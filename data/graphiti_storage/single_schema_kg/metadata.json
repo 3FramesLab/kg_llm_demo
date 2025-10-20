@@ -1,0 +1,7 @@
+{
+  "name": "single_schema_kg",
+  "schema_file": "orderMgmt-catalog",
+  "created_at": "2025-10-20T11:27:21.842291",
+  "nodes_count": 50,
+  "relationships_count": 49
+}

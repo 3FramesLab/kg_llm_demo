@@ -1,0 +1,7 @@
+{
+  "name": "unified_kg_v2",
+  "schema_file": "orderMgmt-catalog,qinspect-designcode",
+  "created_at": "2025-10-20T11:17:45.726425",
+  "nodes_count": 79,
+  "relationships_count": 77
+}

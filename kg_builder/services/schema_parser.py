@@ -194,14 +194,313 @@ class SchemaParser:
         """Build a complete knowledge graph from schema."""
         nodes = SchemaParser.extract_entities(schema)
         relationships = SchemaParser.extract_relationships(schema, nodes)
-        
+
         kg = KnowledgeGraph(
             name=kg_name,
             nodes=nodes,
             relationships=relationships,
             schema_file=schema_name
         )
-        
+
         logger.info(f"Built KG '{kg_name}' with {len(nodes)} nodes and {len(relationships)} relationships")
         return kg
+
+    @staticmethod
+    def build_merged_knowledge_graph(
+        schema_names: List[str],
+        kg_name: str,
+        use_llm: bool = True
+    ) -> KnowledgeGraph:
+        """Build a unified knowledge graph from multiple schemas with cross-schema relationships.
+
+        Args:
+            schema_names: List of schema names to merge
+            kg_name: Name for the generated KG
+            use_llm: Whether to use LLM for relationship enhancement
+
+        Returns:
+            Unified knowledge graph with cross-schema relationships
+        """
+        all_nodes = []
+        all_relationships = []
+        all_schemas = {}
+
+        # Load all schemas
+        for schema_name in schema_names:
+            try:
+                schema = SchemaParser.load_schema(schema_name)
+                all_schemas[schema_name] = schema
+                logger.info(f"Loaded schema: {schema_name}")
+            except FileNotFoundError as e:
+                logger.error(f"Failed to load schema {schema_name}: {e}")
+                raise
+
+        # Extract entities and relationships from each schema
+        for schema_name, schema in all_schemas.items():
+            nodes = SchemaParser.extract_entities(schema)
+            relationships = SchemaParser.extract_relationships(schema, nodes)
+
+            all_nodes.extend(nodes)
+            all_relationships.extend(relationships)
+
+        # Detect and create cross-schema relationships
+        cross_schema_rels = SchemaParser._detect_cross_schema_relationships(
+            all_schemas, all_nodes
+        )
+        all_relationships.extend(cross_schema_rels)
+
+        # Enhance relationships with LLM if enabled
+        if use_llm:
+            all_relationships = SchemaParser._enhance_relationships_with_llm(
+                all_relationships, all_schemas
+            )
+
+        kg = KnowledgeGraph(
+            name=kg_name,
+            nodes=all_nodes,
+            relationships=all_relationships,
+            schema_file=",".join(schema_names)
+        )
+
+        logger.info(
+            f"Built merged KG '{kg_name}' from {len(schema_names)} schemas "
+            f"with {len(all_nodes)} nodes and {len(all_relationships)} relationships"
+        )
+        return kg
+
+    @staticmethod
+    def _detect_cross_schema_relationships(
+        schemas: Dict[str, DatabaseSchema],
+        nodes: List[GraphNode]
+    ) -> List[GraphRelationship]:
+        """Detect relationships between tables across different schemas."""
+        cross_schema_rels = []
+
+        # Create a mapping of table names to schema names
+        table_to_schema = {}
+        for schema_name, schema in schemas.items():
+            for table_name in schema.tables.keys():
+                table_to_schema[table_name] = schema_name
+
+        # Check for common naming patterns that indicate relationships
+        for schema_name, schema in schemas.items():
+            for table_name, table in schema.tables.items():
+                for column in table.columns:
+                    # Look for foreign key patterns
+                    if SchemaParser._is_reference_column(column):
+                        # Try to find matching table in other schemas
+                        for other_schema_name, other_schema in schemas.items():
+                            if other_schema_name == schema_name:
+                                continue
+
+                            # Try to infer target table
+                            target_table = SchemaParser._infer_target_table_across_schemas(
+                                column.name, other_schema
+                            )
+
+                            if target_table:
+                                source_id = f"table_{table_name}"
+                                target_id = f"table_{target_table}"
+
+                                # Avoid duplicate relationships
+                                rel_exists = any(
+                                    r.source_id == source_id and r.target_id == target_id
+                                    for r in cross_schema_rels
+                                )
+
+                                if not rel_exists:
+                                    rel = GraphRelationship(
+                                        source_id=source_id,
+                                        target_id=target_id,
+                                        relationship_type="CROSS_SCHEMA_REFERENCE",
+                                        properties={
+                                            "source_schema": schema_name,
+                                            "target_schema": other_schema_name,
+                                            "column_name": column.name,
+                                            "inferred": True,
+                                        },
+                                        source_column=column.name
+                                    )
+                                    cross_schema_rels.append(rel)
+                                    logger.debug(
+                                        f"Detected cross-schema relationship: "
+                                        f"{schema_name}.{table_name} -> {other_schema_name}.{target_table}"
+                                    )
+
+        return cross_schema_rels
+
+    @staticmethod
+    def _infer_target_table_across_schemas(
+        column_name: str,
+        schema: DatabaseSchema
+    ) -> Optional[str]:
+        """Infer target table from column name within a specific schema."""
+        col_lower = column_name.lower()
+
+        # Remove common suffixes
+        for suffix in ["_uid", "_id", "_ref", "_code"]:
+            if col_lower.endswith(suffix):
+                potential_table = col_lower[:-len(suffix)]
+                # Check if table exists in this schema
+                for table_name in schema.tables.keys():
+                    if table_name.lower() == potential_table or potential_table in table_name.lower():
+                        return table_name
+
+        return None
+
+    @staticmethod
+    def _enhance_relationships_with_llm(
+        relationships: List[GraphRelationship],
+        schemas: Dict[str, DatabaseSchema]
+    ) -> List[GraphRelationship]:
+        """Enhance relationships with LLM analysis (inference, descriptions, confidence scoring).
+
+        Args:
+            relationships: List of relationships to enhance
+            schemas: Dictionary of schemas
+
+        Returns:
+            Enhanced relationships with LLM analysis
+        """
+        try:
+            from kg_builder.services.multi_schema_llm_service import get_multi_schema_llm_service
+
+            llm_service = get_multi_schema_llm_service()
+
+            if not llm_service.is_enabled():
+                logger.info("LLM service not enabled, skipping relationship enhancement")
+                return relationships
+
+            # Prepare schemas info for LLM
+            schemas_info = SchemaParser._prepare_schemas_info(schemas)
+
+            # Convert relationships to dict format for LLM
+            rels_dict = [
+                {
+                    "source_table": rel.source_id.replace("table_", ""),
+                    "target_table": rel.target_id.replace("table_", ""),
+                    "relationship_type": rel.relationship_type,
+                    "properties": rel.properties
+                }
+                for rel in relationships
+            ]
+
+            logger.info("Starting LLM relationship enhancement...")
+
+            # Step 1: Infer additional relationships
+            logger.info("Step 1: Inferring additional relationships...")
+            inferred_rels = llm_service.infer_relationships(schemas_info, rels_dict)
+
+            # Step 2: Enhance descriptions
+            logger.info("Step 2: Enhancing relationship descriptions...")
+            enhanced_rels = llm_service.enhance_relationships(inferred_rels, schemas_info)
+
+            # Step 3: Score relationships
+            logger.info("Step 3: Scoring relationships with confidence...")
+            scored_rels = llm_service.score_relationships(enhanced_rels, schemas_info)
+
+            # Convert back to GraphRelationship objects with LLM metadata
+            enhanced_relationships = []
+
+            # Add original relationships with LLM enhancements
+            for rel in relationships:
+                source_table = rel.source_id.replace("table_", "")
+                target_table = rel.target_id.replace("table_", "")
+
+                # Find matching scored relationship
+                scored = next(
+                    (r for r in scored_rels
+                     if r.get('source_table') == source_table and r.get('target_table') == target_table),
+                    None
+                )
+
+                # Find matching enhanced relationship
+                enhanced = next(
+                    (r for r in enhanced_rels
+                     if r.get('source_table') == source_table and r.get('target_table') == target_table),
+                    None
+                )
+
+                # Update relationship properties with LLM data
+                updated_props = rel.properties.copy() if rel.properties else {}
+
+                if scored:
+                    updated_props['llm_confidence'] = scored.get('confidence', 0.0)
+                    updated_props['llm_reasoning'] = scored.get('reasoning', '')
+                    updated_props['llm_validation_status'] = scored.get('validation_status', '')
+
+                if enhanced:
+                    updated_props['llm_description'] = enhanced.get('description', '')
+
+                # Create updated relationship
+                updated_rel = GraphRelationship(
+                    source_id=rel.source_id,
+                    target_id=rel.target_id,
+                    relationship_type=rel.relationship_type,
+                    properties=updated_props,
+                    source_column=rel.source_column
+                )
+                enhanced_relationships.append(updated_rel)
+
+            # Add inferred relationships
+            for inferred in inferred_rels:
+                if inferred.get('inferred_by_llm'):
+                    source_id = f"table_{inferred.get('source_table')}"
+                    target_id = f"table_{inferred.get('target_table')}"
+
+                    inferred_rel = GraphRelationship(
+                        source_id=source_id,
+                        target_id=target_id,
+                        relationship_type=inferred.get('relationship_type', 'INFERRED'),
+                        properties={
+                            'llm_inferred': True,
+                            'llm_confidence': inferred.get('confidence', 0.0),
+                            'llm_reasoning': inferred.get('reasoning', ''),
+                            'llm_description': f"Inferred: {inferred.get('reasoning', '')}"
+                        }
+                    )
+                    enhanced_relationships.append(inferred_rel)
+
+            logger.info(
+                f"LLM enhancement complete: {len(enhanced_relationships)} relationships "
+                f"({len(enhanced_relationships) - len(relationships)} inferred)"
+            )
+
+            return enhanced_relationships
+
+        except Exception as e:
+            logger.error(f"Error in LLM relationship enhancement: {e}")
+            return relationships
+
+    @staticmethod
+    def _prepare_schemas_info(schemas: Dict[str, DatabaseSchema]) -> Dict[str, Any]:
+        """Prepare schema information for LLM analysis."""
+        schemas_info = {}
+
+        for schema_name, schema in schemas.items():
+            tables_info = {}
+
+            for table_name, table in schema.tables.items():
+                columns_info = [
+                    {
+                        "name": col.name,
+                        "type": col.type,
+                        "nullable": col.nullable,
+                        "primary_key": col.primary_key
+                    }
+                    for col in table.columns
+                ]
+
+                tables_info[table_name] = {
+                    "columns": columns_info,
+                    "primary_keys": table.primary_keys,
+                    "foreign_keys": table.foreign_keys
+                }
+
+            schemas_info[schema_name] = {
+                "tables": tables_info,
+                "total_tables": len(schema.tables)
+            }
+
+        return schemas_info
 

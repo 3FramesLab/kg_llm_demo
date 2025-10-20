@@ -2,7 +2,7 @@
 Pydantic models for request/response validation.
 """
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
 
 
@@ -122,17 +122,38 @@ class SchemaUploadResponse(BaseModel):
 
 class KGGenerationRequest(BaseModel):
     """Request model for KG generation."""
-    schema_name: str = Field(..., description="Name of the schema to process")
+    schema_name: Optional[str] = Field(None, description="Name of a single schema to process (deprecated, use schema_names)")
+    schema_names: Optional[List[str]] = Field(None, description="List of schema names to process and merge into single KG")
     kg_name: str = Field(..., description="Name for the generated knowledge graph")
     backends: List[str] = Field(
         default=["falkordb", "graphiti"],
         description="Backends to use: 'falkordb', 'graphiti', or both"
     )
+    use_llm_enhancement: bool = Field(
+        default=True,
+        description="Use LLM for relationship inference, descriptions, and confidence scoring (only for multi-schema)"
+    )
+
+    @field_validator('schema_names', mode='before')
+    @classmethod
+    def validate_schemas(cls, v, info):
+        """Ensure at least one schema is provided."""
+        schema_name = info.data.get('schema_name')
+
+        # If schema_names not provided, use schema_name for backward compatibility
+        if v is None and schema_name:
+            return [schema_name]
+
+        if v is None and schema_name is None:
+            raise ValueError("Either 'schema_name' or 'schema_names' must be provided")
+
+        return v
 
 
 class KGGenerationResponse(BaseModel):
     """Response model for KG generation."""
     success: bool
+    schemas_processed: List[str] = Field(default=[], description="List of schemas that were processed")
     message: str
     kg_name: str
     nodes_count: int

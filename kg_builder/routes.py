@@ -74,22 +74,33 @@ async def parse_schema(schema_name: str):
 
 @router.post("/kg/generate", response_model=KGGenerationResponse)
 async def generate_knowledge_graph(request: KGGenerationRequest):
-    """Generate a knowledge graph from a schema."""
+    """Generate a knowledge graph from one or multiple schemas."""
     try:
         start_time = time.time()
-        
-        # Load schema
-        schema = SchemaParser.load_schema(request.schema_name)
-        
+
+        # Determine which schemas to process
+        schema_names = request.schema_names or [request.schema_name]
+
         # Build knowledge graph
-        kg = SchemaParser.build_knowledge_graph(
-            request.schema_name,
-            request.kg_name,
-            schema
-        )
-        
+        if len(schema_names) == 1:
+            # Single schema - use original method
+            schema = SchemaParser.load_schema(schema_names[0])
+            kg = SchemaParser.build_knowledge_graph(
+                schema_names[0],
+                request.kg_name,
+                schema
+            )
+        else:
+            # Multiple schemas - use merged method with cross-schema relationships
+            # LLM enhancement is only applied to multi-schema KGs
+            kg = SchemaParser.build_merged_knowledge_graph(
+                schema_names,
+                request.kg_name,
+                use_llm=request.use_llm_enhancement
+            )
+
         backends_used = []
-        
+
         # Store in FalkorDB if requested
         if "falkordb" in request.backends:
             falkordb = get_falkordb_backend()
@@ -98,27 +109,28 @@ async def generate_knowledge_graph(request: KGGenerationRequest):
                     backends_used.append("falkordb")
             else:
                 logger.warning("FalkorDB not connected, skipping")
-        
+
         # Store in Graphiti if requested
         if "graphiti" in request.backends:
             graphiti = get_graphiti_backend()
             if graphiti.create_graph(kg):
                 backends_used.append("graphiti")
-        
+
         elapsed_ms = (time.time() - start_time) * 1000
-        
+
         return KGGenerationResponse(
             success=True,
-            message=f"Knowledge graph '{request.kg_name}' generated successfully",
+            schemas_processed=schema_names,
+            message=f"Knowledge graph '{request.kg_name}' generated successfully from {len(schema_names)} schema(s)",
             kg_name=request.kg_name,
             nodes_count=len(kg.nodes),
             relationships_count=len(kg.relationships),
             backends_used=backends_used,
             generation_time_ms=elapsed_ms
         )
-    
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail=f"Schema '{request.schema_name}' not found")
+
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Error generating knowledge graph: {e}")
         raise HTTPException(status_code=500, detail=str(e))
