@@ -1,0 +1,492 @@
+[
+  {
+    "source_id": "column_catalog_id",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "id"
+    },
+    "source_column": "id",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_added_to_cart_by_user_uid",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "added_to_cart_by_user_uid"
+    },
+    "source_column": "added_to_cart_by_user_uid",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_blocked_by_user_uid",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "blocked_by_user_uid"
+    },
+    "source_column": "blocked_by_user_uid",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_bought_by_user_uid",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "bought_by_user_uid"
+    },
+    "source_column": "bought_by_user_uid",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_cat_uid",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "cat_uid"
+    },
+    "source_column": "cat_uid",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_code",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "code"
+    },
+    "source_column": "code",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_detail_pdf_uid",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "detail_pdf_uid"
+    },
+    "source_column": "detail_pdf_uid",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_group_uid",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "group_uid"
+    },
+    "source_column": "group_uid",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_highres_image_uid",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "highres_image_uid"
+    },
+    "source_column": "highres_image_uid",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_image_uid",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "image_uid"
+    },
+    "source_column": "image_uid",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_image_uid3d",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "image_uid3d"
+    },
+    "source_column": "image_uid3d",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_image_uid3dcol_count",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "image_uid3dcol_count"
+    },
+    "source_column": "image_uid3dcol_count",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_offer_month_uid",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "offer_month_uid"
+    },
+    "source_column": "offer_month_uid",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_sample_requested_by_user_uid",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "sample_requested_by_user_uid"
+    },
+    "source_column": "sample_requested_by_user_uid",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_sourcing_uid",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "sourcing_uid"
+    },
+    "source_column": "sourcing_uid",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_sub_cat_uid",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "sub_cat_uid"
+    },
+    "source_column": "sub_cat_uid",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_tech_pack_uid",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "tech_pack_uid"
+    },
+    "source_column": "tech_pack_uid",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_tenant_uid",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "tenant_uid"
+    },
+    "source_column": "tenant_uid",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_thumbnail_image_uid",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "thumbnail_image_uid"
+    },
+    "source_column": "thumbnail_image_uid",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_uuid",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "uuid"
+    },
+    "source_column": "uuid",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_vendor_uid",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "vendor_uid"
+    },
+    "source_column": "vendor_uid",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_brand_uid",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "brand_uid"
+    },
+    "source_column": "brand_uid",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_fit_uid",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "fit_uid"
+    },
+    "source_column": "fit_uid",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_subbrand_uid",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "subbrand_uid"
+    },
+    "source_column": "subbrand_uid",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_short_code",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "short_code"
+    },
+    "source_column": "short_code",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_designer_code",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "designer_code"
+    },
+    "source_column": "designer_code",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_fabric_code",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "fabric_code"
+    },
+    "source_column": "fabric_code",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_active_sap_code",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "active_sap_code"
+    },
+    "source_column": "active_sap_code",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_ean_code",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "ean_code"
+    },
+    "source_column": "ean_code",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_ext_ref_uid",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "ext_ref_uid"
+    },
+    "source_column": "ext_ref_uid",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_fms_code",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "fms_code"
+    },
+    "source_column": "fms_code",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_sap_code",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "sap_code"
+    },
+    "source_column": "sap_code",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_video_uid",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "video_uid"
+    },
+    "source_column": "video_uid",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_style_code",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "style_code"
+    },
+    "source_column": "style_code",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_collection_uid",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "collection_uid"
+    },
+    "source_column": "collection_uid",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_unit_uid",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "unit_uid"
+    },
+    "source_column": "unit_uid",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_unit_uids",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "unit_uids"
+    },
+    "source_column": "unit_uids",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_ref_img_uid",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "ref_img_uid"
+    },
+    "source_column": "ref_img_uid",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_image_uid_3d",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "image_uid_3d"
+    },
+    "source_column": "image_uid_3d",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_available_size_codes",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "available_size_codes"
+    },
+    "source_column": "available_size_codes",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_brand_id",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "brand_id"
+    },
+    "source_column": "brand_id",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_company_id",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "company_id"
+    },
+    "source_column": "company_id",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_product_id",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "product_id"
+    },
+    "source_column": "product_id",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_parent_tenant_uid",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "parent_tenant_uid"
+    },
+    "source_column": "parent_tenant_uid",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_subseason_uid",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "subseason_uid"
+    },
+    "source_column": "subseason_uid",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_catalog_price_size_codes",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "catalog_price_size_codes"
+    },
+    "source_column": "catalog_price_size_codes",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_catalog_price_size_codes_2",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "catalog_price_size_codes_2"
+    },
+    "source_column": "catalog_price_size_codes_2",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_drop_codes",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "drop_codes"
+    },
+    "source_column": "drop_codes",
+    "target_column": null
+  },
+  {
+    "source_id": "column_catalog_filter_available_size_codes",
+    "target_id": "table_catalog",
+    "relationship_type": "BELONGS_TO",
+    "properties": {
+      "column_name": "filter_available_size_codes"
+    },
+    "source_column": "filter_available_size_codes",
+    "target_column": null
+  }
+]
