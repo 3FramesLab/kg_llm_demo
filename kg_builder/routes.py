@@ -19,6 +19,7 @@ from kg_builder.services.graphiti_backend import get_graphiti_backend
 from kg_builder.services.llm_service import get_llm_service
 from kg_builder.services.reconciliation_service import get_reconciliation_service
 from kg_builder.services.rule_storage import get_rule_storage
+from kg_builder.services.rule_validator import get_rule_validator
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -561,19 +562,36 @@ async def delete_ruleset(ruleset_id: str):
 
 
 @router.get("/reconciliation/rulesets/{ruleset_id}/export/sql")
-async def export_ruleset_to_sql(ruleset_id: str):
+async def export_ruleset_to_sql(
+    ruleset_id: str,
+    query_type: str = "all"
+):
     """
-    Export a ruleset as SQL JOIN statements.
+    Export a ruleset as SQL statements.
 
     Args:
         ruleset_id: ID of the ruleset to export
+        query_type: Type of queries to generate:
+            - "all": Generate all query types (matched, unmatched source, unmatched target, statistics)
+            - "matched": Only matched records query
+            - "unmatched_source": Only unmatched source records
+            - "unmatched_target": Only unmatched target records
 
     Returns:
         SQL statements as text
+
+    Example:
+        GET /reconciliation/rulesets/RECON_ABC123/export/sql?query_type=all
     """
     try:
+        if query_type not in ["all", "matched", "unmatched_source", "unmatched_target"]:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid query_type: {query_type}. Must be one of: all, matched, unmatched_source, unmatched_target"
+            )
+
         storage = get_rule_storage()
-        sql = storage.export_ruleset_to_sql(ruleset_id)
+        sql = storage.export_ruleset_to_sql(ruleset_id, query_type=query_type)
 
         if not sql:
             raise HTTPException(status_code=404, detail=f"Ruleset '{ruleset_id}' not found")
@@ -581,6 +599,7 @@ async def export_ruleset_to_sql(ruleset_id: str):
         return {
             "success": True,
             "ruleset_id": ruleset_id,
+            "query_type": query_type,
             "sql": sql
         }
 
@@ -594,32 +613,107 @@ async def export_ruleset_to_sql(ruleset_id: str):
 @router.post("/reconciliation/validate")
 async def validate_rule(request: RuleValidationRequest):
     """
-    Validate a reconciliation rule.
+    Validate a reconciliation rule against actual database data.
 
-    This endpoint checks if a rule is valid by:
+    This endpoint performs comprehensive validation by:
+    - Connecting to source and target databases via JDBC
     - Verifying tables and columns exist
     - Checking data type compatibility
-    - Testing on sample data (optional)
+    - Testing on sample data to calculate match rates
+    - Detecting relationship cardinality (1:1, 1:N, N:M)
+    - Estimating query performance
 
     Args:
-        request: Rule validation request with rule and sample size
+        request: Rule validation request with rule, sample size, and DB connections
 
     Returns:
-        Validation result with issues and warnings
+        Validation result with issues, warnings, and metrics
+
+    Example request:
+    ```json
+    {
+      "rule": {...},
+      "sample_size": 100,
+      "source_db_config": {
+        "db_type": "oracle",
+        "host": "localhost",
+        "port": 1521,
+        "database": "ORCL",
+        "username": "user1",
+        "password": "pass1"
+      },
+      "target_db_config": {
+        "db_type": "oracle",
+        "host": "localhost",
+        "port": 1521,
+        "database": "ORCL",
+        "username": "user2",
+        "password": "pass2"
+      }
+    }
+    ```
     """
     try:
-        # Basic validation (existence check)
-        # Note: Full validation would require database connection
-        result = ValidationResult(
-            rule_id=request.rule.rule_id,
-            valid=True,
-            exists=True,
-            types_compatible=True,
-            sample_match_rate=None,
-            cardinality=None,
-            estimated_performance_ms=None,
-            issues=[],
-            warnings=["Full validation requires database connection"]
+        from kg_builder.config import (
+            get_source_db_config,
+            get_target_db_config,
+            USE_ENV_DB_CONFIGS
+        )
+
+        # Determine database configurations to use
+        # Priority: 1. Request payload, 2. Environment variables, 3. None (basic validation)
+        source_db_config = request.source_db_config
+        target_db_config = request.target_db_config
+
+        # Use environment configs if enabled and no configs in request
+        if USE_ENV_DB_CONFIGS and not source_db_config and not target_db_config:
+            logger.info("Attempting to use database configs from environment variables")
+            source_db_config = get_source_db_config()
+            target_db_config = get_target_db_config()
+
+            if source_db_config and target_db_config:
+                logger.info("Using database configurations from environment variables for validation")
+            elif source_db_config or target_db_config:
+                logger.warning(
+                    "Partial database configuration found in environment. "
+                    "Both source and target configs are required."
+                )
+                source_db_config = None
+                target_db_config = None
+
+        # Check if database connections are available
+        if not source_db_config or not target_db_config:
+            # Return basic validation without database connection
+            result = ValidationResult(
+                rule_id=request.rule.rule_id,
+                valid=True,
+                exists=True,
+                types_compatible=True,
+                sample_match_rate=None,
+                cardinality=None,
+                estimated_performance_ms=None,
+                issues=[],
+                warnings=[
+                    "Database connections not provided - skipping data validation",
+                    "Provide 'source_db_config' and 'target_db_config' for full validation",
+                    "Or configure database credentials in environment variables"
+                ]
+            )
+            return {
+                "success": True,
+                "validation": result.dict()
+            }
+
+        # Get rule validator
+        validator = get_rule_validator()
+
+        # Perform full validation with database connections
+        logger.info(f"Validating rule '{request.rule.rule_id}' with database connections")
+        result = validator.validate_rule_with_data(
+            rule=request.rule,
+            source_db_config=source_db_config,
+            target_db_config=target_db_config,
+            sample_size=request.sample_size
         )
 
         return {
@@ -628,38 +722,159 @@ async def validate_rule(request: RuleValidationRequest):
         }
 
     except Exception as e:
-        logger.error(f"Error validating rule: {e}")
+        logger.error(f"Error validating rule: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/reconciliation/execute")
 async def execute_reconciliation(request: RuleExecutionRequest):
     """
-    Execute reconciliation rules (placeholder).
+    Execute reconciliation rules against actual databases.
 
-    This endpoint would execute the rules against actual data to find matches.
-    Full implementation requires database connectivity.
+    This endpoint executes the reconciliation rules using SQL queries to find:
+    - Matched records (exist in both source and target)
+    - Unmatched source records (only in source)
+    - Unmatched target records (only in target)
+
+    **Two execution modes:**
+
+    1. **SQL Export Mode** (No database configs provided):
+       - Returns SQL queries that you can run manually
+       - Use this when you want to review/customize the queries
+       - No actual database execution
+
+    2. **Direct Execution Mode** (Database configs provided):
+       - Connects to actual databases via JDBC
+       - Executes queries and returns results
+       - Requires JayDeBeApi and JDBC drivers
 
     Args:
-        request: Execution request with ruleset_id and limit
+        request: Execution request with:
+            - ruleset_id: ID of the ruleset to execute
+            - limit: Maximum number of records to return (default: 100)
+            - source_db_config: (Optional) Source database connection
+            - target_db_config: (Optional) Target database connection
+            - include_matched: (Optional) Include matched records (default: True)
+            - include_unmatched: (Optional) Include unmatched records (default: True)
 
     Returns:
-        Matched records and statistics
+        RuleExecutionResponse with matched and unmatched records
+
+    Example - SQL Export Mode:
+    ```json
+    {
+      "ruleset_id": "RECON_ABC123",
+      "limit": 100
+    }
+    ```
+
+    Example - Direct Execution Mode:
+    ```json
+    {
+      "ruleset_id": "RECON_ABC123",
+      "limit": 100,
+      "source_db_config": {
+        "db_type": "oracle",
+        "host": "localhost",
+        "port": 1521,
+        "database": "ORCL",
+        "username": "user1",
+        "password": "pass1"
+      },
+      "target_db_config": {
+        "db_type": "oracle",
+        "host": "localhost",
+        "port": 1521,
+        "database": "ORCL",
+        "username": "user2",
+        "password": "pass2"
+      }
+    }
+    ```
     """
     try:
-        # Placeholder implementation
-        return RuleExecutionResponse(
-            success=True,
-            matched_count=0,
-            unmatched_source_count=0,
-            unmatched_target_count=0,
-            matched_records=[],
-            unmatched_source=[],
-            unmatched_target=[],
-            execution_time_ms=0.0
+        from kg_builder.config import (
+            get_source_db_config,
+            get_target_db_config,
+            USE_ENV_DB_CONFIGS
         )
 
+        # Determine database configurations to use
+        # Priority: 1. Request payload, 2. Environment variables, 3. None (SQL export mode)
+        source_db_config = request.source_db_config
+        target_db_config = request.target_db_config
+
+        # Use environment configs if enabled and no configs in request
+        if USE_ENV_DB_CONFIGS and not source_db_config and not target_db_config:
+            logger.info("Attempting to use database configs from environment variables")
+            source_db_config = get_source_db_config()
+            target_db_config = get_target_db_config()
+
+            if source_db_config and target_db_config:
+                logger.info("Using database configurations from environment variables")
+            elif source_db_config or target_db_config:
+                logger.warning(
+                    "Partial database configuration found in environment. "
+                    "Both source and target configs are required."
+                )
+                source_db_config = None
+                target_db_config = None
+
+        # Check if database connections are available
+        if not source_db_config or not target_db_config:
+            # SQL Export Mode - return SQL queries
+            logger.info(f"SQL Export Mode: Generating SQL for ruleset '{request.ruleset_id}'")
+
+            storage = get_rule_storage()
+            sql = storage.export_ruleset_to_sql(request.ruleset_id, query_type="all")
+
+            if not sql:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Ruleset '{request.ruleset_id}' not found"
+                )
+
+            return {
+                "success": True,
+                "mode": "sql_export",
+                "message": "SQL queries generated. Execute these queries manually in your database.",
+                "sql": sql,
+                "matched_count": 0,
+                "unmatched_source_count": 0,
+                "unmatched_target_count": 0,
+                "matched_records": [],
+                "unmatched_source": [],
+                "unmatched_target": [],
+                "execution_time_ms": 0.0,
+                "instructions": [
+                    "Copy the SQL queries from the 'sql' field",
+                    "Run them in your database client (SQL Developer, DBeaver, etc.)",
+                    "Review the matched and unmatched records",
+                    "For automated execution, provide source_db_config and target_db_config"
+                ]
+            }
+
+        # Direct Execution Mode - execute against actual databases
+        logger.info(f"Direct Execution Mode: Executing ruleset '{request.ruleset_id}' against databases")
+
+        from kg_builder.services.reconciliation_executor import get_reconciliation_executor
+
+        executor = get_reconciliation_executor()
+
+        result = executor.execute_ruleset(
+            ruleset_id=request.ruleset_id,
+            source_db_config=source_db_config,
+            target_db_config=target_db_config,
+            limit=request.limit,
+            include_matched=getattr(request, 'include_matched', True),
+            include_unmatched=getattr(request, 'include_unmatched', True)
+        )
+
+        return result
+
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error executing reconciliation: {e}")
+        logger.error(f"Error executing reconciliation: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 

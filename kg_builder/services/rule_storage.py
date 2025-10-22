@@ -194,12 +194,21 @@ class ReconciliationRuleStorage:
         logger.info(f"Found {len(filtered)} rulesets matching filters")
         return filtered
 
-    def export_ruleset_to_sql(self, ruleset_id: str) -> Optional[str]:
+    def export_ruleset_to_sql(
+        self,
+        ruleset_id: str,
+        query_type: str = "all"
+    ) -> Optional[str]:
         """
-        Export a ruleset as SQL JOIN statements.
+        Export a ruleset as SQL statements.
 
         Args:
             ruleset_id: ID of the ruleset to export
+            query_type: Type of queries to generate:
+                - "all": Generate all query types (matched, unmatched source, unmatched target)
+                - "matched": Only matched records query
+                - "unmatched_source": Only unmatched source records
+                - "unmatched_target": Only unmatched target records
 
         Returns:
             SQL string or None if ruleset not found
@@ -210,22 +219,32 @@ class ReconciliationRuleStorage:
             return None
 
         sql_statements = []
+        sql_statements.append(f"-- ============================================================================")
         sql_statements.append(f"-- Reconciliation Rules: {ruleset.ruleset_name}")
         sql_statements.append(f"-- Generated from KG: {ruleset.generated_from_kg}")
         sql_statements.append(f"-- Schemas: {', '.join(ruleset.schemas)}")
         sql_statements.append(f"-- Total Rules: {len(ruleset.rules)}")
+        sql_statements.append(f"-- ============================================================================")
         sql_statements.append("")
 
         for i, rule in enumerate(ruleset.rules, 1):
+            sql_statements.append(f"-- ----------------------------------------------------------------------------")
             sql_statements.append(f"-- Rule {i}: {rule.rule_name}")
             sql_statements.append(f"-- Match Type: {rule.match_type}")
             sql_statements.append(f"-- Confidence: {rule.confidence_score:.2f}")
             sql_statements.append(f"-- Reasoning: {rule.reasoning}")
+            sql_statements.append(f"-- ----------------------------------------------------------------------------")
+            sql_statements.append("")
+
+            # Generate column lists
+            source_cols_list = ', '.join([f"s.{col}" for col in rule.source_columns])
+            target_cols_list = ', '.join([f"t.{col}" for col in rule.target_columns])
+
+            # All source columns
+            source_all_cols = "s.*"
+            target_all_cols = "t.*"
 
             # Generate JOIN condition
-            source_cols = ', '.join([f"s.{col}" for col in rule.source_columns])
-            target_cols = ', '.join([f"t.{col}" for col in rule.target_columns])
-
             join_conditions = []
             for src_col, tgt_col in zip(rule.source_columns, rule.target_columns):
                 if rule.transformation:
@@ -235,13 +254,93 @@ class ReconciliationRuleStorage:
 
             join_condition = " AND ".join(join_conditions)
 
-            sql_statements.append(f"""
-SELECT {source_cols}, {target_cols}
+            # Generate queries based on query_type
+            if query_type in ["all", "matched"]:
+                sql_statements.append(f"-- MATCHED RECORDS: Records that exist in both source and target")
+                sql_statements.append(f"""
+SELECT
+    '{rule.rule_id}' AS rule_id,
+    '{rule.rule_name}' AS rule_name,
+    {rule.confidence_score} AS confidence_score,
+    {source_all_cols},
+    {target_all_cols}
 FROM {rule.source_schema}.{rule.source_table} s
-JOIN {rule.target_schema}.{rule.target_table} t
+INNER JOIN {rule.target_schema}.{rule.target_table} t
     ON {join_condition};
 """)
+                sql_statements.append("")
+
+            if query_type in ["all", "unmatched_source"]:
+                sql_statements.append(f"-- UNMATCHED SOURCE: Records in source but NOT in target")
+                sql_statements.append(f"""
+SELECT
+    '{rule.rule_id}' AS rule_id,
+    '{rule.rule_name}' AS rule_name,
+    {source_all_cols}
+FROM {rule.source_schema}.{rule.source_table} s
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM {rule.target_schema}.{rule.target_table} t
+    WHERE {join_condition}
+);
+""")
+                sql_statements.append("")
+
+            if query_type in ["all", "unmatched_target"]:
+                sql_statements.append(f"-- UNMATCHED TARGET: Records in target but NOT in source")
+                sql_statements.append(f"""
+SELECT
+    '{rule.rule_id}' AS rule_id,
+    '{rule.rule_name}' AS rule_name,
+    {target_all_cols}
+FROM {rule.target_schema}.{rule.target_table} t
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM {rule.source_schema}.{rule.source_table} s
+    WHERE {join_condition}
+);
+""")
+                sql_statements.append("")
+
+        # Add summary query at the end
+        if query_type == "all":
+            sql_statements.append("-- ============================================================================")
+            sql_statements.append("-- SUMMARY STATISTICS")
+            sql_statements.append("-- ============================================================================")
             sql_statements.append("")
+
+            for i, rule in enumerate(ruleset.rules, 1):
+                join_conditions = []
+                for src_col, tgt_col in zip(rule.source_columns, rule.target_columns):
+                    if rule.transformation:
+                        join_conditions.append(f"{rule.transformation} = t.{tgt_col}")
+                    else:
+                        join_conditions.append(f"s.{src_col} = t.{tgt_col}")
+                join_condition = " AND ".join(join_conditions)
+
+                sql_statements.append(f"-- Statistics for Rule {i}: {rule.rule_name}")
+                sql_statements.append(f"""
+SELECT
+    '{rule.rule_name}' AS rule_name,
+    (SELECT COUNT(*) FROM {rule.source_schema}.{rule.source_table}) AS total_source,
+    (SELECT COUNT(*) FROM {rule.target_schema}.{rule.target_table}) AS total_target,
+    (SELECT COUNT(*)
+     FROM {rule.source_schema}.{rule.source_table} s
+     INNER JOIN {rule.target_schema}.{rule.target_table} t
+         ON {join_condition}) AS matched_count,
+    (SELECT COUNT(*)
+     FROM {rule.source_schema}.{rule.source_table} s
+     WHERE NOT EXISTS (
+         SELECT 1 FROM {rule.target_schema}.{rule.target_table} t
+         WHERE {join_condition})) AS unmatched_source_count,
+    (SELECT COUNT(*)
+     FROM {rule.target_schema}.{rule.target_table} t
+     WHERE NOT EXISTS (
+         SELECT 1 FROM {rule.source_schema}.{rule.source_table} s
+         WHERE {join_condition})) AS unmatched_target_count
+FROM DUAL;
+""")
+                sql_statements.append("")
 
         return "\n".join(sql_statements)
 

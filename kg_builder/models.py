@@ -281,12 +281,48 @@ class RuleValidationRequest(BaseModel):
     """Request model for validating a reconciliation rule."""
     rule: ReconciliationRule
     sample_size: int = Field(default=100, description="Number of records to test")
+    source_db_config: Optional['DatabaseConnectionInfo'] = Field(default=None, description="Source database connection info")
+    target_db_config: Optional['DatabaseConnectionInfo'] = Field(default=None, description="Target database connection info")
+
+
+class DatabaseConnectionInfo(BaseModel):
+    """Database connection information for JDBC connections."""
+    db_type: str = Field(..., description="Database type: oracle, sqlserver, postgresql, mysql")
+    host: str = Field(..., description="Database host")
+    port: int = Field(..., description="Database port")
+    database: str = Field(..., description="Database name")
+    username: str = Field(..., description="Database username")
+    password: str = Field(..., description="Database password")
+    service_name: Optional[str] = Field(default=None, description="Oracle service name (if applicable)")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "db_type": "oracle",
+                "host": "localhost",
+                "port": 1521,
+                "database": "ORCL",
+                "username": "admin",
+                "password": "password",
+                "service_name": "ORCLPDB"
+            }
+        }
 
 
 class RuleExecutionRequest(BaseModel):
     """Request model for executing reconciliation rules."""
     ruleset_id: str
     limit: int = Field(default=100, description="Maximum number of records to process")
+    source_db_config: Optional['DatabaseConnectionInfo'] = Field(
+        default=None,
+        description="Source database connection (optional - for direct execution)"
+    )
+    target_db_config: Optional['DatabaseConnectionInfo'] = Field(
+        default=None,
+        description="Target database connection (optional - for direct execution)"
+    )
+    include_matched: bool = Field(default=True, description="Include matched records in results")
+    include_unmatched: bool = Field(default=True, description="Include unmatched records in results")
 
 
 class MatchedRecord(BaseModel):
