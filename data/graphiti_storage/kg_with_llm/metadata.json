@@ -1,7 +1,7 @@
 {
   "name": "kg_with_llm",
   "schema_file": "orderMgmt-catalog,qinspect-designcode",
-  "created_at": "2025-10-20T11:27:16.777169",
+  "created_at": "2025-10-20T12:38:00.627223",
   "nodes_count": 79,
   "relationships_count": 77
 }

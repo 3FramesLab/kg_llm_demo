@@ -4,6 +4,7 @@ Pydantic models for request/response validation.
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
+from enum import Enum
 
 
 # LLM-related models
@@ -199,4 +200,112 @@ class HealthCheckResponse(BaseModel):
     falkordb_connected: bool
     graphiti_available: bool
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+# Reconciliation Rule models
+class ReconciliationMatchType(str, Enum):
+    """Types of reconciliation matches."""
+    EXACT = "exact"              # Exact column match
+    FUZZY = "fuzzy"              # Fuzzy string matching
+    COMPOSITE = "composite"      # Multiple columns
+    TRANSFORMATION = "transformation"  # Apply transform function
+    SEMANTIC = "semantic"        # LLM-inferred semantic match
+
+
+class ReconciliationRule(BaseModel):
+    """Represents a reconciliation rule between schemas."""
+    rule_id: str
+    rule_name: str
+    source_schema: str
+    source_table: str
+    source_columns: List[str]
+    target_schema: str
+    target_table: str
+    target_columns: List[str]
+    match_type: ReconciliationMatchType
+    transformation: Optional[str] = None  # SQL/Python transform
+    confidence_score: float  # 0.0-1.0
+    reasoning: str  # LLM explanation
+    validation_status: str  # VALID, LIKELY, UNCERTAIN
+    llm_generated: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    metadata: Dict[str, Any] = {}
+
+
+class ReconciliationRuleSet(BaseModel):
+    """Collection of reconciliation rules."""
+    ruleset_id: str
+    ruleset_name: str
+    schemas: List[str]
+    rules: List[ReconciliationRule]
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    generated_from_kg: str  # KG name
+
+
+class RuleGenerationRequest(BaseModel):
+    """Request model for generating reconciliation rules."""
+    schema_names: List[str] = Field(..., description="List of schema names to reconcile")
+    kg_name: str = Field(..., description="Knowledge graph to use for rule generation")
+    use_llm_enhancement: bool = Field(default=True, description="Use LLM for semantic rule generation")
+    min_confidence: float = Field(default=0.7, description="Minimum confidence score for rules")
+    match_types: List[ReconciliationMatchType] = Field(
+        default=[ReconciliationMatchType.EXACT, ReconciliationMatchType.SEMANTIC],
+        description="Types of matches to generate"
+    )
+
+
+class RuleGenerationResponse(BaseModel):
+    """Response model for rule generation."""
+    success: bool
+    ruleset_id: str
+    rules_count: int
+    rules: List[ReconciliationRule]
+    generation_time_ms: float
+    message: Optional[str] = None
+
+
+class ValidationResult(BaseModel):
+    """Result of validating a reconciliation rule."""
+    rule_id: str
+    valid: bool
+    exists: bool  # Do tables/columns exist?
+    types_compatible: bool  # Are data types compatible?
+    sample_match_rate: Optional[float] = None  # Match rate on sample data
+    cardinality: Optional[str] = None  # 1:1, 1:N, N:M
+    estimated_performance_ms: Optional[float] = None
+    issues: List[str] = []
+    warnings: List[str] = []
+
+
+class RuleValidationRequest(BaseModel):
+    """Request model for validating a reconciliation rule."""
+    rule: ReconciliationRule
+    sample_size: int = Field(default=100, description="Number of records to test")
+
+
+class RuleExecutionRequest(BaseModel):
+    """Request model for executing reconciliation rules."""
+    ruleset_id: str
+    limit: int = Field(default=100, description="Maximum number of records to process")
+
+
+class MatchedRecord(BaseModel):
+    """Represents a matched record pair."""
+    source_record: Dict[str, Any]
+    target_record: Dict[str, Any]
+    match_confidence: float
+    rule_used: str
+    rule_name: str
+
+
+class RuleExecutionResponse(BaseModel):
+    """Response model for rule execution."""
+    success: bool
+    matched_count: int
+    unmatched_source_count: int
+    unmatched_target_count: int
+    matched_records: List[MatchedRecord]
+    unmatched_source: List[Dict[str, Any]] = []
+    unmatched_target: List[Dict[str, Any]] = []
+    execution_time_ms: float
 

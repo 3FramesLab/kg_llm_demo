@@ -52,3 +52,12 @@ OPENAI_MAX_TOKENS = int(os.getenv("OPENAI_MAX_TOKENS", "2000"))
 ENABLE_LLM_EXTRACTION = os.getenv("ENABLE_LLM_EXTRACTION", "true").lower() == "true"
 ENABLE_LLM_ANALYSIS = os.getenv("ENABLE_LLM_ANALYSIS", "true").lower() == "true"
 
+# Reconciliation settings
+RECON_STORAGE_PATH = DATA_DIR / os.getenv("RECON_STORAGE_PATH", "reconciliation_rules")
+RECON_MIN_CONFIDENCE = float(os.getenv("RECON_MIN_CONFIDENCE", "0.7"))
+RECON_ENABLE_LLM = os.getenv("RECON_ENABLE_LLM", "true").lower() == "true"
+RECON_SAMPLE_SIZE = int(os.getenv("RECON_SAMPLE_SIZE", "100"))
+
+# Ensure reconciliation storage exists
+RECON_STORAGE_PATH.mkdir(exist_ok=True, parents=True)
+

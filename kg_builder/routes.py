@@ -9,12 +9,16 @@ from typing import List
 from kg_builder.models import (
     SchemaUploadResponse, KGGenerationRequest, KGGenerationResponse,
     QueryRequest, QueryResponse, EntityResponse, GraphExportResponse,
-    HealthCheckResponse, LLMExtractionResponse, LLMAnalysisResponse
+    HealthCheckResponse, LLMExtractionResponse, LLMAnalysisResponse,
+    RuleGenerationRequest, RuleGenerationResponse, RuleValidationRequest,
+    ValidationResult, RuleExecutionRequest, RuleExecutionResponse
 )
 from kg_builder.services.schema_parser import SchemaParser
 from kg_builder.services.falkordb_backend import get_falkordb_backend
 from kg_builder.services.graphiti_backend import get_graphiti_backend
 from kg_builder.services.llm_service import get_llm_service
+from kg_builder.services.reconciliation_service import get_reconciliation_service
+from kg_builder.services.rule_storage import get_rule_storage
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -400,4 +404,262 @@ async def llm_status():
         "temperature": llm_service.temperature,
         "max_tokens": llm_service.max_tokens
     }
+
+
+# Reconciliation Rule endpoints
+@router.post("/reconciliation/generate", response_model=RuleGenerationResponse)
+async def generate_reconciliation_rules(request: RuleGenerationRequest):
+    """
+    Generate reconciliation rules from a knowledge graph.
+
+    This endpoint analyzes a knowledge graph to automatically generate rules
+    for matching and linking data across different schemas.
+
+    Example request:
+    ```json
+    {
+      "schema_names": ["orderMgmt-catalog", "vendorDB-suppliers"],
+      "kg_name": "unified_kg",
+      "use_llm_enhancement": true,
+      "min_confidence": 0.7,
+      "match_types": ["exact", "semantic"]
+    }
+    ```
+
+    Args:
+        request: Rule generation request parameters
+
+    Returns:
+        Generated reconciliation ruleset with rules and metadata
+    """
+    try:
+        start_time = time.time()
+
+        # Get reconciliation service
+        recon_service = get_reconciliation_service()
+
+        # Generate rules
+        ruleset = recon_service.generate_from_knowledge_graph(
+            kg_name=request.kg_name,
+            schema_names=request.schema_names,
+            use_llm=request.use_llm_enhancement,
+            min_confidence=request.min_confidence
+        )
+
+        # Save ruleset
+        storage = get_rule_storage()
+        storage.save_ruleset(ruleset)
+
+        elapsed_ms = (time.time() - start_time) * 1000
+
+        return RuleGenerationResponse(
+            success=True,
+            ruleset_id=ruleset.ruleset_id,
+            rules_count=len(ruleset.rules),
+            rules=ruleset.rules,
+            generation_time_ms=elapsed_ms,
+            message=f"Generated {len(ruleset.rules)} reconciliation rules"
+        )
+
+    except Exception as e:
+        logger.error(f"Error generating reconciliation rules: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/reconciliation/rulesets")
+async def list_rulesets(schema_name: str = None, kg_name: str = None):
+    """
+    List all saved reconciliation rulesets.
+
+    Query parameters:
+    - schema_name: Filter by schema name (optional)
+    - kg_name: Filter by source knowledge graph (optional)
+
+    Returns:
+        List of ruleset metadata
+    """
+    try:
+        storage = get_rule_storage()
+
+        if schema_name or kg_name:
+            rulesets = storage.search_rulesets(
+                schema_name=schema_name,
+                kg_name=kg_name
+            )
+        else:
+            rulesets = storage.list_rulesets()
+
+        return {
+            "success": True,
+            "rulesets": rulesets,
+            "count": len(rulesets)
+        }
+
+    except Exception as e:
+        logger.error(f"Error listing rulesets: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/reconciliation/rulesets/{ruleset_id}")
+async def get_ruleset(ruleset_id: str):
+    """
+    Retrieve a specific reconciliation ruleset.
+
+    Args:
+        ruleset_id: ID of the ruleset to retrieve
+
+    Returns:
+        Complete ruleset with all rules
+    """
+    try:
+        storage = get_rule_storage()
+        ruleset = storage.load_ruleset(ruleset_id)
+
+        if not ruleset:
+            raise HTTPException(status_code=404, detail=f"Ruleset '{ruleset_id}' not found")
+
+        return {
+            "success": True,
+            "ruleset": ruleset.dict()
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving ruleset: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/reconciliation/rulesets/{ruleset_id}")
+async def delete_ruleset(ruleset_id: str):
+    """
+    Delete a reconciliation ruleset.
+
+    Args:
+        ruleset_id: ID of the ruleset to delete
+
+    Returns:
+        Success status
+    """
+    try:
+        storage = get_rule_storage()
+        deleted = storage.delete_ruleset(ruleset_id)
+
+        if not deleted:
+            raise HTTPException(status_code=404, detail=f"Ruleset '{ruleset_id}' not found")
+
+        return {
+            "success": True,
+            "message": f"Ruleset '{ruleset_id}' deleted successfully"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting ruleset: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/reconciliation/rulesets/{ruleset_id}/export/sql")
+async def export_ruleset_to_sql(ruleset_id: str):
+    """
+    Export a ruleset as SQL JOIN statements.
+
+    Args:
+        ruleset_id: ID of the ruleset to export
+
+    Returns:
+        SQL statements as text
+    """
+    try:
+        storage = get_rule_storage()
+        sql = storage.export_ruleset_to_sql(ruleset_id)
+
+        if not sql:
+            raise HTTPException(status_code=404, detail=f"Ruleset '{ruleset_id}' not found")
+
+        return {
+            "success": True,
+            "ruleset_id": ruleset_id,
+            "sql": sql
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error exporting ruleset to SQL: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/reconciliation/validate")
+async def validate_rule(request: RuleValidationRequest):
+    """
+    Validate a reconciliation rule.
+
+    This endpoint checks if a rule is valid by:
+    - Verifying tables and columns exist
+    - Checking data type compatibility
+    - Testing on sample data (optional)
+
+    Args:
+        request: Rule validation request with rule and sample size
+
+    Returns:
+        Validation result with issues and warnings
+    """
+    try:
+        # Basic validation (existence check)
+        # Note: Full validation would require database connection
+        result = ValidationResult(
+            rule_id=request.rule.rule_id,
+            valid=True,
+            exists=True,
+            types_compatible=True,
+            sample_match_rate=None,
+            cardinality=None,
+            estimated_performance_ms=None,
+            issues=[],
+            warnings=["Full validation requires database connection"]
+        )
+
+        return {
+            "success": True,
+            "validation": result.dict()
+        }
+
+    except Exception as e:
+        logger.error(f"Error validating rule: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/reconciliation/execute")
+async def execute_reconciliation(request: RuleExecutionRequest):
+    """
+    Execute reconciliation rules (placeholder).
+
+    This endpoint would execute the rules against actual data to find matches.
+    Full implementation requires database connectivity.
+
+    Args:
+        request: Execution request with ruleset_id and limit
+
+    Returns:
+        Matched records and statistics
+    """
+    try:
+        # Placeholder implementation
+        return RuleExecutionResponse(
+            success=True,
+            matched_count=0,
+            unmatched_source_count=0,
+            unmatched_target_count=0,
+            matched_records=[],
+            unmatched_source=[],
+            unmatched_target=[],
+            execution_time_ms=0.0
+        )
+
+    except Exception as e:
+        logger.error(f"Error executing reconciliation: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 

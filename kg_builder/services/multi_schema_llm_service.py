@@ -55,8 +55,10 @@ class MultiSchemaLLMService:
         
         try:
             prompt = self._build_inference_prompt(schemas_info, detected_relationships)
-            
-            response = self.client.messages.create(
+
+            logger.debug(f"Inference Prompt:\n{prompt}")
+
+            response = self.client.chat.completions.create(
                 model=self.model,
                 max_tokens=self.max_tokens,
                 temperature=self.temperature,
@@ -71,13 +73,15 @@ class MultiSchemaLLMService:
                     }
                 ]
             )
-            
-            result_text = response.content[0].text
+
+            result_text = response.choices[0].message.content
+            logger.debug(f"LLM Inference Response:\n{result_text}")
+
             inferred = self._parse_inferred_relationships(result_text)
-            
+
             # Combine detected and inferred relationships
             all_relationships = detected_relationships + inferred
-            
+
             logger.info(f"LLM inferred {len(inferred)} additional relationships")
             return all_relationships
             
@@ -106,8 +110,10 @@ class MultiSchemaLLMService:
         
         try:
             prompt = self._build_enhancement_prompt(relationships, schemas_info)
-            
-            response = self.client.messages.create(
+
+            logger.debug(f"Enhancement Prompt:\n{prompt}")
+
+            response = self.client.chat.completions.create(
                 model=self.model,
                 max_tokens=self.max_tokens,
                 temperature=self.temperature,
@@ -122,10 +128,12 @@ class MultiSchemaLLMService:
                     }
                 ]
             )
-            
-            result_text = response.content[0].text
+
+            result_text = response.choices[0].message.content
+            logger.debug(f"LLM Enhancement Response:\n{result_text}")
+
             enhanced = self._parse_enhanced_relationships(result_text)
-            
+
             logger.info(f"LLM enhanced {len(enhanced)} relationships with descriptions")
             return enhanced
             
@@ -140,22 +148,24 @@ class MultiSchemaLLMService:
     ) -> List[Dict[str, Any]]:
         """
         Use LLM to assess confidence in detected relationships.
-        
+
         Args:
             relationships: List of relationships to score
             schemas_info: Information about schemas
-            
+
         Returns:
             Relationships with confidence scores
         """
         if not self.enabled:
             logger.warning("LLM service disabled, returning original relationships")
             return relationships
-        
+
         try:
             prompt = self._build_scoring_prompt(relationships, schemas_info)
-            
-            response = self.client.messages.create(
+
+            logger.debug(f"Scoring Prompt:\n{prompt}")
+
+            response = self.client.chat.completions.create(
                 model=self.model,
                 max_tokens=self.max_tokens,
                 temperature=self.temperature,
@@ -170,16 +180,73 @@ class MultiSchemaLLMService:
                     }
                 ]
             )
-            
-            result_text = response.content[0].text
+
+            result_text = response.choices[0].message.content
+            logger.debug(f"LLM Scoring Response:\n{result_text}")
+
             scored = self._parse_scored_relationships(result_text)
-            
+
             logger.info(f"LLM scored {len(scored)} relationships with confidence")
             return scored
-            
+
         except Exception as e:
             logger.error(f"Error in relationship scoring: {e}")
             return relationships
+
+    def generate_reconciliation_rules(
+        self,
+        relationships: List[Dict[str, Any]],
+        schemas_info: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
+        """
+        Use LLM to generate reconciliation rules from relationships.
+
+        This method analyzes cross-schema relationships and generates actionable
+        reconciliation rules that can be used to match, link, and validate data.
+
+        Args:
+            relationships: List of relationships between schemas
+            schemas_info: Information about all schemas
+
+        Returns:
+            List of reconciliation rules with match strategies and confidence scores
+        """
+        if not self.enabled:
+            logger.warning("LLM service disabled, cannot generate reconciliation rules")
+            return []
+
+        try:
+            prompt = self._build_reconciliation_rules_prompt(relationships, schemas_info)
+
+            logger.debug(f"Reconciliation Rules Prompt:\n{prompt}")
+
+            response = self.client.chat.completions.create(
+                model=self.model,
+                max_tokens=self.max_tokens,
+                temperature=self.temperature,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert data integration specialist. Generate reconciliation rules for matching data across different database schemas."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ]
+            )
+
+            result_text = response.choices[0].message.content
+            logger.debug(f"LLM Reconciliation Rules Response:\n{result_text}")
+
+            rules = self._parse_reconciliation_rules(result_text)
+
+            logger.info(f"LLM generated {len(rules)} reconciliation rules")
+            return rules
+
+        except Exception as e:
+            logger.error(f"Error in reconciliation rule generation: {e}")
+            return []
     
     def _build_inference_prompt(
         self,
@@ -342,7 +409,7 @@ Return as JSON array with this structure:
             json_end = response_text.rfind('}') + 1
             json_str = response_text[json_start:json_end]
             data = json.loads(json_str)
-            
+
             relationships = []
             for rel in data.get('scored_relationships', []):
                 relationships.append({
@@ -352,10 +419,99 @@ Return as JSON array with this structure:
                     'reasoning': rel.get('reasoning'),
                     'validation_status': rel.get('validation_status')
                 })
-            
+
             return relationships
         except Exception as e:
             logger.error(f"Error parsing scored relationships: {e}")
+            return []
+
+    def _build_reconciliation_rules_prompt(
+        self,
+        relationships: List[Dict[str, Any]],
+        schemas_info: Dict[str, Any]
+    ) -> str:
+        """Build prompt for reconciliation rule generation."""
+        schemas_str = json.dumps(schemas_info, indent=2)
+        relationships_str = json.dumps(relationships, indent=2)
+
+        return f"""Given these cross-schema relationships and schemas, generate reconciliation rules
+that would allow matching records between these schemas.
+
+SCHEMAS:
+{schemas_str}
+
+RELATIONSHIPS:
+{relationships_str}
+
+For each rule, provide:
+1. rule_name: Descriptive name for the rule
+2. source_schema: Name of the source schema
+3. source_table: Source table name
+4. source_columns: Array of source column names involved in matching
+5. target_schema: Name of the target schema
+6. target_table: Target table name
+7. target_columns: Array of target column names involved in matching
+8. match_type: One of "exact", "fuzzy", "composite", "transformation", "semantic"
+9. transformation: SQL or Python code for data matching (if needed, null otherwise)
+10. confidence: Confidence score (0.0-1.0) for this rule
+11. reasoning: Why this rule would work
+12. validation_status: "VALID", "LIKELY", or "UNCERTAIN"
+13. example_match: Sample matching scenario
+
+Return JSON:
+{{
+  "rules": [
+    {{
+      "rule_name": "Vendor_UID_Match",
+      "source_schema": "orderMgmt",
+      "source_table": "catalog",
+      "source_columns": ["vendor_uid"],
+      "target_schema": "vendorDB",
+      "target_table": "suppliers",
+      "target_columns": ["supplier_id"],
+      "match_type": "exact",
+      "transformation": null,
+      "confidence": 0.95,
+      "reasoning": "Both fields are UIDs representing vendors",
+      "validation_status": "VALID",
+      "example_match": "vendor_uid='VND123' matches supplier_id='VND123'"
+    }}
+  ]
+}}
+
+Only generate rules with confidence >= 0.7. Focus on cross-schema relationships."""
+
+    def _parse_reconciliation_rules(self, response_text: str) -> List[Dict[str, Any]]:
+        """Parse reconciliation rules from LLM response."""
+        try:
+            # Extract JSON from response
+            json_start = response_text.find('{')
+            json_end = response_text.rfind('}') + 1
+            json_str = response_text[json_start:json_end]
+            data = json.loads(json_str)
+
+            rules = []
+            for rule in data.get('rules', []):
+                rules.append({
+                    'rule_name': rule.get('rule_name', ''),
+                    'source_schema': rule.get('source_schema', ''),
+                    'source_table': rule.get('source_table', ''),
+                    'source_columns': rule.get('source_columns', []),
+                    'target_schema': rule.get('target_schema', ''),
+                    'target_table': rule.get('target_table', ''),
+                    'target_columns': rule.get('target_columns', []),
+                    'match_type': rule.get('match_type', 'semantic'),
+                    'transformation': rule.get('transformation'),
+                    'confidence': rule.get('confidence', 0.7),
+                    'reasoning': rule.get('reasoning', ''),
+                    'validation_status': rule.get('validation_status', 'UNCERTAIN'),
+                    'example_match': rule.get('example_match', '')
+                })
+
+            return rules
+        except Exception as e:
+            logger.error(f"Error parsing reconciliation rules: {e}")
+            logger.debug(f"Response text: {response_text}")
             return []
 
 
