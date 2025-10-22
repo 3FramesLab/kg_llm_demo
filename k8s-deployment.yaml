@@ -1,0 +1,304 @@
+# Kubernetes Deployment for Knowledge Graph Builder
+# Usage: kubectl apply -f k8s-deployment.yaml
+
+---
+# Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kg-builder
+
+---
+# ConfigMap for environment variables
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kg-builder-config
+  namespace: kg-builder
+data:
+  LOG_LEVEL: "INFO"
+  FALKORDB_HOST: "falkordb-service"
+  FALKORDB_PORT: "6379"
+  OPENAI_MODEL: "gpt-3.5-turbo"
+  OPENAI_TEMPERATURE: "0.7"
+  OPENAI_MAX_TOKENS: "2000"
+  ENABLE_LLM_EXTRACTION: "true"
+  ENABLE_LLM_ANALYSIS: "true"
+
+---
+# Secret for sensitive data
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kg-builder-secrets
+  namespace: kg-builder
+type: Opaque
+stringData:
+  OPENAI_API_KEY: "sk-your-key-here"
+  FALKORDB_PASSWORD: ""
+
+---
+# PersistentVolume for FalkorDB
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: falkordb-pv
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /data/falkordb
+
+---
+# PersistentVolumeClaim for FalkorDB
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: falkordb-pvc
+  namespace: kg-builder
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+# FalkorDB Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: falkordb
+  namespace: kg-builder
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: falkordb
+  template:
+    metadata:
+      labels:
+        app: falkordb
+    spec:
+      containers:
+      - name: falkordb
+        image: falkordb/falkordb:latest
+        ports:
+        - containerPort: 6379
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: falkordb-storage
+          mountPath: /data
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: falkordb-storage
+        persistentVolumeClaim:
+          claimName: falkordb-pvc
+
+---
+# FalkorDB Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: falkordb-service
+  namespace: kg-builder
+spec:
+  selector:
+    app: falkordb
+  ports:
+  - protocol: TCP
+    port: 6379
+    targetPort: 6379
+  type: ClusterIP
+
+---
+# KG Builder Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kg-builder-app
+  namespace: kg-builder
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: kg-builder
+  template:
+    metadata:
+      labels:
+        app: kg-builder
+    spec:
+      containers:
+      - name: kg-builder
+        image: kg-builder:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: kg-builder-config
+        - secretRef:
+            name: kg-builder-secrets
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 40
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        volumeMounts:
+        - name: app-data
+          mountPath: /app/data
+        - name: schemas
+          mountPath: /app/schemas
+      volumes:
+      - name: app-data
+        emptyDir: {}
+      - name: schemas
+        configMap:
+          name: kg-builder-schemas
+
+---
+# KG Builder Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: kg-builder-service
+  namespace: kg-builder
+spec:
+  selector:
+    app: kg-builder
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8000
+  type: LoadBalancer
+
+---
+# Horizontal Pod Autoscaler
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: kg-builder-hpa
+  namespace: kg-builder
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: kg-builder-app
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+# Ingress for external access
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kg-builder-ingress
+  namespace: kg-builder
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+  - hosts:
+    - kg-builder.example.com
+    secretName: kg-builder-tls
+  rules:
+  - host: kg-builder.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: kg-builder-service
+            port:
+              number: 80
+
+---
+# NetworkPolicy for security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: kg-builder-network-policy
+  namespace: kg-builder
+spec:
+  podSelector:
+    matchLabels:
+      app: kg-builder
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8000
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: falkordb
+    ports:
+    - protocol: TCP
+      port: 6379
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+

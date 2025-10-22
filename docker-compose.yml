@@ -1,0 +1,146 @@
+# =============================================================================
+# Docker Compose Configuration for Knowledge Graph Builder
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # ---------------------------------------------------------------------------
+  # Main Application Service
+  # ---------------------------------------------------------------------------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kg-builder-app
+    ports:
+      - "8000:8000"
+    environment:
+      # FalkorDB connection
+      - FALKORDB_HOST=falkordb
+      - FALKORDB_PORT=6379
+      - FALKORDB_PASSWORD=${FALKORDB_PASSWORD:-}
+
+      # OpenAI Configuration
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-3.5-turbo}
+      - OPENAI_TEMPERATURE=${OPENAI_TEMPERATURE:-0.7}
+      - OPENAI_MAX_TOKENS=${OPENAI_MAX_TOKENS:-2000}
+
+      # LLM Features
+      - ENABLE_LLM_EXTRACTION=${ENABLE_LLM_EXTRACTION:-true}
+      - ENABLE_LLM_ANALYSIS=${ENABLE_LLM_ANALYSIS:-true}
+
+      # Reconciliation Settings
+      - RECON_MIN_CONFIDENCE=${RECON_MIN_CONFIDENCE:-0.7}
+      - RECON_ENABLE_LLM=${RECON_ENABLE_LLM:-true}
+      - RECON_SAMPLE_SIZE=${RECON_SAMPLE_SIZE:-100}
+
+      # JDBC Settings
+      - JDBC_DRIVERS_PATH=/app/jdbc_drivers
+
+      # Database Connection Settings (Optional)
+      - USE_ENV_DB_CONFIGS=${USE_ENV_DB_CONFIGS:-true}
+      - SOURCE_DB_TYPE=${SOURCE_DB_TYPE:-oracle}
+      - SOURCE_DB_HOST=${SOURCE_DB_HOST:-}
+      - SOURCE_DB_PORT=${SOURCE_DB_PORT:-1521}
+      - SOURCE_DB_DATABASE=${SOURCE_DB_DATABASE:-}
+      - SOURCE_DB_USERNAME=${SOURCE_DB_USERNAME:-}
+      - SOURCE_DB_PASSWORD=${SOURCE_DB_PASSWORD:-}
+      - SOURCE_DB_SERVICE_NAME=${SOURCE_DB_SERVICE_NAME:-}
+      - TARGET_DB_TYPE=${TARGET_DB_TYPE:-oracle}
+      - TARGET_DB_HOST=${TARGET_DB_HOST:-}
+      - TARGET_DB_PORT=${TARGET_DB_PORT:-1521}
+      - TARGET_DB_DATABASE=${TARGET_DB_DATABASE:-}
+      - TARGET_DB_USERNAME=${TARGET_DB_USERNAME:-}
+      - TARGET_DB_PASSWORD=${TARGET_DB_PASSWORD:-}
+      - TARGET_DB_SERVICE_NAME=${TARGET_DB_SERVICE_NAME:-}
+
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+
+    volumes:
+      # Persistent data
+      - ./data:/app/data
+      - ./schemas:/app/schemas
+      - ./jdbc_drivers:/app/jdbc_drivers
+      - ./logs:/app/logs
+
+      # Mount .env file if it exists (for local development)
+      - ./.env:/app/.env:ro
+
+    depends_on:
+      falkordb:
+        condition: service_healthy
+
+    networks:
+      - kg-network
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ---------------------------------------------------------------------------
+  # FalkorDB Service (Graph Database)
+  # ---------------------------------------------------------------------------
+  falkordb:
+    image: falkordb/falkordb:latest
+    container_name: kg-builder-falkordb
+    ports:
+      - "6379:6379"
+    environment:
+      - REDIS_PASSWORD=${FALKORDB_PASSWORD:-}
+    volumes:
+      - falkordb-data:/data
+    networks:
+      - kg-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # Optional: Redis for caching (if needed)
+  # ---------------------------------------------------------------------------
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: kg-builder-redis
+  #   ports:
+  #     - "6380:6379"
+  #   volumes:
+  #     - redis-data:/data
+  #   networks:
+  #     - kg-network
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  kg-network:
+    driver: bridge
+    name: kg-builder-network
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  falkordb-data:
+    name: kg-builder-falkordb-data
+    driver: local
+  # redis-data:
+  #   name: kg-builder-redis-data
+  #   driver: local
