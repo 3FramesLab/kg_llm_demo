@@ -86,6 +86,15 @@ TARGET_DB_SERVICE_NAME = os.getenv("TARGET_DB_SERVICE_NAME", "")  # For Oracle
 # Execution settings
 USE_ENV_DB_CONFIGS = os.getenv("USE_ENV_DB_CONFIGS", "true").lower() == "true"
 
+# MongoDB settings (for reconciliation results storage)
+MONGODB_HOST = os.getenv("MONGODB_HOST", "localhost")
+MONGODB_PORT = int(os.getenv("MONGODB_PORT", "27017"))
+MONGODB_USERNAME = os.getenv("MONGODB_USERNAME", "admin")
+MONGODB_PASSWORD = os.getenv("MONGODB_PASSWORD", "admin123")
+MONGODB_DATABASE = os.getenv("MONGODB_DATABASE", "reconciliation")
+MONGODB_AUTH_SOURCE = os.getenv("MONGODB_AUTH_SOURCE", "admin")
+MONGODB_RESULTS_COLLECTION = os.getenv("MONGODB_RESULTS_COLLECTION", "reconciliation_results")
+
 
 def get_source_db_config():
     """
@@ -135,4 +144,21 @@ def get_target_db_config():
     )
 
     return config
+
+
+def get_mongodb_connection_string() -> str:
+    """
+    Build MongoDB connection string from configuration.
+
+    Returns:
+        MongoDB connection string
+    """
+    if MONGODB_USERNAME and MONGODB_PASSWORD:
+        return (
+            f"mongodb://{MONGODB_USERNAME}:{MONGODB_PASSWORD}"
+            f"@{MONGODB_HOST}:{MONGODB_PORT}/"
+            f"?authSource={MONGODB_AUTH_SOURCE}"
+        )
+    else:
+        return f"mongodb://{MONGODB_HOST}:{MONGODB_PORT}/"
 

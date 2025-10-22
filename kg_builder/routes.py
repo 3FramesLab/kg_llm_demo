@@ -4,7 +4,7 @@ FastAPI routes for knowledge graph operations.
 import logging
 import time
 from fastapi import APIRouter, HTTPException, UploadFile, File
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
 
 from kg_builder.models import (
@@ -870,7 +870,8 @@ async def execute_reconciliation(request: RuleExecutionRequest):
             target_db_config=target_db_config,
             limit=request.limit,
             include_matched=getattr(request, 'include_matched', True),
-            include_unmatched=getattr(request, 'include_unmatched', True)
+            include_unmatched=getattr(request, 'include_unmatched', True),
+            store_in_mongodb=getattr(request, 'store_in_mongodb', True)
         )
 
         return result
@@ -879,6 +880,143 @@ async def execute_reconciliation(request: RuleExecutionRequest):
         raise
     except Exception as e:
         logger.error(f"Error executing reconciliation: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/reconciliation/results/{document_id}")
+async def get_reconciliation_result(document_id: str):
+    """
+    Retrieve a specific reconciliation result from MongoDB by document ID.
+
+    Args:
+        document_id: MongoDB document ID
+
+    Returns:
+        Reconciliation result document
+    """
+    try:
+        from kg_builder.services.mongodb_storage import get_mongodb_storage
+
+        mongo_storage = get_mongodb_storage()
+        result = mongo_storage.get_reconciliation_result(document_id)
+
+        if not result:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Reconciliation result with ID '{document_id}' not found"
+            )
+
+        return {
+            "success": True,
+            "result": result
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving reconciliation result: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/reconciliation/results")
+async def list_reconciliation_results(
+    ruleset_id: Optional[str] = None,
+    limit: int = 100,
+    skip: int = 0
+):
+    """
+    List reconciliation results from MongoDB.
+
+    Args:
+        ruleset_id: Optional filter by ruleset ID
+        limit: Maximum number of results to return (default: 100)
+        skip: Number of results to skip for pagination (default: 0)
+
+    Returns:
+        List of reconciliation result documents
+    """
+    try:
+        from kg_builder.services.mongodb_storage import get_mongodb_storage
+
+        mongo_storage = get_mongodb_storage()
+        results = mongo_storage.list_reconciliation_results(
+            ruleset_id=ruleset_id,
+            limit=limit,
+            skip=skip
+        )
+
+        return {
+            "success": True,
+            "results": results,
+            "count": len(results),
+            "limit": limit,
+            "skip": skip
+        }
+
+    except Exception as e:
+        logger.error(f"Error listing reconciliation results: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/reconciliation/statistics")
+async def get_reconciliation_statistics(ruleset_id: Optional[str] = None):
+    """
+    Get summary statistics for reconciliation results.
+
+    Args:
+        ruleset_id: Optional filter by ruleset ID
+
+    Returns:
+        Summary statistics
+    """
+    try:
+        from kg_builder.services.mongodb_storage import get_mongodb_storage
+
+        mongo_storage = get_mongodb_storage()
+        stats = mongo_storage.get_summary_statistics(ruleset_id=ruleset_id)
+
+        return {
+            "success": True,
+            "statistics": stats
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting reconciliation statistics: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/reconciliation/results/{document_id}")
+async def delete_reconciliation_result(document_id: str):
+    """
+    Delete a specific reconciliation result from MongoDB by document ID.
+
+    Args:
+        document_id: MongoDB document ID
+
+    Returns:
+        Success status
+    """
+    try:
+        from kg_builder.services.mongodb_storage import get_mongodb_storage
+
+        mongo_storage = get_mongodb_storage()
+        deleted = mongo_storage.delete_reconciliation_result(document_id)
+
+        if not deleted:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Reconciliation result with ID '{document_id}' not found"
+            )
+
+        return {
+            "success": True,
+            "message": f"Reconciliation result '{document_id}' deleted successfully"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting reconciliation result: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

@@ -323,6 +323,10 @@ class RuleExecutionRequest(BaseModel):
     )
     include_matched: bool = Field(default=True, description="Include matched records in results")
     include_unmatched: bool = Field(default=True, description="Include unmatched records in results")
+    store_in_mongodb: bool = Field(
+        default=True,
+        description="Store results in MongoDB as JSON documents (only applies to direct execution mode)"
+    )
 
 
 class MatchedRecord(BaseModel):
@@ -344,6 +348,14 @@ class RuleExecutionResponse(BaseModel):
     unmatched_source: List[Dict[str, Any]] = []
     unmatched_target: List[Dict[str, Any]] = []
     execution_time_ms: float
+    mongodb_document_id: Optional[str] = Field(
+        default=None,
+        description="MongoDB document ID if results were stored in MongoDB"
+    )
+    storage_location: Optional[str] = Field(
+        default=None,
+        description="Location where results were stored (e.g., 'mongodb', 'memory')"
+    )
 
 
 # Natural Language Relationship models

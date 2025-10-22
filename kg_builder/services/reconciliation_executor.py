@@ -44,7 +44,8 @@ class ReconciliationExecutor:
         target_db_config: DatabaseConnectionInfo,
         limit: int = 100,
         include_matched: bool = True,
-        include_unmatched: bool = True
+        include_unmatched: bool = True,
+        store_in_mongodb: bool = True
     ) -> RuleExecutionResponse:
         """
         Execute a complete ruleset against databases.
@@ -56,6 +57,7 @@ class ReconciliationExecutor:
             limit: Maximum number of records to return per category
             include_matched: Include matched records in results
             include_unmatched: Include unmatched records in results
+            store_in_mongodb: Store results in MongoDB as JSON documents
 
         Returns:
             RuleExecutionResponse with matched and unmatched records
@@ -125,16 +127,70 @@ class ReconciliationExecutor:
                 f"{len(all_unmatched_target)} unmatched target"
             )
 
-            return RuleExecutionResponse(
-                success=True,
-                matched_count=len(all_matched),
-                unmatched_source_count=len(all_unmatched_source),
-                unmatched_target_count=len(all_unmatched_target),
-                matched_records=all_matched[:limit] if limit else all_matched,
-                unmatched_source=all_unmatched_source[:limit] if limit else all_unmatched_source,
-                unmatched_target=all_unmatched_target[:limit] if limit else all_unmatched_target,
-                execution_time_ms=elapsed_ms
-            )
+            # Prepare response
+            response_data = {
+                "success": True,
+                "matched_count": len(all_matched),
+                "unmatched_source_count": len(all_unmatched_source),
+                "unmatched_target_count": len(all_unmatched_target),
+                "matched_records": all_matched[:limit] if limit else all_matched,
+                "unmatched_source": all_unmatched_source[:limit] if limit else all_unmatched_source,
+                "unmatched_target": all_unmatched_target[:limit] if limit else all_unmatched_target,
+                "execution_time_ms": elapsed_ms
+            }
+
+            # Store in MongoDB if requested
+            mongodb_doc_id = None
+            storage_location = "memory"
+
+            if store_in_mongodb:
+                try:
+                    from kg_builder.services.mongodb_storage import get_mongodb_storage
+
+                    logger.info("Storing reconciliation results in MongoDB...")
+                    mongo_storage = get_mongodb_storage()
+
+                    # Convert MatchedRecord objects to dictionaries for MongoDB storage
+                    matched_dicts = [
+                        {
+                            "source_record": m.source_record,
+                            "target_record": m.target_record,
+                            "match_confidence": m.match_confidence,
+                            "rule_used": m.rule_used,
+                            "rule_name": m.rule_name
+                        }
+                        for m in all_matched
+                    ]
+
+                    # Prepare execution metadata
+                    execution_metadata = {
+                        "execution_time_ms": elapsed_ms,
+                        "limit": limit,
+                        "source_db_type": source_db_config.db_type,
+                        "target_db_type": target_db_config.db_type,
+                        "include_matched": include_matched,
+                        "include_unmatched": include_unmatched
+                    }
+
+                    mongodb_doc_id = mongo_storage.store_reconciliation_result(
+                        ruleset_id=ruleset_id,
+                        matched_records=matched_dicts,
+                        unmatched_source=all_unmatched_source,
+                        unmatched_target=all_unmatched_target,
+                        execution_metadata=execution_metadata
+                    )
+
+                    storage_location = "mongodb"
+                    logger.info(f"Results stored in MongoDB with document ID: {mongodb_doc_id}")
+
+                except Exception as e:
+                    logger.warning(f"Failed to store results in MongoDB: {e}")
+                    # Continue without MongoDB storage
+
+            response_data["mongodb_document_id"] = mongodb_doc_id
+            response_data["storage_location"] = storage_location
+
+            return RuleExecutionResponse(**response_data)
 
         except Exception as e:
             logger.error(f"Error executing ruleset: {e}", exc_info=True)

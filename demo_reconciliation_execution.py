@@ -253,13 +253,14 @@ def step_5_execute_sql_export_mode(ruleset_id: str):
 
 
 def step_6_execute_direct_mode(ruleset_id: str):
-    """Execute reconciliation in direct execution mode (with database connection)."""
-    print_section("STEP 6: Execute Reconciliation (Direct Execution Mode)")
+    """Execute reconciliation in direct execution mode (with database connection and MongoDB storage)."""
+    print_section("STEP 6: Execute Reconciliation (Direct Execution Mode with MongoDB)")
 
     print("⚠️  This mode requires:")
     print("  1. JayDeBeApi installed: pip install JayDeBeApi")
     print("  2. JDBC drivers in jdbc_drivers/ directory")
     print("  3. Actual database connections")
+    print("  4. MongoDB running (auto-started with docker-compose)")
     print()
 
     # Example database configurations
@@ -289,7 +290,8 @@ def step_6_execute_direct_mode(ruleset_id: str):
         "source_db_config": source_db_config,
         "target_db_config": target_db_config,
         "include_matched": True,
-        "include_unmatched": True
+        "include_unmatched": True,
+        "store_in_mongodb": True  # Store results in MongoDB as JSON
     }
 
     print("This is a DEMO - not executing with real database credentials.")
@@ -325,6 +327,14 @@ def step_6_execute_direct_mode(ruleset_id: str):
     #         print(f"  - Unmatched Source: {result.get('unmatched_source_count', 0)}")
     #         print(f"  - Unmatched Target: {result.get('unmatched_target_count', 0)}")
     #         print(f"  - Execution Time: {result.get('execution_time_ms', 0):.2f} ms")
+    #         print(f"  - Storage Location: {result.get('storage_location', 'N/A')}")
+    #
+    #         mongodb_doc_id = result.get('mongodb_document_id')
+    #         if mongodb_doc_id:
+    #             print(f"  - MongoDB Document ID: {mongodb_doc_id}")
+    #             print()
+    #             print("You can retrieve this result later using:")
+    #             print(f"  GET {BASE_URL}/api/v1/reconciliation/results/{mongodb_doc_id}")
     #
     #         return result
     #     else:
