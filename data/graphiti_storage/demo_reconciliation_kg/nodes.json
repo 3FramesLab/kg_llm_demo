@@ -1,0 +1,952 @@
+[
+  {
+    "id": "table_catalog",
+    "label": "catalog",
+    "properties": {
+      "type": "Table",
+      "column_count": 142,
+      "primary_keys": [
+        "id"
+      ]
+    },
+    "source_table": "catalog",
+    "source_column": null
+  },
+  {
+    "id": "column_catalog_id",
+    "label": "catalog.id",
+    "properties": {
+      "type": "Column",
+      "column_type": "BIGINT",
+      "nullable": false,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "id"
+  },
+  {
+    "id": "column_catalog_added_to_cart_by_user_uid",
+    "label": "catalog.added_to_cart_by_user_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "added_to_cart_by_user_uid"
+  },
+  {
+    "id": "column_catalog_blocked_by_user_uid",
+    "label": "catalog.blocked_by_user_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "blocked_by_user_uid"
+  },
+  {
+    "id": "column_catalog_bought_by_user_uid",
+    "label": "catalog.bought_by_user_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "bought_by_user_uid"
+  },
+  {
+    "id": "column_catalog_cat_uid",
+    "label": "catalog.cat_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "cat_uid"
+  },
+  {
+    "id": "column_catalog_code",
+    "label": "catalog.code",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(60) COLLATE \"utf8mb3_general_ci\"",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "code"
+  },
+  {
+    "id": "column_catalog_detail_pdf_uid",
+    "label": "catalog.detail_pdf_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "detail_pdf_uid"
+  },
+  {
+    "id": "column_catalog_group_uid",
+    "label": "catalog.group_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "group_uid"
+  },
+  {
+    "id": "column_catalog_highres_image_uid",
+    "label": "catalog.highres_image_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "highres_image_uid"
+  },
+  {
+    "id": "column_catalog_image_uid",
+    "label": "catalog.image_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(500) COLLATE \"utf8mb3_general_ci\"",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "image_uid"
+  },
+  {
+    "id": "column_catalog_image_uid3d",
+    "label": "catalog.image_uid3d",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "image_uid3d"
+  },
+  {
+    "id": "column_catalog_image_uid3dcol_count",
+    "label": "catalog.image_uid3dcol_count",
+    "properties": {
+      "type": "Column",
+      "column_type": "INTEGER",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "image_uid3dcol_count"
+  },
+  {
+    "id": "column_catalog_offer_month_uid",
+    "label": "catalog.offer_month_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "offer_month_uid"
+  },
+  {
+    "id": "column_catalog_sample_requested_by_user_uid",
+    "label": "catalog.sample_requested_by_user_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "sample_requested_by_user_uid"
+  },
+  {
+    "id": "column_catalog_sourcing_uid",
+    "label": "catalog.sourcing_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "sourcing_uid"
+  },
+  {
+    "id": "column_catalog_sub_cat_uid",
+    "label": "catalog.sub_cat_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "sub_cat_uid"
+  },
+  {
+    "id": "column_catalog_tech_pack_uid",
+    "label": "catalog.tech_pack_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "tech_pack_uid"
+  },
+  {
+    "id": "column_catalog_tenant_uid",
+    "label": "catalog.tenant_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "tenant_uid"
+  },
+  {
+    "id": "column_catalog_thumbnail_image_uid",
+    "label": "catalog.thumbnail_image_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "thumbnail_image_uid"
+  },
+  {
+    "id": "column_catalog_uuid",
+    "label": "catalog.uuid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "uuid"
+  },
+  {
+    "id": "column_catalog_vendor_uid",
+    "label": "catalog.vendor_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "vendor_uid"
+  },
+  {
+    "id": "column_catalog_brand_uid",
+    "label": "catalog.brand_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "brand_uid"
+  },
+  {
+    "id": "column_catalog_fit_uid",
+    "label": "catalog.fit_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "fit_uid"
+  },
+  {
+    "id": "column_catalog_subbrand_uid",
+    "label": "catalog.subbrand_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "subbrand_uid"
+  },
+  {
+    "id": "column_catalog_short_code",
+    "label": "catalog.short_code",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "short_code"
+  },
+  {
+    "id": "column_catalog_designer_code",
+    "label": "catalog.designer_code",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "designer_code"
+  },
+  {
+    "id": "column_catalog_fabric_code",
+    "label": "catalog.fabric_code",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "fabric_code"
+  },
+  {
+    "id": "column_catalog_active_sap_code",
+    "label": "catalog.active_sap_code",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "active_sap_code"
+  },
+  {
+    "id": "column_catalog_ean_code",
+    "label": "catalog.ean_code",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(275)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "ean_code"
+  },
+  {
+    "id": "column_catalog_ext_ref_uid",
+    "label": "catalog.ext_ref_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "ext_ref_uid"
+  },
+  {
+    "id": "column_catalog_fms_code",
+    "label": "catalog.fms_code",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "fms_code"
+  },
+  {
+    "id": "column_catalog_sap_code",
+    "label": "catalog.sap_code",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "sap_code"
+  },
+  {
+    "id": "column_catalog_video_uid",
+    "label": "catalog.video_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "video_uid"
+  },
+  {
+    "id": "column_catalog_style_code",
+    "label": "catalog.style_code",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "style_code"
+  },
+  {
+    "id": "column_catalog_collection_uid",
+    "label": "catalog.collection_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(40)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "collection_uid"
+  },
+  {
+    "id": "column_catalog_unit_uid",
+    "label": "catalog.unit_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(10)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "unit_uid"
+  },
+  {
+    "id": "column_catalog_unit_uids",
+    "label": "catalog.unit_uids",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(20)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "unit_uids"
+  },
+  {
+    "id": "column_catalog_ref_img_uid",
+    "label": "catalog.ref_img_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(200)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "ref_img_uid"
+  },
+  {
+    "id": "column_catalog_image_uid_3d",
+    "label": "catalog.image_uid_3d",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(40)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "image_uid_3d"
+  },
+  {
+    "id": "column_catalog_available_size_codes",
+    "label": "catalog.available_size_codes",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(200)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "available_size_codes"
+  },
+  {
+    "id": "column_catalog_brand_id",
+    "label": "catalog.brand_id",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(50)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "brand_id"
+  },
+  {
+    "id": "column_catalog_company_id",
+    "label": "catalog.company_id",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(50)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "company_id"
+  },
+  {
+    "id": "column_catalog_product_id",
+    "label": "catalog.product_id",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(50)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "product_id"
+  },
+  {
+    "id": "column_catalog_parent_tenant_uid",
+    "label": "catalog.parent_tenant_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(40)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "parent_tenant_uid"
+  },
+  {
+    "id": "column_catalog_subseason_uid",
+    "label": "catalog.subseason_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(5)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "subseason_uid"
+  },
+  {
+    "id": "column_catalog_catalog_price_size_codes",
+    "label": "catalog.catalog_price_size_codes",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(250)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "catalog_price_size_codes"
+  },
+  {
+    "id": "column_catalog_catalog_price_size_codes_2",
+    "label": "catalog.catalog_price_size_codes_2",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(250)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "catalog_price_size_codes_2"
+  },
+  {
+    "id": "column_catalog_drop_codes",
+    "label": "catalog.drop_codes",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(50) COLLATE \"utf8mb3_general_ci\"",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "drop_codes"
+  },
+  {
+    "id": "column_catalog_filter_available_size_codes",
+    "label": "catalog.filter_available_size_codes",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(50)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "catalog",
+    "source_column": "filter_available_size_codes"
+  },
+  {
+    "id": "table_design_code_master",
+    "label": "design_code_master",
+    "properties": {
+      "type": "Table",
+      "column_count": 100,
+      "primary_keys": [
+        "id"
+      ]
+    },
+    "source_table": "design_code_master",
+    "source_column": null
+  },
+  {
+    "id": "column_design_code_master_uuid",
+    "label": "design_code_master.uuid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(40)",
+      "nullable": false,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "uuid"
+  },
+  {
+    "id": "column_design_code_master_parent_tenant_uid",
+    "label": "design_code_master.parent_tenant_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(40)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "parent_tenant_uid"
+  },
+  {
+    "id": "column_design_code_master_tenant_uid",
+    "label": "design_code_master.tenant_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(40)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "tenant_uid"
+  },
+  {
+    "id": "column_design_code_master_brand_uid",
+    "label": "design_code_master.brand_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "brand_uid"
+  },
+  {
+    "id": "column_design_code_master_code",
+    "label": "design_code_master.code",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "code"
+  },
+  {
+    "id": "column_design_code_master_product_type_uid",
+    "label": "design_code_master.product_type_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "product_type_uid"
+  },
+  {
+    "id": "column_design_code_master_temp_code",
+    "label": "design_code_master.temp_code",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "temp_code"
+  },
+  {
+    "id": "column_design_code_master_category_uid",
+    "label": "design_code_master.category_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "category_uid"
+  },
+  {
+    "id": "column_design_code_master_document_uid",
+    "label": "design_code_master.document_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "document_uid"
+  },
+  {
+    "id": "column_design_code_master_collection_uid",
+    "label": "design_code_master.collection_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "collection_uid"
+  },
+  {
+    "id": "column_design_code_master_roadmap_uid",
+    "label": "design_code_master.roadmap_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "roadmap_uid"
+  },
+  {
+    "id": "column_design_code_master_color_code",
+    "label": "design_code_master.color_code",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "color_code"
+  },
+  {
+    "id": "column_design_code_master_commudity_code",
+    "label": "design_code_master.commudity_code",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "commudity_code"
+  },
+  {
+    "id": "column_design_code_master_fabric_code",
+    "label": "design_code_master.fabric_code",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "fabric_code"
+  },
+  {
+    "id": "column_design_code_master_old_artical_code",
+    "label": "design_code_master.old_artical_code",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "old_artical_code"
+  },
+  {
+    "id": "column_design_code_master_sub_brand_uid",
+    "label": "design_code_master.sub_brand_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(40)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "sub_brand_uid"
+  },
+  {
+    "id": "column_design_code_master_sub_category_uid",
+    "label": "design_code_master.sub_category_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "sub_category_uid"
+  },
+  {
+    "id": "column_design_code_master_color_uid",
+    "label": "design_code_master.color_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(20)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "color_uid"
+  },
+  {
+    "id": "column_design_code_master_design_code",
+    "label": "design_code_master.design_code",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "design_code"
+  },
+  {
+    "id": "column_design_code_master_season_uid",
+    "label": "design_code_master.season_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(20)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "season_uid"
+  },
+  {
+    "id": "column_design_code_master_validation_required",
+    "label": "design_code_master.validation_required",
+    "properties": {
+      "type": "Column",
+      "column_type": "INTEGER",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "validation_required"
+  },
+  {
+    "id": "column_design_code_master_raw_material_uid",
+    "label": "design_code_master.raw_material_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(40)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "raw_material_uid"
+  },
+  {
+    "id": "column_design_code_master_article_type_uid",
+    "label": "design_code_master.article_type_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(40)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "article_type_uid"
+  },
+  {
+    "id": "column_design_code_master_material_uid",
+    "label": "design_code_master.material_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(40)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "material_uid"
+  },
+  {
+    "id": "column_design_code_master_id",
+    "label": "design_code_master.id",
+    "properties": {
+      "type": "Column",
+      "column_type": "BIGINT",
+      "nullable": false,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "id"
+  },
+  {
+    "id": "column_design_code_master_reference_code",
+    "label": "design_code_master.reference_code",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(20)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "reference_code"
+  },
+  {
+    "id": "column_design_code_master_product_code",
+    "label": "design_code_master.product_code",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(255)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "product_code"
+  },
+  {
+    "id": "column_design_code_master_product_uid",
+    "label": "design_code_master.product_uid",
+    "properties": {
+      "type": "Column",
+      "column_type": "VARCHAR(40)",
+      "nullable": true,
+      "primary_key": false
+    },
+    "source_table": "design_code_master",
+    "source_column": "product_uid"
+  }
+]

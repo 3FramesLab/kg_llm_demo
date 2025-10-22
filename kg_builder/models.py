@@ -345,3 +345,45 @@ class RuleExecutionResponse(BaseModel):
     unmatched_target: List[Dict[str, Any]] = []
     execution_time_ms: float
 
+
+# Natural Language Relationship models
+class NLInputFormat(str, Enum):
+    """Supported input formats for natural language relationships."""
+    NATURAL_LANGUAGE = "natural_language"      # "Products are supplied by Vendors"
+    SEMI_STRUCTURED = "semi_structured"        # "catalog.product_id → vendor.vendor_id (SUPPLIED_BY)"
+    PSEUDO_SQL = "pseudo_sql"                  # "SELECT * FROM products JOIN vendors ON ..."
+    BUSINESS_RULES = "business_rules"          # "IF product.status='active' THEN ..."
+
+
+class RelationshipDefinition(BaseModel):
+    """Parsed natural language relationship definition."""
+    source_table: str = Field(..., description="Source table name")
+    target_table: str = Field(..., description="Target table name")
+    relationship_type: str = Field(..., description="Type of relationship (e.g., SUPPLIED_BY, CONTAINS)")
+    properties: List[str] = Field(default=[], description="Properties/columns for the relationship")
+    cardinality: str = Field(default="1:N", description="Cardinality (1:1, 1:N, N:M)")
+    confidence: float = Field(default=0.75, description="Confidence score (0.0-1.0)")
+    reasoning: str = Field(..., description="Explanation of why this relationship was inferred")
+    input_format: NLInputFormat = Field(..., description="Format of the input")
+    validation_status: str = Field(default="PENDING", description="VALID, INVALID, PENDING")
+    validation_errors: List[str] = Field(default=[], description="Validation errors if any")
+
+
+class NLRelationshipRequest(BaseModel):
+    """Request to add natural language relationships to knowledge graph."""
+    kg_name: str = Field(..., description="Name of the knowledge graph")
+    definitions: List[str] = Field(..., description="List of natural language relationship definitions")
+    schemas: List[str] = Field(..., description="List of schema names involved")
+    use_llm: bool = Field(default=True, description="Use LLM for parsing (vs rule-based)")
+    min_confidence: float = Field(default=0.7, description="Minimum confidence threshold")
+
+
+class NLRelationshipResponse(BaseModel):
+    """Response from natural language relationship parsing."""
+    success: bool = Field(..., description="Whether all definitions were parsed successfully")
+    relationships: List[RelationshipDefinition] = Field(default=[], description="Parsed relationships")
+    parsed_count: int = Field(..., description="Number of successfully parsed definitions")
+    failed_count: int = Field(..., description="Number of failed definitions")
+    errors: List[str] = Field(default=[], description="Error messages for failed definitions")
+    processing_time_ms: float = Field(..., description="Time taken to process all definitions")
+

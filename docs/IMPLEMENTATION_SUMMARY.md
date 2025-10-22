@@ -1,245 +1,503 @@
-# Knowledge Graph Builder - Implementation Summary
+# Reconciliation Execution Implementation Summary
 
-## Project Overview
+## ✅ Implementation Complete
 
-A complete FastAPI application that builds knowledge graphs from JSON schema files using both **FalkorDB** and **Graphiti** backends. The application successfully parses database schemas and transforms them into graph structures with nodes (entities) and relationships.
+The reconciliation execution feature has been **fully implemented** using the SQL Export approach.
 
-## ✅ Completed Deliverables
+---
 
-### 1. **Complete FastAPI Application**
-- ✅ Full-featured REST API with automatic Swagger/OpenAPI documentation
-- ✅ Proper project structure with separation of concerns
-- ✅ Error handling and validation throughout
-- ✅ CORS support for cross-origin requests
-- ✅ Comprehensive logging
+## 🎯 What Was Implemented
 
-### 2. **Core Components**
+### 1. Enhanced SQL Export Service
+**File:** `kg_builder/services/rule_storage.py`
 
-#### Configuration (`kg_builder/config.py`)
-- FalkorDB connection settings (host, port, password)
-- Graphiti storage path configuration
-- API settings (CORS, logging, etc.)
-- Environment variable support
+**Features:**
+- ✅ Generate SQL for matched records (INNER JOIN)
+- ✅ Generate SQL for unmatched source records (NOT EXISTS)
+- ✅ Generate SQL for unmatched target records (NOT EXISTS)
+- ✅ Generate summary statistics queries
+- ✅ Support for multiple query types: `all`, `matched`, `unmatched_source`, `unmatched_target`
+- ✅ Proper SQL formatting with comments and metadata
 
-#### Data Models (`kg_builder/models.py`)
-- **Schema Models**: `ColumnSchema`, `TableSchema`, `DatabaseSchema`
-- **Graph Models**: `GraphNode`, `GraphRelationship`, `KnowledgeGraph`
-- **API Models**: Request/response models for all endpoints
-- Full Pydantic validation
-
-#### Schema Parser (`kg_builder/services/schema_parser.py`)
-- Loads JSON schema files from `schemas/` directory
-- Extracts entities (table and column nodes)
-- Identifies relationships from foreign keys and column naming patterns
-- Infers relationships from UID/ID columns
-- Builds complete knowledge graph structures
-
-#### FalkorDB Backend (`kg_builder/services/falkordb_backend.py`)
-- Redis-based graph database integration
-- Cypher query execution
-- Node and relationship creation
-- Graph querying and retrieval
-- Graceful fallback when FalkorDB unavailable
-
-#### Graphiti Backend (`kg_builder/services/graphiti_backend.py`)
-- Temporal knowledge graph support
-- File-based JSON storage fallback
-- Graph persistence and retrieval
-- Pattern matching for queries
-- Metadata tracking
-
-#### FastAPI Routes (`kg_builder/routes.py`)
-- 11 comprehensive endpoints covering all operations
-- Health checks and status monitoring
-- Schema management (list, parse)
-- Knowledge graph operations (generate, query, export)
-- Entity and relationship retrieval
-
-#### Main Application (`kg_builder/main.py`)
-- FastAPI app initialization
-- Middleware configuration
-- Startup/shutdown event handlers
-- Custom OpenAPI schema
-- Automatic documentation
-
-### 3. **API Endpoints**
-
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| GET | `/api/v1/health` | Health check |
-| GET | `/api/v1/schemas` | List available schemas |
-| POST | `/api/v1/schemas/{name}/parse` | Parse schema |
-| POST | `/api/v1/kg/generate` | Generate knowledge graph |
-| GET | `/api/v1/kg` | List all graphs |
-| GET | `/api/v1/kg/{name}/entities` | Get entities |
-| GET | `/api/v1/kg/{name}/relationships` | Get relationships |
-| POST | `/api/v1/kg/{name}/query` | Query graph |
-| GET | `/api/v1/kg/{name}/export` | Export graph |
-| DELETE | `/api/v1/kg/{name}` | Delete graph |
-
-### 4. **Documentation**
-
-- ✅ **README.md**: Complete setup and usage guide
-- ✅ **QUICKSTART.md**: 5-minute quick start guide
-- ✅ **API_EXAMPLES.md**: Detailed curl and Python examples
-- ✅ **.env.example**: Configuration template
-- ✅ **requirements.txt**: All dependencies
-
-### 5. **Dependencies**
-
-```
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-pydantic==2.5.0
-falkordb>=1.0.1
-mysql-connector-python==8.2.0
-sqlalchemy==2.0.23
-python-dotenv==1.0.0
-python-multipart==0.0.6
-```
-
-## 🧪 Testing Results
-
-### Successful API Tests
-
-1. **Health Check** ✅
-   - Status: healthy
-   - FalkorDB: Not connected (expected - server not running)
-   - Graphiti: File-based fallback active
-
-2. **Schema Listing** ✅
-   - Found 2 schemas: `orderMgmt-catalog`, `qinspect-designcode`
-
-3. **Schema Parsing** ✅
-   - Parsed `orderMgmt-catalog` successfully
-   - Extracted 1 table with 142 columns
-
-4. **Knowledge Graph Generation** ✅
-   - Generated graph with 50 nodes and 49 relationships
-   - Generation time: ~5ms
-   - Graphiti backend working with file storage
-
-5. **Entity Retrieval** ✅
-   - Retrieved 50 entities successfully
-   - Entities include table nodes and important column nodes
-   - Proper metadata and properties included
-
-## 📊 Knowledge Graph Structure
-
-### Nodes Created
-- **Table Nodes**: One node per table (e.g., `table_catalog`)
-- **Column Nodes**: Nodes for important columns (UIDs, IDs, codes, keys, refs)
-- **Properties**: Type, column count, nullable status, data types
-
-### Relationships Created
-- **BELONGS_TO**: Column belongs to table
-- **FOREIGN_KEY**: Table references another table via foreign key
-- **REFERENCES**: Inferred relationships from column naming patterns
-
-### Example from orderMgmt-catalog
-- 1 table node
-- 49 column nodes (important columns)
-- 49 relationships connecting columns to table
-- Inferred relationships from UID columns
-
-## 🚀 Running the Application
-
-### Start Server
-```bash
-python -m kg_builder.main
-```
-
-### Access API
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-- **API Base**: http://localhost:8000/api/v1
-
-### Example Workflow
+**Methods:**
 ```python
-import requests
+export_ruleset_to_sql(ruleset_id, query_type="all") -> str
+```
 
-# 1. Check health
-requests.get('http://localhost:8000/api/v1/health')
+### 2. Reconciliation Executor Service
+**File:** `kg_builder/services/reconciliation_executor.py`
 
-# 2. List schemas
-requests.get('http://localhost:8000/api/v1/schemas')
+**Features:**
+- ✅ Direct execution against databases via JDBC
+- ✅ Support for Oracle, SQL Server, PostgreSQL, MySQL
+- ✅ Execute matched records queries
+- ✅ Execute unmatched source queries
+- ✅ Execute unmatched target queries
+- ✅ Connection management and cleanup
+- ✅ Error handling and logging
 
-# 3. Generate KG
-payload = {
-    'schema_name': 'orderMgmt-catalog',
-    'kg_name': 'my_kg',
-    'backends': ['graphiti']
+**Methods:**
+```python
+execute_ruleset(
+    ruleset_id,
+    source_db_config,
+    target_db_config,
+    limit=100,
+    include_matched=True,
+    include_unmatched=True
+) -> RuleExecutionResponse
+```
+
+### 3. Updated API Endpoints
+**File:** `kg_builder/routes.py`
+
+#### Enhanced SQL Export Endpoint
+**Endpoint:** `GET /reconciliation/rulesets/{ruleset_id}/export/sql`
+
+**Features:**
+- ✅ Query parameter: `query_type` (all, matched, unmatched_source, unmatched_target)
+- ✅ Returns formatted SQL queries
+- ✅ Error handling for invalid ruleset IDs
+
+**Example:**
+```bash
+GET /reconciliation/rulesets/RECON_ABC123/export/sql?query_type=all
+```
+
+#### Updated Execution Endpoint
+**Endpoint:** `POST /reconciliation/execute`
+
+**Features:**
+- ✅ **Two execution modes:**
+  - **SQL Export Mode:** No DB configs → Returns SQL queries
+  - **Direct Execution Mode:** With DB configs → Executes and returns results
+- ✅ Optional database configurations
+- ✅ Configurable limits
+- ✅ Include/exclude matched/unmatched records
+- ✅ Comprehensive error handling
+
+**Example (SQL Export Mode):**
+```json
+{
+  "ruleset_id": "RECON_ABC123",
+  "limit": 100
 }
-requests.post('http://localhost:8000/api/v1/kg/generate', json=payload)
-
-# 4. Get entities
-requests.get('http://localhost:8000/api/v1/kg/my_kg/entities')
-
-# 5. Export graph
-requests.get('http://localhost:8000/api/v1/kg/my_kg/export')
 ```
 
-## 📁 Project Structure
+**Example (Direct Execution Mode):**
+```json
+{
+  "ruleset_id": "RECON_ABC123",
+  "limit": 100,
+  "source_db_config": {...},
+  "target_db_config": {...}
+}
+```
+
+### 4. Updated Data Models
+**File:** `kg_builder/models.py`
+
+**Changes:**
+- ✅ Updated `RuleExecutionRequest` to include:
+  - `source_db_config` (optional)
+  - `target_db_config` (optional)
+  - `include_matched` (boolean)
+  - `include_unmatched` (boolean)
+
+### 5. Demo Script
+**File:** `demo_reconciliation_execution.py`
+
+**Features:**
+- ✅ Complete end-to-end workflow demonstration
+- ✅ Step-by-step execution with clear output
+- ✅ Both SQL export and direct execution examples
+- ✅ Generates SQL files for review
+- ✅ Error handling and user-friendly messages
+
+**Usage:**
+```bash
+python demo_reconciliation_execution.py
+```
+
+### 6. Comprehensive Documentation
+
+#### Main Documentation
+**File:** `docs/RECONCILIATION_EXECUTION_GUIDE.md` (90+ sections)
+
+**Contents:**
+- Execution modes comparison
+- SQL export mode usage
+- Direct execution mode usage
+- Generated SQL query examples
+- Complete workflow
+- Python examples
+- Troubleshooting
+- API reference
+
+#### Quick Start Guide
+**File:** `RECONCILIATION_QUICKSTART.md`
+
+**Contents:**
+- 5-minute quick start
+- Complete workflow commands
+- Configuration guide
+- Quick reference commands
+- Troubleshooting tips
+
+#### Implementation Summary
+**File:** `IMPLEMENTATION_SUMMARY.md` (this file)
+
+---
+
+## 🔍 Generated SQL Queries
+
+### Query Structure
+
+The system generates **comprehensive SQL queries** with:
+
+1. **Metadata Comments**
+   ```sql
+   -- Reconciliation Rules: Reconciliation_unified_kg
+   -- Generated from KG: unified_kg
+   -- Schemas: orderMgmt-catalog, vendorDB-suppliers
+   -- Total Rules: 5
+   ```
+
+2. **Rule Information**
+   ```sql
+   -- Rule 1: Vendor_Match
+   -- Match Type: exact
+   -- Confidence: 0.95
+   -- Reasoning: Foreign key constraint implies exact match relationship
+   ```
+
+3. **Matched Records Query**
+   ```sql
+   SELECT
+       'RULE_001' AS rule_id,
+       'Vendor_Match' AS rule_name,
+       0.95 AS confidence_score,
+       s.*,
+       t.*
+   FROM orderMgmt.catalog s
+   INNER JOIN vendorDB.suppliers t
+       ON s.vendor_uid = t.supplier_id;
+   ```
+
+4. **Unmatched Source Query**
+   ```sql
+   SELECT
+       'RULE_001' AS rule_id,
+       'Vendor_Match' AS rule_name,
+       s.*
+   FROM orderMgmt.catalog s
+   WHERE NOT EXISTS (
+       SELECT 1
+       FROM vendorDB.suppliers t
+       WHERE s.vendor_uid = t.supplier_id
+   );
+   ```
+
+5. **Unmatched Target Query**
+   ```sql
+   SELECT
+       'RULE_001' AS rule_id,
+       'Vendor_Match' AS rule_name,
+       t.*
+   FROM vendorDB.suppliers t
+   WHERE NOT EXISTS (
+       SELECT 1
+       FROM orderMgmt.catalog s
+       WHERE s.vendor_uid = t.supplier_id
+   );
+   ```
+
+6. **Summary Statistics**
+   ```sql
+   SELECT
+       'Vendor_Match' AS rule_name,
+       (SELECT COUNT(*) FROM orderMgmt.catalog) AS total_source,
+       (SELECT COUNT(*) FROM vendorDB.suppliers) AS total_target,
+       -- ... matched/unmatched counts
+   FROM DUAL;
+   ```
+
+---
+
+## 📊 Execution Modes Comparison
+
+| Feature | SQL Export Mode | Direct Execution Mode |
+|---------|----------------|----------------------|
+| **Prerequisites** | None | JayDeBeApi + JDBC drivers |
+| **Database Connection** | Not required | Required |
+| **Use Case** | Manual review & execution | Automated execution |
+| **Output** | SQL text | JSON with data |
+| **Security** | No credentials needed | Requires DB credentials |
+| **Flexibility** | Can customize SQL | Fixed execution |
+| **Best For** | Testing, auditing | Production automation |
+| **Performance** | Manual | Automated |
+
+---
+
+## 🚀 Usage Examples
+
+### Example 1: Generate and Export SQL
+
+```bash
+# 1. Generate rules
+curl -X POST http://localhost:8000/reconciliation/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "schema_names": ["schema1", "schema2"],
+    "kg_name": "my_kg",
+    "use_llm_enhancement": true
+  }'
+
+# Response: {"ruleset_id": "RECON_ABC123", ...}
+
+# 2. Export SQL
+curl "http://localhost:8000/reconciliation/rulesets/RECON_ABC123/export/sql?query_type=all" \
+  > reconciliation.sql
+
+# 3. Run in database
+sqlplus user/pass@db @reconciliation.sql
+```
+
+### Example 2: SQL Export Mode Execution
+
+```bash
+curl -X POST http://localhost:8000/reconciliation/execute \
+  -H "Content-Type: application/json" \
+  -d '{
+    "ruleset_id": "RECON_ABC123",
+    "limit": 100
+  }' | jq -r '.sql' > queries.sql
+```
+
+### Example 3: Direct Execution Mode
+
+```bash
+curl -X POST http://localhost:8000/reconciliation/execute \
+  -H "Content-Type: application/json" \
+  -d '{
+    "ruleset_id": "RECON_ABC123",
+    "limit": 100,
+    "source_db_config": {
+      "db_type": "oracle",
+      "host": "localhost",
+      "port": 1521,
+      "database": "ORCL",
+      "username": "user1",
+      "password": "pass1"
+    },
+    "target_db_config": {
+      "db_type": "oracle",
+      "host": "localhost",
+      "port": 1521,
+      "database": "ORCL",
+      "username": "user2",
+      "password": "pass2"
+    }
+  }'
+```
+
+---
+
+## 📁 File Structure
 
 ```
-kg_builder/
-├── __init__.py
-├── config.py
-├── models.py
-├── main.py
-├── routes.py
-└── services/
-    ├── __init__.py
-    ├── schema_parser.py
-    ├── falkordb_backend.py
-    └── graphiti_backend.py
-
-schemas/
-├── orderMgmt-catalog.json
-└── qinspect-designcode.json
-
-data/
-└── graphiti_storage/
-    └── test_kg/
-        ├── nodes.json
-        ├── relationships.json
-        └── metadata.json
-
-Documentation/
-├── README.md
-├── QUICKSTART.md
-├── API_EXAMPLES.md
-├── .env.example
-└── requirements.txt
+dq-poc/
+├── kg_builder/
+│   ├── services/
+│   │   ├── rule_storage.py           [✅ Enhanced SQL export]
+│   │   ├── reconciliation_executor.py [✅ NEW: Direct execution]
+│   │   ├── reconciliation_service.py  [Existing: Rule generation]
+│   │   └── rule_validator.py          [Existing: Rule validation]
+│   ├── routes.py                      [✅ Updated endpoints]
+│   └── models.py                      [✅ Updated request models]
+├── docs/
+│   ├── RECONCILIATION_EXECUTION_GUIDE.md [✅ NEW: Complete guide]
+│   └── RULE_VALIDATION_GUIDE.md          [Existing]
+├── demo_reconciliation_execution.py   [✅ NEW: Demo script]
+├── test_rule_validation.py            [Existing: Test script]
+├── RECONCILIATION_QUICKSTART.md       [✅ NEW: Quick reference]
+└── IMPLEMENTATION_SUMMARY.md          [✅ NEW: This file]
 ```
+
+---
+
+## ✅ Testing
+
+### Run the Demo
+```bash
+# Start server
+python -m uvicorn kg_builder.main:app --reload
+
+# Run demo (in another terminal)
+python demo_reconciliation_execution.py
+```
+
+**Expected Output:**
+- ✅ Schemas listed
+- ✅ Knowledge graph generated
+- ✅ Reconciliation rules generated
+- ✅ SQL files created:
+  - `reconciliation_queries_RECON_*_all.sql`
+  - `reconciliation_queries_RECON_*_matched.sql`
+  - `reconciliation_execution_RECON_*.sql`
+
+### Test API Endpoints
+
+```bash
+# Test health check
+curl http://localhost:8000/health
+
+# Test SQL export
+curl "http://localhost:8000/reconciliation/rulesets/RECON_ABC123/export/sql?query_type=all"
+
+# Test execution (SQL export mode)
+curl -X POST http://localhost:8000/reconciliation/execute \
+  -H "Content-Type: application/json" \
+  -d '{"ruleset_id":"RECON_ABC123","limit":100}'
+```
+
+---
 
 ## 🎯 Key Features
 
-1. **Dual Backend Support**: FalkorDB for production, Graphiti with fallback
-2. **Automatic Schema Parsing**: Extracts entities and relationships
-3. **Intelligent Relationship Inference**: From column names and foreign keys
-4. **RESTful API**: Complete CRUD operations
-5. **Automatic Documentation**: Swagger UI and ReDoc
-6. **Error Handling**: Graceful degradation and informative errors
-7. **Extensible Design**: Easy to add new backends or features
+### 1. Flexible Execution
+- ✅ SQL Export Mode: Review before execution
+- ✅ Direct Execution Mode: Automated execution
 
-## 🔧 Configuration
+### 2. Comprehensive Queries
+- ✅ Matched records (INNER JOIN)
+- ✅ Unmatched source (NOT EXISTS)
+- ✅ Unmatched target (NOT EXISTS)
+- ✅ Summary statistics
 
-Edit `kg_builder/config.py` or set environment variables:
-- `FALKORDB_HOST`: FalkorDB server host
-- `FALKORDB_PORT`: FalkorDB server port
-- `FALKORDB_PASSWORD`: Optional password
-- `LOG_LEVEL`: Logging level (INFO, DEBUG, etc.)
+### 3. Database Support
+- ✅ Oracle
+- ✅ SQL Server
+- ✅ PostgreSQL
+- ✅ MySQL
 
-## 📝 Notes
+### 4. Production Ready
+- ✅ Error handling
+- ✅ Connection management
+- ✅ Logging
+- ✅ Configurable limits
+- ✅ Security considerations
 
-- FalkorDB connection is optional; application works with Graphiti fallback
-- Graphiti stores graphs as JSON files in `data/graphiti_storage/`
-- All endpoints return JSON with consistent response format
-- Comprehensive error messages for debugging
-- Ready for production deployment
+### 5. Developer Friendly
+- ✅ Comprehensive documentation
+- ✅ Demo script
+- ✅ API documentation
+- ✅ Python examples
+- ✅ cURL examples
 
-## 🎉 Status
+---
 
-**COMPLETE AND TESTED** - All requirements met and verified working!
+## 🔒 Security Considerations
 
+### Implemented
+- ✅ Read-only operations (SELECT queries only)
+- ✅ Parameterized limits
+- ✅ Connection cleanup
+- ✅ Error message sanitization
+- ✅ Optional database connections
+
+### Recommendations
+- 🔸 Use read-only database users
+- 🔸 Grant only SELECT permissions
+- 🔸 Use environment variables for credentials
+- 🔸 Implement API authentication
+- 🔸 Use HTTPS in production
+- 🔸 Rate limit API requests
+
+---
+
+## 📈 Performance Considerations
+
+### Optimizations
+- ✅ Configurable record limits
+- ✅ Connection pooling ready
+- ✅ Query timeout support
+- ✅ Efficient NOT EXISTS queries
+
+### Recommendations
+- 🔸 Add indexes on JOIN columns
+- 🔸 Use appropriate limits (start small)
+- 🔸 Monitor query performance
+- 🔸 Implement pagination for large datasets
+- 🔸 Cache frequently used rulesets
+
+---
+
+## 🎓 What's Next?
+
+### For Testing
+1. Run the demo script
+2. Review generated SQL files
+3. Test queries in your database
+4. Validate results
+
+### For Production
+1. Set up JDBC drivers
+2. Configure database connections
+3. Implement authentication
+4. Set up monitoring
+5. Integrate into data pipelines
+
+### For Enhancement (Future)
+- [ ] Web UI for reconciliation execution
+- [ ] Scheduling and automation
+- [ ] Email notifications
+- [ ] Advanced transformations
+- [ ] Data quality metrics
+- [ ] Historical tracking
+
+---
+
+## 📚 Documentation Links
+
+- **Quick Start:** [RECONCILIATION_QUICKSTART.md](RECONCILIATION_QUICKSTART.md)
+- **Complete Guide:** [docs/RECONCILIATION_EXECUTION_GUIDE.md](docs/RECONCILIATION_EXECUTION_GUIDE.md)
+- **Rule Validation:** [docs/RULE_VALIDATION_GUIDE.md](docs/RULE_VALIDATION_GUIDE.md)
+- **Demo Script:** [demo_reconciliation_execution.py](demo_reconciliation_execution.py)
+- **API Docs:** http://localhost:8000/docs
+
+---
+
+## ✨ Summary
+
+### What You Can Do Now
+
+1. ✅ **Generate reconciliation rules** from knowledge graphs
+2. ✅ **Export rules as SQL** in multiple formats
+3. ✅ **Execute reconciliation** in two modes:
+   - SQL Export Mode (manual)
+   - Direct Execution Mode (automated)
+4. ✅ **Find matched records** between data sources
+5. ✅ **Identify unmatched records** in source and target
+6. ✅ **Get summary statistics** for data quality metrics
+
+### Key Benefits
+
+- 🎯 **Flexibility:** Choose SQL export or direct execution
+- 🔒 **Security:** No forced database connections
+- 📊 **Comprehensive:** All reconciliation scenarios covered
+- 🚀 **Production Ready:** Error handling, logging, documentation
+- 👨‍💻 **Developer Friendly:** Examples, demos, API docs
+
+---
+
+## 🎉 Success!
+
+The reconciliation execution feature is **fully implemented and ready to use**!
+
+Run the demo to see it in action:
+```bash
+python demo_reconciliation_execution.py
+```
+
+**Happy Reconciling!** 🎯

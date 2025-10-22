@@ -6,8 +6,9 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Tuple, Any, Optional
 from kg_builder.models import (
-    DatabaseSchema, TableSchema, ColumnSchema, 
-    GraphNode, GraphRelationship, KnowledgeGraph
+    DatabaseSchema, TableSchema, ColumnSchema,
+    GraphNode, GraphRelationship, KnowledgeGraph,
+    RelationshipDefinition
 )
 from kg_builder.config import SCHEMAS_DIR
 from datetime import datetime
@@ -503,4 +504,188 @@ class SchemaParser:
             }
 
         return schemas_info
+
+    @staticmethod
+    def add_nl_relationships_to_kg(
+        kg: KnowledgeGraph,
+        nl_relationships: List[RelationshipDefinition]
+    ) -> KnowledgeGraph:
+        """
+        Add natural language-defined relationships to an existing knowledge graph.
+
+        This method:
+        1. Converts NL relationships to GraphRelationship objects
+        2. Merges with existing relationships
+        3. Handles duplicates
+        4. Tracks relationship source
+
+        Args:
+            kg: Existing knowledge graph
+            nl_relationships: List of NL-defined relationships
+
+        Returns:
+            Updated knowledge graph with NL relationships added
+        """
+        logger.info(f"Adding {len(nl_relationships)} NL relationships to KG '{kg.name}'")
+
+        # Convert NL relationships to GraphRelationship objects
+        new_relationships = []
+        duplicates_found = 0
+
+        for nl_rel in nl_relationships:
+            # Skip if validation failed
+            if nl_rel.validation_status != "VALID":
+                logger.warning(f"Skipping invalid relationship: {nl_rel.source_table} -> {nl_rel.target_table}")
+                continue
+
+            # Create source and target IDs
+            source_id = f"table_{nl_rel.source_table}"
+            target_id = f"table_{nl_rel.target_table}"
+
+            # Check if relationship already exists
+            existing = any(
+                r.source_id == source_id and
+                r.target_id == target_id and
+                r.relationship_type == nl_rel.relationship_type
+                for r in kg.relationships
+            )
+
+            if existing:
+                duplicates_found += 1
+                logger.debug(f"Duplicate relationship found: {source_id} -> {target_id}")
+                continue
+
+            # Create GraphRelationship with NL metadata
+            graph_rel = GraphRelationship(
+                source_id=source_id,
+                target_id=target_id,
+                relationship_type=nl_rel.relationship_type,
+                properties={
+                    "source": "natural_language",
+                    "confidence": nl_rel.confidence,
+                    "reasoning": nl_rel.reasoning,
+                    "cardinality": nl_rel.cardinality,
+                    "input_format": nl_rel.input_format,
+                    "nl_defined": True
+                }
+            )
+            new_relationships.append(graph_rel)
+
+        # Add new relationships to KG
+        kg.relationships.extend(new_relationships)
+
+        logger.info(
+            f"Added {len(new_relationships)} NL relationships to KG '{kg.name}' "
+            f"({duplicates_found} duplicates skipped)"
+        )
+
+        return kg
+
+    @staticmethod
+    def merge_relationships(
+        kg: KnowledgeGraph,
+        strategy: str = "union"
+    ) -> KnowledgeGraph:
+        """
+        Merge and deduplicate relationships in a knowledge graph.
+
+        Strategies:
+        - "union": Keep all relationships (default)
+        - "high_confidence": Keep only high-confidence relationships
+        - "deduplicate": Remove exact duplicates
+
+        Args:
+            kg: Knowledge graph to process
+            strategy: Merge strategy
+
+        Returns:
+            Knowledge graph with merged relationships
+        """
+        logger.info(f"Merging relationships in KG '{kg.name}' using strategy: {strategy}")
+
+        if strategy == "deduplicate":
+            # Remove exact duplicates
+            seen = set()
+            unique_rels = []
+
+            for rel in kg.relationships:
+                key = (rel.source_id, rel.target_id, rel.relationship_type)
+                if key not in seen:
+                    seen.add(key)
+                    unique_rels.append(rel)
+
+            kg.relationships = unique_rels
+            logger.info(f"Deduplicated relationships: {len(kg.relationships)} unique relationships")
+
+        elif strategy == "high_confidence":
+            # Keep only high-confidence relationships
+            high_conf_rels = []
+
+            for rel in kg.relationships:
+                confidence = rel.properties.get("confidence", 0.75)
+                if confidence >= 0.7:
+                    high_conf_rels.append(rel)
+
+            kg.relationships = high_conf_rels
+            logger.info(f"Filtered by confidence: {len(kg.relationships)} high-confidence relationships")
+
+        # "union" strategy: keep all (no action needed)
+
+        return kg
+
+    @staticmethod
+    def get_relationship_statistics(kg: KnowledgeGraph) -> Dict[str, Any]:
+        """
+        Get statistics about relationships in a knowledge graph.
+
+        Args:
+            kg: Knowledge graph to analyze
+
+        Returns:
+            Dictionary with relationship statistics
+        """
+        stats = {
+            "total_relationships": len(kg.relationships),
+            "by_type": {},
+            "by_source": {},
+            "nl_defined": 0,
+            "auto_detected": 0,
+            "average_confidence": 0.0,
+            "high_confidence_count": 0
+        }
+
+        total_confidence = 0.0
+        confidence_count = 0
+
+        for rel in kg.relationships:
+            # Count by type
+            rel_type = rel.relationship_type
+            stats["by_type"][rel_type] = stats["by_type"].get(rel_type, 0) + 1
+
+            # Count by source
+            source = rel.source_id
+            stats["by_source"][source] = stats["by_source"].get(source, 0) + 1
+
+            # Count NL vs auto-detected
+            if rel.properties.get("nl_defined", False):
+                stats["nl_defined"] += 1
+            else:
+                stats["auto_detected"] += 1
+
+            # Track confidence
+            confidence = rel.properties.get("confidence", 0.75)
+            total_confidence += confidence
+            confidence_count += 1
+
+            if confidence >= 0.7:
+                stats["high_confidence_count"] += 1
+
+        # Calculate average confidence
+        if confidence_count > 0:
+            stats["average_confidence"] = total_confidence / confidence_count
+
+        logger.info(f"KG '{kg.name}' statistics: {stats['total_relationships']} relationships, "
+                   f"{stats['nl_defined']} NL-defined, {stats['auto_detected']} auto-detected")
+
+        return stats
 

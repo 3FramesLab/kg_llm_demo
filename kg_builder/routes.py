@@ -5,13 +5,15 @@ import logging
 import time
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from typing import List
+from pydantic import BaseModel
 
 from kg_builder.models import (
     SchemaUploadResponse, KGGenerationRequest, KGGenerationResponse,
     QueryRequest, QueryResponse, EntityResponse, GraphExportResponse,
     HealthCheckResponse, LLMExtractionResponse, LLMAnalysisResponse,
     RuleGenerationRequest, RuleGenerationResponse, RuleValidationRequest,
-    ValidationResult, RuleExecutionRequest, RuleExecutionResponse
+    ValidationResult, RuleExecutionRequest, RuleExecutionResponse,
+    NLRelationshipRequest, NLRelationshipResponse, KnowledgeGraph
 )
 from kg_builder.services.schema_parser import SchemaParser
 from kg_builder.services.falkordb_backend import get_falkordb_backend
@@ -20,6 +22,7 @@ from kg_builder.services.llm_service import get_llm_service
 from kg_builder.services.reconciliation_service import get_reconciliation_service
 from kg_builder.services.rule_storage import get_rule_storage
 from kg_builder.services.rule_validator import get_rule_validator
+from kg_builder.services.nl_relationship_parser import get_nl_relationship_parser
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -876,5 +879,253 @@ async def execute_reconciliation(request: RuleExecutionRequest):
         raise
     except Exception as e:
         logger.error(f"Error executing reconciliation: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Natural Language Relationship endpoints
+@router.post("/kg/relationships/natural-language", response_model=NLRelationshipResponse)
+async def add_natural_language_relationships(request: NLRelationshipRequest):
+    """
+    Add relationships defined in natural language to knowledge graph.
+
+    This endpoint allows users to define custom relationships between entities
+    using natural language instead of structured formats. The system parses the
+    definitions and adds them to the knowledge graph.
+
+    Supported input formats:
+    1. Natural Language: "Products are supplied by Vendors"
+    2. Semi-Structured: "catalog.product_id → vendor.vendor_id (SUPPLIED_BY)"
+    3. Pseudo-SQL: "SELECT * FROM products JOIN vendors ON ..."
+    4. Business Rules: "IF product.status='active' THEN ..."
+
+    Example request:
+    ```json
+    {
+      "kg_name": "demo_kg",
+      "schemas": ["orderMgmt-catalog", "vendorDB-suppliers"],
+      "definitions": [
+        "Products are supplied by Vendors",
+        "Orders contain Products with quantity",
+        "Vendors have Locations"
+      ],
+      "use_llm": true,
+      "min_confidence": 0.7
+    }
+    ```
+
+    Args:
+        request: NL relationship request with definitions
+
+    Returns:
+        NLRelationshipResponse with parsed relationships and status
+    """
+    try:
+        start_time = time.time()
+
+        logger.info(f"Processing {len(request.definitions)} natural language relationship definitions")
+
+        # Get parser
+        parser = get_nl_relationship_parser()
+
+        # Load schemas
+        try:
+            schemas_info = {}
+            for schema_name in request.schemas:
+                schema = SchemaParser.load_schema(schema_name)
+                schemas_info[schema_name] = {
+                    "tables": list(schema.tables.keys()),
+                    "columns": {
+                        table.name: list(table.columns.keys())
+                        for table in schema.tables.values()
+                    }
+                }
+            logger.debug(f"Loaded {len(schemas_info)} schemas")
+        except Exception as e:
+            logger.error(f"Error loading schemas: {e}")
+            raise HTTPException(status_code=400, detail=f"Failed to load schemas: {str(e)}")
+
+        # Parse definitions
+        all_relationships = []
+        errors = []
+
+        for definition in request.definitions:
+            try:
+                logger.debug(f"Parsing definition: {definition}")
+                parsed = parser.parse(definition, schemas_info, use_llm=request.use_llm)
+
+                # Filter by confidence
+                filtered = [r for r in parsed if r.confidence >= request.min_confidence]
+
+                if not filtered and parsed:
+                    errors.append(
+                        f"Definition '{definition}' parsed but all relationships below "
+                        f"confidence threshold ({request.min_confidence})"
+                    )
+                else:
+                    all_relationships.extend(filtered)
+                    logger.debug(f"Successfully parsed: {len(filtered)} relationships")
+
+            except Exception as e:
+                error_msg = f"Failed to parse '{definition}': {str(e)}"
+                logger.error(error_msg)
+                errors.append(error_msg)
+
+        # Calculate processing time
+        processing_time_ms = (time.time() - start_time) * 1000
+
+        # Prepare response
+        response = NLRelationshipResponse(
+            success=len(errors) == 0,
+            relationships=all_relationships,
+            parsed_count=len(all_relationships),
+            failed_count=len(errors),
+            errors=errors,
+            processing_time_ms=processing_time_ms
+        )
+
+        logger.info(
+            f"NL relationship parsing complete: {len(all_relationships)} parsed, "
+            f"{len(errors)} errors, {processing_time_ms:.2f}ms"
+        )
+
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error adding natural language relationships: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class KGIntegrationRequest(BaseModel):
+    """Request model for KG integration with NL relationships."""
+    kg_name: str
+    nl_definitions: List[str]
+    schemas: List[str]
+    use_llm: bool = True
+    min_confidence: float = 0.7
+    merge_strategy: str = "union"
+
+
+@router.post("/kg/integrate-nl-relationships")
+async def integrate_nl_relationships_to_kg(request: KGIntegrationRequest):
+    """
+    Integrate natural language-defined relationships into an existing knowledge graph.
+
+    This endpoint:
+    1. Parses natural language relationship definitions
+    2. Adds them to the existing knowledge graph
+    3. Merges with auto-detected relationships
+    4. Returns updated KG with statistics
+    """
+    try:
+        start_time = time.time()
+
+        # Step 1: Generate or load the knowledge graph
+        logger.info(f"Loading knowledge graph: {request.kg_name}")
+        try:
+            kg = SchemaParser.build_merged_knowledge_graph(request.schemas, request.kg_name, use_llm=request.use_llm)
+        except Exception as e:
+            logger.error(f"Failed to build KG: {e}")
+            raise HTTPException(status_code=400, detail=f"Failed to build KG: {str(e)}")
+
+        logger.info(f"Loaded KG with {len(kg.nodes)} nodes and {len(kg.relationships)} relationships")
+
+        # Step 2: Parse natural language definitions
+        logger.info(f"Parsing {len(request.nl_definitions)} NL definitions")
+        parser = get_nl_relationship_parser()
+
+        # Prepare schemas info
+        schemas_info = {}
+        for schema_name in request.schemas:
+            try:
+                schema = SchemaParser.load_schema(schema_name)
+                schemas_info[schema_name] = {
+                    "tables": list(schema.tables.keys()),
+                    "columns": {
+                        table.name: list(table.columns.keys())
+                        for table in schema.tables.values()
+                    }
+                }
+            except Exception as e:
+                logger.warning(f"Failed to load schema {schema_name}: {e}")
+
+        # Parse all definitions
+        all_nl_relationships = []
+        parse_errors = []
+
+        for definition in request.nl_definitions:
+            try:
+                parsed = parser.parse(definition, schemas_info, use_llm=request.use_llm)
+                filtered = [r for r in parsed if r.confidence >= request.min_confidence]
+                all_nl_relationships.extend(filtered)
+            except Exception as e:
+                error_msg = f"Failed to parse '{definition}': {str(e)}"
+                logger.warning(error_msg)
+                parse_errors.append(error_msg)
+
+        logger.info(f"Parsed {len(all_nl_relationships)} NL relationships")
+
+        # Step 3: Add NL relationships to KG
+        logger.info("Adding NL relationships to knowledge graph")
+        kg = SchemaParser.add_nl_relationships_to_kg(kg, all_nl_relationships)
+
+        # Step 4: Merge relationships
+        logger.info(f"Merging relationships using strategy: {request.merge_strategy}")
+        kg = SchemaParser.merge_relationships(kg, strategy=request.merge_strategy)
+
+        # Step 5: Get statistics
+        stats = SchemaParser.get_relationship_statistics(kg)
+
+        processing_time_ms = (time.time() - start_time) * 1000
+
+        logger.info(
+            f"KG integration complete: {len(kg.relationships)} total relationships, "
+            f"{stats['nl_defined']} NL-defined, {stats['auto_detected']} auto-detected, "
+            f"{processing_time_ms:.2f}ms"
+        )
+
+        return {
+            "success": len(parse_errors) == 0,
+            "kg_name": request.kg_name,
+            "nodes_count": len(kg.nodes),
+            "relationships_count": len(kg.relationships),
+            "nl_relationships_added": len(all_nl_relationships),
+            "statistics": stats,
+            "errors": parse_errors,
+            "processing_time_ms": processing_time_ms,
+            "knowledge_graph": kg
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error integrating NL relationships to KG: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/kg/statistics")
+async def get_kg_statistics(request: KGIntegrationRequest):
+    """
+    Get statistics about a knowledge graph.
+    """
+    try:
+        logger.info(f"Getting statistics for KG: {request.kg_name}")
+
+        # Build KG
+        kg = SchemaParser.build_merged_knowledge_graph(request.schemas, request.kg_name, use_llm=False)
+
+        # Get statistics
+        stats = SchemaParser.get_relationship_statistics(kg)
+
+        return {
+            "kg_name": request.kg_name,
+            "nodes_count": len(kg.nodes),
+            "relationships_count": len(kg.relationships),
+            "statistics": stats
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting KG statistics: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 

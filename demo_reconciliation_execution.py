@@ -35,7 +35,7 @@ def step_1_list_available_schemas():
     print_section("STEP 1: List Available Schemas")
 
     try:
-        response = requests.get(f"{BASE_URL}/schemas")
+        response = requests.get(f"{BASE_URL}/api/v1/schemas")
 
         if response.status_code == 200:
             result = response.json()
@@ -72,7 +72,7 @@ def step_2_generate_knowledge_graph(schema_names: list):
 
     try:
         response = requests.post(
-            f"{BASE_URL}/kg/generate",
+            f"{BASE_URL}/api/v1/kg/generate",
             json=request_data,
             headers={"Content-Type": "application/json"}
         )
@@ -110,7 +110,7 @@ def step_3_generate_reconciliation_rules(schema_names: list, kg_name: str):
 
     try:
         response = requests.post(
-            f"{BASE_URL}/reconciliation/generate",
+            f"{BASE_URL}/api/v1/reconciliation/generate",
             json=request_data,
             headers={"Content-Type": "application/json"}
         )
@@ -155,7 +155,7 @@ def step_4_export_sql_queries(ruleset_id: str, query_type: str = "all"):
 
     try:
         response = requests.get(
-            f"{BASE_URL}/reconciliation/rulesets/{ruleset_id}/export/sql",
+            f"{BASE_URL}/api/v1/reconciliation/rulesets/{ruleset_id}/export/sql",
             params={"query_type": query_type}
         )
 
@@ -214,7 +214,7 @@ def step_5_execute_sql_export_mode(ruleset_id: str):
 
     try:
         response = requests.post(
-            f"{BASE_URL}/reconciliation/execute",
+            f"{BASE_URL}/api/v1/reconciliation/execute",
             json=request_data,
             headers={"Content-Type": "application/json"}
         )
@@ -312,7 +312,7 @@ def step_6_execute_direct_mode(ruleset_id: str):
     # Uncomment to execute with real databases:
     # try:
     #     response = requests.post(
-    #         f"{BASE_URL}/reconciliation/execute",
+    #         f"{BASE_URL}/api/v1/reconciliation/execute",
     #         json=request_data,
     #         headers={"Content-Type": "application/json"}
     #     )
@@ -347,7 +347,7 @@ def demo_workflow():
 
     # Check API availability
     try:
-        response = requests.get(f"{BASE_URL}/health")
+        response = requests.get(f"{BASE_URL}/api/v1/health")
         if response.status_code != 200:
             print(f"\n⚠ WARNING: API health check failed.")
             print(f"   Start server: python -m uvicorn kg_builder.main:app --reload")

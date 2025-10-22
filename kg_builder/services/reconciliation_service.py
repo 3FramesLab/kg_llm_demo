@@ -34,11 +34,8 @@ class ReconciliationRuleGenerator:
     def __init__(self):
         """Initialize the rule generator."""
         self.schema_parser = SchemaParser()
-        self.falkordb = FalkorDBBackend(
-            host=FALKORDB_HOST,
-            port=FALKORDB_PORT,
-            password=FALKORDB_PASSWORD
-        )
+        from kg_builder.services.falkordb_backend import get_falkordb_backend
+        self.falkordb = get_falkordb_backend()
 
     def generate_from_knowledge_graph(
         self,
