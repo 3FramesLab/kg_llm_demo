@@ -1,7 +1,0 @@
-{
-  "name": "unified_test_kg",
-  "schema_file": "orderMgmt-catalog,qinspect-designcode",
-  "created_at": "2025-10-20T11:16:59.615961",
-  "nodes_count": 79,
-  "relationships_count": 77
-}

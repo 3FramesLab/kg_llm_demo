@@ -218,10 +218,35 @@ class GraphitiBackend:
         
         return []
     
-    def list_graphs(self) -> List[str]:
-        """List all graphs."""
+    def list_graphs(self) -> List[dict]:
+        """List all graphs with their metadata."""
         try:
-            graphs = [d.name for d in self.storage_path.iterdir() if d.is_dir()]
+            graphs = []
+            for d in self.storage_path.iterdir():
+                if d.is_dir():
+                    metadata_file = d / "metadata.json"
+                    if metadata_file.exists():
+                        try:
+                            with open(metadata_file, 'r') as f:
+                                metadata = json.load(f)
+                                # Add backends information
+                                metadata['backends'] = ['graphiti']
+                                graphs.append(metadata)
+                        except Exception as e:
+                            logger.warning(f"Could not read metadata for {d.name}: {e}")
+                            # Fallback: add basic info
+                            graphs.append({
+                                'name': d.name,
+                                'backends': ['graphiti'],
+                                'created_at': None
+                            })
+                    else:
+                        # No metadata file, add basic info
+                        graphs.append({
+                            'name': d.name,
+                            'backends': ['graphiti'],
+                            'created_at': None
+                        })
             return graphs
         except Exception as e:
             logger.error(f"Error listing graphs: {e}")

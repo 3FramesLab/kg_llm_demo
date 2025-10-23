@@ -1,0 +1,28 @@
+[
+  {
+    "source_id": "table_catalog",
+    "target_id": "table_design_code_master",
+    "relationship_type": "SEMANTIC_REFERENCE",
+    "properties": {
+      "llm_inferred": true,
+      "llm_confidence": 0.8,
+      "llm_reasoning": "The 'catalog' table contains information about products such as color, fabric type, fit, gender, and occasion, which are also present in the 'design_code_master' table indicating a semantic relationship between the two tables based on product attributes.",
+      "llm_description": "Inferred: The 'catalog' table contains information about products such as color, fabric type, fit, gender, and occasion, which are also present in the 'design_code_master' table indicating a semantic relationship between the two tables based on product attributes."
+    },
+    "source_column": null,
+    "target_column": null
+  },
+  {
+    "source_id": "table_catalog",
+    "target_id": "table_design_code_master",
+    "relationship_type": "BUSINESS_LOGIC",
+    "properties": {
+      "llm_inferred": true,
+      "llm_confidence": 0.75,
+      "llm_reasoning": "The 'catalog' table contains product information like price, brand, and collection, which could be related to design codes for specific products or collections for business operations.",
+      "llm_description": "Inferred: The 'catalog' table contains product information like price, brand, and collection, which could be related to design codes for specific products or collections for business operations."
+    },
+    "source_column": null,
+    "target_column": null
+  }
+]

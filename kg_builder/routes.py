@@ -13,7 +13,8 @@ from kg_builder.models import (
     HealthCheckResponse, LLMExtractionResponse, LLMAnalysisResponse,
     RuleGenerationRequest, RuleGenerationResponse, RuleValidationRequest,
     ValidationResult, RuleExecutionRequest, RuleExecutionResponse,
-    NLRelationshipRequest, NLRelationshipResponse, KnowledgeGraph
+    NLRelationshipRequest, NLRelationshipResponse, KnowledgeGraph,
+    KPICalculationRequest, KPICalculationResponse
 )
 from kg_builder.services.schema_parser import SchemaParser
 from kg_builder.services.falkordb_backend import get_falkordb_backend
@@ -1265,5 +1266,159 @@ async def get_kg_statistics(request: KGIntegrationRequest):
 
     except Exception as e:
         logger.error(f"Error getting KG statistics: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# KPI Routes - Data Quality and Reconciliation Monitoring
+# ============================================================================
+
+@router.post("/kpi/calculate", response_model=KPICalculationResponse)
+async def calculate_kpis(request: KPICalculationRequest):
+    """
+    Calculate all three KPIs for a reconciliation execution.
+
+    KPIs calculated:
+    1. Reconciliation Coverage Rate (RCR) - % of matched records
+    2. Data Quality Confidence Score (DQCS) - weighted confidence average
+    3. Reconciliation Efficiency Index (REI) - efficiency score
+    """
+    try:
+        from kg_builder.services.kpi_service import KPIService
+
+        logger.info(f"Calculating KPIs for execution: {request.execution_id}")
+
+        kpi_service = KPIService()
+        kpi_service._ensure_indexes()
+
+        # Calculate RCR
+        rcr_doc = kpi_service.calculate_rcr(
+            matched_count=request.matched_count,
+            total_source_count=request.total_source_count,
+            ruleset_id=request.ruleset_id,
+            ruleset_name=request.ruleset_name,
+            execution_id=request.execution_id,
+            source_kg=request.source_kg,
+            source_schemas=request.source_schemas
+        )
+        rcr_id = kpi_service.store_kpi("RECONCILIATION_COVERAGE_RATE", rcr_doc)
+        rcr_value = rcr_doc["metrics"]["coverage_rate"]
+
+        # Calculate DQCS
+        dqcs_doc = kpi_service.calculate_dqcs(
+            matched_records=request.matched_records,
+            ruleset_id=request.ruleset_id,
+            ruleset_name=request.ruleset_name,
+            execution_id=request.execution_id,
+            source_kg=request.source_kg
+        )
+        dqcs_id = kpi_service.store_kpi("DATA_QUALITY_CONFIDENCE_SCORE", dqcs_doc)
+        dqcs_value = dqcs_doc["metrics"]["overall_confidence_score"]
+
+        # Calculate REI
+        rei_doc = kpi_service.calculate_rei(
+            matched_count=request.matched_count,
+            total_source_count=request.total_source_count,
+            active_rules=request.active_rules,
+            total_rules=request.total_rules,
+            execution_time_ms=request.execution_time_ms,
+            ruleset_id=request.ruleset_id,
+            ruleset_name=request.ruleset_name,
+            execution_id=request.execution_id,
+            source_kg=request.source_kg,
+            resource_metrics=request.resource_metrics
+        )
+        rei_id = kpi_service.store_kpi("RECONCILIATION_EFFICIENCY_INDEX", rei_doc)
+        rei_value = rei_doc["metrics"]["efficiency_index"]
+
+        kpi_service.close()
+
+        logger.info(f"KPIs calculated successfully - RCR: {rcr_value}%, DQCS: {dqcs_value}, REI: {rei_value}")
+
+        return KPICalculationResponse(
+            success=True,
+            rcr_id=rcr_id,
+            dqcs_id=dqcs_id,
+            rei_id=rei_id,
+            rcr_value=rcr_value,
+            dqcs_value=dqcs_value,
+            rei_value=rei_value
+        )
+
+    except Exception as e:
+        logger.error(f"Error calculating KPIs: {e}", exc_info=True)
+        return KPICalculationResponse(
+            success=False,
+            error=str(e)
+        )
+
+
+@router.get("/kpi/rcr/{ruleset_id}")
+async def get_latest_rcr(ruleset_id: str):
+    """Get latest Reconciliation Coverage Rate for a ruleset."""
+    try:
+        from kg_builder.services.kpi_service import KPIService
+
+        kpi_service = KPIService()
+        kpi = kpi_service.get_latest_kpi("RECONCILIATION_COVERAGE_RATE", ruleset_id)
+        kpi_service.close()
+
+        if not kpi:
+            raise HTTPException(status_code=404, detail=f"No RCR found for ruleset {ruleset_id}")
+
+        # Convert ObjectId to string for JSON serialization
+        kpi['_id'] = str(kpi['_id'])
+        return kpi
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving RCR: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/kpi/dqcs/{ruleset_id}")
+async def get_latest_dqcs(ruleset_id: str):
+    """Get latest Data Quality Confidence Score for a ruleset."""
+    try:
+        from kg_builder.services.kpi_service import KPIService
+
+        kpi_service = KPIService()
+        kpi = kpi_service.get_latest_kpi("DATA_QUALITY_CONFIDENCE_SCORE", ruleset_id)
+        kpi_service.close()
+
+        if not kpi:
+            raise HTTPException(status_code=404, detail=f"No DQCS found for ruleset {ruleset_id}")
+
+        kpi['_id'] = str(kpi['_id'])
+        return kpi
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving DQCS: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/kpi/rei/{ruleset_id}")
+async def get_latest_rei(ruleset_id: str):
+    """Get latest Reconciliation Efficiency Index for a ruleset."""
+    try:
+        from kg_builder.services.kpi_service import KPIService
+
+        kpi_service = KPIService()
+        kpi = kpi_service.get_latest_kpi("RECONCILIATION_EFFICIENCY_INDEX", ruleset_id)
+        kpi_service.close()
+
+        if not kpi:
+            raise HTTPException(status_code=404, detail=f"No REI found for ruleset {ruleset_id}")
+
+        kpi['_id'] = str(kpi['_id'])
+        return kpi
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving REI: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 

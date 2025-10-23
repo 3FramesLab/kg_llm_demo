@@ -60,11 +60,21 @@ class SchemaParser:
     
     @staticmethod
     def extract_entities(schema: DatabaseSchema) -> List[GraphNode]:
-        """Extract entities (nodes) from schema."""
+        """Extract entities (nodes) from schema - only tables, not columns."""
         nodes = []
-        
+
         for table_name, table in schema.tables.items():
-            # Create node for the table itself
+            # Create node for the table itself with all column metadata
+            columns_metadata = [
+                {
+                    "name": col.name,
+                    "type": col.type,
+                    "nullable": col.nullable,
+                    "primary_key": col.primary_key
+                }
+                for col in table.columns
+            ]
+
             table_node = GraphNode(
                 id=f"table_{table_name}",
                 label=table_name,
@@ -72,35 +82,20 @@ class SchemaParser:
                     "type": "Table",
                     "column_count": len(table.columns),
                     "primary_keys": table.primary_keys,
+                    "foreign_keys": [fk for fk in table.foreign_keys],  # Store foreign key info
+                    "columns": columns_metadata,  # Store all column info as table properties
                 },
                 source_table=table_name
             )
             nodes.append(table_node)
-            
-            # Create nodes for important columns (UIDs, IDs, foreign keys)
-            for column in table.columns:
-                if SchemaParser._is_important_column(column):
-                    col_node = GraphNode(
-                        id=f"column_{table_name}_{column.name}",
-                        label=f"{table_name}.{column.name}",
-                        properties={
-                            "type": "Column",
-                            "column_type": column.type,
-                            "nullable": column.nullable,
-                            "primary_key": column.primary_key,
-                        },
-                        source_table=table_name,
-                        source_column=column.name
-                    )
-                    nodes.append(col_node)
-        
+
         return nodes
     
     @staticmethod
     def extract_relationships(schema: DatabaseSchema, nodes: List[GraphNode]) -> List[GraphRelationship]:
-        """Extract relationships from schema."""
+        """Extract relationships from schema - only table-to-table relationships."""
         relationships = []
-        
+
         for table_name, table in schema.tables.items():
             # Relationships from foreign keys
             for fk in table.foreign_keys:
@@ -119,7 +114,7 @@ class SchemaParser:
                         source_column=fk.get("columns", [None])[0]
                     )
                     relationships.append(rel)
-            
+
             # Relationships from UID/ID columns (inferred)
             for column in table.columns:
                 if SchemaParser._is_reference_column(column):
@@ -139,21 +134,7 @@ class SchemaParser:
                             source_column=column.name
                         )
                         relationships.append(rel)
-            
-            # Column belongs to table relationships
-            for column in table.columns:
-                if SchemaParser._is_important_column(column):
-                    source_id = f"column_{table_name}_{column.name}"
-                    target_id = f"table_{table_name}"
-                    rel = GraphRelationship(
-                        source_id=source_id,
-                        target_id=target_id,
-                        relationship_type="BELONGS_TO",
-                        properties={"column_name": column.name},
-                        source_column=column.name
-                    )
-                    relationships.append(rel)
-        
+
         return relationships
     
     @staticmethod

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Container,
   Typography,
@@ -27,6 +27,7 @@ import {
   AccordionSummary,
   AccordionDetails,
   Slider,
+  MenuItem,
 } from '@mui/material';
 import { Add, Refresh, Download, Delete, ExpandMore } from '@mui/icons-material';
 import {
@@ -60,6 +61,13 @@ export default function Reconciliation() {
   useEffect(() => {
     loadInitialData();
   }, []);
+
+  // Auto-load first ruleset when switching to View Rules tab (only if no ruleset selected)
+  useEffect(() => {
+    if (tabValue === 1 && !selectedRuleset && rulesets.length > 0) {
+      handleLoadRuleset(rulesets[0].ruleset_id);
+    }
+  }, [tabValue, rulesets]);
 
   const loadInitialData = async () => {
     try {
@@ -97,11 +105,15 @@ export default function Reconciliation() {
 
   const handleLoadRuleset = async (rulesetId) => {
     setLoading(true);
+    setError(null);
     try {
       const response = await getRuleset(rulesetId);
-      setSelectedRuleset(response.data);
+      // Backend returns { success: true, ruleset: {...} }
+      const ruleset = response.data.ruleset || response.data;
+      setSelectedRuleset(ruleset);
       setTabValue(1);
     } catch (err) {
+      console.error('Error loading ruleset:', err);
       setError(err.response?.data?.detail || err.message);
     } finally {
       setLoading(false);
@@ -357,7 +369,12 @@ export default function Reconciliation() {
       {tabValue === 1 && (
         <Grid container spacing={3}>
           <Grid item xs={12}>
-            {selectedRuleset ? (
+            {loading && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                <CircularProgress />
+              </Box>
+            )}
+            {!loading && selectedRuleset ? (
               <>
                 <Paper sx={{ p: 3, mb: 3 }}>
                   <Typography variant="h6" gutterBottom>
@@ -441,11 +458,13 @@ export default function Reconciliation() {
                   </Table>
                 </TableContainer>
               </>
-            ) : (
+            ) : !loading ? (
               <Alert severity="info">
-                Select a ruleset from the "Manage Rulesets" tab to view its rules
+                {rulesets.length === 0
+                  ? 'No rulesets available. Generate rules using the "Generate Rules" tab.'
+                  : 'Click "View" on a ruleset in the "Manage" tab to view its rules.'}
               </Alert>
-            )}
+            ) : null}
           </Grid>
         </Grid>
       )}

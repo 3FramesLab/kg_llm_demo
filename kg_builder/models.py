@@ -399,3 +399,76 @@ class NLRelationshipResponse(BaseModel):
     errors: List[str] = Field(default=[], description="Error messages for failed definitions")
     processing_time_ms: float = Field(..., description="Time taken to process all definitions")
 
+
+# KPI Models
+class KPIMetrics(BaseModel):
+    """Base model for KPI metrics."""
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    ruleset_id: str
+    ruleset_name: str
+    execution_id: str
+
+
+class ReconciliationCoverageRateKPI(KPIMetrics):
+    """Reconciliation Coverage Rate KPI."""
+    matched_records: int
+    unmatched_source: int
+    total_source_records: int
+    coverage_rate: float = Field(..., ge=0, le=100, description="Coverage percentage 0-100")
+    status: str = Field(..., description="HEALTHY, WARNING, or CRITICAL")
+    source_kg: str
+    source_schemas: List[str]
+
+
+class DataQualityConfidenceScoreKPI(KPIMetrics):
+    """Data Quality Confidence Score KPI."""
+    overall_confidence_score: float = Field(..., ge=0, le=1, description="Confidence score 0-1")
+    total_matched_records: int
+    high_confidence_matches: int
+    medium_confidence_matches: int
+    low_confidence_matches: int
+    status: str = Field(..., description="GOOD, ACCEPTABLE, or POOR")
+    source_kg: str
+
+
+class ReconciliationEfficiencyIndexKPI(KPIMetrics):
+    """Reconciliation Efficiency Index KPI."""
+    efficiency_index: float = Field(..., ge=0, description="Efficiency score")
+    match_success_rate: float = Field(..., ge=0, le=100)
+    rule_utilization: float = Field(..., ge=0, le=100)
+    speed_factor: float = Field(..., ge=0, le=100)
+    total_records_processed: int
+    execution_time_ms: float
+    records_per_second: float
+    status: str = Field(..., description="EXCELLENT, GOOD, ACCEPTABLE, WARNING, or CRITICAL")
+    source_kg: str
+
+
+class KPICalculationRequest(BaseModel):
+    """Request to calculate KPIs for an execution."""
+    execution_id: str
+    ruleset_id: str
+    ruleset_name: str
+    source_kg: str
+    source_schemas: List[str]
+    matched_count: int
+    total_source_count: int
+    matched_records: List[Dict[str, Any]] = []
+    active_rules: int
+    total_rules: int
+    execution_time_ms: float
+    resource_metrics: Optional[Dict[str, Any]] = None
+
+
+class KPICalculationResponse(BaseModel):
+    """Response from KPI calculation."""
+    success: bool
+    rcr_id: Optional[str] = None
+    dqcs_id: Optional[str] = None
+    rei_id: Optional[str] = None
+    rcr_value: Optional[float] = None
+    dqcs_value: Optional[float] = None
+    rei_value: Optional[float] = None
+    error: Optional[str] = None
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+

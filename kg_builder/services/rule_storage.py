@@ -117,7 +117,7 @@ class ReconciliationRuleStorage:
                         'ruleset_id': data.get('ruleset_id'),
                         'ruleset_name': data.get('ruleset_name'),
                         'schemas': data.get('schemas', []),
-                        'rules_count': len(data.get('rules', [])),
+                        'rule_count': len(data.get('rules', [])),  # Changed from rules_count to rule_count for frontend compatibility
                         'created_at': data.get('created_at'),
                         'generated_from_kg': data.get('generated_from_kg')
                     }
