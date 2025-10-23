@@ -1,0 +1,360 @@
+2025-10-24 00:48:16,838 - INFO - 
+================================================================================
+2025-10-24 00:48:16,839 - INFO - STARTING END-TO-END RECONCILIATION WORKFLOW
+2025-10-24 00:48:16,839 - INFO - ================================================================================
+2025-10-24 00:48:16,839 - INFO - 
+================================================================================
+2025-10-24 00:48:16,839 - INFO - STEP 1: SCHEMA LOADING
+2025-10-24 00:48:16,839 - INFO - ================================================================================
+2025-10-24 00:48:16,840 - INFO - Found 2 schemas: ['orderMgmt-catalog', 'qinspect-designcode']
+2025-10-24 00:48:16,841 - INFO - [OK] Loaded schema: orderMgmt-catalog - Tables: 1
+2025-10-24 00:48:16,847 - INFO - [OK] Loaded schema: qinspect-designcode - Tables: 1
+2025-10-24 00:48:16,847 - INFO - [OK] Successfully loaded 2 schemas
+2025-10-24 00:48:16,848 - INFO - 
+================================================================================
+2025-10-24 00:48:16,848 - INFO - STEP 2: KNOWLEDGE GRAPH CREATION
+2025-10-24 00:48:16,848 - INFO - ================================================================================
+2025-10-24 00:48:16,848 - INFO - Creating KG 'kg_20251024_004816' from schemas: ['orderMgmt-catalog', 'qinspect-designcode']
+2025-10-24 00:48:16,848 - INFO - Loaded schema: orderMgmt-catalog
+2025-10-24 00:48:16,849 - INFO - Loaded schema: qinspect-designcode
+2025-10-24 00:48:16,850 - INFO - Built merged KG 'kg_20251024_004816' from 2 schemas with 2 nodes and 0 relationships
+2025-10-24 00:48:16,850 - INFO - [OK] KG created: kg_20251024_004816
+2025-10-24 00:48:16,850 - INFO -   - Nodes: 2
+2025-10-24 00:48:16,850 - INFO -   - Relationships: 0
+2025-10-24 00:48:16,850 - INFO - 
+================================================================================
+2025-10-24 00:48:16,850 - INFO - STEP 3: RECONCILIATION RULES GENERATION
+2025-10-24 00:48:16,850 - INFO - ================================================================================
+2025-10-24 00:48:19,542 - ERROR - Failed to connect to FalkorDB: Error 11001 connecting to falkordb:6379. getaddrinfo failed.
+2025-10-24 00:48:19,542 - INFO - Generating reconciliation rules from KG 'kg_20251024_004816'
+2025-10-24 00:48:19,543 - INFO - Generating reconciliation rules from KG 'kg_20251024_004816'
+2025-10-24 00:48:19,544 - ERROR - Error querying KG relationships: 'FalkorDBBackend' object has no attribute 'execute_query'
+2025-10-24 00:48:19,549 - INFO - Generated 19 reconciliation rules (19 pattern-based, 0 LLM-based)
+2025-10-24 00:48:19,549 - INFO - [OK] Reconciliation rules generated
+2025-10-24 00:48:19,549 - INFO -   - Ruleset ID: RECON_07C55A55
+2025-10-24 00:48:19,549 - INFO -   - Total Rules: 19
+2025-10-24 00:48:19,549 - INFO -   - Rule 1: Name_Match_catalog_id (confidence: 0.75)
+2025-10-24 00:48:19,549 - INFO -   - Rule 2: Name_Match_catalog_code (confidence: 0.75)
+2025-10-24 00:48:19,549 - INFO -   - Rule 3: Name_Match_catalog_sub_cat_uid (confidence: 0.75)
+2025-10-24 00:48:19,549 - INFO -   - ... and 16 more rules
+2025-10-24 00:48:19,551 - INFO - Saved ruleset to: data\reconciliation_rules\RECON_07C55A55.json
+2025-10-24 00:48:19,551 - INFO - 
+================================================================================
+2025-10-24 00:48:19,551 - INFO - STEP 4: DATABASE CONNECTION VERIFICATION
+2025-10-24 00:48:19,551 - INFO - ================================================================================
+2025-10-24 00:48:19,551 - INFO - Source Database: mysql @ localhost:3306/ordermgmt
+2025-10-24 00:48:19,551 - INFO - Target Database: mysql @ localhost:3306/newamazon
+2025-10-24 00:48:19,551 - INFO - [OK] Database configurations loaded successfully
+2025-10-24 00:48:19,551 - INFO - 
+================================================================================
+2025-10-24 00:48:19,551 - INFO - STEP 5: RULE EXECUTION
+2025-10-24 00:48:19,551 - INFO - ================================================================================
+2025-10-24 00:48:19,551 - INFO - ReconciliationRuleStorage initialized at: D:\learning\dq-poc\data\reconciliation_rules
+2025-10-24 00:48:19,551 - INFO - Executing ruleset 'RECON_07C55A55' against databases
+2025-10-24 00:48:19,552 - INFO - Record limit: 100
+2025-10-24 00:48:19,552 - INFO - Executing ruleset 'RECON_07C55A55' with limit=100
+2025-10-24 00:48:19,568 - INFO - Loaded ruleset 'RECON_07C55A55' with 19 rules
+2025-10-24 00:48:31,294 - ERROR - Error executing matched query: com.mysql.cj.jdbc.exceptions.CommunicationsException: Communications link failure
+
+The last packet successfully received from the server was 10,021 milliseconds ago. The last packet sent successfully to the server was 10,022 milliseconds ago.
+2025-10-24 00:48:31,296 - ERROR - Error executing unmatched source query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:31,947 - ERROR - Error executing matched query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:31,947 - ERROR - Error executing unmatched source query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:32,672 - ERROR - Error executing matched query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:32,673 - ERROR - Error executing unmatched source query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:33,159 - ERROR - Error executing matched query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:33,160 - ERROR - Error executing unmatched source query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:33,635 - ERROR - Error executing matched query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:33,635 - ERROR - Error executing unmatched source query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:33,792 - ERROR - Error executing matched query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:33,793 - ERROR - Error executing unmatched source query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:33,944 - ERROR - Error executing matched query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:33,944 - ERROR - Error executing unmatched source query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:34,092 - ERROR - Error executing matched query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:34,093 - ERROR - Error executing unmatched source query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:34,227 - ERROR - Error executing matched query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:34,227 - ERROR - Error executing unmatched source query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:34,366 - ERROR - Error executing matched query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:34,366 - ERROR - Error executing unmatched source query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:34,694 - ERROR - Error executing matched query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:34,694 - ERROR - Error executing unmatched source query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:34,804 - ERROR - Error executing matched query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:34,804 - ERROR - Error executing unmatched source query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:34,893 - ERROR - Error executing matched query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:34,893 - ERROR - Error executing unmatched source query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:35,015 - ERROR - Error executing matched query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:35,015 - ERROR - Error executing unmatched source query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:35,164 - ERROR - Error executing matched query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:35,165 - ERROR - Error executing unmatched source query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:35,268 - ERROR - Error executing matched query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:35,268 - ERROR - Error executing unmatched source query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:35,379 - ERROR - Error executing matched query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:35,380 - ERROR - Error executing unmatched source query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:35,525 - ERROR - Error executing matched query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:35,526 - ERROR - Error executing unmatched source query: <built-in method __subclasscheck__ of _jpype._JClass object at 0x0000020F022E54C0> returned a result with an exception set
+2025-10-24 00:48:35,680 - INFO - Execution complete: 0 matched, 100 unmatched source, 1900 unmatched target
+2025-10-24 00:48:35,682 - INFO - Storing reconciliation results in MongoDB...
+2025-10-24 00:48:35,682 - INFO - Connecting to MongoDB at mongodb://localhost:27017/
+2025-10-24 00:48:35,713 - INFO - Connected to MongoDB database: reconciliation
+2025-10-24 00:48:35,752 - INFO - Stored reconciliation result in MongoDB: document_id=68fa7f8bbf48134baa707241, matched=0, unmatched_source=100, unmatched_target=1900
+2025-10-24 00:48:35,752 - INFO - Results stored in MongoDB with document ID: 68fa7f8bbf48134baa707241
+2025-10-24 00:48:35,758 - INFO - [OK] Rule execution completed in 16.21s
+2025-10-24 00:48:35,759 - INFO -   - Matched Records: 0
+2025-10-24 00:48:35,759 - INFO -   - Unmatched Source: 100
+2025-10-24 00:48:35,759 - INFO -   - Unmatched Target: 1900
+2025-10-24 00:48:35,759 - INFO -   - Total Source Records: 100
+2025-10-24 00:48:35,759 - INFO -   - Storage Location: mongodb
+2025-10-24 00:48:35,759 - INFO -   - Coverage Rate: 0.00%
+2025-10-24 00:48:35,759 - INFO - 
+================================================================================
+2025-10-24 00:48:35,759 - INFO - STEP 6: KPI CALCULATION
+2025-10-24 00:48:35,759 - INFO - ================================================================================
+2025-10-24 00:48:35,777 - INFO - KPI Service connected to MongoDB
+2025-10-24 00:48:35,777 - INFO - Calculating KPIs for ruleset 'RECON_07C55A55'
+2025-10-24 00:48:35,778 - INFO - Stored RECONCILIATION_COVERAGE_RATE with ID: 68fa7f8bbf48134baa707243
+2025-10-24 00:48:35,778 - INFO - [OK] RCR: 0.00% - MongoDB ID: 68fa7f8bbf48134baa707243
+2025-10-24 00:48:35,779 - INFO - Stored DATA_QUALITY_CONFIDENCE_SCORE with ID: 68fa7f8bbf48134baa707244
+2025-10-24 00:48:35,779 - INFO - [OK] DQCS: 0.000 - MongoDB ID: 68fa7f8bbf48134baa707244
+2025-10-24 00:48:35,779 - INFO - Stored RECONCILIATION_EFFICIENCY_INDEX with ID: 68fa7f8bbf48134baa707245
+2025-10-24 00:48:35,779 - INFO - [OK] REI: 0.00 - MongoDB ID: 68fa7f8bbf48134baa707245
+2025-10-24 00:48:35,780 - INFO - 
+================================================================================
+2025-10-24 00:48:35,780 - INFO - END-TO-END RECONCILIATION WORKFLOW - SUMMARY
+2025-10-24 00:48:35,780 - INFO - ================================================================================
+2025-10-24 00:48:35,780 - INFO - Total Execution Time: 18.94 seconds
+2025-10-24 00:48:35,780 - INFO - Schemas Processed: 2
+2025-10-24 00:48:35,780 - INFO - Rules Generated: 19
+2025-10-24 00:48:35,780 - INFO - Records Matched: 0/100
+2025-10-24 00:48:35,780 - INFO - KPI Results:
+2025-10-24 00:48:35,780 - INFO -   - RCR: 0.00%
+2025-10-24 00:48:35,780 - INFO -   - DQCS: 0.000
+2025-10-24 00:48:35,780 - INFO -   - REI: 0.00
+2025-10-24 00:48:35,780 - INFO - [OK] WORKFLOW COMPLETED SUCCESSFULLY
+2025-10-24 00:48:35,780 - INFO - ================================================================================
+2025-10-24 00:53:24,760 - INFO - 
+================================================================================
+2025-10-24 00:53:24,760 - INFO - STARTING END-TO-END RECONCILIATION WORKFLOW
+2025-10-24 00:53:24,760 - INFO - ================================================================================
+2025-10-24 00:53:24,760 - INFO - 
+================================================================================
+2025-10-24 00:53:24,760 - INFO - STEP 1: SCHEMA LOADING
+2025-10-24 00:53:24,760 - INFO - ================================================================================
+2025-10-24 00:53:24,760 - INFO - Found 2 schemas: ['orderMgmt-catalog', 'qinspect-designcode']
+2025-10-24 00:53:24,761 - INFO - [OK] Loaded schema: orderMgmt-catalog - Tables: 1
+2025-10-24 00:53:24,762 - INFO - [OK] Loaded schema: qinspect-designcode - Tables: 1
+2025-10-24 00:53:24,762 - INFO - [OK] Successfully loaded 2 schemas
+2025-10-24 00:53:24,762 - INFO - 
+================================================================================
+2025-10-24 00:53:24,762 - INFO - STEP 2: KNOWLEDGE GRAPH CREATION
+2025-10-24 00:53:24,762 - INFO - ================================================================================
+2025-10-24 00:53:24,762 - INFO - Creating KG 'kg_20251024_005324' from schemas: ['orderMgmt-catalog', 'qinspect-designcode']
+2025-10-24 00:53:24,763 - INFO - Loaded schema: orderMgmt-catalog
+2025-10-24 00:53:24,763 - INFO - Loaded schema: qinspect-designcode
+2025-10-24 00:53:24,764 - INFO - Built merged KG 'kg_20251024_005324' from 2 schemas with 2 nodes and 0 relationships
+2025-10-24 00:53:24,764 - INFO - [OK] KG created: kg_20251024_005324
+2025-10-24 00:53:24,764 - INFO -   - Nodes: 2
+2025-10-24 00:53:24,764 - INFO -   - Relationships: 0
+2025-10-24 00:53:24,765 - INFO - 
+================================================================================
+2025-10-24 00:53:24,765 - INFO - STEP 3: RECONCILIATION RULES GENERATION
+2025-10-24 00:53:24,765 - INFO - ================================================================================
+2025-10-24 00:53:27,469 - ERROR - Failed to connect to FalkorDB: Error 11001 connecting to falkordb:6379. getaddrinfo failed.
+2025-10-24 00:53:27,470 - INFO - Generating reconciliation rules from KG 'kg_20251024_005324'
+2025-10-24 00:53:27,470 - INFO - Generating reconciliation rules from KG 'kg_20251024_005324'
+2025-10-24 00:53:27,471 - DEBUG - Loaded schema: orderMgmt-catalog
+2025-10-24 00:53:27,472 - DEBUG - Loaded schema: qinspect-designcode
+2025-10-24 00:53:27,473 - ERROR - Error querying KG relationships: 'FalkorDBBackend' object has no attribute 'execute_query'
+2025-10-24 00:53:27,482 - DEBUG - Generated 19 pattern-based rules
+2025-10-24 00:53:27,483 - INFO - Generated 19 reconciliation rules (19 pattern-based, 0 LLM-based)
+2025-10-24 00:53:27,483 - INFO - [OK] Reconciliation rules generated
+2025-10-24 00:53:27,483 - INFO -   - Ruleset ID: RECON_513A5F5B
+2025-10-24 00:53:27,483 - INFO -   - Total Rules: 19
+2025-10-24 00:53:27,484 - INFO -   - Rule 1: Name_Match_catalog_id (confidence: 0.75)
+2025-10-24 00:53:27,484 - INFO -   - Rule 2: Name_Match_catalog_code (confidence: 0.75)
+2025-10-24 00:53:27,484 - INFO -   - Rule 3: Name_Match_catalog_sub_cat_uid (confidence: 0.75)
+2025-10-24 00:53:27,484 - INFO -   - ... and 16 more rules
+2025-10-24 00:53:27,488 - INFO - Saved ruleset to: data\reconciliation_rules\RECON_513A5F5B.json
+2025-10-24 00:53:27,488 - INFO - 
+================================================================================
+2025-10-24 00:53:27,488 - INFO - STEP 4: DATABASE CONNECTION VERIFICATION
+2025-10-24 00:53:27,488 - INFO - ================================================================================
+2025-10-24 00:53:27,488 - INFO - Source Database: mysql @ localhost:3306/ordermgmt
+2025-10-24 00:53:27,488 - INFO - Target Database: mysql @ localhost:3306/newamazon
+2025-10-24 00:53:27,489 - INFO - [OK] Database configurations loaded successfully
+2025-10-24 00:53:27,489 - INFO - 
+================================================================================
+2025-10-24 00:53:27,489 - INFO - STEP 5: RULE EXECUTION
+2025-10-24 00:53:27,489 - INFO - ================================================================================
+2025-10-24 00:53:27,489 - INFO - ReconciliationRuleStorage initialized at: D:\learning\dq-poc\data\reconciliation_rules
+2025-10-24 00:53:27,489 - INFO - Executing ruleset 'RECON_513A5F5B' against databases
+2025-10-24 00:53:27,489 - INFO - Record limit: 100
+2025-10-24 00:53:27,490 - INFO - Executing ruleset 'RECON_513A5F5B' with limit=100
+2025-10-24 00:53:27,508 - INFO - Loaded ruleset 'RECON_513A5F5B' with 19 rules
+2025-10-24 00:53:27,508 - DEBUG - Connecting to source database...
+2025-10-24 00:53:27,509 - DEBUG - Connecting to jdbc:mysql://localhost:3306/ordermgmt?connectTimeout=60000&socketTimeout=120000&autoReconnect=true with driver com.mysql.cj.jdbc.Driver
+2025-10-24 00:53:29,556 - DEBUG - Database connection established
+2025-10-24 00:53:29,556 - DEBUG - Connecting to target database...
+2025-10-24 00:53:29,557 - DEBUG - Connecting to jdbc:mysql://localhost:3306/newamazon?connectTimeout=60000&socketTimeout=120000&autoReconnect=true with driver com.mysql.cj.jdbc.Driver
+2025-10-24 00:53:29,599 - DEBUG - Database connection established
+2025-10-24 00:53:29,600 - DEBUG - Executing rule: Name_Match_catalog_id
+2025-10-24 00:53:29,600 - DEBUG - [MATCHED QUERY] Rule: Name_Match_catalog_id
+2025-10-24 00:53:29,600 - DEBUG - [MATCHED QUERY] SQL:
+
+            SELECT s.*, t.*
+            FROM `ordermgmt`.`catalog` s
+            INNER JOIN `newamazon`.`design_code_master` t
+                ON s.id = t.id
+            LIMIT 100
+            
+2025-10-24 00:53:30,002 - DEBUG - Found 0 matched records for rule Name_Match_catalog_id
+2025-10-24 00:53:30,003 - DEBUG - [UNMATCHED SOURCE QUERY] Rule: Name_Match_catalog_id
+2025-10-24 00:53:30,003 - DEBUG - [UNMATCHED SOURCE QUERY] SQL:
+
+            SELECT s.*
+            FROM `ordermgmt`.`catalog` s
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM `newamazon`.`design_code_master` t
+                WHERE s.id = t.id
+            )
+            LIMIT 100
+            
+2025-10-24 00:53:30,204 - DEBUG - Found 100 unmatched source records for rule Name_Match_catalog_id
+2025-10-24 00:53:30,204 - DEBUG - [UNMATCHED TARGET QUERY] Rule: Name_Match_catalog_id
+2025-10-24 00:53:30,204 - DEBUG - [UNMATCHED TARGET QUERY] SQL:
+
+            SELECT t.*
+            FROM `newamazon`.`design_code_master` t
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM `ordermgmt`.`catalog` s
+                WHERE s.id = t.id
+            )
+            LIMIT 100
+            
+2025-10-24 00:53:30,302 - DEBUG - Found 100 unmatched target records for rule Name_Match_catalog_id
+2025-10-24 00:53:30,302 - DEBUG - Executing rule: Name_Match_catalog_code
+2025-10-24 00:53:30,302 - DEBUG - [MATCHED QUERY] Rule: Name_Match_catalog_code
+2025-10-24 00:53:30,302 - DEBUG - [MATCHED QUERY] SQL:
+
+            SELECT s.*, t.*
+            FROM `ordermgmt`.`catalog` s
+            INNER JOIN `newamazon`.`design_code_master` t
+                ON s.code = t.code
+            LIMIT 100
+            
+2025-10-24 00:57:30,355 - ERROR - Error executing matched query: com.mysql.cj.jdbc.exceptions.CommunicationsException: Communications link failure
+
+The last packet successfully received from the server was 240,027 milliseconds ago. The last packet sent successfully to the server was 240,030 milliseconds ago.
+2025-10-24 00:57:30,356 - DEBUG - [UNMATCHED SOURCE QUERY] Rule: Name_Match_catalog_code
+2025-10-24 00:57:30,356 - DEBUG - [UNMATCHED SOURCE QUERY] SQL:
+
+            SELECT s.*
+            FROM `ordermgmt`.`catalog` s
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM `newamazon`.`design_code_master` t
+                WHERE s.code = t.code
+            )
+            LIMIT 100
+            
+2025-10-24 00:57:32,071 - DEBUG - Found 100 unmatched source records for rule Name_Match_catalog_code
+2025-10-24 00:57:32,072 - DEBUG - [UNMATCHED TARGET QUERY] Rule: Name_Match_catalog_code
+2025-10-24 00:57:32,072 - DEBUG - [UNMATCHED TARGET QUERY] SQL:
+
+            SELECT t.*
+            FROM `newamazon`.`design_code_master` t
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM `ordermgmt`.`catalog` s
+                WHERE s.code = t.code
+            )
+            LIMIT 100
+            
+2025-10-24 00:57:32,847 - DEBUG - Found 100 unmatched target records for rule Name_Match_catalog_code
+2025-10-24 00:57:32,847 - DEBUG - Executing rule: Name_Match_catalog_sub_cat_uid
+2025-10-24 00:57:32,848 - DEBUG - [MATCHED QUERY] Rule: Name_Match_catalog_sub_cat_uid
+2025-10-24 00:57:32,848 - DEBUG - [MATCHED QUERY] SQL:
+
+            SELECT s.*, t.*
+            FROM `ordermgmt`.`catalog` s
+            INNER JOIN `newamazon`.`design_code_master` t
+                ON s.sub_cat_uid = t.sub_category_uid
+            LIMIT 100
+            
+2025-10-24 00:57:32,971 - DEBUG - Found 0 matched records for rule Name_Match_catalog_sub_cat_uid
+2025-10-24 00:57:32,971 - DEBUG - [UNMATCHED SOURCE QUERY] Rule: Name_Match_catalog_sub_cat_uid
+2025-10-24 00:57:32,971 - DEBUG - [UNMATCHED SOURCE QUERY] SQL:
+
+            SELECT s.*
+            FROM `ordermgmt`.`catalog` s
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM `newamazon`.`design_code_master` t
+                WHERE s.sub_cat_uid = t.sub_category_uid
+            )
+            LIMIT 100
+            
+2025-10-24 00:57:33,104 - DEBUG - Found 100 unmatched source records for rule Name_Match_catalog_sub_cat_uid
+2025-10-24 00:57:33,104 - DEBUG - [UNMATCHED TARGET QUERY] Rule: Name_Match_catalog_sub_cat_uid
+2025-10-24 00:57:33,104 - DEBUG - [UNMATCHED TARGET QUERY] SQL:
+
+            SELECT t.*
+            FROM `newamazon`.`design_code_master` t
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM `ordermgmt`.`catalog` s
+                WHERE s.sub_cat_uid = t.sub_category_uid
+            )
+            LIMIT 100
+            
+2025-10-24 00:57:33,830 - DEBUG - Found 100 unmatched target records for rule Name_Match_catalog_sub_cat_uid
+2025-10-24 00:57:33,830 - DEBUG - Executing rule: Name_Match_catalog_tenant_uid
+2025-10-24 00:57:33,830 - DEBUG - [MATCHED QUERY] Rule: Name_Match_catalog_tenant_uid
+2025-10-24 00:57:33,830 - DEBUG - [MATCHED QUERY] SQL:
+
+            SELECT s.*, t.*
+            FROM `ordermgmt`.`catalog` s
+            INNER JOIN `newamazon`.`design_code_master` t
+                ON s.tenant_uid = t.parent_tenant_uid
+            LIMIT 100
+            
+2025-10-24 01:01:33,845 - ERROR - Error executing matched query: com.mysql.cj.jdbc.exceptions.CommunicationsException: Communications link failure
+
+The last packet successfully received from the server was 240,012 milliseconds ago. The last packet sent successfully to the server was 240,014 milliseconds ago.
+2025-10-24 01:01:33,845 - DEBUG - [UNMATCHED SOURCE QUERY] Rule: Name_Match_catalog_tenant_uid
+2025-10-24 01:01:33,846 - DEBUG - [UNMATCHED SOURCE QUERY] SQL:
+
+            SELECT s.*
+            FROM `ordermgmt`.`catalog` s
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM `newamazon`.`design_code_master` t
+                WHERE s.tenant_uid = t.parent_tenant_uid
+            )
+            LIMIT 100
+            
+2025-10-24 01:01:34,901 - DEBUG - Found 100 unmatched source records for rule Name_Match_catalog_tenant_uid
+2025-10-24 01:01:34,901 - DEBUG - [UNMATCHED TARGET QUERY] Rule: Name_Match_catalog_tenant_uid
+2025-10-24 01:01:34,902 - DEBUG - [UNMATCHED TARGET QUERY] SQL:
+
+            SELECT t.*
+            FROM `newamazon`.`design_code_master` t
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM `ordermgmt`.`catalog` s
+                WHERE s.tenant_uid = t.parent_tenant_uid
+            )
+            LIMIT 100
+            
+2025-10-24 01:01:35,574 - DEBUG - Found 100 unmatched target records for rule Name_Match_catalog_tenant_uid
+2025-10-24 01:01:35,574 - DEBUG - Executing rule: Name_Match_catalog_tenant_uid
+2025-10-24 01:01:35,574 - DEBUG - [MATCHED QUERY] Rule: Name_Match_catalog_tenant_uid
+2025-10-24 01:01:35,574 - DEBUG - [MATCHED QUERY] SQL:
+
+            SELECT s.*, t.*
+            FROM `ordermgmt`.`catalog` s
+            INNER JOIN `newamazon`.`design_code_master` t
+                ON s.tenant_uid = t.tenant_uid
+            LIMIT 100
+            

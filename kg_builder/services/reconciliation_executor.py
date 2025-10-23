@@ -37,6 +37,39 @@ class ReconciliationExecutor:
         self.jdbc_drivers_path = Path(JDBC_DRIVERS_PATH) if JDBC_DRIVERS_PATH else None
         self.storage = get_rule_storage()
 
+    @staticmethod
+    def _quote_identifier(identifier: str, db_type: str = "mysql") -> str:
+        """
+        Quote database identifiers (schema, table, column names) based on database type.
+
+        Args:
+            identifier: The identifier to quote (schema, table, or column name)
+            db_type: Database type (mysql, oracle, postgresql, sqlserver)
+
+        Returns:
+            Quoted identifier appropriate for the database type
+        """
+        if not identifier:
+            return identifier
+
+        db_type = db_type.lower()
+
+        if db_type == "mysql":
+            # MySQL uses backticks
+            return f"`{identifier}`"
+        elif db_type == "oracle":
+            # Oracle uses double quotes
+            return f'"{identifier}"'
+        elif db_type == "postgresql":
+            # PostgreSQL uses double quotes
+            return f'"{identifier}"'
+        elif db_type == "sqlserver":
+            # SQL Server uses square brackets
+            return f"[{identifier}]"
+        else:
+            # Default to backticks (MySQL style)
+            return f"`{identifier}`"
+
     def execute_ruleset(
         self,
         ruleset_id: str,
@@ -103,19 +136,19 @@ class ReconciliationExecutor:
                 # Execute matched records query
                 if include_matched:
                     matched = self._execute_matched_query(
-                        source_conn, target_conn, rule, limit
+                        source_conn, target_conn, rule, limit, source_db_config.db_type
                     )
                     all_matched.extend(matched)
 
                 # Execute unmatched queries
                 if include_unmatched:
                     unmatched_src = self._execute_unmatched_source_query(
-                        source_conn, target_conn, rule, limit
+                        source_conn, target_conn, rule, limit, source_db_config.db_type
                     )
                     all_unmatched_source.extend(unmatched_src)
 
                     unmatched_tgt = self._execute_unmatched_target_query(
-                        source_conn, target_conn, rule, limit
+                        source_conn, target_conn, rule, limit, source_db_config.db_type
                     )
                     all_unmatched_target.extend(unmatched_tgt)
 
@@ -217,7 +250,8 @@ class ReconciliationExecutor:
         source_conn: Any,
         target_conn: Any,
         rule: ReconciliationRule,
-        limit: int
+        limit: int,
+        db_type: str = "mysql"
     ) -> List[MatchedRecord]:
         """Execute query to find matched records."""
         try:
@@ -231,15 +265,27 @@ class ReconciliationExecutor:
 
             join_condition = " AND ".join(join_conditions)
 
+            # Quote identifiers based on database type
+            source_schema_quoted = self._quote_identifier(rule.source_schema, db_type)
+            source_table_quoted = self._quote_identifier(rule.source_table, db_type)
+            target_schema_quoted = self._quote_identifier(rule.target_schema, db_type)
+            target_table_quoted = self._quote_identifier(rule.target_table, db_type)
+
             # For matched records, we need to join on the same connection
             # Assuming both schemas are on the same database for now
+            # Use LIMIT for MySQL, ROWNUM for Oracle
+            limit_clause = f"LIMIT {limit}" if db_type.lower() == "mysql" else f"WHERE ROWNUM <= {limit}"
+
             query = f"""
             SELECT s.*, t.*
-            FROM {rule.source_schema}.{rule.source_table} s
-            INNER JOIN {rule.target_schema}.{rule.target_table} t
+            FROM {source_schema_quoted}.{source_table_quoted} s
+            INNER JOIN {target_schema_quoted}.{target_table_quoted} t
                 ON {join_condition}
-            WHERE ROWNUM <= {limit}
+            {limit_clause}
             """
+
+            logger.debug(f"[MATCHED QUERY] Rule: {rule.rule_name}")
+            logger.debug(f"[MATCHED QUERY] SQL:\n{query}")
 
             cursor = source_conn.cursor()
             cursor.execute(query)
@@ -279,7 +325,8 @@ class ReconciliationExecutor:
         source_conn: Any,
         target_conn: Any,
         rule: ReconciliationRule,
-        limit: int
+        limit: int,
+        db_type: str = "mysql"
     ) -> List[Dict[str, Any]]:
         """Execute query to find unmatched source records."""
         try:
@@ -293,16 +340,28 @@ class ReconciliationExecutor:
 
             join_condition = " AND ".join(join_conditions)
 
+            # Quote identifiers based on database type
+            source_schema_quoted = self._quote_identifier(rule.source_schema, db_type)
+            source_table_quoted = self._quote_identifier(rule.source_table, db_type)
+            target_schema_quoted = self._quote_identifier(rule.target_schema, db_type)
+            target_table_quoted = self._quote_identifier(rule.target_table, db_type)
+
+            # Use LIMIT for MySQL, ROWNUM for Oracle
+            limit_clause = f"LIMIT {limit}" if db_type.lower() == "mysql" else f"AND ROWNUM <= {limit}"
+
             query = f"""
             SELECT s.*
-            FROM {rule.source_schema}.{rule.source_table} s
+            FROM {source_schema_quoted}.{source_table_quoted} s
             WHERE NOT EXISTS (
                 SELECT 1
-                FROM {rule.target_schema}.{rule.target_table} t
+                FROM {target_schema_quoted}.{target_table_quoted} t
                 WHERE {join_condition}
             )
-            AND ROWNUM <= {limit}
+            {limit_clause}
             """
+
+            logger.debug(f"[UNMATCHED SOURCE QUERY] Rule: {rule.rule_name}")
+            logger.debug(f"[UNMATCHED SOURCE QUERY] SQL:\n{query}")
 
             cursor = source_conn.cursor()
             cursor.execute(query)
@@ -333,7 +392,8 @@ class ReconciliationExecutor:
         source_conn: Any,
         target_conn: Any,
         rule: ReconciliationRule,
-        limit: int
+        limit: int,
+        db_type: str = "mysql"
     ) -> List[Dict[str, Any]]:
         """Execute query to find unmatched target records."""
         try:
@@ -347,16 +407,28 @@ class ReconciliationExecutor:
 
             join_condition = " AND ".join(join_conditions)
 
+            # Quote identifiers based on database type
+            source_schema_quoted = self._quote_identifier(rule.source_schema, db_type)
+            source_table_quoted = self._quote_identifier(rule.source_table, db_type)
+            target_schema_quoted = self._quote_identifier(rule.target_schema, db_type)
+            target_table_quoted = self._quote_identifier(rule.target_table, db_type)
+
+            # Use LIMIT for MySQL, ROWNUM for Oracle
+            limit_clause = f"LIMIT {limit}" if db_type.lower() == "mysql" else f"AND ROWNUM <= {limit}"
+
             query = f"""
             SELECT t.*
-            FROM {rule.target_schema}.{rule.target_table} t
+            FROM {target_schema_quoted}.{target_table_quoted} t
             WHERE NOT EXISTS (
                 SELECT 1
-                FROM {rule.source_schema}.{rule.source_table} s
+                FROM {source_schema_quoted}.{source_table_quoted} s
                 WHERE {join_condition}
             )
-            AND ROWNUM <= {limit}
+            {limit_clause}
             """
+
+            logger.debug(f"[UNMATCHED TARGET QUERY] Rule: {rule.rule_name}")
+            logger.debug(f"[UNMATCHED TARGET QUERY] SQL:\n{query}")
 
             cursor = target_conn.cursor()
             cursor.execute(query)
@@ -439,7 +511,11 @@ class ReconciliationExecutor:
             return f"jdbc:postgresql://{db_config.host}:{db_config.port}/{db_config.database}"
 
         elif db_type == "mysql":
-            return f"jdbc:mysql://{db_config.host}:{db_config.port}/{db_config.database}"
+            # Add connection timeout and other parameters for MySQL
+            # Increased timeouts for complex reconciliation queries that may take longer
+            # connectTimeout: time to establish connection (60s)
+            # socketTimeout: time to wait for data from server (120s for complex joins)
+            return f"jdbc:mysql://{db_config.host}:{db_config.port}/{db_config.database}?connectTimeout=60000&socketTimeout=120000&autoReconnect=true"
 
         else:
             raise ValueError(f"Unsupported database type: {db_config.db_type}")

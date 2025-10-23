@@ -1,0 +1,468 @@
+{
+  "ruleset_id": "RECON_8070DFCF",
+  "ruleset_name": "Reconciliation_kg_20251024_001402",
+  "schemas": [
+    "orderMgmt-catalog",
+    "qinspect-designcode"
+  ],
+  "rules": [
+    {
+      "rule_id": "RULE_924B7E5D",
+      "rule_name": "Name_Match_catalog_id",
+      "source_schema": "orderMgmt-catalog",
+      "source_table": "catalog",
+      "source_columns": [
+        "id"
+      ],
+      "target_schema": "qinspect-designcode",
+      "target_table": "design_code_master",
+      "target_columns": [
+        "id"
+      ],
+      "match_type": "exact",
+      "transformation": null,
+      "confidence_score": 0.75,
+      "reasoning": "Column name similarity suggests matching: id \u2248 id",
+      "validation_status": "LIKELY",
+      "llm_generated": false,
+      "created_at": "2025-10-23T18:44:05.356594",
+      "metadata": {
+        "match_method": "name_similarity"
+      }
+    },
+    {
+      "rule_id": "RULE_DB657B85",
+      "rule_name": "Name_Match_catalog_code",
+      "source_schema": "orderMgmt-catalog",
+      "source_table": "catalog",
+      "source_columns": [
+        "code"
+      ],
+      "target_schema": "qinspect-designcode",
+      "target_table": "design_code_master",
+      "target_columns": [
+        "code"
+      ],
+      "match_type": "exact",
+      "transformation": null,
+      "confidence_score": 0.75,
+      "reasoning": "Column name similarity suggests matching: code \u2248 code",
+      "validation_status": "LIKELY",
+      "llm_generated": false,
+      "created_at": "2025-10-23T18:44:05.357200",
+      "metadata": {
+        "match_method": "name_similarity"
+      }
+    },
+    {
+      "rule_id": "RULE_4B9F396F",
+      "rule_name": "Name_Match_catalog_sub_cat_uid",
+      "source_schema": "orderMgmt-catalog",
+      "source_table": "catalog",
+      "source_columns": [
+        "sub_cat_uid"
+      ],
+      "target_schema": "qinspect-designcode",
+      "target_table": "design_code_master",
+      "target_columns": [
+        "sub_category_uid"
+      ],
+      "match_type": "exact",
+      "transformation": null,
+      "confidence_score": 0.75,
+      "reasoning": "Column name similarity suggests matching: sub_cat_uid \u2248 sub_category_uid",
+      "validation_status": "LIKELY",
+      "llm_generated": false,
+      "created_at": "2025-10-23T18:44:05.360722",
+      "metadata": {
+        "match_method": "name_similarity"
+      }
+    },
+    {
+      "rule_id": "RULE_8BB26380",
+      "rule_name": "Name_Match_catalog_tenant_uid",
+      "source_schema": "orderMgmt-catalog",
+      "source_table": "catalog",
+      "source_columns": [
+        "tenant_uid"
+      ],
+      "target_schema": "qinspect-designcode",
+      "target_table": "design_code_master",
+      "target_columns": [
+        "parent_tenant_uid"
+      ],
+      "match_type": "exact",
+      "transformation": null,
+      "confidence_score": 0.75,
+      "reasoning": "Column name similarity suggests matching: tenant_uid \u2248 parent_tenant_uid",
+      "validation_status": "LIKELY",
+      "llm_generated": false,
+      "created_at": "2025-10-23T18:44:05.360722",
+      "metadata": {
+        "match_method": "name_similarity"
+      }
+    },
+    {
+      "rule_id": "RULE_9E13E19D",
+      "rule_name": "Name_Match_catalog_tenant_uid",
+      "source_schema": "orderMgmt-catalog",
+      "source_table": "catalog",
+      "source_columns": [
+        "tenant_uid"
+      ],
+      "target_schema": "qinspect-designcode",
+      "target_table": "design_code_master",
+      "target_columns": [
+        "tenant_uid"
+      ],
+      "match_type": "exact",
+      "transformation": null,
+      "confidence_score": 0.75,
+      "reasoning": "Column name similarity suggests matching: tenant_uid \u2248 tenant_uid",
+      "validation_status": "LIKELY",
+      "llm_generated": false,
+      "created_at": "2025-10-23T18:44:05.360722",
+      "metadata": {
+        "match_method": "name_similarity"
+      }
+    },
+    {
+      "rule_id": "RULE_9FB32B69",
+      "rule_name": "Name_Match_catalog_brand_uid",
+      "source_schema": "orderMgmt-catalog",
+      "source_table": "catalog",
+      "source_columns": [
+        "brand_uid"
+      ],
+      "target_schema": "qinspect-designcode",
+      "target_table": "design_code_master",
+      "target_columns": [
+        "brand_uid"
+      ],
+      "match_type": "exact",
+      "transformation": null,
+      "confidence_score": 0.75,
+      "reasoning": "Column name similarity suggests matching: brand_uid \u2248 brand_uid",
+      "validation_status": "LIKELY",
+      "llm_generated": false,
+      "created_at": "2025-10-23T18:44:05.361722",
+      "metadata": {
+        "match_method": "name_similarity"
+      }
+    },
+    {
+      "rule_id": "RULE_B6A71506",
+      "rule_name": "Name_Match_catalog_brand_uid",
+      "source_schema": "orderMgmt-catalog",
+      "source_table": "catalog",
+      "source_columns": [
+        "brand_uid"
+      ],
+      "target_schema": "qinspect-designcode",
+      "target_table": "design_code_master",
+      "target_columns": [
+        "sub_brand_uid"
+      ],
+      "match_type": "exact",
+      "transformation": null,
+      "confidence_score": 0.75,
+      "reasoning": "Column name similarity suggests matching: brand_uid \u2248 sub_brand_uid",
+      "validation_status": "LIKELY",
+      "llm_generated": false,
+      "created_at": "2025-10-23T18:44:05.361722",
+      "metadata": {
+        "match_method": "name_similarity"
+      }
+    },
+    {
+      "rule_id": "RULE_C839564A",
+      "rule_name": "Name_Match_catalog_subbrand_uid",
+      "source_schema": "orderMgmt-catalog",
+      "source_table": "catalog",
+      "source_columns": [
+        "subbrand_uid"
+      ],
+      "target_schema": "qinspect-designcode",
+      "target_table": "design_code_master",
+      "target_columns": [
+        "brand_uid"
+      ],
+      "match_type": "exact",
+      "transformation": null,
+      "confidence_score": 0.75,
+      "reasoning": "Column name similarity suggests matching: subbrand_uid \u2248 brand_uid",
+      "validation_status": "LIKELY",
+      "llm_generated": false,
+      "created_at": "2025-10-23T18:44:05.361722",
+      "metadata": {
+        "match_method": "name_similarity"
+      }
+    },
+    {
+      "rule_id": "RULE_53D4976A",
+      "rule_name": "Name_Match_catalog_designer_code",
+      "source_schema": "orderMgmt-catalog",
+      "source_table": "catalog",
+      "source_columns": [
+        "designer_code"
+      ],
+      "target_schema": "qinspect-designcode",
+      "target_table": "design_code_master",
+      "target_columns": [
+        "design_code"
+      ],
+      "match_type": "exact",
+      "transformation": null,
+      "confidence_score": 0.75,
+      "reasoning": "Column name similarity suggests matching: designer_code \u2248 design_code",
+      "validation_status": "LIKELY",
+      "llm_generated": false,
+      "created_at": "2025-10-23T18:44:05.362722",
+      "metadata": {
+        "match_method": "name_similarity"
+      }
+    },
+    {
+      "rule_id": "RULE_EF7F0819",
+      "rule_name": "Name_Match_catalog_fabric_code",
+      "source_schema": "orderMgmt-catalog",
+      "source_table": "catalog",
+      "source_columns": [
+        "fabric_code"
+      ],
+      "target_schema": "qinspect-designcode",
+      "target_table": "design_code_master",
+      "target_columns": [
+        "fabric_code"
+      ],
+      "match_type": "exact",
+      "transformation": null,
+      "confidence_score": 0.75,
+      "reasoning": "Column name similarity suggests matching: fabric_code \u2248 fabric_code",
+      "validation_status": "LIKELY",
+      "llm_generated": false,
+      "created_at": "2025-10-23T18:44:05.362722",
+      "metadata": {
+        "match_method": "name_similarity"
+      }
+    },
+    {
+      "rule_id": "RULE_36A3CC97",
+      "rule_name": "Name_Match_catalog_collection_uid",
+      "source_schema": "orderMgmt-catalog",
+      "source_table": "catalog",
+      "source_columns": [
+        "collection_uid"
+      ],
+      "target_schema": "qinspect-designcode",
+      "target_table": "design_code_master",
+      "target_columns": [
+        "collection_uid"
+      ],
+      "match_type": "exact",
+      "transformation": null,
+      "confidence_score": 0.75,
+      "reasoning": "Column name similarity suggests matching: collection_uid \u2248 collection_uid",
+      "validation_status": "LIKELY",
+      "llm_generated": false,
+      "created_at": "2025-10-23T18:44:05.364808",
+      "metadata": {
+        "match_method": "name_similarity"
+      }
+    },
+    {
+      "rule_id": "RULE_FECAD8B6",
+      "rule_name": "Name_Match_catalog_brand_id",
+      "source_schema": "orderMgmt-catalog",
+      "source_table": "catalog",
+      "source_columns": [
+        "brand_id"
+      ],
+      "target_schema": "qinspect-designcode",
+      "target_table": "design_code_master",
+      "target_columns": [
+        "brand_uid"
+      ],
+      "match_type": "exact",
+      "transformation": null,
+      "confidence_score": 0.75,
+      "reasoning": "Column name similarity suggests matching: brand_id \u2248 brand_uid",
+      "validation_status": "LIKELY",
+      "llm_generated": false,
+      "created_at": "2025-10-23T18:44:05.366731",
+      "metadata": {
+        "match_method": "name_similarity"
+      }
+    },
+    {
+      "rule_id": "RULE_6042ABE3",
+      "rule_name": "Name_Match_catalog_brand_id",
+      "source_schema": "orderMgmt-catalog",
+      "source_table": "catalog",
+      "source_columns": [
+        "brand_id"
+      ],
+      "target_schema": "qinspect-designcode",
+      "target_table": "design_code_master",
+      "target_columns": [
+        "sub_brand_uid"
+      ],
+      "match_type": "exact",
+      "transformation": null,
+      "confidence_score": 0.75,
+      "reasoning": "Column name similarity suggests matching: brand_id \u2248 sub_brand_uid",
+      "validation_status": "LIKELY",
+      "llm_generated": false,
+      "created_at": "2025-10-23T18:44:05.366731",
+      "metadata": {
+        "match_method": "name_similarity"
+      }
+    },
+    {
+      "rule_id": "RULE_3272D040",
+      "rule_name": "Name_Match_catalog_product_id",
+      "source_schema": "orderMgmt-catalog",
+      "source_table": "catalog",
+      "source_columns": [
+        "product_id"
+      ],
+      "target_schema": "qinspect-designcode",
+      "target_table": "design_code_master",
+      "target_columns": [
+        "product_type_uid"
+      ],
+      "match_type": "exact",
+      "transformation": null,
+      "confidence_score": 0.75,
+      "reasoning": "Column name similarity suggests matching: product_id \u2248 product_type_uid",
+      "validation_status": "LIKELY",
+      "llm_generated": false,
+      "created_at": "2025-10-23T18:44:05.366731",
+      "metadata": {
+        "match_method": "name_similarity"
+      }
+    },
+    {
+      "rule_id": "RULE_1FC70C34",
+      "rule_name": "Name_Match_catalog_product_id",
+      "source_schema": "orderMgmt-catalog",
+      "source_table": "catalog",
+      "source_columns": [
+        "product_id"
+      ],
+      "target_schema": "qinspect-designcode",
+      "target_table": "design_code_master",
+      "target_columns": [
+        "product_code"
+      ],
+      "match_type": "exact",
+      "transformation": null,
+      "confidence_score": 0.75,
+      "reasoning": "Column name similarity suggests matching: product_id \u2248 product_code",
+      "validation_status": "LIKELY",
+      "llm_generated": false,
+      "created_at": "2025-10-23T18:44:05.367340",
+      "metadata": {
+        "match_method": "name_similarity"
+      }
+    },
+    {
+      "rule_id": "RULE_4AC3B593",
+      "rule_name": "Name_Match_catalog_product_id",
+      "source_schema": "orderMgmt-catalog",
+      "source_table": "catalog",
+      "source_columns": [
+        "product_id"
+      ],
+      "target_schema": "qinspect-designcode",
+      "target_table": "design_code_master",
+      "target_columns": [
+        "product_uid"
+      ],
+      "match_type": "exact",
+      "transformation": null,
+      "confidence_score": 0.75,
+      "reasoning": "Column name similarity suggests matching: product_id \u2248 product_uid",
+      "validation_status": "LIKELY",
+      "llm_generated": false,
+      "created_at": "2025-10-23T18:44:05.367340",
+      "metadata": {
+        "match_method": "name_similarity"
+      }
+    },
+    {
+      "rule_id": "RULE_0FDD2E1E",
+      "rule_name": "Name_Match_catalog_parent_tenant_uid",
+      "source_schema": "orderMgmt-catalog",
+      "source_table": "catalog",
+      "source_columns": [
+        "parent_tenant_uid"
+      ],
+      "target_schema": "qinspect-designcode",
+      "target_table": "design_code_master",
+      "target_columns": [
+        "parent_tenant_uid"
+      ],
+      "match_type": "exact",
+      "transformation": null,
+      "confidence_score": 0.75,
+      "reasoning": "Column name similarity suggests matching: parent_tenant_uid \u2248 parent_tenant_uid",
+      "validation_status": "LIKELY",
+      "llm_generated": false,
+      "created_at": "2025-10-23T18:44:05.367340",
+      "metadata": {
+        "match_method": "name_similarity"
+      }
+    },
+    {
+      "rule_id": "RULE_FE2F9EE2",
+      "rule_name": "Name_Match_catalog_parent_tenant_uid",
+      "source_schema": "orderMgmt-catalog",
+      "source_table": "catalog",
+      "source_columns": [
+        "parent_tenant_uid"
+      ],
+      "target_schema": "qinspect-designcode",
+      "target_table": "design_code_master",
+      "target_columns": [
+        "tenant_uid"
+      ],
+      "match_type": "exact",
+      "transformation": null,
+      "confidence_score": 0.75,
+      "reasoning": "Column name similarity suggests matching: parent_tenant_uid \u2248 tenant_uid",
+      "validation_status": "LIKELY",
+      "llm_generated": false,
+      "created_at": "2025-10-23T18:44:05.367340",
+      "metadata": {
+        "match_method": "name_similarity"
+      }
+    },
+    {
+      "rule_id": "RULE_F124ECA0",
+      "rule_name": "Name_Match_catalog_subseason_uid",
+      "source_schema": "orderMgmt-catalog",
+      "source_table": "catalog",
+      "source_columns": [
+        "subseason_uid"
+      ],
+      "target_schema": "qinspect-designcode",
+      "target_table": "design_code_master",
+      "target_columns": [
+        "season_uid"
+      ],
+      "match_type": "exact",
+      "transformation": null,
+      "confidence_score": 0.75,
+      "reasoning": "Column name similarity suggests matching: subseason_uid \u2248 season_uid",
+      "validation_status": "LIKELY",
+      "llm_generated": false,
+      "created_at": "2025-10-23T18:44:05.367340",
+      "metadata": {
+        "match_method": "name_similarity"
+      }
+    }
+  ],
+  "created_at": "2025-10-23T18:44:05.368451",
+  "generated_from_kg": "kg_20251024_001402"
+}

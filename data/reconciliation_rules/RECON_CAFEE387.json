@@ -1,0 +1,296 @@
+{
+  "ruleset_id": "RECON_CAFEE387",
+  "ruleset_name": "Reconciliation_kg_20251023_235823",
+  "schemas": [
+    "orderMgmt-catalog",
+    "qinspect-designcode"
+  ],
+  "rules": [
+    {
+      "rule_id": "RULE_44BC6F4B",
+      "rule_name": "Name_Match_catalog_id",
+      "source_table": "catalog",
+      "target_table": "design_code_master",
+      "match_type": "exact",
+      "confidence_score": 0.75,
+      "validation_status": "LIKELY",
+      "source_columns": [
+        "id"
+      ],
+      "target_columns": [
+        "id"
+      ]
+    },
+    {
+      "rule_id": "RULE_77CCF4EB",
+      "rule_name": "Name_Match_catalog_code",
+      "source_table": "catalog",
+      "target_table": "design_code_master",
+      "match_type": "exact",
+      "confidence_score": 0.75,
+      "validation_status": "LIKELY",
+      "source_columns": [
+        "code"
+      ],
+      "target_columns": [
+        "code"
+      ]
+    },
+    {
+      "rule_id": "RULE_D3204670",
+      "rule_name": "Name_Match_catalog_sub_cat_uid",
+      "source_table": "catalog",
+      "target_table": "design_code_master",
+      "match_type": "exact",
+      "confidence_score": 0.75,
+      "validation_status": "LIKELY",
+      "source_columns": [
+        "sub_cat_uid"
+      ],
+      "target_columns": [
+        "sub_category_uid"
+      ]
+    },
+    {
+      "rule_id": "RULE_45A137A2",
+      "rule_name": "Name_Match_catalog_tenant_uid",
+      "source_table": "catalog",
+      "target_table": "design_code_master",
+      "match_type": "exact",
+      "confidence_score": 0.75,
+      "validation_status": "LIKELY",
+      "source_columns": [
+        "tenant_uid"
+      ],
+      "target_columns": [
+        "parent_tenant_uid"
+      ]
+    },
+    {
+      "rule_id": "RULE_9B14642C",
+      "rule_name": "Name_Match_catalog_tenant_uid",
+      "source_table": "catalog",
+      "target_table": "design_code_master",
+      "match_type": "exact",
+      "confidence_score": 0.75,
+      "validation_status": "LIKELY",
+      "source_columns": [
+        "tenant_uid"
+      ],
+      "target_columns": [
+        "tenant_uid"
+      ]
+    },
+    {
+      "rule_id": "RULE_347374E2",
+      "rule_name": "Name_Match_catalog_brand_uid",
+      "source_table": "catalog",
+      "target_table": "design_code_master",
+      "match_type": "exact",
+      "confidence_score": 0.75,
+      "validation_status": "LIKELY",
+      "source_columns": [
+        "brand_uid"
+      ],
+      "target_columns": [
+        "brand_uid"
+      ]
+    },
+    {
+      "rule_id": "RULE_8604A138",
+      "rule_name": "Name_Match_catalog_brand_uid",
+      "source_table": "catalog",
+      "target_table": "design_code_master",
+      "match_type": "exact",
+      "confidence_score": 0.75,
+      "validation_status": "LIKELY",
+      "source_columns": [
+        "brand_uid"
+      ],
+      "target_columns": [
+        "sub_brand_uid"
+      ]
+    },
+    {
+      "rule_id": "RULE_2B0E699B",
+      "rule_name": "Name_Match_catalog_subbrand_uid",
+      "source_table": "catalog",
+      "target_table": "design_code_master",
+      "match_type": "exact",
+      "confidence_score": 0.75,
+      "validation_status": "LIKELY",
+      "source_columns": [
+        "subbrand_uid"
+      ],
+      "target_columns": [
+        "brand_uid"
+      ]
+    },
+    {
+      "rule_id": "RULE_96017F3C",
+      "rule_name": "Name_Match_catalog_designer_code",
+      "source_table": "catalog",
+      "target_table": "design_code_master",
+      "match_type": "exact",
+      "confidence_score": 0.75,
+      "validation_status": "LIKELY",
+      "source_columns": [
+        "designer_code"
+      ],
+      "target_columns": [
+        "design_code"
+      ]
+    },
+    {
+      "rule_id": "RULE_115BA3F3",
+      "rule_name": "Name_Match_catalog_fabric_code",
+      "source_table": "catalog",
+      "target_table": "design_code_master",
+      "match_type": "exact",
+      "confidence_score": 0.75,
+      "validation_status": "LIKELY",
+      "source_columns": [
+        "fabric_code"
+      ],
+      "target_columns": [
+        "fabric_code"
+      ]
+    },
+    {
+      "rule_id": "RULE_202A441D",
+      "rule_name": "Name_Match_catalog_collection_uid",
+      "source_table": "catalog",
+      "target_table": "design_code_master",
+      "match_type": "exact",
+      "confidence_score": 0.75,
+      "validation_status": "LIKELY",
+      "source_columns": [
+        "collection_uid"
+      ],
+      "target_columns": [
+        "collection_uid"
+      ]
+    },
+    {
+      "rule_id": "RULE_CBCD88EE",
+      "rule_name": "Name_Match_catalog_brand_id",
+      "source_table": "catalog",
+      "target_table": "design_code_master",
+      "match_type": "exact",
+      "confidence_score": 0.75,
+      "validation_status": "LIKELY",
+      "source_columns": [
+        "brand_id"
+      ],
+      "target_columns": [
+        "brand_uid"
+      ]
+    },
+    {
+      "rule_id": "RULE_53F5D4D6",
+      "rule_name": "Name_Match_catalog_brand_id",
+      "source_table": "catalog",
+      "target_table": "design_code_master",
+      "match_type": "exact",
+      "confidence_score": 0.75,
+      "validation_status": "LIKELY",
+      "source_columns": [
+        "brand_id"
+      ],
+      "target_columns": [
+        "sub_brand_uid"
+      ]
+    },
+    {
+      "rule_id": "RULE_1DEA81D1",
+      "rule_name": "Name_Match_catalog_product_id",
+      "source_table": "catalog",
+      "target_table": "design_code_master",
+      "match_type": "exact",
+      "confidence_score": 0.75,
+      "validation_status": "LIKELY",
+      "source_columns": [
+        "product_id"
+      ],
+      "target_columns": [
+        "product_type_uid"
+      ]
+    },
+    {
+      "rule_id": "RULE_39285DE2",
+      "rule_name": "Name_Match_catalog_product_id",
+      "source_table": "catalog",
+      "target_table": "design_code_master",
+      "match_type": "exact",
+      "confidence_score": 0.75,
+      "validation_status": "LIKELY",
+      "source_columns": [
+        "product_id"
+      ],
+      "target_columns": [
+        "product_code"
+      ]
+    },
+    {
+      "rule_id": "RULE_8BF3313B",
+      "rule_name": "Name_Match_catalog_product_id",
+      "source_table": "catalog",
+      "target_table": "design_code_master",
+      "match_type": "exact",
+      "confidence_score": 0.75,
+      "validation_status": "LIKELY",
+      "source_columns": [
+        "product_id"
+      ],
+      "target_columns": [
+        "product_uid"
+      ]
+    },
+    {
+      "rule_id": "RULE_79AF6AAE",
+      "rule_name": "Name_Match_catalog_parent_tenant_uid",
+      "source_table": "catalog",
+      "target_table": "design_code_master",
+      "match_type": "exact",
+      "confidence_score": 0.75,
+      "validation_status": "LIKELY",
+      "source_columns": [
+        "parent_tenant_uid"
+      ],
+      "target_columns": [
+        "parent_tenant_uid"
+      ]
+    },
+    {
+      "rule_id": "RULE_2B6E4DFE",
+      "rule_name": "Name_Match_catalog_parent_tenant_uid",
+      "source_table": "catalog",
+      "target_table": "design_code_master",
+      "match_type": "exact",
+      "confidence_score": 0.75,
+      "validation_status": "LIKELY",
+      "source_columns": [
+        "parent_tenant_uid"
+      ],
+      "target_columns": [
+        "tenant_uid"
+      ]
+    },
+    {
+      "rule_id": "RULE_32A59E63",
+      "rule_name": "Name_Match_catalog_subseason_uid",
+      "source_table": "catalog",
+      "target_table": "design_code_master",
+      "match_type": "exact",
+      "confidence_score": 0.75,
+      "validation_status": "LIKELY",
+      "source_columns": [
+        "subseason_uid"
+      ],
+      "target_columns": [
+        "season_uid"
+      ]
+    }
+  ],
+  "created_at": "2025-10-23T18:28:23.273641"
+}

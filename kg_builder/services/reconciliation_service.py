@@ -112,6 +112,41 @@ class ReconciliationRuleGenerator:
                 raise
         return schemas
 
+    @staticmethod
+    def _extract_database_name(database_url: str) -> str:
+        """
+        Extract database name from connection URL.
+
+        Supports:
+        - MySQL: mysql+mysqlconnector://user:pass@host:port/database?charset=utf8mb4
+        - Oracle: oracle://user:pass@host:port/database
+        - PostgreSQL: postgresql://user:pass@host:port/database
+        - SQL Server: mssql+pyodbc://user:pass@host:port/database
+
+        Args:
+            database_url: Database connection URL
+
+        Returns:
+            Database name or empty string if not found
+        """
+        if not database_url:
+            return ""
+
+        try:
+            # Remove query parameters
+            url_without_params = database_url.split('?')[0]
+
+            # Extract the part after the last slash
+            parts = url_without_params.split('/')
+            if len(parts) > 0:
+                db_name = parts[-1]
+                return db_name if db_name else ""
+
+            return ""
+        except Exception as e:
+            logger.warning(f"Failed to extract database name from URL: {database_url}, error: {e}")
+            return ""
+
     def _get_kg_relationships(self, kg_name: str) -> List[Dict[str, Any]]:
         """Query knowledge graph for all relationships."""
         try:
@@ -251,6 +286,14 @@ class ReconciliationRuleGenerator:
                 if not schema1 or not schema2:
                     continue
 
+                # Extract database names from connection URLs
+                db1_name = self._extract_database_name(schema1.database)
+                db2_name = self._extract_database_name(schema2.database)
+
+                # Use database names if available, otherwise fall back to schema names
+                source_schema = db1_name if db1_name else schema1_name
+                target_schema = db2_name if db2_name else schema2_name
+
                 # Compare all table pairs
                 for table1_name, table1 in schema1.tables.items():
                     for table2_name, table2 in schema2.tables.items():
@@ -268,10 +311,10 @@ class ReconciliationRuleGenerator:
                                     rules.append(ReconciliationRule(
                                         rule_id=f"RULE_{generate_uid()}",
                                         rule_name=f"Name_Match_{table1_name}_{col1.name}",
-                                        source_schema=schema1_name,
+                                        source_schema=source_schema,
                                         source_table=table1_name,
                                         source_columns=[col1.name],
-                                        target_schema=schema2_name,
+                                        target_schema=target_schema,
                                         target_table=table2_name,
                                         target_columns=[col2.name],
                                         match_type=ReconciliationMatchType.EXACT,
