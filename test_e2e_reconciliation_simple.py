@@ -115,18 +115,40 @@ def generate_reconciliation_rules(kg_data: Dict[str, Any], schema_names: List[st
     logger.info("\n" + "="*80)
     logger.info("STEP 3: RECONCILIATION RULES GENERATION")
     logger.info("="*80)
-    
+
     try:
         recon_service = get_reconciliation_service()
         kg_name = kg_data["kg_name"]
-        
+
         logger.info(f"Generating reconciliation rules from KG '{kg_name}'")
-        
+
+        # Define field preferences for rule generation
+        field_preferences = [
+            {
+                "table_name": "catalog",
+                "priority_fields": [],
+                "exclude_fields": [],
+                "field_hints": {
+                    "code": "code",
+                    "style_code": "code",
+                    "is_active": "deleted"
+                }
+            }
+        ]
+
+        logger.info(f"Using field preferences for rule generation:")
+        for pref in field_preferences:
+            logger.info(f"  Table: {pref['table_name']}")
+            logger.info(f"    Priority Fields: {pref['priority_fields']}")
+            logger.info(f"    Exclude Fields: {pref['exclude_fields']}")
+            logger.info(f"    Field Hints: {pref['field_hints']}")
+
         ruleset = recon_service.generate_from_knowledge_graph(
             kg_name=kg_name,
             schema_names=schema_names,
-            use_llm=False,
-            min_confidence=0.7
+            use_llm=True,
+            min_confidence=0.7,
+            field_preferences=field_preferences
         )
         
         logger.info(f"[OK] Reconciliation rules generated")

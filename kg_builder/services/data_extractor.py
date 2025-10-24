@@ -113,11 +113,12 @@ class DataExtractor:
                 source_db_host=source_db_config.host
             )
 
-            # Load data into landing DB
+            # Load data into landing DB with type conversion
             row_count = self._bulk_load_to_landing(
                 staging_table_name=staging_table_name,
                 column_names=column_names,
-                data=data
+                data=data,
+                column_types=column_types
             )
 
             # Create indexes on join columns
@@ -337,28 +338,117 @@ class DataExtractor:
         # In production, use jdbc_type's type code
         type_str = str(jdbc_type).upper()
 
-        if 'CHAR' in type_str or 'TEXT' in type_str:
+        # Boolean/Bit types - must check before INT
+        if 'BOOL' in type_str or 'BIT' in type_str:
+            return 'TINYINT(1)'
+        # Character types
+        elif 'CHAR' in type_str or 'TEXT' in type_str or 'STRING' in type_str:
             return 'TEXT'
+        # Tiny int specifically
+        elif 'TINYINT' in type_str:
+            return 'TINYINT'
+        # Integer types
         elif 'INT' in type_str or 'NUMBER' in type_str:
             return 'BIGINT'
+        # Decimal types
         elif 'DECIMAL' in type_str or 'NUMERIC' in type_str:
             return 'DECIMAL(38,10)'
-        elif 'FLOAT' in type_str or 'DOUBLE' in type_str:
+        # Float types
+        elif 'FLOAT' in type_str or 'DOUBLE' in type_str or 'REAL' in type_str:
             return 'DOUBLE'
-        elif 'DATE' in type_str:
+        # Date types
+        elif 'DATE' in type_str and 'DATETIME' not in type_str:
+            return 'DATE'
+        elif 'DATETIME' in type_str:
             return 'DATETIME'
+        # Timestamp types
         elif 'TIMESTAMP' in type_str:
             return 'TIMESTAMP'
-        elif 'BOOL' in type_str:
-            return 'BOOLEAN'
+        # Binary types
+        elif 'BLOB' in type_str or 'BINARY' in type_str:
+            return 'BLOB'
+        # Default to TEXT for unknown types
         else:
+            logger.debug(f"Unknown JDBC type '{jdbc_type}', defaulting to TEXT")
             return 'TEXT'
+
+    def _convert_data_values(
+        self,
+        data: List[tuple],
+        column_types: List[Any]
+    ) -> List[tuple]:
+        """
+        Convert data values to MySQL-compatible formats.
+
+        Handles:
+        - Boolean strings ('True'/'False') -> 1/0
+        - None/NULL values
+        - Date/timestamp conversions
+
+        Args:
+            data: Raw data from source database
+            column_types: JDBC column types
+
+        Returns:
+            Converted data
+        """
+        converted_data = []
+
+        for row in data:
+            converted_row = []
+            for value, jdbc_type in zip(row, column_types):
+                converted_value = self._convert_single_value(value, jdbc_type)
+                converted_row.append(converted_value)
+            converted_data.append(tuple(converted_row))
+
+        return converted_data
+
+    def _convert_single_value(self, value: Any, jdbc_type: Any) -> Any:
+        """Convert a single value based on its JDBC type."""
+        # Handle NULL
+        if value is None:
+            return None
+
+        type_str = str(jdbc_type).upper()
+
+        # Boolean conversion
+        if 'BOOL' in type_str or 'BIT' in type_str:
+            if isinstance(value, str):
+                if value.lower() in ('true', '1', 'yes', 't', 'y'):
+                    return 1
+                elif value.lower() in ('false', '0', 'no', 'f', 'n'):
+                    return 0
+            elif isinstance(value, bool):
+                return 1 if value else 0
+            elif isinstance(value, int):
+                return 1 if value else 0
+
+        # Integer conversion - handle boolean strings in integer columns
+        elif 'INT' in type_str or 'NUMBER' in type_str:
+            if isinstance(value, str):
+                # Check if it's a boolean string
+                if value.lower() in ('true', 'false'):
+                    return 1 if value.lower() == 'true' else 0
+                # Try to convert to int
+                try:
+                    return int(float(value))  # Handle "1.0" -> 1
+                except (ValueError, TypeError):
+                    return None
+
+        # String conversion
+        elif 'CHAR' in type_str or 'TEXT' in type_str:
+            if isinstance(value, (bytes, bytearray)):
+                return value.decode('utf-8', errors='ignore')
+            return str(value) if value is not None else None
+
+        return value
 
     def _bulk_load_to_landing(
         self,
         staging_table_name: str,
         column_names: List[str],
-        data: List[tuple]
+        data: List[tuple],
+        column_types: Optional[List[Any]] = None
     ) -> int:
         """
         Bulk load data into landing database using LOAD DATA INFILE.
@@ -367,12 +457,18 @@ class DataExtractor:
             staging_table_name: Target staging table
             column_names: List of column names
             data: Data rows
+            column_types: JDBC column types for conversion
 
         Returns:
             Number of rows inserted
         """
         if not data:
             return 0
+
+        # Convert data values to MySQL-compatible formats
+        if column_types:
+            logger.info("Converting data values for MySQL compatibility...")
+            data = self._convert_data_values(data, column_types)
 
         if config.LANDING_USE_BULK_COPY:
             return self._bulk_load_with_load_data_infile(

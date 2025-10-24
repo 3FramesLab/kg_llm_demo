@@ -42,7 +42,8 @@ class ReconciliationRuleGenerator:
         kg_name: str,
         schema_names: List[str],
         use_llm: bool = True,
-        min_confidence: float = 0.7
+        min_confidence: float = 0.7,
+        field_preferences: Optional[List[Dict[str, Any]]] = None
     ) -> ReconciliationRuleSet:
         """
         Main entry point for rule generation from a knowledge graph.
@@ -52,6 +53,7 @@ class ReconciliationRuleGenerator:
             schema_names: List of schema names involved
             use_llm: Whether to use LLM for semantic rule generation
             min_confidence: Minimum confidence score for rules (0.0-1.0)
+            field_preferences: User-specific field preferences for rule generation
 
         Returns:
             ReconciliationRuleSet containing generated rules
@@ -71,7 +73,7 @@ class ReconciliationRuleGenerator:
 
         # 4. Enhance with LLM if enabled
         if use_llm:
-            llm_rules = self._generate_llm_rules(relationships, schemas_info)
+            llm_rules = self._generate_llm_rules(relationships, schemas_info, field_preferences=field_preferences)
             all_rules = basic_rules + llm_rules
         else:
             all_rules = basic_rules
@@ -332,7 +334,8 @@ class ReconciliationRuleGenerator:
     def _generate_llm_rules(
         self,
         relationships: List[Dict[str, Any]],
-        schemas_info: Dict[str, DatabaseSchema]
+        schemas_info: Dict[str, DatabaseSchema],
+        field_preferences: Optional[List[Dict[str, Any]]] = None
     ) -> List[ReconciliationRule]:
         """Generate semantic rules using LLM analysis."""
         try:
@@ -349,7 +352,7 @@ class ReconciliationRuleGenerator:
 
             # Generate rules using LLM
             llm_rules_dict = llm_service.generate_reconciliation_rules(
-                relationships, schemas_dict
+                relationships, schemas_dict, field_preferences=field_preferences
             )
 
             # Convert to ReconciliationRule objects and validate

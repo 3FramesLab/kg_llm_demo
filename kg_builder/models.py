@@ -242,6 +242,23 @@ class ReconciliationRuleSet(BaseModel):
     generated_from_kg: str  # KG name
 
 
+class FieldPreference(BaseModel):
+    """User preference for specific fields in rule generation."""
+    table_name: str = Field(..., description="Table name")
+    priority_fields: List[str] = Field(
+        default=[],
+        description="Fields to prioritize for matching (high priority)"
+    )
+    exclude_fields: List[str] = Field(
+        default=[],
+        description="Fields to exclude from rule generation"
+    )
+    field_hints: Dict[str, str] = Field(
+        default={},
+        description="Hints about field relationships (e.g., {'vendor_id': 'supplier_id'})"
+    )
+
+
 class RuleGenerationRequest(BaseModel):
     """Request model for generating reconciliation rules."""
     schema_names: List[str] = Field(..., description="List of schema names to reconcile")
@@ -251,6 +268,10 @@ class RuleGenerationRequest(BaseModel):
     match_types: List[ReconciliationMatchType] = Field(
         default=[ReconciliationMatchType.EXACT, ReconciliationMatchType.SEMANTIC],
         description="Types of matches to generate"
+    )
+    field_preferences: Optional[List[FieldPreference]] = Field(
+        default=None,
+        description="User-specific field preferences for rule generation"
     )
 
 

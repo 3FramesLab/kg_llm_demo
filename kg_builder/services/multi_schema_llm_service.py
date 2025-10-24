@@ -196,7 +196,8 @@ class MultiSchemaLLMService:
     def generate_reconciliation_rules(
         self,
         relationships: List[Dict[str, Any]],
-        schemas_info: Dict[str, Any]
+        schemas_info: Dict[str, Any],
+        field_preferences: Optional[List[Dict[str, Any]]] = None
     ) -> List[Dict[str, Any]]:
         """
         Use LLM to generate reconciliation rules from relationships.
@@ -207,6 +208,7 @@ class MultiSchemaLLMService:
         Args:
             relationships: List of relationships between schemas
             schemas_info: Information about all schemas
+            field_preferences: User-specific field preferences for rule generation
 
         Returns:
             List of reconciliation rules with match strategies and confidence scores
@@ -216,7 +218,7 @@ class MultiSchemaLLMService:
             return []
 
         try:
-            prompt = self._build_reconciliation_rules_prompt(relationships, schemas_info)
+            prompt = self._build_reconciliation_rules_prompt(relationships, schemas_info, field_preferences=field_preferences)
 
             logger.debug(f"Reconciliation Rules Prompt:\n{prompt}")
 
@@ -428,11 +430,30 @@ Return as JSON array with this structure:
     def _build_reconciliation_rules_prompt(
         self,
         relationships: List[Dict[str, Any]],
-        schemas_info: Dict[str, Any]
+        schemas_info: Dict[str, Any],
+        field_preferences: Optional[List[Dict[str, Any]]] = None
     ) -> str:
         """Build prompt for reconciliation rule generation."""
         schemas_str = json.dumps(schemas_info, indent=2)
         relationships_str = json.dumps(relationships, indent=2)
+
+        # Build field preferences section
+        field_preferences_str = ""
+        if field_preferences:
+            field_preferences_str = "\n\nUSER-SPECIFIC FIELD PREFERENCES:\n"
+            for pref in field_preferences:
+                field_preferences_str += f"\nTable: {pref.get('table_name', 'N/A')}\n"
+
+                if pref.get('priority_fields'):
+                    field_preferences_str += f"  PRIORITY FIELDS (focus on these): {', '.join(pref['priority_fields'])}\n"
+
+                if pref.get('exclude_fields'):
+                    field_preferences_str += f"  EXCLUDE FIELDS (skip these): {', '.join(pref['exclude_fields'])}\n"
+
+                if pref.get('field_hints'):
+                    field_preferences_str += f"  FIELD HINTS (suggested matches):\n"
+                    for source, target in pref['field_hints'].items():
+                        field_preferences_str += f"    - {source} → {target}\n"
 
         return f"""Given these cross-schema relationships and schemas, generate reconciliation rules
 that would allow matching records between these schemas.
@@ -445,6 +466,7 @@ SCHEMAS:
 
 RELATIONSHIPS:
 {relationships_str}
+{field_preferences_str}
 
 For each rule, provide:
 1. rule_name: Descriptive name for the rule
@@ -487,7 +509,10 @@ CRITICAL RULES:
 - Focus on cross-schema relationships
 - ONLY use columns that exist in the provided schemas
 - Double-check each column name against the schema before including it
-- If you cannot find a valid matching column, do not create a rule for it"""
+- If you cannot find a valid matching column, do not create a rule for it
+- PRIORITIZE user-specified priority fields when available
+- EXCLUDE user-specified exclude fields from rule generation
+- CONSIDER user-provided field hints as strong suggestions for matching"""
 
     def _parse_reconciliation_rules(self, response_text: str) -> List[Dict[str, Any]]:
         """Parse reconciliation rules from LLM response."""
