@@ -352,10 +352,19 @@ class ReconciliationRuleGenerator:
                 relationships, schemas_dict
             )
 
-            # Convert to ReconciliationRule objects
+            # Convert to ReconciliationRule objects and validate
             rules = []
             for rule_dict in llm_rules_dict:
                 try:
+                    # Validate that columns exist in schemas before creating rule
+                    if not self._validate_rule_columns(rule_dict, schemas_info):
+                        logger.warning(
+                            f"Skipping invalid LLM rule '{rule_dict.get('rule_name')}': "
+                            f"columns {rule_dict.get('source_columns')} or {rule_dict.get('target_columns')} "
+                            f"do not exist in schemas"
+                        )
+                        continue
+
                     rule = ReconciliationRule(
                         rule_id=f"RULE_{generate_uid()}",
                         rule_name=rule_dict.get('rule_name', f"LLM_Rule_{generate_uid()}"),
@@ -385,6 +394,84 @@ class ReconciliationRuleGenerator:
         except Exception as e:
             logger.error(f"Error in LLM rule generation: {e}")
             return []
+
+    def _validate_rule_columns(
+        self,
+        rule_dict: Dict[str, Any],
+        schemas_info: Dict[str, DatabaseSchema]
+    ) -> bool:
+        """
+        Validate that all columns referenced in a rule actually exist in the schemas.
+
+        Args:
+            rule_dict: Rule dictionary from LLM
+            schemas_info: Schema information
+
+        Returns:
+            True if all columns exist, False otherwise
+        """
+        try:
+            source_schema_name = rule_dict.get('source_schema', '')
+            source_table_name = rule_dict.get('source_table', '')
+            source_columns = rule_dict.get('source_columns', [])
+            target_schema_name = rule_dict.get('target_schema', '')
+            target_table_name = rule_dict.get('target_table', '')
+            target_columns = rule_dict.get('target_columns', [])
+
+            # Find matching schema (handle both schema name and database name)
+            source_schema = None
+            for schema_name, schema in schemas_info.items():
+                db_name = self._extract_database_name(schema.database)
+                if schema_name == source_schema_name or db_name == source_schema_name:
+                    source_schema = schema
+                    break
+
+            target_schema = None
+            for schema_name, schema in schemas_info.items():
+                db_name = self._extract_database_name(schema.database)
+                if schema_name == target_schema_name or db_name == target_schema_name:
+                    target_schema = schema
+                    break
+
+            if not source_schema or not target_schema:
+                logger.debug(f"Schema not found: source={source_schema_name}, target={target_schema_name}")
+                return False
+
+            # Validate source columns exist
+            source_table = source_schema.tables.get(source_table_name)
+            if not source_table:
+                logger.debug(f"Source table '{source_table_name}' not found in schema '{source_schema_name}'")
+                return False
+
+            source_column_names = [col.name.lower() for col in source_table.columns]
+            for col in source_columns:
+                if col.lower() not in source_column_names:
+                    logger.debug(
+                        f"Source column '{col}' not found in table '{source_table_name}'. "
+                        f"Available columns: {source_column_names}"
+                    )
+                    return False
+
+            # Validate target columns exist
+            target_table = target_schema.tables.get(target_table_name)
+            if not target_table:
+                logger.debug(f"Target table '{target_table_name}' not found in schema '{target_schema_name}'")
+                return False
+
+            target_column_names = [col.name.lower() for col in target_table.columns]
+            for col in target_columns:
+                if col.lower() not in target_column_names:
+                    logger.debug(
+                        f"Target column '{col}' not found in table '{target_table_name}'. "
+                        f"Available columns: {target_column_names}"
+                    )
+                    return False
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Error validating rule columns: {e}")
+            return False
 
     def _is_uid_pattern(self, column_name: str) -> bool:
         """Check if column follows UID/ID naming pattern."""

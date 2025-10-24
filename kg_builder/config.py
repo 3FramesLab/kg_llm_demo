@@ -95,6 +95,20 @@ MONGODB_DATABASE = os.getenv("MONGODB_DATABASE", "reconciliation")
 MONGODB_AUTH_SOURCE = os.getenv("MONGODB_AUTH_SOURCE", "admin")
 MONGODB_RESULTS_COLLECTION = os.getenv("MONGODB_RESULTS_COLLECTION", "reconciliation_results")
 
+# Landing Database Configuration (for multi-database reconciliation)
+LANDING_DB_ENABLED = os.getenv("LANDING_DB_ENABLED", "false").lower() == "true"
+LANDING_DB_TYPE = os.getenv("LANDING_DB_TYPE", "mysql")
+LANDING_DB_HOST = os.getenv("LANDING_DB_HOST", "localhost")
+LANDING_DB_PORT = int(os.getenv("LANDING_DB_PORT", "3306"))
+LANDING_DB_DATABASE = os.getenv("LANDING_DB_DATABASE", "reconciliation_landing")
+LANDING_DB_USERNAME = os.getenv("LANDING_DB_USERNAME", "")
+LANDING_DB_PASSWORD = os.getenv("LANDING_DB_PASSWORD", "")
+LANDING_DB_SCHEMA = os.getenv("LANDING_DB_SCHEMA", "staging")  # Schema for staging tables
+LANDING_KEEP_STAGING = os.getenv("LANDING_KEEP_STAGING", "true").lower() == "true"  # Keep for 24h
+LANDING_STAGING_TTL_HOURS = int(os.getenv("LANDING_STAGING_TTL_HOURS", "24"))  # Auto-cleanup after 24 hours
+LANDING_BATCH_SIZE = int(os.getenv("LANDING_BATCH_SIZE", "10000"))  # Rows per batch
+LANDING_USE_BULK_COPY = os.getenv("LANDING_USE_BULK_COPY", "true").lower() == "true"  # Use LOAD DATA INFILE
+
 
 def get_source_db_config():
     """
@@ -161,4 +175,29 @@ def get_mongodb_connection_string() -> str:
         )
     else:
         return f"mongodb://{MONGODB_HOST}:{MONGODB_PORT}/"
+
+
+def get_landing_db_config():
+    """
+    Get landing database configuration from environment variables.
+
+    Returns:
+        DatabaseConnectionInfo if credentials are configured, None otherwise
+    """
+    if not LANDING_DB_ENABLED or not LANDING_DB_USERNAME or not LANDING_DB_PASSWORD:
+        return None
+
+    from kg_builder.models import DatabaseConnectionInfo
+
+    config = DatabaseConnectionInfo(
+        db_type=LANDING_DB_TYPE,
+        host=LANDING_DB_HOST,
+        port=LANDING_DB_PORT,
+        database=LANDING_DB_DATABASE,
+        username=LANDING_DB_USERNAME,
+        password=LANDING_DB_PASSWORD,
+        schema=LANDING_DB_SCHEMA
+    )
+
+    return config
 

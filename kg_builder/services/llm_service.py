@@ -79,7 +79,9 @@ Return as JSON with this structure:
         }}
     ]
 }}"""
-            
+
+            logger.debug(f"Entity Extraction Prompt:\n{prompt}")
+
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
@@ -97,8 +99,10 @@ Return as JSON with this structure:
             )
             
             result_text = response.choices[0].message.content
+            logger.debug(f"LLM Entity Extraction Response:\n{result_text}")
+
             result = json.loads(result_text)
-            
+
             logger.info(f"LLM extracted {len(result.get('entities', []))} entities")
             return result
             
@@ -154,7 +158,9 @@ Return as JSON with this structure:
         }}
     ]
 }}"""
-            
+
+            logger.debug(f"Relationship Extraction Prompt:\n{prompt}")
+
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
@@ -172,8 +178,10 @@ Return as JSON with this structure:
             )
             
             result_text = response.choices[0].message.content
+            logger.debug(f"LLM Relationship Extraction Response:\n{result_text}")
+
             result = json.loads(result_text)
-            
+
             logger.info(f"LLM extracted {len(result.get('relationships', []))} relationships")
             return result
             
@@ -227,7 +235,9 @@ Return as JSON with this structure:
     "business_logic": "inferred business logic",
     "quality_notes": "data quality considerations"
 }}"""
-            
+
+            logger.debug(f"Schema Analysis Prompt:\n{prompt}")
+
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
@@ -245,8 +255,10 @@ Return as JSON with this structure:
             )
             
             result_text = response.choices[0].message.content
+            logger.debug(f"LLM Schema Analysis Response:\n{result_text}")
+
             result = json.loads(result_text)
-            
+
             logger.info("LLM schema analysis completed")
             return result
             

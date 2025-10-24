@@ -437,6 +437,9 @@ Return as JSON array with this structure:
         return f"""Given these cross-schema relationships and schemas, generate reconciliation rules
 that would allow matching records between these schemas.
 
+IMPORTANT: Only use columns that ACTUALLY EXIST in the provided schemas below.
+Do NOT invent or hallucinate column names. Verify each column exists in the schema before using it.
+
 SCHEMAS:
 {schemas_str}
 
@@ -445,12 +448,12 @@ RELATIONSHIPS:
 
 For each rule, provide:
 1. rule_name: Descriptive name for the rule
-2. source_schema: Name of the source schema
-3. source_table: Source table name
-4. source_columns: Array of source column names involved in matching
-5. target_schema: Name of the target schema
-6. target_table: Target table name
-7. target_columns: Array of target column names involved in matching
+2. source_schema: Name of the source schema (must match schema names above)
+3. source_table: Source table name (must exist in source schema)
+4. source_columns: Array of source column names (must ALL exist in the table schema)
+5. target_schema: Name of the target schema (must match schema names above)
+6. target_table: Target table name (must exist in target schema)
+7. target_columns: Array of target column names (must ALL exist in the table schema)
 8. match_type: One of "exact", "fuzzy", "composite", "transformation", "semantic"
 9. transformation: SQL or Python code for data matching (if needed, null otherwise)
 10. confidence: Confidence score (0.0-1.0) for this rule
@@ -479,7 +482,12 @@ Return JSON:
   ]
 }}
 
-Only generate rules with confidence >= 0.7. Focus on cross-schema relationships."""
+CRITICAL RULES:
+- Only generate rules with confidence >= 0.7
+- Focus on cross-schema relationships
+- ONLY use columns that exist in the provided schemas
+- Double-check each column name against the schema before including it
+- If you cannot find a valid matching column, do not create a rule for it"""
 
     def _parse_reconciliation_rules(self, response_text: str) -> List[Dict[str, Any]]:
         """Parse reconciliation rules from LLM response."""

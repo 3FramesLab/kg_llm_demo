@@ -1,0 +1,372 @@
+D:\learning\dq-poc\kg_builder\models.py:288: UserWarning: Field name "schema" in "DatabaseConnectionInfo" shadows an attribute in parent "BaseModel"
+  class DatabaseConnectionInfo(BaseModel):
+2025-10-24 13:06:36,622 - INFO - 
+================================================================================
+2025-10-24 13:06:36,622 - INFO - STARTING END-TO-END RECONCILIATION WORKFLOW
+2025-10-24 13:06:36,622 - INFO - ================================================================================
+2025-10-24 13:06:36,622 - INFO - \U0001f680 Landing Database: ENABLED
+2025-10-24 13:06:36,623 - INFO -    Will use landing database approach for reconciliation
+2025-10-24 13:06:36,623 - INFO -    Expected: 10-15x faster execution, constant memory
+2025-10-24 13:06:36,629 - INFO - ================================================================================
+2025-10-24 13:06:36,629 - INFO - 
+================================================================================
+2025-10-24 13:06:36,629 - INFO - STEP 1: SCHEMA LOADING
+2025-10-24 13:06:36,629 - INFO - ================================================================================
+2025-10-24 13:06:36,629 - INFO - Found 2 schemas: ['orderMgmt-catalog', 'qinspect-designcode']
+2025-10-24 13:06:36,630 - INFO - [OK] Loaded schema: orderMgmt-catalog - Tables: 1
+2025-10-24 13:06:36,631 - INFO - [OK] Loaded schema: qinspect-designcode - Tables: 1
+2025-10-24 13:06:36,631 - INFO - [OK] Successfully loaded 2 schemas
+2025-10-24 13:06:36,631 - INFO - 
+================================================================================
+2025-10-24 13:06:36,631 - INFO - STEP 2: KNOWLEDGE GRAPH CREATION
+2025-10-24 13:06:36,631 - INFO - ================================================================================
+2025-10-24 13:06:36,631 - INFO - Creating KG 'kg_20251024_130636' from schemas: ['orderMgmt-catalog', 'qinspect-designcode']
+2025-10-24 13:06:36,631 - INFO - Loaded schema: orderMgmt-catalog
+2025-10-24 13:06:36,632 - INFO - Loaded schema: qinspect-designcode
+2025-10-24 13:06:36,633 - INFO - Built merged KG 'kg_20251024_130636' from 2 schemas with 2 nodes and 0 relationships
+2025-10-24 13:06:36,633 - INFO - [OK] KG created: kg_20251024_130636
+2025-10-24 13:06:36,633 - INFO -   - Nodes: 2
+2025-10-24 13:06:36,633 - INFO -   - Relationships: 0
+2025-10-24 13:06:36,633 - INFO - 
+================================================================================
+2025-10-24 13:06:36,633 - INFO - STEP 3: RECONCILIATION RULES GENERATION
+2025-10-24 13:06:36,633 - INFO - ================================================================================
+2025-10-24 13:06:39,340 - ERROR - Failed to connect to FalkorDB: Error 11001 connecting to falkordb:6379. getaddrinfo failed.
+2025-10-24 13:06:39,340 - INFO - Generating reconciliation rules from KG 'kg_20251024_130636'
+2025-10-24 13:06:39,341 - INFO - Generating reconciliation rules from KG 'kg_20251024_130636'
+2025-10-24 13:06:39,341 - DEBUG - Loaded schema: orderMgmt-catalog
+2025-10-24 13:06:39,342 - DEBUG - Loaded schema: qinspect-designcode
+2025-10-24 13:06:39,342 - ERROR - Error querying KG relationships: 'FalkorDBBackend' object has no attribute 'execute_query'
+2025-10-24 13:06:39,350 - DEBUG - Generated 19 pattern-based rules
+2025-10-24 13:06:39,351 - INFO - Generated 19 reconciliation rules (19 pattern-based, 0 LLM-based)
+2025-10-24 13:06:39,351 - INFO - [OK] Reconciliation rules generated
+2025-10-24 13:06:39,351 - INFO -   - Ruleset ID: RECON_7D36AC0F
+2025-10-24 13:06:39,351 - INFO -   - Total Rules: 19
+2025-10-24 13:06:39,351 - INFO -   - Rule 1: Name_Match_catalog_id (confidence: 0.75)
+2025-10-24 13:06:39,351 - INFO -   - Rule 2: Name_Match_catalog_code (confidence: 0.75)
+2025-10-24 13:06:39,351 - INFO -   - Rule 3: Name_Match_catalog_sub_cat_uid (confidence: 0.75)
+2025-10-24 13:06:39,351 - INFO -   - ... and 16 more rules
+2025-10-24 13:06:39,353 - INFO - Saved ruleset to: data\reconciliation_rules\RECON_7D36AC0F.json
+2025-10-24 13:06:39,353 - INFO - 
+================================================================================
+2025-10-24 13:06:39,353 - INFO - STEP 4: DATABASE CONNECTION VERIFICATION
+2025-10-24 13:06:39,353 - INFO - ================================================================================
+2025-10-24 13:06:39,353 - INFO - Source Database: mysql @ localhost:3306/ordermgmt
+2025-10-24 13:06:39,353 - INFO - Target Database: mysql @ localhost:3306/newamazon
+2025-10-24 13:06:39,353 - INFO - [OK] Database configurations loaded successfully
+2025-10-24 13:06:39,353 - INFO - 
+================================================================================
+2025-10-24 13:06:39,353 - INFO - STEP 5: RULE EXECUTION
+2025-10-24 13:06:39,353 - INFO - ================================================================================
+2025-10-24 13:06:39,353 - INFO - \U0001f680 Using LANDING DATABASE approach
+2025-10-24 13:06:39,353 - INFO -   - This provides 10-15x faster execution
+2025-10-24 13:06:39,353 - INFO -   - KPIs calculated directly in SQL
+2025-10-24 13:06:39,353 - INFO -   - Constant memory usage
+2025-10-24 13:06:39,354 - INFO - Initialized LandingDBConnector for localhost:3306/reconciliation_landing
+2025-10-24 13:06:39,354 - INFO - Initialized StagingManager with schema: staging
+2025-10-24 13:06:39,354 - INFO - Initialized DataExtractor
+2025-10-24 13:06:39,354 - INFO - ReconciliationRuleStorage initialized at: D:\learning\dq-poc\data\reconciliation_rules
+2025-10-24 13:06:39,354 - INFO - Initialized LandingReconciliationExecutor
+2025-10-24 13:06:39,354 - INFO - Executing ruleset 'RECON_7D36AC0F' with landing database
+2025-10-24 13:06:39,354 - INFO - Record limit: 100
+2025-10-24 13:06:39,354 - INFO - Starting landing-based reconciliation execution: EXEC_7f668947
+2025-10-24 13:06:39,375 - INFO - Loaded ruleset 'RECON_7D36AC0F' with 19 rules
+2025-10-24 13:06:39,376 - INFO - Loaded ruleset 'RECON_7D36AC0F' with 19 rules
+2025-10-24 13:06:39,376 - INFO - ============================================================
+2025-10-24 13:06:39,376 - INFO - PHASE 1: Extracting source data to landing database
+2025-10-24 13:06:39,376 - INFO - ============================================================
+2025-10-24 13:06:39,376 - DEBUG - Connecting to jdbc:mysql://localhost:3306/ordermgmt
+2025-10-24 13:06:41,364 - DEBUG - Database connection established
+2025-10-24 13:06:41,364 - INFO - Extracting source data from ordermgmt.catalog
+2025-10-24 13:06:41,364 - DEBUG - Extraction query: SELECT `parent_tenant_uid`, `fabric_code`, `subbrand_uid`, `id`, `tenant_uid`, `subseason_uid`, `collection_uid`, `product_id`, `code`, `sub_cat_uid`, `brand_uid`, `brand_id`, `designer_code` FROM ordermgmt.catalog LIMIT 100
+2025-10-24 13:06:41,589 - INFO - Extracted 100 rows from ordermgmt.catalog
+2025-10-24 13:06:41,592 - INFO - Successfully connected to landing database
+2025-10-24 13:06:41,611 - INFO - Created staging table: recon_stage_EXEC_7f668947_source_20251024_073641 with 13 columns
+2025-10-24 13:06:41,614 - DEBUG - Stored metadata for staging table: recon_stage_EXEC_7f668947_source_20251024_073641
+2025-10-24 13:06:41,617 - ERROR - Database error: (3948, 'Loading local data is disabled; this must be enabled on both the client and server sides')
+2025-10-24 13:06:41,618 - WARNING - LOAD DATA INFILE failed: (3948, 'Loading local data is disabled; this must be enabled on both the client and server sides'). Falling back to batch insert.
+2025-10-24 13:06:41,625 - INFO - Batch inserted 100 rows
+2025-10-24 13:06:41,626 - ERROR - Database error: (1170, "BLOB/TEXT column 'parent_tenant_uid' used in key specification without a key length")
+2025-10-24 13:06:41,626 - WARNING - Failed to create index idx_recon_stage_EXEC_7f668947_source_20251024_073641_parent_tena: (1170, "BLOB/TEXT column 'parent_tenant_uid' used in key specification without a key length")
+2025-10-24 13:06:41,627 - ERROR - Database error: (1170, "BLOB/TEXT column 'fabric_code' used in key specification without a key length")
+2025-10-24 13:06:41,627 - WARNING - Failed to create index idx_recon_stage_EXEC_7f668947_source_20251024_073641_fabric_code: (1170, "BLOB/TEXT column 'fabric_code' used in key specification without a key length")
+2025-10-24 13:06:41,628 - ERROR - Database error: (1170, "BLOB/TEXT column 'subbrand_uid' used in key specification without a key length")
+2025-10-24 13:06:41,628 - WARNING - Failed to create index idx_recon_stage_EXEC_7f668947_source_20251024_073641_subbrand_ui: (1170, "BLOB/TEXT column 'subbrand_uid' used in key specification without a key length")
+2025-10-24 13:06:41,653 - DEBUG - Created index: idx_recon_stage_EXEC_7f668947_source_20251024_073641_id
+2025-10-24 13:06:41,653 - ERROR - Database error: (1170, "BLOB/TEXT column 'tenant_uid' used in key specification without a key length")
+2025-10-24 13:06:41,653 - WARNING - Failed to create index idx_recon_stage_EXEC_7f668947_source_20251024_073641_tenant_uid: (1170, "BLOB/TEXT column 'tenant_uid' used in key specification without a key length")
+2025-10-24 13:06:41,654 - ERROR - Database error: (1170, "BLOB/TEXT column 'subseason_uid' used in key specification without a key length")
+2025-10-24 13:06:41,654 - WARNING - Failed to create index idx_recon_stage_EXEC_7f668947_source_20251024_073641_subseason_u: (1170, "BLOB/TEXT column 'subseason_uid' used in key specification without a key length")
+2025-10-24 13:06:41,655 - ERROR - Database error: (1170, "BLOB/TEXT column 'collection_uid' used in key specification without a key length")
+2025-10-24 13:06:41,655 - WARNING - Failed to create index idx_recon_stage_EXEC_7f668947_source_20251024_073641_collection_: (1170, "BLOB/TEXT column 'collection_uid' used in key specification without a key length")
+2025-10-24 13:06:41,656 - ERROR - Database error: (1170, "BLOB/TEXT column 'product_id' used in key specification without a key length")
+2025-10-24 13:06:41,656 - WARNING - Failed to create index idx_recon_stage_EXEC_7f668947_source_20251024_073641_product_id: (1170, "BLOB/TEXT column 'product_id' used in key specification without a key length")
+2025-10-24 13:06:41,656 - ERROR - Database error: (1170, "BLOB/TEXT column 'code' used in key specification without a key length")
+2025-10-24 13:06:41,656 - WARNING - Failed to create index idx_recon_stage_EXEC_7f668947_source_20251024_073641_code: (1170, "BLOB/TEXT column 'code' used in key specification without a key length")
+2025-10-24 13:06:41,657 - ERROR - Database error: (1170, "BLOB/TEXT column 'sub_cat_uid' used in key specification without a key length")
+2025-10-24 13:06:41,657 - WARNING - Failed to create index idx_recon_stage_EXEC_7f668947_source_20251024_073641_sub_cat_uid: (1170, "BLOB/TEXT column 'sub_cat_uid' used in key specification without a key length")
+2025-10-24 13:06:41,658 - ERROR - Database error: (1170, "BLOB/TEXT column 'brand_uid' used in key specification without a key length")
+2025-10-24 13:06:41,658 - WARNING - Failed to create index idx_recon_stage_EXEC_7f668947_source_20251024_073641_brand_uid: (1170, "BLOB/TEXT column 'brand_uid' used in key specification without a key length")
+2025-10-24 13:06:41,659 - ERROR - Database error: (1170, "BLOB/TEXT column 'brand_id' used in key specification without a key length")
+2025-10-24 13:06:41,659 - WARNING - Failed to create index idx_recon_stage_EXEC_7f668947_source_20251024_073641_brand_id: (1170, "BLOB/TEXT column 'brand_id' used in key specification without a key length")
+2025-10-24 13:06:41,660 - ERROR - Database error: (1170, "BLOB/TEXT column 'designer_code' used in key specification without a key length")
+2025-10-24 13:06:41,660 - WARNING - Failed to create index idx_recon_stage_EXEC_7f668947_source_20251024_073641_designer_co: (1170, "BLOB/TEXT column 'designer_code' used in key specification without a key length")
+2025-10-24 13:06:41,660 - INFO - Created 1 indexes on recon_stage_EXEC_7f668947_source_20251024_073641
+2025-10-24 13:06:41,665 - INFO - Extraction complete: 100 rows in 2288.65ms (44 rows/sec)
+2025-10-24 13:06:41,665 - INFO - Source extraction: 100 rows in 2288.65ms
+2025-10-24 13:06:41,665 - INFO - ============================================================
+2025-10-24 13:06:41,665 - INFO - PHASE 2: Extracting target data to landing database
+2025-10-24 13:06:41,665 - INFO - ============================================================
+2025-10-24 13:06:41,665 - DEBUG - Connecting to jdbc:mysql://localhost:3306/newamazon
+2025-10-24 13:06:41,725 - DEBUG - Database connection established
+2025-10-24 13:06:41,725 - INFO - Extracting target data from newamazon.design_code_master
+2025-10-24 13:06:41,725 - DEBUG - Extraction query: SELECT `parent_tenant_uid`, `product_code`, `sub_brand_uid`, `fabric_code`, `id`, `tenant_uid`, `product_type_uid`, `collection_uid`, `season_uid`, `code`, `sub_category_uid`, `brand_uid`, `design_code`, `product_uid` FROM newamazon.design_code_master LIMIT 100
+2025-10-24 13:06:41,736 - INFO - Extracted 100 rows from newamazon.design_code_master
+2025-10-24 13:06:41,762 - INFO - Created staging table: recon_stage_EXEC_7f668947_target_20251024_073641 with 14 columns
+2025-10-24 13:06:41,766 - DEBUG - Stored metadata for staging table: recon_stage_EXEC_7f668947_target_20251024_073641
+2025-10-24 13:06:41,768 - ERROR - Database error: (3948, 'Loading local data is disabled; this must be enabled on both the client and server sides')
+2025-10-24 13:06:41,768 - WARNING - LOAD DATA INFILE failed: (3948, 'Loading local data is disabled; this must be enabled on both the client and server sides'). Falling back to batch insert.
+2025-10-24 13:06:41,774 - INFO - Batch inserted 100 rows
+2025-10-24 13:06:41,775 - ERROR - Database error: (1170, "BLOB/TEXT column 'parent_tenant_uid' used in key specification without a key length")
+2025-10-24 13:06:41,775 - WARNING - Failed to create index idx_recon_stage_EXEC_7f668947_target_20251024_073641_parent_tena: (1170, "BLOB/TEXT column 'parent_tenant_uid' used in key specification without a key length")
+2025-10-24 13:06:41,775 - ERROR - Database error: (1170, "BLOB/TEXT column 'product_code' used in key specification without a key length")
+2025-10-24 13:06:41,775 - WARNING - Failed to create index idx_recon_stage_EXEC_7f668947_target_20251024_073641_product_cod: (1170, "BLOB/TEXT column 'product_code' used in key specification without a key length")
+2025-10-24 13:06:41,776 - ERROR - Database error: (1170, "BLOB/TEXT column 'sub_brand_uid' used in key specification without a key length")
+2025-10-24 13:06:41,776 - WARNING - Failed to create index idx_recon_stage_EXEC_7f668947_target_20251024_073641_sub_brand_u: (1170, "BLOB/TEXT column 'sub_brand_uid' used in key specification without a key length")
+2025-10-24 13:06:41,777 - ERROR - Database error: (1170, "BLOB/TEXT column 'fabric_code' used in key specification without a key length")
+2025-10-24 13:06:41,777 - WARNING - Failed to create index idx_recon_stage_EXEC_7f668947_target_20251024_073641_fabric_code: (1170, "BLOB/TEXT column 'fabric_code' used in key specification without a key length")
+2025-10-24 13:06:41,806 - DEBUG - Created index: idx_recon_stage_EXEC_7f668947_target_20251024_073641_id
+2025-10-24 13:06:41,807 - ERROR - Database error: (1170, "BLOB/TEXT column 'tenant_uid' used in key specification without a key length")
+2025-10-24 13:06:41,807 - WARNING - Failed to create index idx_recon_stage_EXEC_7f668947_target_20251024_073641_tenant_uid: (1170, "BLOB/TEXT column 'tenant_uid' used in key specification without a key length")
+2025-10-24 13:06:41,808 - ERROR - Database error: (1170, "BLOB/TEXT column 'product_type_uid' used in key specification without a key length")
+2025-10-24 13:06:41,808 - WARNING - Failed to create index idx_recon_stage_EXEC_7f668947_target_20251024_073641_product_typ: (1170, "BLOB/TEXT column 'product_type_uid' used in key specification without a key length")
+2025-10-24 13:06:41,809 - ERROR - Database error: (1170, "BLOB/TEXT column 'collection_uid' used in key specification without a key length")
+2025-10-24 13:06:41,809 - WARNING - Failed to create index idx_recon_stage_EXEC_7f668947_target_20251024_073641_collection_: (1170, "BLOB/TEXT column 'collection_uid' used in key specification without a key length")
+2025-10-24 13:06:41,810 - ERROR - Database error: (1170, "BLOB/TEXT column 'season_uid' used in key specification without a key length")
+2025-10-24 13:06:41,810 - WARNING - Failed to create index idx_recon_stage_EXEC_7f668947_target_20251024_073641_season_uid: (1170, "BLOB/TEXT column 'season_uid' used in key specification without a key length")
+2025-10-24 13:06:41,811 - ERROR - Database error: (1170, "BLOB/TEXT column 'code' used in key specification without a key length")
+2025-10-24 13:06:41,811 - WARNING - Failed to create index idx_recon_stage_EXEC_7f668947_target_20251024_073641_code: (1170, "BLOB/TEXT column 'code' used in key specification without a key length")
+2025-10-24 13:06:41,811 - ERROR - Database error: (1170, "BLOB/TEXT column 'sub_category_uid' used in key specification without a key length")
+2025-10-24 13:06:41,811 - WARNING - Failed to create index idx_recon_stage_EXEC_7f668947_target_20251024_073641_sub_categor: (1170, "BLOB/TEXT column 'sub_category_uid' used in key specification without a key length")
+2025-10-24 13:06:41,812 - ERROR - Database error: (1170, "BLOB/TEXT column 'brand_uid' used in key specification without a key length")
+2025-10-24 13:06:41,812 - WARNING - Failed to create index idx_recon_stage_EXEC_7f668947_target_20251024_073641_brand_uid: (1170, "BLOB/TEXT column 'brand_uid' used in key specification without a key length")
+2025-10-24 13:06:41,813 - ERROR - Database error: (1170, "BLOB/TEXT column 'design_code' used in key specification without a key length")
+2025-10-24 13:06:41,813 - WARNING - Failed to create index idx_recon_stage_EXEC_7f668947_target_20251024_073641_design_code: (1170, "BLOB/TEXT column 'design_code' used in key specification without a key length")
+2025-10-24 13:06:41,815 - ERROR - Database error: (1170, "BLOB/TEXT column 'product_uid' used in key specification without a key length")
+2025-10-24 13:06:41,815 - WARNING - Failed to create index idx_recon_stage_EXEC_7f668947_target_20251024_073641_product_uid: (1170, "BLOB/TEXT column 'product_uid' used in key specification without a key length")
+2025-10-24 13:06:41,815 - INFO - Created 1 indexes on recon_stage_EXEC_7f668947_target_20251024_073641
+2025-10-24 13:06:41,820 - INFO - Extraction complete: 100 rows in 154.99ms (645 rows/sec)
+2025-10-24 13:06:41,820 - INFO - Target extraction: 100 rows in 154.99ms
+2025-10-24 13:06:41,822 - INFO - ============================================================
+2025-10-24 13:06:41,822 - INFO - PHASE 3: Reconciling in landing database and calculating KPIs
+2025-10-24 13:06:41,822 - INFO - ============================================================
+2025-10-24 13:06:41,822 - DEBUG - ================================================================================
+2025-10-24 13:06:41,822 - DEBUG - GENERATED RECONCILIATION SQL QUERY:
+2025-10-24 13:06:41,822 - DEBUG - ================================================================================
+2025-10-24 13:06:41,822 - DEBUG - 
+        WITH
+        -- Count total records in source
+        source_total AS (
+            SELECT COUNT(*) as total_count
+            FROM `recon_stage_EXEC_7f668947_source_20251024_073641`
+        ),
+
+        -- Count total records in target
+        target_total AS (
+            SELECT COUNT(*) as total_count
+            FROM `recon_stage_EXEC_7f668947_target_20251024_073641`
+        ),
+
+        -- Find matched records
+        matched AS (
+            SELECT
+                COUNT(*) as matched_count,
+                0.75 as avg_confidence,
+                SUM(CASE WHEN 0.75 >= 0.9 THEN 1 ELSE 0 END) as high_conf,
+                SUM(CASE WHEN 0.75 >= 0.8 AND 0.75 < 0.9 THEN 1 ELSE 0 END) as med_conf,
+                SUM(CASE WHEN 0.75 < 0.8 THEN 1 ELSE 0 END) as low_conf
+            FROM `recon_stage_EXEC_7f668947_source_20251024_073641` s
+            INNER JOIN `recon_stage_EXEC_7f668947_target_20251024_073641` t
+                ON (s.`id` = t.`id`) OR (s.`code` = t.`code`) OR (s.`sub_cat_uid` = t.`sub_category_uid`) OR (s.`tenant_uid` = t.`parent_tenant_uid`) OR (s.`tenant_uid` = t.`tenant_uid`) OR (s.`brand_uid` = t.`brand_uid`) OR (s.`brand_uid` = t.`sub_brand_uid`) OR (s.`subbrand_uid` = t.`brand_uid`) OR (s.`designer_code` = t.`design_code`) OR (s.`fabric_code` = t.`fabric_code`) OR (s.`collection_uid` = t.`collection_uid`) OR (s.`brand_id` = t.`brand_uid`) OR (s.`brand_id` = t.`sub_brand_uid`) OR (s.`product_id` = t.`product_type_uid`) OR (s.`product_id` = t.`product_code`) OR (s.`product_id` = t.`product_uid`) OR (s.`parent_tenant_uid` = t.`parent_tenant_uid`) OR (s.`parent_tenant_uid` = t.`tenant_uid`) OR (s.`subseason_uid` = t.`season_uid`)
+        ),
+
+        -- Find unmatched source records
+        unmatched_source AS (
+            SELECT COUNT(*) as count
+            FROM `recon_stage_EXEC_7f668947_source_20251024_073641` s
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM `recon_stage_EXEC_7f668947_target_20251024_073641` t
+                WHERE (s.`id` = t.`id`) OR (s.`code` = t.`code`) OR (s.`sub_cat_uid` = t.`sub_category_uid`) OR (s.`tenant_uid` = t.`parent_tenant_uid`) OR (s.`tenant_uid` = t.`tenant_uid`) OR (s.`brand_uid` = t.`brand_uid`) OR (s.`brand_uid` = t.`sub_brand_uid`) OR (s.`subbrand_uid` = t.`brand_uid`) OR (s.`designer_code` = t.`design_code`) OR (s.`fabric_code` = t.`fabric_code`) OR (s.`collection_uid` = t.`collection_uid`) OR (s.`brand_id` = t.`brand_uid`) OR (s.`brand_id` = t.`sub_brand_uid`) OR (s.`product_id` = t.`product_type_uid`) OR (s.`product_id` = t.`product_code`) OR (s.`product_id` = t.`product_uid`) OR (s.`parent_tenant_uid` = t.`parent_tenant_uid`) OR (s.`parent_tenant_uid` = t.`tenant_uid`) OR (s.`subseason_uid` = t.`season_uid`)
+            )
+        ),
+
+        -- Find unmatched target records
+        unmatched_target AS (
+            SELECT COUNT(*) as count
+            FROM `recon_stage_EXEC_7f668947_target_20251024_073641` t
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM `recon_stage_EXEC_7f668947_source_20251024_073641` s
+                WHERE (s.`id` = t.`id`) OR (s.`code` = t.`code`) OR (s.`sub_cat_uid` = t.`sub_category_uid`) OR (s.`tenant_uid` = t.`parent_tenant_uid`) OR (s.`tenant_uid` = t.`tenant_uid`) OR (s.`brand_uid` = t.`brand_uid`) OR (s.`brand_uid` = t.`sub_brand_uid`) OR (s.`subbrand_uid` = t.`brand_uid`) OR (s.`designer_code` = t.`design_code`) OR (s.`fabric_code` = t.`fabric_code`) OR (s.`collection_uid` = t.`collection_uid`) OR (s.`brand_id` = t.`brand_uid`) OR (s.`brand_id` = t.`sub_brand_uid`) OR (s.`product_id` = t.`product_type_uid`) OR (s.`product_id` = t.`product_code`) OR (s.`product_id` = t.`product_uid`) OR (s.`parent_tenant_uid` = t.`parent_tenant_uid`) OR (s.`parent_tenant_uid` = t.`tenant_uid`) OR (s.`subseason_uid` = t.`season_uid`)
+            )
+        ),
+
+        -- Calculate KPIs
+        kpis AS (
+            SELECT
+                m.matched_count,
+                us.count as unmatched_source_count,
+                ut.count as unmatched_target_count,
+                st.total_count as total_source_count,
+                tt.total_count as total_target_count,
+
+                -- RCR Calculation
+                ROUND((m.matched_count * 100.0 / NULLIF(st.total_count, 0)), 2) as rcr,
+                CASE
+                    WHEN (m.matched_count * 100.0 / NULLIF(st.total_count, 0)) >= 90 THEN 'HEALTHY'
+                    WHEN (m.matched_count * 100.0 / NULLIF(st.total_count, 0)) >= 80 THEN 'WARNING'
+                    ELSE 'CRITICAL'
+                END as rcr_status,
+
+                -- DQCS Calculation
+                ROUND(m.avg_confidence, 3) as dqcs,
+                CASE
+                    WHEN m.avg_confidence >= 0.8 THEN 'GOOD'
+                    WHEN m.avg_confidence >= 0.7 THEN 'ACCEPTABLE'
+                    ELSE 'POOR'
+                END as dqcs_status,
+
+                -- Confidence distribution
+                m.high_conf as high_confidence_count,
+                m.med_conf as medium_confidence_count,
+                m.low_conf as low_confidence_count,
+
+                -- REI Calculation (simplified)
+                ROUND(
+                    (m.matched_count * 100.0 / NULLIF(st.total_count, 0)) *
+                    (19 * 1.0 / 19)
+                , 2) as rei
+
+            FROM matched m
+            CROSS JOIN unmatched_source us
+            CROSS JOIN unmatched_target ut
+            CROSS JOIN source_total st
+            CROSS JOIN target_total tt
+        )
+
+        SELECT * FROM kpis;
+        
+2025-10-24 13:06:41,822 - DEBUG - ================================================================================
+2025-10-24 13:06:41,822 - DEBUG - Executing reconciliation query...
+2025-10-24 13:06:41,845 - INFO - Reconciliation complete in 23.04ms
+2025-10-24 13:06:41,845 - INFO -   - Matched: 0
+2025-10-24 13:06:41,845 - INFO -   - Unmatched Source: 100
+2025-10-24 13:06:41,845 - INFO -   - Unmatched Target: 100
+2025-10-24 13:06:41,845 - INFO -   - RCR: 0.0% (CRITICAL)
+2025-10-24 13:06:41,845 - INFO -   - DQCS: 0.75 (ACCEPTABLE)
+2025-10-24 13:06:41,845 - INFO -   - REI: 0.0
+2025-10-24 13:06:41,845 - INFO - ============================================================
+2025-10-24 13:06:41,845 - INFO - PHASE 4: Storing results in MongoDB
+2025-10-24 13:06:41,845 - INFO - ============================================================
+2025-10-24 13:06:41,847 - INFO - Connecting to MongoDB at mongodb://localhost:27017/
+2025-10-24 13:06:41,848 - DEBUG - {"message": "Starting topology monitoring", "topologyId": {"$oid": "68fb2c8994715da1967bf0af"}}
+2025-10-24 13:06:41,849 - DEBUG - {"message": "Topology description changed", "topologyId": {"$oid": "68fb2c8994715da1967bf0af"}, "previousDescription": "<TopologyDescription id: 68fb2c8994715da1967bf0af, topology_type: Unknown, servers: []>", "newDescription": "<TopologyDescription id: 68fb2c8994715da1967bf0af, topology_type: Unknown, servers: [<ServerDescription ('localhost', 27017) server_type: Unknown, rtt: None>]>"}
+2025-10-24 13:06:41,849 - DEBUG - {"message": "Starting server monitoring", "topologyId": {"$oid": "68fb2c8994715da1967bf0af"}, "serverHost": "localhost", "serverPort": 27017}
+2025-10-24 13:06:41,849 - DEBUG - {"message": "Connection pool created", "clientId": {"$oid": "68fb2c8994715da1967bf0af"}, "serverHost": "localhost", "serverPort": 27017}
+2025-10-24 13:06:41,850 - DEBUG - {"message": "Server selection started", "selector": "Primary()", "operation": "ping", "topologyDescription": "<TopologyDescription id: 68fb2c8994715da1967bf0af, topology_type: Unknown, servers: [<ServerDescription ('localhost', 27017) server_type: Unknown, rtt: None>]>", "clientId": {"$oid": "68fb2c8994715da1967bf0af"}}
+2025-10-24 13:06:41,851 - DEBUG - {"message": "Waiting for suitable server to become available", "selector": "Primary()", "operation": "ping", "topologyDescription": "<TopologyDescription id: 68fb2c8994715da1967bf0af, topology_type: Unknown, servers: [<ServerDescription ('localhost', 27017) server_type: Unknown, rtt: None>]>", "clientId": {"$oid": "68fb2c8994715da1967bf0af"}, "remainingTimeMS": 5000}
+2025-10-24 13:06:41,851 - DEBUG - {"message": "Server heartbeat started", "topologyId": {"$oid": "68fb2c8994715da1967bf0af"}, "driverConnectionId": 1, "serverHost": "localhost", "serverPort": 27017, "awaited": false}
+2025-10-24 13:06:41,852 - DEBUG - {"message": "Server heartbeat succeeded", "topologyId": {"$oid": "68fb2c8994715da1967bf0af"}, "driverConnectionId": 1, "serverConnectionId": 82, "serverHost": "localhost", "serverPort": 27017, "awaited": false, "durationMS": 0.0, "reply": "{\"helloOk\": true, \"ismaster\": true, \"topologyVersion\": {\"processId\": {\"$oid\": \"68fa2799ea64e312b4f0a9ae\"}}, \"maxBsonObjectSize\": 16777216, \"maxMessageSizeBytes\": 48000000, \"maxWriteBatchSize\": 100000, \"localTime\": {\"$date\": \"2025-10-24T07:36:41.853Z\"}, \"logicalSessionTimeoutMinutes\": 30, \"connectionId\": 82, \"maxWireVersion\": 27, \"ok\": 1.0}"}
+2025-10-24 13:06:41,852 - DEBUG - {"message": "Connection pool ready", "clientId": {"$oid": "68fb2c8994715da1967bf0af"}, "serverHost": "localhost", "serverPort": 27017}
+2025-10-24 13:06:41,852 - DEBUG - {"message": "Topology description changed", "topologyId": {"$oid": "68fb2c8994715da1967bf0af"}, "previousDescription": "<TopologyDescription id: 68fb2c8994715da1967bf0af, topology_type: Unknown, servers: [<ServerDescription ('localhost', 27017) server_type: Unknown, rtt: None>]>", "newDescription": "<TopologyDescription id: 68fb2c8994715da1967bf0af, topology_type: Single, servers: [<ServerDescription ('localhost', 27017) server_type: Standalone, rtt: 0.0>]>"}
+2025-10-24 13:06:41,854 - DEBUG - {"message": "Server selection succeeded", "selector": "Primary()", "operation": "ping", "topologyDescription": "<TopologyDescription id: 68fb2c8994715da1967bf0af, topology_type: Single, servers: [<ServerDescription ('localhost', 27017) server_type: Standalone, rtt: 0.0>]>", "clientId": {"$oid": "68fb2c8994715da1967bf0af"}, "serverHost": "localhost", "serverPort": 27017}
+2025-10-24 13:06:41,854 - DEBUG - {"message": "Connection checkout started", "clientId": {"$oid": "68fb2c8994715da1967bf0af"}, "serverHost": "localhost", "serverPort": 27017}
+2025-10-24 13:06:41,854 - DEBUG - {"message": "Connection created", "clientId": {"$oid": "68fb2c8994715da1967bf0af"}, "serverHost": "localhost", "serverPort": 27017, "driverConnectionId": 1}
+2025-10-24 13:06:41,854 - DEBUG - {"message": "Server heartbeat started", "topologyId": {"$oid": "68fb2c8994715da1967bf0af"}, "driverConnectionId": 1, "serverConnectionId": 82, "serverHost": "localhost", "serverPort": 27017, "awaited": true}
+2025-10-24 13:06:41,876 - DEBUG - {"message": "Connection ready", "clientId": {"$oid": "68fb2c8994715da1967bf0af"}, "serverHost": "localhost", "serverPort": 27017, "driverConnectionId": 1, "durationMS": 0.0}
+2025-10-24 13:06:41,876 - DEBUG - {"message": "Connection checked out", "clientId": {"$oid": "68fb2c8994715da1967bf0af"}, "serverHost": "localhost", "serverPort": 27017, "driverConnectionId": 1, "durationMS": 0.03200000000651926}
+2025-10-24 13:06:41,876 - DEBUG - {"message": "Command started", "clientId": {"$oid": "68fb2c8994715da1967bf0af"}, "command": "{\"ping\": 1, \"lsid\": {\"id\": {\"$binary\": {\"base64\": \"KjY31tocRiCRJvNRqaDUmQ==\", \"subType\": \"04\"}}}, \"$db\": \"admin\"}", "commandName": "ping", "databaseName": "admin", "requestId": 18467, "operationId": 18467, "driverConnectionId": 1, "serverConnectionId": 84, "serverHost": "localhost", "serverPort": 27017}
+2025-10-24 13:06:41,876 - DEBUG - {"message": "Command succeeded", "clientId": {"$oid": "68fb2c8994715da1967bf0af"}, "durationMS": 0.0, "reply": "{\"ok\": 1.0}", "commandName": "ping", "databaseName": "admin", "requestId": 18467, "operationId": 18467, "driverConnectionId": 1, "serverConnectionId": 84, "serverHost": "localhost", "serverPort": 27017}
+2025-10-24 13:06:41,877 - DEBUG - {"message": "Connection checked in", "clientId": {"$oid": "68fb2c8994715da1967bf0af"}, "serverHost": "localhost", "serverPort": 27017, "driverConnectionId": 1}
+2025-10-24 13:06:41,877 - INFO - Connected to MongoDB database: reconciliation
+2025-10-24 13:06:41,877 - DEBUG - {"message": "Server selection started", "selector": "<function writable_server_selector at 0x000001A05E1E4E00>", "operation": "insert", "topologyDescription": "<TopologyDescription id: 68fb2c8994715da1967bf0af, topology_type: Single, servers: [<ServerDescription ('localhost', 27017) server_type: Standalone, rtt: 0.0>]>", "clientId": {"$oid": "68fb2c8994715da1967bf0af"}}
+2025-10-24 13:06:41,877 - DEBUG - {"message": "Server selection succeeded", "selector": "<function writable_server_selector at 0x000001A05E1E4E00>", "operation": "insert", "topologyDescription": "<TopologyDescription id: 68fb2c8994715da1967bf0af, topology_type: Single, servers: [<ServerDescription ('localhost', 27017) server_type: Standalone, rtt: 0.0>]>", "clientId": {"$oid": "68fb2c8994715da1967bf0af"}, "serverHost": "localhost", "serverPort": 27017}
+2025-10-24 13:06:41,877 - DEBUG - {"message": "Connection checkout started", "clientId": {"$oid": "68fb2c8994715da1967bf0af"}, "serverHost": "localhost", "serverPort": 27017}
+2025-10-24 13:06:41,877 - DEBUG - {"message": "Connection checked out", "clientId": {"$oid": "68fb2c8994715da1967bf0af"}, "serverHost": "localhost", "serverPort": 27017, "driverConnectionId": 1, "durationMS": 0.0}
+2025-10-24 13:06:41,878 - DEBUG - {"message": "Command started", "clientId": {"$oid": "68fb2c8994715da1967bf0af"}, "command": "{\"insert\": \"reconciliation_results\", \"ordered\": true, \"lsid\": {\"id\": {\"$binary\": {\"base64\": \"KjY31tocRiCRJvNRqaDUmQ==\", \"subType\": \"04\"}}}, \"$db\": \"reconciliation\", \"documents\": [{\"ruleset_id\": \"RECON_7D36AC0F\", \"execution_timestamp\": {\"$date\": \"2025-10-24T07:36:41.877Z\"}, \"metadata\": {\"execution_id\": \"EXEC_7f668947\", \"ruleset_id\": \"RECON_7D36AC0F\", \"execution_type\": \"landing_database\", \"timestamp\": {\"$date\": \"2025-10-24T07:36:41.877Z\"}, \"kpis\": {\"unmatched_source_count\": 100, \"unmatched_target_count\": 100, \"total_source_count\": 100, \"total_target_count\": 100, \"rcr_status\": \"CRITICAL\", \"dqcs\": 0.75, \"dqcs_status\": \"ACCEPTABLE\"}, \"total_source_count\": 100}, \"_id\": {\"$oid\": \"68fb2c8994715da1967bf0b0\"}}]}", "commandName": "insert", "databaseName": "reconciliation", "requestId": 6334, "operationId": 6334, "driverConnectionId": 1, "serverConnectionId": 84, "serverHost": "localhost", "serverPort": 27017}
+2025-10-24 13:06:41,879 - DEBUG - {"message": "Command succeeded", "clientId": {"$oid": "68fb2c8994715da1967bf0af"}, "durationMS": 0.0, "reply": "{\"n\": 1, \"ok\": 1.0}", "commandName": "insert", "databaseName": "reconciliation", "requestId": 6334, "operationId": 6334, "driverConnectionId": 1, "serverConnectionId": 84, "serverHost": "localhost", "serverPort": 27017}
+2025-10-24 13:06:41,879 - DEBUG - {"message": "Connection checked in", "clientId": {"$oid": "68fb2c8994715da1967bf0af"}, "serverHost": "localhost", "serverPort": 27017, "driverConnectionId": 1}
+2025-10-24 13:06:41,879 - INFO - Stored reconciliation result in MongoDB: document_id=68fb2c8994715da1967bf0b0, matched=0, unmatched_source=0, unmatched_target=0
+2025-10-24 13:06:41,879 - INFO - Stored in MongoDB: 68fb2c8994715da1967bf0b0
+2025-10-24 13:06:41,879 - INFO - Staging tables retained (TTL: 24h)
+2025-10-24 13:06:41,891 - INFO - ============================================================
+2025-10-24 13:06:41,892 - INFO - EXECUTION COMPLETE: EXEC_7f668947
+2025-10-24 13:06:41,892 - INFO - Total time: 2536.61ms
+2025-10-24 13:06:41,892 - INFO - ============================================================
+2025-10-24 13:06:41,892 - INFO - [OK] Landing DB execution completed in 2.54s
+2025-10-24 13:06:41,892 - INFO -   - Matched Records: 0
+2025-10-24 13:06:41,892 - INFO -   - Unmatched Source: 100
+2025-10-24 13:06:41,892 - INFO -   - Unmatched Target: 100
+2025-10-24 13:06:41,892 - INFO -   - Total Source Records: 100
+2025-10-24 13:06:41,892 - INFO -   - Total Target Records: 100
+2025-10-24 13:06:41,892 - INFO -   - Storage Location: MongoDB
+2025-10-24 13:06:41,892 - INFO - 
+2025-10-24 13:06:41,892 - INFO - \U0001f4ca KPIs (Calculated in Landing DB):
+2025-10-24 13:06:41,892 - INFO -   - RCR: 0.00% [CRITICAL]
+2025-10-24 13:06:41,892 - INFO -   - DQCS: 0.750 [ACCEPTABLE]
+2025-10-24 13:06:41,892 - INFO -   - REI: 0.00
+2025-10-24 13:06:41,892 - INFO - 
+2025-10-24 13:06:41,892 - INFO - \U0001f5c4\ufe0f  Staging Tables (Retained for 24h):
+2025-10-24 13:06:41,892 - INFO -   - Source: recon_stage_EXEC_7f668947_source_20251024_073641
+2025-10-24 13:06:41,892 - INFO -     Rows: 100, Size: 0.02 MB
+2025-10-24 13:06:41,892 - INFO -   - Target: recon_stage_EXEC_7f668947_target_20251024_073641
+2025-10-24 13:06:41,892 - INFO -     Rows: 100, Size: 0.02 MB
+2025-10-24 13:06:41,892 - INFO - 
+2025-10-24 13:06:41,892 - INFO - \u23f1\ufe0f  Performance Breakdown:
+2025-10-24 13:06:41,893 - INFO -   - Extraction: 2446.02ms
+2025-10-24 13:06:41,893 - INFO -   - Reconciliation + KPIs: 23.04ms
+2025-10-24 13:06:41,893 - INFO -   - Total: 2536.61ms
+2025-10-24 13:06:41,893 - INFO - 
+================================================================================
+2025-10-24 13:06:41,893 - INFO - STEP 6: KPI CALCULATION
+2025-10-24 13:06:41,893 - INFO - ================================================================================
+2025-10-24 13:06:41,893 - INFO - \u2705 KPIs already calculated in landing database (SQL aggregation)
+2025-10-24 13:06:41,893 - INFO -    Skipping Python-based KPI calculation
+2025-10-24 13:06:41,893 - INFO - 
+2025-10-24 13:06:41,893 - INFO - \U0001f4ca KPI Results:
+2025-10-24 13:06:41,893 - INFO -   - RCR: 0.00% [CRITICAL]
+2025-10-24 13:06:41,893 - INFO -   - DQCS: 0.750 [ACCEPTABLE]
+2025-10-24 13:06:41,893 - INFO -   - REI: 0.00
+2025-10-24 13:06:41,893 - INFO - 
+2025-10-24 13:06:41,893 - INFO - \U0001f4a1 Benefits of Landing DB KPI Calculation:
+2025-10-24 13:06:41,893 - INFO -   - Instant calculation (SQL aggregation)
+2025-10-24 13:06:41,893 - INFO -   - No Python loops or in-memory processing
+2025-10-24 13:06:41,893 - INFO -   - Scales to billions of records
+2025-10-24 13:06:41,893 - INFO -   - Single query computes all KPIs
+2025-10-24 13:06:41,893 - INFO - 
+================================================================================
+2025-10-24 13:06:41,893 - INFO - END-TO-END RECONCILIATION WORKFLOW - SUMMARY
+2025-10-24 13:06:41,893 - INFO - ================================================================================
+2025-10-24 13:06:41,893 - INFO - Total Execution Time: 5.26 seconds
+2025-10-24 13:06:41,893 - INFO - Schemas Processed: 2
+2025-10-24 13:06:41,894 - INFO - Rules Generated: 19
+2025-10-24 13:06:41,894 - INFO - Records Matched: 0/100
+2025-10-24 13:06:41,894 - INFO - 
+2025-10-24 13:06:41,894 - INFO - \U0001f680 Execution Approach: LANDING DATABASE
+2025-10-24 13:06:41,894 - INFO -   - Extraction Time: 2446.02ms
+2025-10-24 13:06:41,894 - INFO -   - Reconciliation Time: 23.04ms
+2025-10-24 13:06:41,894 - INFO -   - Total Execution: 2536.61ms
+2025-10-24 13:06:41,894 - INFO -   - Staging Tables (24h TTL):
+2025-10-24 13:06:41,894 - INFO -     • Source: recon_stage_EXEC_7f668947_source_20251024_073641
+2025-10-24 13:06:41,894 - INFO -     • Target: recon_stage_EXEC_7f668947_target_20251024_073641
+2025-10-24 13:06:41,894 - INFO - 
+2025-10-24 13:06:41,894 - INFO - \U0001f4ca KPI Results:
+2025-10-24 13:06:41,894 - INFO -   - RCR: 0.00%
+2025-10-24 13:06:41,894 - INFO -   - DQCS: 0.750
+2025-10-24 13:06:41,894 - INFO -   - REI: 0.00
+2025-10-24 13:06:41,894 - INFO -   - Calculation Method: SQL Aggregation (Landing DB)
+2025-10-24 13:06:41,894 - INFO - 
+2025-10-24 13:06:41,894 - INFO - [OK] WORKFLOW COMPLETED SUCCESSFULLY
+2025-10-24 13:06:41,894 - INFO - ================================================================================
+2025-10-24 13:06:42,360 - DEBUG - {"message": "Server heartbeat failed", "topologyId": {"$oid": "68fb2c8994715da1967bf0af"}, "serverHost": "localhost", "serverPort": 27017, "awaited": true, "durationMS": 516.0000000032596, "failure": "\"_OperationCancelled('operation cancelled')\"", "driverConnectionId": 1}

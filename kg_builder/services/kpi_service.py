@@ -1,10 +1,11 @@
 """
 KPI Service for Data Quality and Reconciliation Monitoring.
 
-This service calculates and stores three key performance indicators:
+This service calculates and stores four key performance indicators:
 1. Reconciliation Coverage Rate (RCR) - % of matched records
 2. Data Quality Confidence Score (DQCS) - weighted confidence average
 3. Reconciliation Efficiency Index (REI) - efficiency score
+4. Inactive Records Rate (IRR) - % of inactive records in source data
 """
 
 import logging
@@ -68,6 +69,11 @@ class KPIService:
             rei_col = self.db['kpi_reconciliation_efficiency']
             rei_col.create_index([('ruleset_id', 1), ('timestamp', -1)])
             rei_col.create_index([('metrics.efficiency_index', 1)])
+
+            # IRR Collection (Inactive Records Rate)
+            irr_col = self.db['kpi_inactive_records_rate']
+            irr_col.create_index([('ruleset_id', 1), ('timestamp', -1)])
+            irr_col.create_index([('metrics.inactive_rate', 1)])
 
             # KG Metadata Collection
             kg_col = self.db['kpi_knowledge_graph_metadata']
@@ -314,6 +320,119 @@ class KPIService:
 
         return kpi_doc
 
+    def calculate_irr(
+        self,
+        total_source_count: int,
+        inactive_count: int,
+        ruleset_id: str,
+        ruleset_name: str,
+        execution_id: str,
+        source_kg: str,
+        source_schemas: List[str],
+        active_count: Optional[int] = None,
+        breakdown_by_status: Optional[List[Dict[str, Any]]] = None
+    ) -> Dict[str, Any]:
+        """
+        Calculate Inactive Records Rate (IRR).
+
+        IRR = (Inactive Records / Total Source Records) × 100
+
+        This KPI tracks the percentage of inactive records in the source data,
+        which helps identify data quality issues and stale records.
+
+        Args:
+            total_source_count: Total number of records in source
+            inactive_count: Number of inactive records (is_active = 0 or NULL)
+            ruleset_id: ID of the ruleset
+            ruleset_name: Name of the ruleset
+            execution_id: Execution ID
+            source_kg: Source knowledge graph name
+            source_schemas: List of source schemas
+            active_count: Number of active records (optional, calculated if not provided)
+            breakdown_by_status: Breakdown of records by status (optional)
+
+        Returns:
+            KPI document for MongoDB storage
+        """
+        if total_source_count == 0:
+            inactive_rate = 0.0
+            active_count = 0
+        else:
+            inactive_rate = (inactive_count / total_source_count) * 100
+            if active_count is None:
+                active_count = total_source_count - inactive_count
+
+        # Determine status based on inactive rate
+        if inactive_rate <= 5:
+            status = "EXCELLENT"  # Very few inactive records
+        elif inactive_rate <= 10:
+            status = "GOOD"  # Acceptable level of inactive records
+        elif inactive_rate <= 20:
+            status = "WARNING"  # Moderate level of inactive records
+        else:
+            status = "CRITICAL"  # High level of inactive records
+
+        kpi_doc = {
+            "kpi_type": "INACTIVE_RECORDS_RATE",
+            "ruleset_id": ruleset_id,
+            "ruleset_name": ruleset_name,
+            "execution_id": execution_id,
+            "timestamp": datetime.utcnow(),
+            "period": "execution",
+            "metrics": {
+                "total_records": total_source_count,
+                "active_records": active_count,
+                "inactive_records": inactive_count,
+                "inactive_rate": round(inactive_rate, 2),
+                "inactive_percentage": round(inactive_rate, 2),
+                "active_percentage": round(100 - inactive_rate, 2)
+            },
+            "breakdown_by_status": breakdown_by_status or [],
+            "thresholds": {
+                "excellent": 5,
+                "good": 10,
+                "warning": 20,
+                "critical": 100,
+                "current_status": status
+            },
+            "data_quality_assessment": {
+                "status": status,
+                "interpretation": self._interpret_irr_status(status, inactive_rate),
+                "recommendation": self._get_irr_recommendation(status, inactive_rate)
+            },
+            "data_lineage": {
+                "source_kg": source_kg,
+                "source_schemas": source_schemas,
+                "generated_from_kg": source_kg
+            },
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+
+        return kpi_doc
+
+    @staticmethod
+    def _interpret_irr_status(status: str, inactive_rate: float) -> str:
+        """Interpret the IRR status with a human-readable message."""
+        interpretations = {
+            "EXCELLENT": f"Only {inactive_rate:.2f}% of records are inactive - excellent data quality",
+            "GOOD": f"{inactive_rate:.2f}% of records are inactive - acceptable data quality",
+            "WARNING": f"{inactive_rate:.2f}% of records are inactive - consider data cleanup",
+            "CRITICAL": f"{inactive_rate:.2f}% of records are inactive - urgent data quality review needed"
+        }
+        return interpretations.get(status, "Unknown status")
+
+    @staticmethod
+    def _get_irr_recommendation(status: str, inactive_rate: float) -> str:
+        """Get recommendation based on IRR status."""
+        recommendations = {
+            "EXCELLENT": "Continue current data maintenance practices",
+            "GOOD": "Monitor inactive records regularly",
+            "WARNING": "Review and archive inactive records; implement retention policy",
+            "CRITICAL": "Immediate action required: investigate cause of high inactive rate; implement data cleanup"
+        }
+        return recommendations.get(status, "No recommendation available")
+
     def store_kpi(self, kpi_type: str, kpi_doc: Dict[str, Any]) -> Optional[str]:
         """Store KPI document in MongoDB."""
         try:
@@ -331,7 +450,8 @@ class KPIService:
         mapping = {
             "RECONCILIATION_COVERAGE_RATE": "kpi_reconciliation_coverage",
             "DATA_QUALITY_CONFIDENCE_SCORE": "kpi_data_quality_confidence",
-            "RECONCILIATION_EFFICIENCY_INDEX": "kpi_reconciliation_efficiency"
+            "RECONCILIATION_EFFICIENCY_INDEX": "kpi_reconciliation_efficiency",
+            "INACTIVE_RECORDS_RATE": "kpi_inactive_records_rate"
         }
         return mapping.get(kpi_type, "kpi_metrics")
 

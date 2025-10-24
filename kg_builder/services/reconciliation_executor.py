@@ -154,10 +154,16 @@ class ReconciliationExecutor:
 
             elapsed_ms = (time.time() - start_time) * 1000
 
+            # Count inactive records from source data
+            inactive_count = self._count_inactive_records(
+                source_conn, ruleset, source_db_config.db_type
+            )
+
             logger.info(
                 f"Execution complete: {len(all_matched)} matched, "
                 f"{len(all_unmatched_source)} unmatched source, "
-                f"{len(all_unmatched_target)} unmatched target"
+                f"{len(all_unmatched_target)} unmatched target, "
+                f"{inactive_count} inactive records"
             )
 
             # Prepare response
@@ -169,7 +175,8 @@ class ReconciliationExecutor:
                 "matched_records": all_matched[:limit] if limit else all_matched,
                 "unmatched_source": all_unmatched_source[:limit] if limit else all_unmatched_source,
                 "unmatched_target": all_unmatched_target[:limit] if limit else all_unmatched_target,
-                "execution_time_ms": elapsed_ms
+                "execution_time_ms": elapsed_ms,
+                "inactive_count": inactive_count
             }
 
             # Store in MongoDB if requested
@@ -244,6 +251,65 @@ class ReconciliationExecutor:
                     logger.debug("Target connection closed")
                 except Exception as e:
                     logger.error(f"Error closing target connection: {e}")
+
+    def _count_inactive_records(
+        self,
+        source_conn: Any,
+        ruleset: ReconciliationRuleSet,
+        db_type: str = "mysql"
+    ) -> int:
+        """
+        Count inactive records in the source database.
+
+        Looks for records where is_active = 0 or is_active IS NULL in the source table.
+
+        Args:
+            source_conn: Database connection
+            ruleset: The reconciliation ruleset
+            db_type: Database type (mysql, oracle, etc.)
+
+        Returns:
+            Count of inactive records
+        """
+        try:
+            if not ruleset.rules:
+                logger.warning("No rules in ruleset, cannot count inactive records")
+                return 0
+
+            # Get the first rule to determine source table
+            first_rule = ruleset.rules[0]
+            source_schema = first_rule.source_schema
+            source_table = first_rule.source_table
+
+            # Quote identifiers based on database type
+            schema_quoted = self._quote_identifier(source_schema, db_type)
+            table_quoted = self._quote_identifier(source_table, db_type)
+            is_active_quoted = self._quote_identifier("is_active", db_type)
+
+            # Build query to count inactive records
+            query = f"""
+            SELECT COUNT(*) as inactive_count
+            FROM {schema_quoted}.{table_quoted}
+            WHERE {is_active_quoted} = 0 OR {is_active_quoted} IS NULL
+            """
+
+            logger.debug(f"[INACTIVE COUNT QUERY] SQL:\n{query}")
+
+            # Execute query
+            cursor = source_conn.cursor()
+            cursor.execute(query)
+            result = cursor.fetchone()
+            cursor.close()
+
+            inactive_count = result[0] if result else 0
+            logger.info(f"Found {inactive_count} inactive records in {source_schema}.{source_table}")
+
+            return inactive_count
+
+        except Exception as e:
+            logger.warning(f"Failed to count inactive records: {e}")
+            # Return 0 if we can't count (don't fail the entire execution)
+            return 0
 
     def _execute_matched_query(
         self,

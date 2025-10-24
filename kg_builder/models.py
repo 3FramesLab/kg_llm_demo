@@ -294,6 +294,7 @@ class DatabaseConnectionInfo(BaseModel):
     username: str = Field(..., description="Database username")
     password: str = Field(..., description="Database password")
     service_name: Optional[str] = Field(default=None, description="Oracle service name (if applicable)")
+    schema: Optional[str] = Field(default=None, description="Database schema (for PostgreSQL/MySQL landing DB)")
 
     class Config:
         json_schema_extra = {
@@ -348,6 +349,10 @@ class RuleExecutionResponse(BaseModel):
     unmatched_source: List[Dict[str, Any]] = []
     unmatched_target: List[Dict[str, Any]] = []
     execution_time_ms: float
+    inactive_count: int = Field(
+        default=0,
+        description="Number of inactive records (is_active = 0 or NULL) in source data"
+    )
     mongodb_document_id: Optional[str] = Field(
         default=None,
         description="MongoDB document ID if results were stored in MongoDB"
@@ -471,4 +476,79 @@ class KPICalculationResponse(BaseModel):
     rei_value: Optional[float] = None
     error: Optional[str] = None
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+# Landing Database Models
+class LandingExecutionRequest(BaseModel):
+    """Request model for executing reconciliation with landing database."""
+    ruleset_id: str = Field(..., description="Ruleset ID to execute")
+    source_db_config: DatabaseConnectionInfo = Field(..., description="Source database connection")
+    target_db_config: DatabaseConnectionInfo = Field(..., description="Target database connection")
+    landing_db_config: Optional[DatabaseConnectionInfo] = Field(
+        default=None,
+        description="Landing database connection (uses config if not provided)"
+    )
+    limit: int = Field(default=None, description="Limit rows per staging table (None for all)")
+    include_matched: bool = Field(default=True, description="Include matched records")
+    include_unmatched: bool = Field(default=True, description="Include unmatched records")
+    store_in_mongodb: bool = Field(default=True, description="Store results in MongoDB")
+    keep_staging: bool = Field(default=True, description="Keep staging tables for audit (24h TTL)")
+
+
+class StagingTableInfo(BaseModel):
+    """Information about a staging table."""
+    table_name: str
+    row_count: int
+    created_at: datetime
+    size_mb: Optional[float] = None
+    indexes: List[str] = []
+
+
+class LandingExecutionResponse(BaseModel):
+    """Response from landing-based reconciliation execution."""
+    success: bool
+    execution_id: str
+    matched_count: int
+    unmatched_source_count: int
+    unmatched_target_count: int
+    total_source_count: int
+    total_target_count: int
+
+    # KPIs calculated directly in landing DB
+    rcr: float = Field(..., description="Reconciliation Coverage Rate (%)")
+    rcr_status: str = Field(..., description="HEALTHY, WARNING, or CRITICAL")
+    dqcs: float = Field(..., description="Data Quality Confidence Score")
+    dqcs_status: str = Field(..., description="GOOD, ACCEPTABLE, or POOR")
+    rei: float = Field(..., description="Reconciliation Efficiency Index")
+
+    # Staging table information
+    source_staging: StagingTableInfo
+    target_staging: StagingTableInfo
+
+    # Execution metrics
+    extraction_time_ms: float
+    reconciliation_time_ms: float
+    total_time_ms: float
+
+    # Storage
+    mongodb_document_id: Optional[str] = None
+    staging_retained: bool = True
+    staging_ttl_hours: int = 24
+
+    error: Optional[str] = None
+
+
+class StagingTableMetadata(BaseModel):
+    """Metadata for tracking staging tables."""
+    table_name: str
+    execution_id: str
+    ruleset_id: str
+    source_or_target: str  # 'source' or 'target'
+    source_db_type: str
+    source_db_host: str
+    row_count: int
+    created_at: datetime
+    expires_at: datetime
+    size_bytes: Optional[int] = None
+    status: str = Field(default="active", description="active, expired, deleted")
 

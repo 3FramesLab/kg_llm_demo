@@ -1,0 +1,6231 @@
+2025-10-24 14:00:46,804 - kg_builder.services.multi_schema_llm_service - INFO
+MultiSchemaLLMService initialized with model: gpt-3.5-turbo
+================================================================================
+
+2025-10-24 14:00:46,807 - kg_builder.services.multi_schema_llm_service - DEBUG
+Inference Prompt:
+Analyze these database schemas and already-detected relationships.
+Infer additional relationships that might exist based on semantic meaning and business logic.
+
+SCHEMAS:
+{
+  "orderMgmt-catalog": {
+    "tables": {
+      "catalog": {
+        "columns": [
+          {
+            "name": "id",
+            "type": "BIGINT",
+            "nullable": false,
+            "primary_key": false
+          },
+          {
+            "name": "added_to_cart_by_user_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "added_to_cart_on",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "added_to_cart_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "blocked_by_user_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "blocked_on",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "blocked_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "bought_by_user_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "brief",
+            "type": "VARCHAR(150) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "bucket",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "cat_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "category",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "category_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "closure_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "code",
+            "type": "VARCHAR(60) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "collection_story",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "color",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "compliance",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "composition_details",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "created_by",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "created_on",
+            "type": "VARCHAR(40) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "created_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "decline_reason",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "description",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "detail_pdf_uid",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "exclusivity",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_composition",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_count",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fit",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fit_type",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "from_price",
+            "type": "DOUBLE",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "garment_treatment",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "gender",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "group_uid",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "highres_image_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "image_uid",
+            "type": "VARCHAR(500) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "image_uid3d",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "image_uid3dcol_count",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_active",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_new",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "like_count",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "like_status",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "location",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "market_details",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "max_order_qty",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "max_production_lead_time",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "min_order_qty",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "min_production_lead_time",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "modified_by",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "modified_on",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "modified_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "monthly_capacity",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "neck_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "occasion",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "offer_month_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "origin",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "pattern",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "phase",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "price",
+            "type": "DECIMAL(11, 2)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_story",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "production_details",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "production_lead_time",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "qty_unit",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sample_policy",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sample_requested_by_user_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "searchable_description",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sleeve",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sold_on",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sold_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sourcing_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "specialization",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "status",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sub_cat_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sub_category_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "subbrand",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "tags",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "tech_pack_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "tenant_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "thumbnail_image_uid",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "title",
+            "type": "VARCHAR(150) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "to_price",
+            "type": "DOUBLE",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "trim_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "unlike_count",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "uuid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "vendor_name",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "vendor_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "view_count",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "weave_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "brand_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fit_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "subbrand_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "short_code",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "offer_month",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "designer_code",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "display_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "design_group",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "features",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "active_sap_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "ean_code",
+            "type": "VARCHAR(275)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "ext_ref_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fms_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sap_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "video_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "season",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "style_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "collection_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "net_price",
+            "type": "DECIMAL(11, 2)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "siblings",
+            "type": "VARCHAR(1000)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "stock_check",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "unit_uid",
+            "type": "VARCHAR(10)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "unit_uids",
+            "type": "VARCHAR(20)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "image_tags",
+            "type": "VARCHAR(200)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "tax",
+            "type": "DOUBLE",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "bought_count",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "ordinal",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "ref_img_uid",
+            "type": "VARCHAR(200)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "image_uid_3d",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "pleat_type",
+            "type": "VARCHAR(10)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "pocket",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "waist_closure",
+            "type": "VARCHAR(12)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "waist_rise",
+            "type": "VARCHAR(10)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "available_size_codes",
+            "type": "VARCHAR(200)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "distributor_stock_qty",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "warehouse_stock_qty",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "brand_id",
+            "type": "VARCHAR(50)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "company_id",
+            "type": "VARCHAR(50)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_id",
+            "type": "VARCHAR(50)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "parent_tenant_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "seq_no",
+            "type": "VARCHAR(50)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "subseason_uid",
+            "type": "VARCHAR(5)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_must_buy",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "catalog_price_size_codes",
+            "type": "VARCHAR(250)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "catalog_price_size_codes_2",
+            "type": "VARCHAR(250)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "drop_codes",
+            "type": "VARCHAR(50) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "filter_available_size_codes",
+            "type": "VARCHAR(50)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "attire",
+            "type": "VARCHAR(20)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "deleted",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "box_size",
+            "type": "INTEGER",
+            "nullable": false,
+            "primary_key": false
+          }
+        ],
+        "primary_keys": [
+          "id"
+        ],
+        "foreign_keys": []
+      }
+    },
+    "total_tables": 1
+  },
+  "qinspect-designcode": {
+    "tables": {
+      "design_code_master": {
+        "columns": [
+          {
+            "name": "uuid",
+            "type": "VARCHAR(40)",
+            "nullable": false,
+            "primary_key": false
+          },
+          {
+            "name": "created_by",
+            "type": "VARCHAR(60) COLLATE \"utf8mb4_0900_ai_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "created_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "deleted",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "modified_by",
+            "type": "VARCHAR(60) COLLATE \"utf8mb4_0900_ai_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "modified_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "parent_tenant_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "push_status",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "status",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sync_status",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "tenant_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "brand_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "comments",
+            "type": "VARCHAR(500)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "description",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "parent",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_type_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "name",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "baseline_price",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "brand",
+            "type": "VARCHAR(200)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "collection",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_type_name",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "season",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "temp_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "attributes_json",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "category_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "document_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "mrp",
+            "type": "DOUBLE",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "same_mrp",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "uom",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "collection_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "document_summary",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "roadmap_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "collection_name",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "artical_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "bom",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "category",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "category_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "category_group",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "collar_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "color",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "color_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "commudity_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "core_or_fashion",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "country_of_origin",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "design_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_content_group",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_design",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_wave",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fit",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fit_name",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "gender",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_active",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_expiry_enabled",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_inventorized",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_returnable",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_sellable",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_taxable",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "occasion",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "old_artical_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "pack",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sleeve",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sub_brand",
+            "type": "VARCHAR(200)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sub_brand_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sub_category",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sub_category_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "wash",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "currency",
+            "type": "VARCHAR(10)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "active",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "expiry_enabled",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "inventorized",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "returnable",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sellable",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "taxable",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "offer_month",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sampling_status",
+            "type": "VARCHAR(20)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "color_uid",
+            "type": "VARCHAR(20)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "design_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "season_uid",
+            "type": "VARCHAR(20)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "validation_required",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "raw_material_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "all_documents_approved",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "price_updated",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "article_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "article_type_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "division",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "lining",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "material",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "material_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "id",
+            "type": "BIGINT",
+            "nullable": false,
+            "primary_key": false
+          },
+          {
+            "name": "reference_code",
+            "type": "VARCHAR(20)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "packaging_size",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "packaging_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_unit",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "promo",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          }
+        ],
+        "primary_keys": [
+          "id"
+        ],
+        "foreign_keys": []
+      }
+    },
+    "total_tables": 1
+  }
+}
+
+ALREADY DETECTED RELATIONSHIPS:
+[]
+
+For each inferred relationship, provide:
+1. source_table
+2. target_table
+3. relationship_type (e.g., "SEMANTIC_REFERENCE", "BUSINESS_LOGIC")
+4. reasoning (why this relationship likely exists)
+5. confidence (0.0-1.0)
+
+Return as JSON array with this structure:
+{
+    "inferred_relationships": [
+        {
+            "source_table": "table1",
+            "target_table": "table2",
+            "relationship_type": "SEMANTIC_REFERENCE",
+            "reasoning": "explanation",
+            "confidence": 0.85
+        }
+    ]
+}
+
+Only include relationships with confidence >= 0.7.
+================================================================================
+
+2025-10-24 14:00:54,028 - kg_builder.services.multi_schema_llm_service - DEBUG
+LLM Inference Response:
+```json
+{
+    "inferred_relationships": [
+        {
+            "source_table": "orderMgmt-catalog.catalog",
+            "target_table": "qinspect-designcode.design_code_master",
+            "relationship_type": "SEMANTIC_REFERENCE",
+            "reasoning": "The 'code' column in orderMgmt-catalog.catalog table and 'design_code' column in qinspect-designcode.design_code_master table likely represent a common identifier or code for products across different schemas.",
+            "confidence": 0.8
+        },
+        {
+            "source_table": "orderMgmt-catalog.catalog",
+            "target_table": "qinspect-designcode.design_code_master",
+            "relationship_type": "SEMANTIC_REFERENCE",
+            "reasoning": "The 'brand_uid' column in orderMgmt-catalog.catalog table and 'brand_uid' column in qinspect-designcode.design_code_master table likely represent a common identifier for brands.",
+            "confidence": 0.75
+        },
+        {
+            "source_table": "orderMgmt-catalog.catalog",
+            "target_table": "qinspect-designcode.design_code_master",
+            "relationship_type": "BUSINESS_LOGIC",
+            "reasoning": "The 'color' column in orderMgmt-catalog.catalog table and 'color' column in qinspect-designcode.design_code_master table may be related to specifying color information for products.",
+            "confidence": 0.7
+        }
+    ]
+}
+```
+================================================================================
+
+2025-10-24 14:00:54,028 - kg_builder.services.multi_schema_llm_service - INFO
+LLM inferred 3 additional relationships
+================================================================================
+
+2025-10-24 14:00:54,030 - kg_builder.services.multi_schema_llm_service - DEBUG
+Enhancement Prompt:
+Generate clear business descriptions for these database relationships.
+
+SCHEMAS:
+{
+  "orderMgmt-catalog": {
+    "tables": {
+      "catalog": {
+        "columns": [
+          {
+            "name": "id",
+            "type": "BIGINT",
+            "nullable": false,
+            "primary_key": false
+          },
+          {
+            "name": "added_to_cart_by_user_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "added_to_cart_on",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "added_to_cart_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "blocked_by_user_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "blocked_on",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "blocked_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "bought_by_user_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "brief",
+            "type": "VARCHAR(150) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "bucket",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "cat_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "category",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "category_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "closure_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "code",
+            "type": "VARCHAR(60) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "collection_story",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "color",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "compliance",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "composition_details",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "created_by",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "created_on",
+            "type": "VARCHAR(40) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "created_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "decline_reason",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "description",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "detail_pdf_uid",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "exclusivity",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_composition",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_count",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fit",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fit_type",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "from_price",
+            "type": "DOUBLE",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "garment_treatment",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "gender",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "group_uid",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "highres_image_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "image_uid",
+            "type": "VARCHAR(500) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "image_uid3d",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "image_uid3dcol_count",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_active",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_new",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "like_count",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "like_status",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "location",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "market_details",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "max_order_qty",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "max_production_lead_time",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "min_order_qty",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "min_production_lead_time",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "modified_by",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "modified_on",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "modified_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "monthly_capacity",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "neck_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "occasion",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "offer_month_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "origin",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "pattern",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "phase",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "price",
+            "type": "DECIMAL(11, 2)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_story",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "production_details",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "production_lead_time",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "qty_unit",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sample_policy",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sample_requested_by_user_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "searchable_description",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sleeve",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sold_on",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sold_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sourcing_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "specialization",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "status",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sub_cat_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sub_category_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "subbrand",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "tags",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "tech_pack_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "tenant_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "thumbnail_image_uid",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "title",
+            "type": "VARCHAR(150) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "to_price",
+            "type": "DOUBLE",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "trim_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "unlike_count",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "uuid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "vendor_name",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "vendor_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "view_count",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "weave_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "brand_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fit_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "subbrand_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "short_code",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "offer_month",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "designer_code",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "display_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "design_group",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "features",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "active_sap_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "ean_code",
+            "type": "VARCHAR(275)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "ext_ref_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fms_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sap_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "video_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "season",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "style_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "collection_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "net_price",
+            "type": "DECIMAL(11, 2)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "siblings",
+            "type": "VARCHAR(1000)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "stock_check",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "unit_uid",
+            "type": "VARCHAR(10)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "unit_uids",
+            "type": "VARCHAR(20)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "image_tags",
+            "type": "VARCHAR(200)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "tax",
+            "type": "DOUBLE",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "bought_count",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "ordinal",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "ref_img_uid",
+            "type": "VARCHAR(200)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "image_uid_3d",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "pleat_type",
+            "type": "VARCHAR(10)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "pocket",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "waist_closure",
+            "type": "VARCHAR(12)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "waist_rise",
+            "type": "VARCHAR(10)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "available_size_codes",
+            "type": "VARCHAR(200)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "distributor_stock_qty",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "warehouse_stock_qty",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "brand_id",
+            "type": "VARCHAR(50)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "company_id",
+            "type": "VARCHAR(50)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_id",
+            "type": "VARCHAR(50)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "parent_tenant_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "seq_no",
+            "type": "VARCHAR(50)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "subseason_uid",
+            "type": "VARCHAR(5)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_must_buy",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "catalog_price_size_codes",
+            "type": "VARCHAR(250)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "catalog_price_size_codes_2",
+            "type": "VARCHAR(250)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "drop_codes",
+            "type": "VARCHAR(50) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "filter_available_size_codes",
+            "type": "VARCHAR(50)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "attire",
+            "type": "VARCHAR(20)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "deleted",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "box_size",
+            "type": "INTEGER",
+            "nullable": false,
+            "primary_key": false
+          }
+        ],
+        "primary_keys": [
+          "id"
+        ],
+        "foreign_keys": []
+      }
+    },
+    "total_tables": 1
+  },
+  "qinspect-designcode": {
+    "tables": {
+      "design_code_master": {
+        "columns": [
+          {
+            "name": "uuid",
+            "type": "VARCHAR(40)",
+            "nullable": false,
+            "primary_key": false
+          },
+          {
+            "name": "created_by",
+            "type": "VARCHAR(60) COLLATE \"utf8mb4_0900_ai_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "created_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "deleted",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "modified_by",
+            "type": "VARCHAR(60) COLLATE \"utf8mb4_0900_ai_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "modified_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "parent_tenant_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "push_status",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "status",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sync_status",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "tenant_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "brand_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "comments",
+            "type": "VARCHAR(500)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "description",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "parent",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_type_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "name",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "baseline_price",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "brand",
+            "type": "VARCHAR(200)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "collection",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_type_name",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "season",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "temp_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "attributes_json",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "category_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "document_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "mrp",
+            "type": "DOUBLE",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "same_mrp",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "uom",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "collection_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "document_summary",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "roadmap_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "collection_name",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "artical_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "bom",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "category",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "category_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "category_group",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "collar_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "color",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "color_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "commudity_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "core_or_fashion",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "country_of_origin",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "design_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_content_group",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_design",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_wave",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fit",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fit_name",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "gender",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_active",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_expiry_enabled",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_inventorized",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_returnable",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_sellable",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_taxable",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "occasion",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "old_artical_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "pack",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sleeve",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sub_brand",
+            "type": "VARCHAR(200)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sub_brand_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sub_category",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sub_category_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "wash",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "currency",
+            "type": "VARCHAR(10)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "active",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "expiry_enabled",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "inventorized",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "returnable",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sellable",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "taxable",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "offer_month",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sampling_status",
+            "type": "VARCHAR(20)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "color_uid",
+            "type": "VARCHAR(20)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "design_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "season_uid",
+            "type": "VARCHAR(20)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "validation_required",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "raw_material_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "all_documents_approved",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "price_updated",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "article_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "article_type_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "division",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "lining",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "material",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "material_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "id",
+            "type": "BIGINT",
+            "nullable": false,
+            "primary_key": false
+          },
+          {
+            "name": "reference_code",
+            "type": "VARCHAR(20)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "packaging_size",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "packaging_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_unit",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "promo",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          }
+        ],
+        "primary_keys": [
+          "id"
+        ],
+        "foreign_keys": []
+      }
+    },
+    "total_tables": 1
+  }
+}
+
+RELATIONSHIPS:
+[
+  {
+    "source_table": "orderMgmt-catalog.catalog",
+    "target_table": "qinspect-designcode.design_code_master",
+    "relationship_type": "SEMANTIC_REFERENCE",
+    "reasoning": "The 'code' column in orderMgmt-catalog.catalog table and 'design_code' column in qinspect-designcode.design_code_master table likely represent a common identifier or code for products across different schemas.",
+    "confidence": 0.8,
+    "inferred_by_llm": true
+  },
+  {
+    "source_table": "orderMgmt-catalog.catalog",
+    "target_table": "qinspect-designcode.design_code_master",
+    "relationship_type": "SEMANTIC_REFERENCE",
+    "reasoning": "The 'brand_uid' column in orderMgmt-catalog.catalog table and 'brand_uid' column in qinspect-designcode.design_code_master table likely represent a common identifier for brands.",
+    "confidence": 0.75,
+    "inferred_by_llm": true
+  },
+  {
+    "source_table": "orderMgmt-catalog.catalog",
+    "target_table": "qinspect-designcode.design_code_master",
+    "relationship_type": "BUSINESS_LOGIC",
+    "reasoning": "The 'color' column in orderMgmt-catalog.catalog table and 'color' column in qinspect-designcode.design_code_master table may be related to specifying color information for products.",
+    "confidence": 0.7,
+    "inferred_by_llm": true
+  }
+]
+
+For each relationship, provide a clear, concise business description explaining:
+- What the relationship represents
+- Why it exists
+- How data flows through it
+
+Return as JSON array with this structure:
+{
+    "enhanced_relationships": [
+        {
+            "source_table": "table1",
+            "target_table": "table2",
+            "description": "Clear business description of the relationship"
+        }
+    ]
+}
+================================================================================
+
+2025-10-24 14:01:00,184 - kg_builder.services.multi_schema_llm_service - DEBUG
+LLM Enhancement Response:
+```json
+{
+    "enhanced_relationships": [
+        {
+            "source_table": "orderMgmt-catalog.catalog",
+            "target_table": "qinspect-designcode.design_code_master",
+            "description": "The relationship between the 'catalog' table in orderMgmt-catalog schema and the 'design_code_master' table in qinspect-designcode schema represents a semantic reference. The 'code' column in the catalog table and the 'design_code' column in the design_code_master table likely serve as a common identifier or code for products across different schemas. This relationship exists to establish a connection between product data in the catalog and design code information, enabling seamless data retrieval and analysis across product design and catalog management systems."
+        },
+        {
+            "source_table": "orderMgmt-catalog.catalog",
+            "target_table": "qinspect-designcode.design_code_master",
+            "description": "The relationship between the 'catalog' table in orderMgmt-catalog schema and the 'design_code_master' table in qinspect-designcode schema represents a semantic reference. The 'brand_uid' column in the catalog table and the 'brand_uid' column in the design_code_master table likely serve as a common identifier for brands. This relationship facilitates the association of products with their respective brands, aiding in brand-specific analysis, reporting, and categorization of products based on brand affiliations."
+        },
+        {
+            "source_table": "orderMgmt-catalog.catalog",
+            "target_table": "qinspect-designcode.design_code_master",
+            "description": "The relationship between the 'catalog' table in orderMgmt-catalog schema and the 'design_code_master' table in qinspect-designcode schema represents a business logic relationship. The 'color' column in the catalog table and the 'color' column in the design_code_master table may be related to specifying color information for products. This relationship allows for the management and retrieval of color-related data for products, ensuring consistency in color representation and facilitating color-based search and filtering functionalities for product catalog browsing."
+        }
+    ]
+}
+```
+================================================================================
+
+2025-10-24 14:01:00,184 - kg_builder.services.multi_schema_llm_service - INFO
+LLM enhanced 3 relationships with descriptions
+================================================================================
+
+2025-10-24 14:01:00,186 - kg_builder.services.multi_schema_llm_service - DEBUG
+Scoring Prompt:
+Assess the confidence and validity of these database relationships.
+
+SCHEMAS:
+{
+  "orderMgmt-catalog": {
+    "tables": {
+      "catalog": {
+        "columns": [
+          {
+            "name": "id",
+            "type": "BIGINT",
+            "nullable": false,
+            "primary_key": false
+          },
+          {
+            "name": "added_to_cart_by_user_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "added_to_cart_on",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "added_to_cart_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "blocked_by_user_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "blocked_on",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "blocked_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "bought_by_user_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "brief",
+            "type": "VARCHAR(150) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "bucket",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "cat_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "category",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "category_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "closure_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "code",
+            "type": "VARCHAR(60) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "collection_story",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "color",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "compliance",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "composition_details",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "created_by",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "created_on",
+            "type": "VARCHAR(40) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "created_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "decline_reason",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "description",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "detail_pdf_uid",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "exclusivity",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_composition",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_count",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fit",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fit_type",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "from_price",
+            "type": "DOUBLE",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "garment_treatment",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "gender",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "group_uid",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "highres_image_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "image_uid",
+            "type": "VARCHAR(500) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "image_uid3d",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "image_uid3dcol_count",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_active",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_new",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "like_count",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "like_status",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "location",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "market_details",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "max_order_qty",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "max_production_lead_time",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "min_order_qty",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "min_production_lead_time",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "modified_by",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "modified_on",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "modified_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "monthly_capacity",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "neck_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "occasion",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "offer_month_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "origin",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "pattern",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "phase",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "price",
+            "type": "DECIMAL(11, 2)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_story",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "production_details",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "production_lead_time",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "qty_unit",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sample_policy",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sample_requested_by_user_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "searchable_description",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sleeve",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sold_on",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sold_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sourcing_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "specialization",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "status",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sub_cat_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sub_category_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "subbrand",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "tags",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "tech_pack_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "tenant_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "thumbnail_image_uid",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "title",
+            "type": "VARCHAR(150) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "to_price",
+            "type": "DOUBLE",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "trim_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "unlike_count",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "uuid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "vendor_name",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "vendor_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "view_count",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "weave_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "brand_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fit_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "subbrand_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "short_code",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "offer_month",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "designer_code",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "display_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "design_group",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "features",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "active_sap_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "ean_code",
+            "type": "VARCHAR(275)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "ext_ref_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fms_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sap_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "video_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "season",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "style_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "collection_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "net_price",
+            "type": "DECIMAL(11, 2)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "siblings",
+            "type": "VARCHAR(1000)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "stock_check",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "unit_uid",
+            "type": "VARCHAR(10)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "unit_uids",
+            "type": "VARCHAR(20)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "image_tags",
+            "type": "VARCHAR(200)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "tax",
+            "type": "DOUBLE",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "bought_count",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "ordinal",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "ref_img_uid",
+            "type": "VARCHAR(200)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "image_uid_3d",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "pleat_type",
+            "type": "VARCHAR(10)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "pocket",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "waist_closure",
+            "type": "VARCHAR(12)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "waist_rise",
+            "type": "VARCHAR(10)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "available_size_codes",
+            "type": "VARCHAR(200)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "distributor_stock_qty",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "warehouse_stock_qty",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "brand_id",
+            "type": "VARCHAR(50)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "company_id",
+            "type": "VARCHAR(50)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_id",
+            "type": "VARCHAR(50)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "parent_tenant_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "seq_no",
+            "type": "VARCHAR(50)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "subseason_uid",
+            "type": "VARCHAR(5)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_must_buy",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "catalog_price_size_codes",
+            "type": "VARCHAR(250)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "catalog_price_size_codes_2",
+            "type": "VARCHAR(250)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "drop_codes",
+            "type": "VARCHAR(50) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "filter_available_size_codes",
+            "type": "VARCHAR(50)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "attire",
+            "type": "VARCHAR(20)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "deleted",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "box_size",
+            "type": "INTEGER",
+            "nullable": false,
+            "primary_key": false
+          }
+        ],
+        "primary_keys": [
+          "id"
+        ],
+        "foreign_keys": []
+      }
+    },
+    "total_tables": 1
+  },
+  "qinspect-designcode": {
+    "tables": {
+      "design_code_master": {
+        "columns": [
+          {
+            "name": "uuid",
+            "type": "VARCHAR(40)",
+            "nullable": false,
+            "primary_key": false
+          },
+          {
+            "name": "created_by",
+            "type": "VARCHAR(60) COLLATE \"utf8mb4_0900_ai_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "created_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "deleted",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "modified_by",
+            "type": "VARCHAR(60) COLLATE \"utf8mb4_0900_ai_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "modified_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "parent_tenant_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "push_status",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "status",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sync_status",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "tenant_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "brand_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "comments",
+            "type": "VARCHAR(500)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "description",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "parent",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_type_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "name",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "baseline_price",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "brand",
+            "type": "VARCHAR(200)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "collection",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_type_name",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "season",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "temp_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "attributes_json",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "category_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "document_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "mrp",
+            "type": "DOUBLE",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "same_mrp",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "uom",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "collection_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "document_summary",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "roadmap_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "collection_name",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "artical_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "bom",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "category",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "category_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "category_group",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "collar_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "color",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "color_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "commudity_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "core_or_fashion",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "country_of_origin",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "design_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_content_group",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_design",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_wave",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fit",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fit_name",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "gender",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_active",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_expiry_enabled",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_inventorized",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_returnable",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_sellable",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_taxable",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "occasion",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "old_artical_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "pack",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sleeve",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sub_brand",
+            "type": "VARCHAR(200)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sub_brand_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sub_category",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sub_category_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "wash",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "currency",
+            "type": "VARCHAR(10)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "active",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "expiry_enabled",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "inventorized",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "returnable",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sellable",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "taxable",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "offer_month",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sampling_status",
+            "type": "VARCHAR(20)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "color_uid",
+            "type": "VARCHAR(20)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "design_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "season_uid",
+            "type": "VARCHAR(20)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "validation_required",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "raw_material_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "all_documents_approved",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "price_updated",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "article_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "article_type_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "division",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "lining",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "material",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "material_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "id",
+            "type": "BIGINT",
+            "nullable": false,
+            "primary_key": false
+          },
+          {
+            "name": "reference_code",
+            "type": "VARCHAR(20)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "packaging_size",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "packaging_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_unit",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "promo",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          }
+        ],
+        "primary_keys": [
+          "id"
+        ],
+        "foreign_keys": []
+      }
+    },
+    "total_tables": 1
+  }
+}
+
+RELATIONSHIPS:
+[
+  {
+    "source_table": "orderMgmt-catalog.catalog",
+    "target_table": "qinspect-designcode.design_code_master",
+    "description": "The relationship between the 'catalog' table in orderMgmt-catalog schema and the 'design_code_master' table in qinspect-designcode schema represents a semantic reference. The 'code' column in the catalog table and the 'design_code' column in the design_code_master table likely serve as a common identifier or code for products across different schemas. This relationship exists to establish a connection between product data in the catalog and design code information, enabling seamless data retrieval and analysis across product design and catalog management systems."
+  },
+  {
+    "source_table": "orderMgmt-catalog.catalog",
+    "target_table": "qinspect-designcode.design_code_master",
+    "description": "The relationship between the 'catalog' table in orderMgmt-catalog schema and the 'design_code_master' table in qinspect-designcode schema represents a semantic reference. The 'brand_uid' column in the catalog table and the 'brand_uid' column in the design_code_master table likely serve as a common identifier for brands. This relationship facilitates the association of products with their respective brands, aiding in brand-specific analysis, reporting, and categorization of products based on brand affiliations."
+  },
+  {
+    "source_table": "orderMgmt-catalog.catalog",
+    "target_table": "qinspect-designcode.design_code_master",
+    "description": "The relationship between the 'catalog' table in orderMgmt-catalog schema and the 'design_code_master' table in qinspect-designcode schema represents a business logic relationship. The 'color' column in the catalog table and the 'color' column in the design_code_master table may be related to specifying color information for products. This relationship allows for the management and retrieval of color-related data for products, ensuring consistency in color representation and facilitating color-based search and filtering functionalities for product catalog browsing."
+  }
+]
+
+For each relationship, provide:
+1. confidence (0.0-1.0) - How confident you are this relationship is valid
+2. reasoning - Why you assigned this confidence level
+3. validation_status - "VALID", "LIKELY", "UNCERTAIN", or "QUESTIONABLE"
+
+Return as JSON array with this structure:
+{
+    "scored_relationships": [
+        {
+            "source_table": "table1",
+            "target_table": "table2",
+            "confidence": 0.95,
+            "reasoning": "Strong naming pattern and semantic alignment",
+            "validation_status": "VALID"
+        }
+    ]
+}
+================================================================================
+
+2025-10-24 14:01:02,538 - kg_builder.services.multi_schema_llm_service - DEBUG
+LLM Scoring Response:
+{
+    "scored_relationships": [
+        {
+            "source_table": "orderMgmt-catalog.catalog",
+            "target_table": "qinspect-designcode.design_code_master",
+            "confidence": 0.9,
+            "reasoning": "The relationships are based on common identifiers like 'code', 'brand_uid', and 'color' which indicate a clear link between product data and design code information. The descriptions provided also emphasize the semantic reference and business logic connections.",
+            "validation_status": "VALID"
+        }
+    ]
+}
+================================================================================
+
+2025-10-24 14:01:02,539 - kg_builder.services.multi_schema_llm_service - INFO
+LLM scored 1 relationships with confidence
+================================================================================
+
+2025-10-24 14:01:05,282 - kg_builder.services.multi_schema_llm_service - DEBUG
+Reconciliation Rules Prompt:
+Given these cross-schema relationships and schemas, generate reconciliation rules
+that would allow matching records between these schemas.
+
+IMPORTANT: Only use columns that ACTUALLY EXIST in the provided schemas below.
+Do NOT invent or hallucinate column names. Verify each column exists in the schema before using it.
+
+SCHEMAS:
+{
+  "orderMgmt-catalog": {
+    "tables": {
+      "catalog": {
+        "columns": [
+          {
+            "name": "id",
+            "type": "BIGINT",
+            "nullable": false,
+            "primary_key": false
+          },
+          {
+            "name": "added_to_cart_by_user_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "added_to_cart_on",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "added_to_cart_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "blocked_by_user_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "blocked_on",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "blocked_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "bought_by_user_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "brief",
+            "type": "VARCHAR(150) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "bucket",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "cat_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "category",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "category_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "closure_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "code",
+            "type": "VARCHAR(60) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "collection_story",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "color",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "compliance",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "composition_details",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "created_by",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "created_on",
+            "type": "VARCHAR(40) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "created_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "decline_reason",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "description",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "detail_pdf_uid",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "exclusivity",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_composition",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_count",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fit",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fit_type",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "from_price",
+            "type": "DOUBLE",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "garment_treatment",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "gender",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "group_uid",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "highres_image_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "image_uid",
+            "type": "VARCHAR(500) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "image_uid3d",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "image_uid3dcol_count",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_active",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_new",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "like_count",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "like_status",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "location",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "market_details",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "max_order_qty",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "max_production_lead_time",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "min_order_qty",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "min_production_lead_time",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "modified_by",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "modified_on",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "modified_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "monthly_capacity",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "neck_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "occasion",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "offer_month_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "origin",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "pattern",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "phase",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "price",
+            "type": "DECIMAL(11, 2)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_story",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "production_details",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "production_lead_time",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "qty_unit",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sample_policy",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sample_requested_by_user_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "searchable_description",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sleeve",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sold_on",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sold_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sourcing_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "specialization",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "status",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sub_cat_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sub_category_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "subbrand",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "tags",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "tech_pack_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "tenant_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "thumbnail_image_uid",
+            "type": "VARCHAR(100) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "title",
+            "type": "VARCHAR(150) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "to_price",
+            "type": "DOUBLE",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "trim_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "unlike_count",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "uuid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "vendor_name",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "vendor_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "view_count",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "weave_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "brand_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fit_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "subbrand_uid",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "short_code",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "offer_month",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "designer_code",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "display_type",
+            "type": "VARCHAR(255) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "design_group",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "features",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "active_sap_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "ean_code",
+            "type": "VARCHAR(275)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "ext_ref_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fms_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sap_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "video_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "season",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "style_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "collection_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "net_price",
+            "type": "DECIMAL(11, 2)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "siblings",
+            "type": "VARCHAR(1000)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "stock_check",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "unit_uid",
+            "type": "VARCHAR(10)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "unit_uids",
+            "type": "VARCHAR(20)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "image_tags",
+            "type": "VARCHAR(200)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "tax",
+            "type": "DOUBLE",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "bought_count",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "ordinal",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "ref_img_uid",
+            "type": "VARCHAR(200)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "image_uid_3d",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "pleat_type",
+            "type": "VARCHAR(10)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "pocket",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "waist_closure",
+            "type": "VARCHAR(12)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "waist_rise",
+            "type": "VARCHAR(10)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "available_size_codes",
+            "type": "VARCHAR(200)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "distributor_stock_qty",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "warehouse_stock_qty",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "brand_id",
+            "type": "VARCHAR(50)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "company_id",
+            "type": "VARCHAR(50)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_id",
+            "type": "VARCHAR(50)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "parent_tenant_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "seq_no",
+            "type": "VARCHAR(50)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "subseason_uid",
+            "type": "VARCHAR(5)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_must_buy",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "catalog_price_size_codes",
+            "type": "VARCHAR(250)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "catalog_price_size_codes_2",
+            "type": "VARCHAR(250)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "drop_codes",
+            "type": "VARCHAR(50) COLLATE \"utf8mb3_general_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "filter_available_size_codes",
+            "type": "VARCHAR(50)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "attire",
+            "type": "VARCHAR(20)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "deleted",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "box_size",
+            "type": "INTEGER",
+            "nullable": false,
+            "primary_key": false
+          }
+        ],
+        "primary_keys": [
+          "id"
+        ],
+        "foreign_keys": []
+      }
+    },
+    "total_tables": 1
+  },
+  "qinspect-designcode": {
+    "tables": {
+      "design_code_master": {
+        "columns": [
+          {
+            "name": "uuid",
+            "type": "VARCHAR(40)",
+            "nullable": false,
+            "primary_key": false
+          },
+          {
+            "name": "created_by",
+            "type": "VARCHAR(60) COLLATE \"utf8mb4_0900_ai_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "created_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "deleted",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "modified_by",
+            "type": "VARCHAR(60) COLLATE \"utf8mb4_0900_ai_ci\"",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "modified_time",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "parent_tenant_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "push_status",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "status",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sync_status",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "tenant_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "brand_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "comments",
+            "type": "VARCHAR(500)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "description",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "parent",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_type_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "name",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "baseline_price",
+            "type": "BIGINT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "brand",
+            "type": "VARCHAR(200)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "collection",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_type_name",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "season",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "temp_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "attributes_json",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "category_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "document_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "mrp",
+            "type": "DOUBLE",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "same_mrp",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "uom",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "collection_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "document_summary",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "roadmap_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "collection_name",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "artical_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "bom",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "category",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "category_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "category_group",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "collar_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "color",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "color_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "commudity_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "core_or_fashion",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "country_of_origin",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "design_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_content_group",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_design",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fabric_wave",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fit",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "fit_name",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "gender",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_active",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_expiry_enabled",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_inventorized",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_returnable",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_sellable",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "is_taxable",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "occasion",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "old_artical_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "pack",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sleeve",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sub_brand",
+            "type": "VARCHAR(200)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sub_brand_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sub_category",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sub_category_uid",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "wash",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "currency",
+            "type": "VARCHAR(10)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "active",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "expiry_enabled",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "inventorized",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "returnable",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sellable",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "taxable",
+            "type": "BIT",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "offer_month",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "sampling_status",
+            "type": "VARCHAR(20)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "color_uid",
+            "type": "VARCHAR(20)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "design_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "season_uid",
+            "type": "VARCHAR(20)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "validation_required",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "raw_material_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "all_documents_approved",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "price_updated",
+            "type": "INTEGER",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "article_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "article_type_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "division",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "lining",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "material",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "material_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "id",
+            "type": "BIGINT",
+            "nullable": false,
+            "primary_key": false
+          },
+          {
+            "name": "reference_code",
+            "type": "VARCHAR(20)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "packaging_size",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "packaging_type",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_code",
+            "type": "VARCHAR(255)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_uid",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "product_unit",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          },
+          {
+            "name": "promo",
+            "type": "VARCHAR(40)",
+            "nullable": true,
+            "primary_key": false
+          }
+        ],
+        "primary_keys": [
+          "id"
+        ],
+        "foreign_keys": []
+      }
+    },
+    "total_tables": 1
+  }
+}
+
+RELATIONSHIPS:
+[]
+
+For each rule, provide:
+1. rule_name: Descriptive name for the rule
+2. source_schema: Name of the source schema (must match schema names above)
+3. source_table: Source table name (must exist in source schema)
+4. source_columns: Array of source column names (must ALL exist in the table schema)
+5. target_schema: Name of the target schema (must match schema names above)
+6. target_table: Target table name (must exist in target schema)
+7. target_columns: Array of target column names (must ALL exist in the table schema)
+8. match_type: One of "exact", "fuzzy", "composite", "transformation", "semantic"
+9. transformation: SQL or Python code for data matching (if needed, null otherwise)
+10. confidence: Confidence score (0.0-1.0) for this rule
+11. reasoning: Why this rule would work
+12. validation_status: "VALID", "LIKELY", or "UNCERTAIN"
+13. example_match: Sample matching scenario
+
+Return JSON:
+{
+  "rules": [
+    {
+      "rule_name": "Vendor_UID_Match",
+      "source_schema": "orderMgmt",
+      "source_table": "catalog",
+      "source_columns": ["vendor_uid"],
+      "target_schema": "vendorDB",
+      "target_table": "suppliers",
+      "target_columns": ["supplier_id"],
+      "match_type": "exact",
+      "transformation": null,
+      "confidence": 0.95,
+      "reasoning": "Both fields are UIDs representing vendors",
+      "validation_status": "VALID",
+      "example_match": "vendor_uid='VND123' matches supplier_id='VND123'"
+    }
+  ]
+}
+
+CRITICAL RULES:
+- Only generate rules with confidence >= 0.7
+- Focus on cross-schema relationships
+- ONLY use columns that exist in the provided schemas
+- Double-check each column name against the schema before including it
+- If you cannot find a valid matching column, do not create a rule for it
+================================================================================
+
+2025-10-24 14:01:09,289 - kg_builder.services.multi_schema_llm_service - DEBUG
+LLM Reconciliation Rules Response:
+{
+	"rules": [{
+		"rule_name": "UUID_Match",
+		"source_schema": "orderMgmt-catalog",
+		"source_table": "catalog",
+		"source_columns": ["uuid"],
+		"target_schema": "qinspect-designcode",
+		"target_table": "design_code_master",
+		"target_columns": ["uuid"],
+		"match_type": "exact",
+		"transformation": null,
+		"confidence": 0.9,
+		"reasoning": "Both tables have a UUID field representing unique identifiers.",
+		"validation_status": "VALID",
+		"example_match": "uuid='12345' matches uuid='12345'"
+	}, {
+		"rule_name": "Code_Match",
+		"source_schema": "orderMgmt-catalog",
+		"source_table": "catalog",
+		"source_columns": ["code"],
+		"target_schema": "qinspect-designcode",
+		"target_table": "design_code_master",
+		"target_columns": ["code"],
+		"match_type": "exact",
+		"transformation": null,
+		"confidence": 0.8,
+		"reasoning": "Both tables have a code field used for identification.",
+		"validation_status": "LIKELY",
+		"example_match": "code='ABC' matches code='ABC'"
+	}]
+}
+================================================================================
+
+2025-10-24 14:01:09,289 - kg_builder.services.multi_schema_llm_service - INFO
+LLM generated 2 reconciliation rules
+================================================================================
+
