@@ -135,6 +135,8 @@ async def generate_knowledge_graph(request: KGGenerationRequest):
             kg_name=request.kg_name,
             nodes_count=len(kg.nodes),
             relationships_count=len(kg.relationships),
+            nodes=kg.nodes,
+            relationships=kg.relationships,
             backends_used=backends_used,
             generation_time_ms=elapsed_ms
         )

@@ -159,6 +159,8 @@ class KGGenerationResponse(BaseModel):
     kg_name: str
     nodes_count: int
     relationships_count: int
+    nodes: List[GraphNode] = Field(default=[], description="All nodes in the knowledge graph")
+    relationships: List[GraphRelationship] = Field(default=[], description="All relationships in the knowledge graph")
     backends_used: List[str]
     generation_time_ms: float
 
