@@ -1,0 +1,72 @@
+[
+  {
+    "source_id": "table_hana_material_master",
+    "target_id": "table_brz_lnd_RBP_GPU",
+    "relationship_type": "SEMANTIC_REFERENCE",
+    "properties": {
+      "llm_inferred": true,
+      "llm_confidence": 0.85,
+      "llm_reasoning": "Both fields refer to a unique identifier for a material",
+      "llm_description": "Inferred: Both fields refer to a unique identifier for a material",
+      "data_type_match": "NVARCHAR \u2194 NVARCHAR"
+    },
+    "source_column": "MATERIAL",
+    "target_column": "Material"
+  },
+  {
+    "source_id": "table_hana_material_master",
+    "target_id": "table_brz_lnd_SKU_LIFNR_Excel",
+    "relationship_type": "SEMANTIC_REFERENCE",
+    "properties": {
+      "llm_inferred": true,
+      "llm_confidence": 0.85,
+      "llm_reasoning": "Both fields refer to a unique identifier for a material",
+      "llm_description": "Inferred: Both fields refer to a unique identifier for a material",
+      "data_type_match": "NVARCHAR \u2194 VARCHAR"
+    },
+    "source_column": "MATERIAL",
+    "target_column": "Material"
+  },
+  {
+    "source_id": "table_hana_material_master",
+    "target_id": "table_brz_lnd_OPS_EXCEL_GPU",
+    "relationship_type": "SEMANTIC_REFERENCE",
+    "properties": {
+      "llm_inferred": true,
+      "llm_confidence": 0.85,
+      "llm_reasoning": "Both fields refer to the business unit associated with a given material or SKU",
+      "llm_description": "Inferred: Both fields refer to the business unit associated with a given material or SKU",
+      "data_type_match": "NVARCHAR \u2194 NVARCHAR"
+    },
+    "source_column": "Business Unit",
+    "target_column": "Business_Unit"
+  },
+  {
+    "source_id": "table_hana_material_master",
+    "target_id": "table_brz_lnd_OPS_EXCEL_GPU",
+    "relationship_type": "SEMANTIC_REFERENCE",
+    "properties": {
+      "llm_inferred": true,
+      "llm_confidence": 0.85,
+      "llm_reasoning": "Both fields refer to the product line associated with a given material or SKU",
+      "llm_description": "Inferred: Both fields refer to the product line associated with a given material or SKU",
+      "data_type_match": "NVARCHAR \u2194 NVARCHAR"
+    },
+    "source_column": "Product Line",
+    "target_column": "Product_Line"
+  },
+  {
+    "source_id": "table_hana_material_master",
+    "target_id": "table_brz_lnd_OPS_EXCEL_GPU",
+    "relationship_type": "BUSINESS_LOGIC",
+    "properties": {
+      "llm_inferred": true,
+      "llm_confidence": 0.75,
+      "llm_reasoning": "The material in hana_material_master can be seen as the planning SKU in brz_lnd_OPS_EXCEL_GPU",
+      "llm_description": "Inferred: The material in hana_material_master can be seen as the planning SKU in brz_lnd_OPS_EXCEL_GPU",
+      "data_type_match": "NVARCHAR \u2194 NVARCHAR"
+    },
+    "source_column": "MATERIAL",
+    "target_column": "PLANNING_SKU"
+  }
+]

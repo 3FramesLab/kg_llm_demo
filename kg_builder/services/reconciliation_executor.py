@@ -6,6 +6,8 @@ This service executes SQL-based reconciliation queries to find matched and unmat
 
 import logging
 import time
+import json
+from datetime import datetime
 from typing import Dict, List, Any, Optional, Tuple
 from pathlib import Path
 
@@ -36,6 +38,27 @@ class ReconciliationExecutor:
         """Initialize the reconciliation executor."""
         self.jdbc_drivers_path = Path(JDBC_DRIVERS_PATH) if JDBC_DRIVERS_PATH else None
         self.storage = get_rule_storage()
+
+    @staticmethod
+    def _normalize_schema_name(schema_name: str, db_type: str = "sqlserver") -> str:
+        """
+        Normalize schema name to actual database schema.
+
+        For SQL Server, converts JSON filename schemas to 'dbo' (default schema).
+
+        Args:
+            schema_name: Schema name from reconciliation rules (may be JSON filename)
+            db_type: Database type
+
+        Returns:
+            Normalized schema name
+        """
+        if db_type.lower() == "sqlserver":
+            # If schema looks like a filename (has -, _, or mix of cases), use 'dbo'
+            if any(char in schema_name for char in ['-', '_']) or schema_name.islower():
+                logger.info(f"Normalizing SQL Server schema '{schema_name}' to 'dbo'")
+                return "dbo"
+        return schema_name
 
     @staticmethod
     def _quote_identifier(identifier: str, db_type: str = "mysql") -> str:
@@ -70,6 +93,52 @@ class ReconciliationExecutor:
             # Default to backticks (MySQL style)
             return f"`{identifier}`"
 
+    def _log_sql_query(self, query_type: str, rule_name: str, sql: str, attempt: str = "FIRST"):
+        """
+        Log SQL query in a formatted way for debugging.
+
+        Args:
+            query_type: Type of query (MATCHED, UNMATCHED_SOURCE, UNMATCHED_TARGET, INACTIVE_COUNT)
+            rule_name: Name of the rule being executed
+            sql: The SQL query to log
+            attempt: Attempt number (FIRST, RETRY)
+        """
+        separator = "=" * 100
+        logger.info(f"\n{separator}")
+        logger.info(f"[{attempt} ATTEMPT] {query_type} QUERY - Rule: {rule_name}")
+        logger.info(f"{separator}")
+        logger.info(f"SQL:\n{sql}")
+        logger.info(f"{separator}\n")
+
+    def _get_limit_clause(self, limit: int, db_type: str = "mysql", is_where_clause: bool = False) -> str:
+        """
+        Generate database-specific LIMIT clause.
+
+        Args:
+            limit: Number of rows to limit
+            db_type: Database type (mysql, oracle, postgresql, sqlserver)
+            is_where_clause: If True, returns clause for WHERE context (e.g., "AND ROWNUM <= 100")
+                           If False, returns clause for SELECT context (e.g., "LIMIT 100" or "TOP 100")
+
+        Returns:
+            Database-specific limit clause
+        """
+        db_type = db_type.lower()
+
+        if db_type == "mysql":
+            return f"LIMIT {limit}"
+        elif db_type == "oracle":
+            # Oracle uses ROWNUM in WHERE clause
+            return f"AND ROWNUM <= {limit}" if is_where_clause else f"WHERE ROWNUM <= {limit}"
+        elif db_type == "postgresql":
+            return f"LIMIT {limit}"
+        elif db_type == "sqlserver":
+            # SQL Server uses TOP in SELECT clause
+            return f"TOP {limit}"
+        else:
+            # Default to MySQL style
+            return f"LIMIT {limit}"
+
     def execute_ruleset(
         self,
         ruleset_id: str,
@@ -77,8 +146,7 @@ class ReconciliationExecutor:
         target_db_config: DatabaseConnectionInfo,
         limit: int = 100,
         include_matched: bool = True,
-        include_unmatched: bool = True,
-        store_in_mongodb: bool = True
+        include_unmatched: bool = True
     ) -> RuleExecutionResponse:
         """
         Execute a complete ruleset against databases.
@@ -90,10 +158,9 @@ class ReconciliationExecutor:
             limit: Maximum number of records to return per category
             include_matched: Include matched records in results
             include_unmatched: Include unmatched records in results
-            store_in_mongodb: Store results in MongoDB as JSON documents
 
         Returns:
-            RuleExecutionResponse with matched and unmatched records
+            RuleExecutionResponse with matched and unmatched records, generated SQL, and file path
         """
         if not JAYDEBEAPI_AVAILABLE:
             raise RuntimeError(
@@ -125,32 +192,39 @@ class ReconciliationExecutor:
             if not target_conn:
                 raise RuntimeError("Failed to connect to target database")
 
-            # Execute all rules
+            # Execute all rules and collect SQL queries
             all_matched = []
             all_unmatched_source = []
             all_unmatched_target = []
+            generated_sql = []
 
             for rule in ruleset.rules:
                 logger.debug(f"Executing rule: {rule.rule_name}")
 
                 # Execute matched records query
                 if include_matched:
-                    matched = self._execute_matched_query(
+                    matched, matched_sql = self._execute_matched_query(
                         source_conn, target_conn, rule, limit, source_db_config.db_type
                     )
                     all_matched.extend(matched)
+                    if matched_sql:
+                        generated_sql.append(matched_sql)
 
                 # Execute unmatched queries
                 if include_unmatched:
-                    unmatched_src = self._execute_unmatched_source_query(
+                    unmatched_src, unmatched_src_sql = self._execute_unmatched_source_query(
                         source_conn, target_conn, rule, limit, source_db_config.db_type
                     )
                     all_unmatched_source.extend(unmatched_src)
+                    if unmatched_src_sql:
+                        generated_sql.append(unmatched_src_sql)
 
-                    unmatched_tgt = self._execute_unmatched_target_query(
+                    unmatched_tgt, unmatched_tgt_sql = self._execute_unmatched_target_query(
                         source_conn, target_conn, rule, limit, source_db_config.db_type
                     )
                     all_unmatched_target.extend(unmatched_tgt)
+                    if unmatched_tgt_sql:
+                        generated_sql.append(unmatched_tgt_sql)
 
             elapsed_ms = (time.time() - start_time) * 1000
 
@@ -176,59 +250,25 @@ class ReconciliationExecutor:
                 "unmatched_source": all_unmatched_source[:limit] if limit else all_unmatched_source,
                 "unmatched_target": all_unmatched_target[:limit] if limit else all_unmatched_target,
                 "execution_time_ms": elapsed_ms,
-                "inactive_count": inactive_count
+                "inactive_count": inactive_count,
+                "generated_sql": generated_sql
             }
 
-            # Store in MongoDB if requested
-            mongodb_doc_id = None
-            storage_location = "memory"
-
-            if store_in_mongodb:
-                try:
-                    from kg_builder.services.mongodb_storage import get_mongodb_storage
-
-                    logger.info("Storing reconciliation results in MongoDB...")
-                    mongo_storage = get_mongodb_storage()
-
-                    # Convert MatchedRecord objects to dictionaries for MongoDB storage
-                    matched_dicts = [
-                        {
-                            "source_record": m.source_record,
-                            "target_record": m.target_record,
-                            "match_confidence": m.match_confidence,
-                            "rule_used": m.rule_used,
-                            "rule_name": m.rule_name
-                        }
-                        for m in all_matched
-                    ]
-
-                    # Prepare execution metadata
-                    execution_metadata = {
-                        "execution_time_ms": elapsed_ms,
-                        "limit": limit,
-                        "source_db_type": source_db_config.db_type,
-                        "target_db_type": target_db_config.db_type,
-                        "include_matched": include_matched,
-                        "include_unmatched": include_unmatched
-                    }
-
-                    mongodb_doc_id = mongo_storage.store_reconciliation_result(
-                        ruleset_id=ruleset_id,
-                        matched_records=matched_dicts,
-                        unmatched_source=all_unmatched_source,
-                        unmatched_target=all_unmatched_target,
-                        execution_metadata=execution_metadata
-                    )
-
-                    storage_location = "mongodb"
-                    logger.info(f"Results stored in MongoDB with document ID: {mongodb_doc_id}")
-
-                except Exception as e:
-                    logger.warning(f"Failed to store results in MongoDB: {e}")
-                    # Continue without MongoDB storage
-
-            response_data["mongodb_document_id"] = mongodb_doc_id
-            response_data["storage_location"] = storage_location
+            # Store results to file
+            result_file_path = None
+            try:
+                result_file_path = self._store_results_to_file(
+                    ruleset_id=ruleset_id,
+                    response_data=response_data,
+                    all_matched=all_matched,
+                    all_unmatched_source=all_unmatched_source,
+                    all_unmatched_target=all_unmatched_target
+                )
+                logger.info(f"Results stored to file: {result_file_path}")
+                response_data["result_file_path"] = result_file_path
+            except Exception as e:
+                logger.warning(f"Failed to store results to file: {e}")
+                # Continue without file storage
 
             return RuleExecutionResponse(**response_data)
 
@@ -278,7 +318,7 @@ class ReconciliationExecutor:
 
             # Get the first rule to determine source table
             first_rule = ruleset.rules[0]
-            source_schema = first_rule.source_schema
+            source_schema = self._normalize_schema_name(first_rule.source_schema, db_type)
             source_table = first_rule.source_table
 
             # Quote identifiers based on database type
@@ -293,11 +333,24 @@ class ReconciliationExecutor:
             WHERE {is_active_quoted} = 0 OR {is_active_quoted} IS NULL
             """
 
-            logger.debug(f"[INACTIVE COUNT QUERY] SQL:\n{query}")
+            self._log_sql_query("INACTIVE_COUNT", f"{source_schema}.{source_table}", query, "FIRST")
 
             # Execute query
             cursor = source_conn.cursor()
-            cursor.execute(query)
+            try:
+                cursor.execute(query)
+            except Exception as schema_error:
+                # If schema prefix fails, try without schema (defaults to dbo in SQL Server)
+                logger.warning(f"Query with schema prefix failed: {schema_error}. Trying without schema prefix...")
+                query_no_schema = f"""
+                SELECT COUNT(*) as inactive_count
+                FROM {table_quoted}
+                WHERE {is_active_quoted} = 0 OR {is_active_quoted} IS NULL
+                """
+                self._log_sql_query("INACTIVE_COUNT", f"{source_schema}.{source_table}", query_no_schema, "RETRY")
+                cursor.execute(query_no_schema)
+                query = query_no_schema  # Use the no-schema version for logging
+
             result = cursor.fetchone()
             cursor.close()
 
@@ -318,8 +371,8 @@ class ReconciliationExecutor:
         rule: ReconciliationRule,
         limit: int,
         db_type: str = "mysql"
-    ) -> List[MatchedRecord]:
-        """Execute query to find matched records."""
+    ) -> Tuple[List[MatchedRecord], Optional[Dict[str, Any]]]:
+        """Execute query to find matched records. Returns (records, sql_info)."""
         try:
             # Build JOIN query
             join_conditions = []
@@ -331,18 +384,29 @@ class ReconciliationExecutor:
 
             join_condition = " AND ".join(join_conditions)
 
-            # Quote identifiers based on database type
-            source_schema_quoted = self._quote_identifier(rule.source_schema, db_type)
+            # Normalize and quote identifiers based on database type
+            source_schema = self._normalize_schema_name(rule.source_schema, db_type)
+            target_schema = self._normalize_schema_name(rule.target_schema, db_type)
+
+            source_schema_quoted = self._quote_identifier(source_schema, db_type)
             source_table_quoted = self._quote_identifier(rule.source_table, db_type)
-            target_schema_quoted = self._quote_identifier(rule.target_schema, db_type)
+            target_schema_quoted = self._quote_identifier(target_schema, db_type)
             target_table_quoted = self._quote_identifier(rule.target_table, db_type)
 
-            # For matched records, we need to join on the same connection
-            # Assuming both schemas are on the same database for now
-            # Use LIMIT for MySQL, ROWNUM for Oracle
-            limit_clause = f"LIMIT {limit}" if db_type.lower() == "mysql" else f"WHERE ROWNUM <= {limit}"
+            # Get database-specific limit clause
+            limit_clause = self._get_limit_clause(limit, db_type, is_where_clause=False)
 
-            query = f"""
+            # For SQL Server, TOP goes in SELECT clause
+            if db_type.lower() == "sqlserver":
+                query = f"""
+            SELECT {limit_clause} s.*, t.*
+            FROM {source_schema_quoted}.{source_table_quoted} s
+            INNER JOIN {target_schema_quoted}.{target_table_quoted} t
+                ON {join_condition}
+            """
+            else:
+                # For MySQL, Oracle, PostgreSQL, LIMIT goes at the end
+                query = f"""
             SELECT s.*, t.*
             FROM {source_schema_quoted}.{source_table_quoted} s
             INNER JOIN {target_schema_quoted}.{target_table_quoted} t
@@ -350,11 +414,24 @@ class ReconciliationExecutor:
             {limit_clause}
             """
 
-            logger.debug(f"[MATCHED QUERY] Rule: {rule.rule_name}")
-            logger.debug(f"[MATCHED QUERY] SQL:\n{query}")
+            self._log_sql_query("MATCHED", rule.rule_name, query, "FIRST")
 
             cursor = source_conn.cursor()
-            cursor.execute(query)
+            try:
+                cursor.execute(query)
+            except Exception as schema_error:
+                # If schema prefix fails, try without schema (defaults to dbo in SQL Server)
+                logger.warning(f"Query with schema prefix failed: {schema_error}. Trying without schema prefix...")
+                query_no_schema = f"""
+                SELECT s.*, t.*
+                FROM {source_table_quoted} s
+                INNER JOIN {target_table_quoted} t
+                    ON {join_condition}
+                {limit_clause}
+                """
+                self._log_sql_query("MATCHED", rule.rule_name, query_no_schema, "RETRY")
+                cursor.execute(query_no_schema)
+                query = query_no_schema  # Use the no-schema version for response
 
             # Get column names
             source_columns = []
@@ -380,11 +457,22 @@ class ReconciliationExecutor:
                 ))
 
             logger.debug(f"Found {len(matched_records)} matched records for rule {rule.rule_name}")
-            return matched_records
+
+            # Prepare SQL info for response
+            sql_info = {
+                "rule_id": rule.rule_id,
+                "rule_name": rule.rule_name,
+                "query_type": "matched",
+                "source_sql": query,
+                "target_sql": None,
+                "description": f"Find matched records between {rule.source_table} and {rule.target_table}"
+            }
+
+            return matched_records, sql_info
 
         except Exception as e:
             logger.error(f"Error executing matched query: {e}")
-            return []
+            return [], None
 
     def _execute_unmatched_source_query(
         self,
@@ -393,8 +481,8 @@ class ReconciliationExecutor:
         rule: ReconciliationRule,
         limit: int,
         db_type: str = "mysql"
-    ) -> List[Dict[str, Any]]:
-        """Execute query to find unmatched source records."""
+    ) -> Tuple[List[Dict[str, Any]], Optional[Dict[str, Any]]]:
+        """Execute query to find unmatched source records. Returns (records, sql_info)."""
         try:
             # Build NOT EXISTS query
             join_conditions = []
@@ -406,16 +494,32 @@ class ReconciliationExecutor:
 
             join_condition = " AND ".join(join_conditions)
 
-            # Quote identifiers based on database type
-            source_schema_quoted = self._quote_identifier(rule.source_schema, db_type)
+            # Normalize and quote identifiers based on database type
+            source_schema = self._normalize_schema_name(rule.source_schema, db_type)
+            target_schema = self._normalize_schema_name(rule.target_schema, db_type)
+
+            source_schema_quoted = self._quote_identifier(source_schema, db_type)
             source_table_quoted = self._quote_identifier(rule.source_table, db_type)
-            target_schema_quoted = self._quote_identifier(rule.target_schema, db_type)
+            target_schema_quoted = self._quote_identifier(target_schema, db_type)
             target_table_quoted = self._quote_identifier(rule.target_table, db_type)
 
-            # Use LIMIT for MySQL, ROWNUM for Oracle
-            limit_clause = f"LIMIT {limit}" if db_type.lower() == "mysql" else f"AND ROWNUM <= {limit}"
+            # Get database-specific limit clause
+            limit_clause = self._get_limit_clause(limit, db_type, is_where_clause=False)
 
-            query = f"""
+            # For SQL Server, TOP goes in SELECT clause
+            if db_type.lower() == "sqlserver":
+                query = f"""
+            SELECT {limit_clause} s.*
+            FROM {source_schema_quoted}.{source_table_quoted} s
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM {target_schema_quoted}.{target_table_quoted} t
+                WHERE {join_condition}
+            )
+            """
+            else:
+                # For MySQL, Oracle, PostgreSQL, LIMIT goes at the end
+                query = f"""
             SELECT s.*
             FROM {source_schema_quoted}.{source_table_quoted} s
             WHERE NOT EXISTS (
@@ -426,11 +530,27 @@ class ReconciliationExecutor:
             {limit_clause}
             """
 
-            logger.debug(f"[UNMATCHED SOURCE QUERY] Rule: {rule.rule_name}")
-            logger.debug(f"[UNMATCHED SOURCE QUERY] SQL:\n{query}")
+            self._log_sql_query("UNMATCHED_SOURCE", rule.rule_name, query, "FIRST")
 
             cursor = source_conn.cursor()
-            cursor.execute(query)
+            try:
+                cursor.execute(query)
+            except Exception as schema_error:
+                # If schema prefix fails, try without schema (defaults to dbo in SQL Server)
+                logger.warning(f"Query with schema prefix failed: {schema_error}. Trying without schema prefix...")
+                query_no_schema = f"""
+                SELECT s.*
+                FROM {source_table_quoted} s
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM {target_table_quoted} t
+                    WHERE {join_condition}
+                )
+                {limit_clause}
+                """
+                self._log_sql_query("UNMATCHED_SOURCE", rule.rule_name, query_no_schema, "RETRY")
+                cursor.execute(query_no_schema)
+                query = query_no_schema  # Use the no-schema version for response
 
             # Get column names
             columns = [desc[0] for desc in cursor.description]
@@ -447,11 +567,22 @@ class ReconciliationExecutor:
                 unmatched.append(row_dict)
 
             logger.debug(f"Found {len(unmatched)} unmatched source records for rule {rule.rule_name}")
-            return unmatched
+
+            # Prepare SQL info for response
+            sql_info = {
+                "rule_id": rule.rule_id,
+                "rule_name": rule.rule_name,
+                "query_type": "unmatched_source",
+                "source_sql": query,
+                "target_sql": None,
+                "description": f"Find records in {rule.source_table} not found in {rule.target_table}"
+            }
+
+            return unmatched, sql_info
 
         except Exception as e:
             logger.error(f"Error executing unmatched source query: {e}")
-            return []
+            return [], None
 
     def _execute_unmatched_target_query(
         self,
@@ -460,8 +591,8 @@ class ReconciliationExecutor:
         rule: ReconciliationRule,
         limit: int,
         db_type: str = "mysql"
-    ) -> List[Dict[str, Any]]:
-        """Execute query to find unmatched target records."""
+    ) -> Tuple[List[Dict[str, Any]], Optional[Dict[str, Any]]]:
+        """Execute query to find unmatched target records. Returns (records, sql_info)."""
         try:
             # Build NOT EXISTS query
             join_conditions = []
@@ -473,16 +604,32 @@ class ReconciliationExecutor:
 
             join_condition = " AND ".join(join_conditions)
 
-            # Quote identifiers based on database type
-            source_schema_quoted = self._quote_identifier(rule.source_schema, db_type)
+            # Normalize and quote identifiers based on database type
+            source_schema = self._normalize_schema_name(rule.source_schema, db_type)
+            target_schema = self._normalize_schema_name(rule.target_schema, db_type)
+
+            source_schema_quoted = self._quote_identifier(source_schema, db_type)
             source_table_quoted = self._quote_identifier(rule.source_table, db_type)
-            target_schema_quoted = self._quote_identifier(rule.target_schema, db_type)
+            target_schema_quoted = self._quote_identifier(target_schema, db_type)
             target_table_quoted = self._quote_identifier(rule.target_table, db_type)
 
-            # Use LIMIT for MySQL, ROWNUM for Oracle
-            limit_clause = f"LIMIT {limit}" if db_type.lower() == "mysql" else f"AND ROWNUM <= {limit}"
+            # Get database-specific limit clause
+            limit_clause = self._get_limit_clause(limit, db_type, is_where_clause=False)
 
-            query = f"""
+            # For SQL Server, TOP goes in SELECT clause
+            if db_type.lower() == "sqlserver":
+                query = f"""
+            SELECT {limit_clause} t.*
+            FROM {target_schema_quoted}.{target_table_quoted} t
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM {source_schema_quoted}.{source_table_quoted} s
+                WHERE {join_condition}
+            )
+            """
+            else:
+                # For MySQL, Oracle, PostgreSQL, LIMIT goes at the end
+                query = f"""
             SELECT t.*
             FROM {target_schema_quoted}.{target_table_quoted} t
             WHERE NOT EXISTS (
@@ -493,11 +640,27 @@ class ReconciliationExecutor:
             {limit_clause}
             """
 
-            logger.debug(f"[UNMATCHED TARGET QUERY] Rule: {rule.rule_name}")
-            logger.debug(f"[UNMATCHED TARGET QUERY] SQL:\n{query}")
+            self._log_sql_query("UNMATCHED_TARGET", rule.rule_name, query, "FIRST")
 
             cursor = target_conn.cursor()
-            cursor.execute(query)
+            try:
+                cursor.execute(query)
+            except Exception as schema_error:
+                # If schema prefix fails, try without schema (defaults to dbo in SQL Server)
+                logger.warning(f"Query with schema prefix failed: {schema_error}. Trying without schema prefix...")
+                query_no_schema = f"""
+                SELECT t.*
+                FROM {target_table_quoted} t
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM {source_table_quoted} s
+                    WHERE {join_condition}
+                )
+                {limit_clause}
+                """
+                self._log_sql_query("UNMATCHED_TARGET", rule.rule_name, query_no_schema, "RETRY")
+                cursor.execute(query_no_schema)
+                query = query_no_schema  # Use the no-schema version for response
 
             # Get column names
             columns = [desc[0] for desc in cursor.description]
@@ -514,11 +677,86 @@ class ReconciliationExecutor:
                 unmatched.append(row_dict)
 
             logger.debug(f"Found {len(unmatched)} unmatched target records for rule {rule.rule_name}")
-            return unmatched
+
+            # Prepare SQL info for response
+            sql_info = {
+                "rule_id": rule.rule_id,
+                "rule_name": rule.rule_name,
+                "query_type": "unmatched_target",
+                "source_sql": None,
+                "target_sql": query,
+                "description": f"Find records in {rule.target_table} not found in {rule.source_table}"
+            }
+
+            return unmatched, sql_info
 
         except Exception as e:
             logger.error(f"Error executing unmatched target query: {e}")
-            return []
+            return [], None
+
+    def _store_results_to_file(
+        self,
+        ruleset_id: str,
+        response_data: Dict[str, Any],
+        all_matched: List[MatchedRecord],
+        all_unmatched_source: List[Dict[str, Any]],
+        all_unmatched_target: List[Dict[str, Any]]
+    ) -> str:
+        """
+        Store reconciliation results to a JSON file.
+
+        Args:
+            ruleset_id: ID of the ruleset
+            response_data: Response data dictionary
+            all_matched: List of matched records
+            all_unmatched_source: List of unmatched source records
+            all_unmatched_target: List of unmatched target records
+
+        Returns:
+            Path to the saved file
+        """
+        # Create results directory if it doesn't exist
+        results_dir = Path("results")
+        results_dir.mkdir(exist_ok=True)
+
+        # Generate filename with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"reconciliation_result_{ruleset_id}_{timestamp}.json"
+        file_path = results_dir / filename
+
+        # Prepare data for JSON serialization
+        matched_dicts = [
+            {
+                "source_record": m.source_record,
+                "target_record": m.target_record,
+                "match_confidence": m.match_confidence,
+                "rule_used": m.rule_used,
+                "rule_name": m.rule_name
+            }
+            for m in all_matched
+        ]
+
+        # Prepare complete result document
+        result_document = {
+            "ruleset_id": ruleset_id,
+            "execution_timestamp": datetime.now().isoformat(),
+            "matched_count": response_data["matched_count"],
+            "unmatched_source_count": response_data["unmatched_source_count"],
+            "unmatched_target_count": response_data["unmatched_target_count"],
+            "execution_time_ms": response_data["execution_time_ms"],
+            "inactive_count": response_data.get("inactive_count", 0),
+            "matched_records": matched_dicts,
+            "unmatched_source": all_unmatched_source,
+            "unmatched_target": all_unmatched_target,
+            "generated_sql": response_data.get("generated_sql", [])
+        }
+
+        # Write to file
+        with open(file_path, 'w') as f:
+            json.dump(result_document, f, indent=2, default=str)
+
+        logger.info(f"Results stored to file: {file_path}")
+        return str(file_path)
 
     def _connect_to_database(
         self,
@@ -571,7 +809,7 @@ class ReconciliationExecutor:
                 return f"jdbc:oracle:thin:@{db_config.host}:{db_config.port}:{db_config.database}"
 
         elif db_type == "sqlserver" or db_type == "mssql":
-            return f"jdbc:sqlserver://{db_config.host}:{db_config.port};databaseName={db_config.database}"
+            return f"jdbc:sqlserver://{db_config.host}:{db_config.port};databaseName={db_config.database};encrypt=true;trustServerCertificate=true"
 
         elif db_type == "postgresql" or db_type == "postgres":
             return f"jdbc:postgresql://{db_config.host}:{db_config.port}/{db_config.database}"

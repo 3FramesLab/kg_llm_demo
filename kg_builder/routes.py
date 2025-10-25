@@ -93,20 +93,22 @@ async def generate_knowledge_graph(request: KGGenerationRequest):
 
         # Build knowledge graph
         if len(schema_names) == 1:
-            # Single schema - use original method
+            # Single schema - use original method with optional LLM enhancement
             schema = SchemaParser.load_schema(schema_names[0])
             kg = SchemaParser.build_knowledge_graph(
                 schema_names[0],
                 request.kg_name,
-                schema
+                schema,
+                use_llm=request.use_llm_enhancement,
+                field_preferences=request.field_preferences
             )
         else:
             # Multiple schemas - use merged method with cross-schema relationships
-            # LLM enhancement is only applied to multi-schema KGs
             kg = SchemaParser.build_merged_knowledge_graph(
                 schema_names,
                 request.kg_name,
-                use_llm=request.use_llm_enhancement
+                use_llm=request.use_llm_enhancement,
+                field_preferences=request.field_preferences
             )
 
         backends_used = []
@@ -451,7 +453,8 @@ async def generate_reconciliation_rules(request: RuleGenerationRequest):
             kg_name=request.kg_name,
             schema_names=request.schema_names,
             use_llm=request.use_llm_enhancement,
-            min_confidence=request.min_confidence
+            min_confidence=request.min_confidence,
+            field_preferences=request.field_preferences
         )
 
         # Save ruleset
@@ -874,8 +877,7 @@ async def execute_reconciliation(request: RuleExecutionRequest):
             target_db_config=target_db_config,
             limit=request.limit,
             include_matched=getattr(request, 'include_matched', True),
-            include_unmatched=getattr(request, 'include_unmatched', True),
-            store_in_mongodb=getattr(request, 'store_in_mongodb', True)
+            include_unmatched=getattr(request, 'include_unmatched', True)
         )
 
         return result

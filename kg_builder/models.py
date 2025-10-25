@@ -103,6 +103,10 @@ class KnowledgeGraph(BaseModel):
     relationships: List[GraphRelationship]
     created_at: datetime = Field(default_factory=datetime.utcnow)
     schema_file: str
+    metadata: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Metadata including field_preferences used during generation"
+    )
 
 
 # API Request/Response models
@@ -132,7 +136,11 @@ class KGGenerationRequest(BaseModel):
     )
     use_llm_enhancement: bool = Field(
         default=True,
-        description="Use LLM for relationship inference, descriptions, and confidence scoring (only for multi-schema)"
+        description="Use LLM for relationship inference, descriptions, and confidence scoring"
+    )
+    field_preferences: Optional[List['FieldPreference']] = Field(
+        default=None,
+        description="User-specific field hints to guide LLM relationship inference"
     )
 
     @field_validator('schema_names', mode='before')
@@ -226,6 +234,10 @@ class ReconciliationRule(BaseModel):
     target_columns: List[str]
     match_type: ReconciliationMatchType
     transformation: Optional[str] = None  # SQL/Python transform
+    filter_conditions: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Filter conditions to apply (e.g., {'Active_Inactive': 'Active'})"
+    )
     confidence_score: float  # 0.0-1.0
     reasoning: str  # LLM explanation
     validation_status: str  # VALID, LIKELY, UNCERTAIN
@@ -258,6 +270,10 @@ class FieldPreference(BaseModel):
     field_hints: Dict[str, str] = Field(
         default={},
         description="Hints about field relationships (e.g., {'vendor_id': 'supplier_id'})"
+    )
+    filter_hints: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Filter conditions for this table (e.g., {'Active_Inactive': 'Active', 'deleted': False})"
     )
 
 
@@ -347,10 +363,6 @@ class RuleExecutionRequest(BaseModel):
     )
     include_matched: bool = Field(default=True, description="Include matched records in results")
     include_unmatched: bool = Field(default=True, description="Include unmatched records in results")
-    store_in_mongodb: bool = Field(
-        default=True,
-        description="Store results in MongoDB as JSON documents (only applies to direct execution mode)"
-    )
 
 
 class MatchedRecord(BaseModel):
@@ -376,13 +388,13 @@ class RuleExecutionResponse(BaseModel):
         default=0,
         description="Number of inactive records (is_active = 0 or NULL) in source data"
     )
-    mongodb_document_id: Optional[str] = Field(
-        default=None,
-        description="MongoDB document ID if results were stored in MongoDB"
+    generated_sql: List[Dict[str, Any]] = Field(
+        default=[],
+        description="Array of SQL queries executed during reconciliation with structure: [{rule_id, source_sql, target_sql, description}, ...]"
     )
-    storage_location: Optional[str] = Field(
+    result_file_path: Optional[str] = Field(
         default=None,
-        description="Location where results were stored (e.g., 'mongodb', 'memory')"
+        description="Path to the saved JSON file containing full execution results (e.g., results/reconciliation_result_RECON_ABC123_20251025_120530.json)"
     )
 
 

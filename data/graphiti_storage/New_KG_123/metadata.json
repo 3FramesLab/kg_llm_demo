@@ -1,0 +1,11 @@
+{
+  "name": "New_KG_123",
+  "schema_file": "newdqschema",
+  "created_at": "2025-10-25T17:28:57.536861",
+  "nodes_count": 4,
+  "relationships_count": 5,
+  "field_preferences": [
+    "table_name='hana_material_master' priority_fields=['MATERIAL'] exclude_fields=['INTERNAL_NOTES', 'TEMP_FIELD'] field_hints={'MATERIAL': 'PLANNING_SKU'}",
+    "table_name='brz_lnd_OPS_EXCEL_GPU' priority_fields=['PLANNING_SKU', 'Active_Inactive'] exclude_fields=['STAGING_FLAG'] field_hints={'PLANNING_SKU': 'MATERIAL'}"
+  ]
+}

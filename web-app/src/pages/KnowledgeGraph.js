@@ -41,6 +41,7 @@ import {
   getKGRelationships,
   exportKG,
   deleteKG,
+  checkLLMStatus,
 } from '../services/api';
 import GraphVisualization from '../components/GraphVisualization';
 
@@ -59,12 +60,19 @@ export default function KnowledgeGraph() {
     kg_name: '',
     use_llm_enhancement: true,
     backends: ['graphiti'],
+    field_preferences: null,
   });
+
+  // Field preferences input (JSON string)
+  const [fieldPreferencesInput, setFieldPreferencesInput] = useState('');
 
   // Selected KG details
   const [selectedKG, setSelectedKG] = useState(null);
   const [kgEntities, setKgEntities] = useState([]);
   const [kgRelationships, setKgRelationships] = useState([]);
+
+  // LLM status
+  const [llmStatus, setLlmStatus] = useState({ enabled: false, model: null });
 
   useEffect(() => {
     loadInitialData();
@@ -72,12 +80,14 @@ export default function KnowledgeGraph() {
 
   const loadInitialData = async () => {
     try {
-      const [schemasRes, kgsRes] = await Promise.all([
+      const [schemasRes, kgsRes, llmStatusRes] = await Promise.all([
         listSchemas(),
         listKGs(),
+        checkLLMStatus(),
       ]);
       setSchemas(schemasRes.data.schemas || []);
       setKnowledgeGraphs(kgsRes.data.graphs || []);
+      setLlmStatus(llmStatusRes.data);
     } catch (err) {
       console.error('Error loading data:', err);
     }
@@ -101,8 +111,23 @@ export default function KnowledgeGraph() {
         payload.schema_name = formData.schema_name;
       }
 
+      // Parse and add field_preferences if provided
+      if (fieldPreferencesInput.trim()) {
+        try {
+          payload.field_preferences = JSON.parse(fieldPreferencesInput);
+        } catch (err) {
+          setError('Invalid JSON in field preferences: ' + err.message);
+          setLoading(false);
+          return;
+        }
+      }
+
       const response = await generateKG(payload);
-      setSuccess(`Knowledge graph "${response.data.kg_name}" created successfully!`);
+      const llmUsed = formData.schema_names.length > 1 && formData.use_llm_enhancement;
+      const successMsg = `Knowledge graph "${response.data.kg_name}" created successfully!${
+        llmUsed ? ' (LLM enhancement applied)' : ''
+      }`;
+      setSuccess(successMsg);
 
       // Reset form
       setFormData({
@@ -253,18 +278,76 @@ export default function KnowledgeGraph() {
                 ))}
               </Paper>
 
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={formData.use_llm_enhancement}
-                    onChange={(e) =>
-                      setFormData({ ...formData, use_llm_enhancement: e.target.checked })
-                    }
-                  />
-                }
-                label="Use LLM Enhancement (Recommended)"
-                sx={{ mt: 2 }}
-              />
+              <Box sx={{ mt: 2 }}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.use_llm_enhancement}
+                      onChange={(e) =>
+                        setFormData({ ...formData, use_llm_enhancement: e.target.checked })
+                      }
+                      disabled={!llmStatus.enabled}
+                    />
+                  }
+                  label="Use LLM Enhancement"
+                />
+                {!llmStatus.enabled && (
+                  <Alert severity="warning" sx={{ mt: 1 }}>
+                    LLM service is not enabled. Configure OPENAI_API_KEY in your .env file to use LLM enhancement.
+                  </Alert>
+                )}
+                {llmStatus.enabled && formData.schema_names.length === 1 && (
+                  <Alert severity="success" sx={{ mt: 1 }}>
+                    LLM enabled: Using {llmStatus.model} for intelligent entity and relationship extraction
+                  </Alert>
+                )}
+                {llmStatus.enabled && formData.schema_names.length > 1 && (
+                  <Alert severity="success" sx={{ mt: 1 }}>
+                    LLM enabled: Using {llmStatus.model} for cross-schema relationship inference
+                  </Alert>
+                )}
+              </Box>
+
+              {formData.use_llm_enhancement && llmStatus.enabled && (
+                <Accordion sx={{ mt: 2 }}>
+                  <AccordionSummary expandIcon={<ExpandMore />}>
+                    <Typography>Field Preferences (Optional - Advanced)</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                      Guide LLM inference with specific field hints. Provide JSON array with table-specific preferences.
+                    </Typography>
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={8}
+                      label="Field Preferences (JSON)"
+                      placeholder={JSON.stringify([
+                        {
+                          table_name: "hana_material_master",
+                          field_hints: {
+                            MATERIAL: "PLANNING_SKU"
+                          },
+                          priority_fields: ["MATERIAL", "MATERIAL_DESC"],
+                          exclude_fields: ["INTERNAL_NOTES", "TEMP_FIELD"]
+                        },
+                        {
+                          table_name: "brz_lnd_OPS_EXCEL_GPU",
+                          field_hints: {
+                            PLANNING_SKU: "MATERIAL",
+                            GPU_MODEL: "PRODUCT_TYPE"
+                          },
+                          priority_fields: ["PLANNING_SKU", "GPU_MODEL"],
+                          exclude_fields: ["STAGING_FLAG"]
+                        }
+                      ], null, 2)}
+                      value={fieldPreferencesInput}
+                      onChange={(e) => setFieldPreferencesInput(e.target.value)}
+                      helperText="Provide field hints to guide LLM relationship inference. Leave empty to let LLM infer automatically."
+                    />
+                  </AccordionDetails>
+                </Accordion>
+              )}
 
               <Box sx={{ mt: 3 }}>
                 <Button
@@ -303,6 +386,17 @@ export default function KnowledgeGraph() {
                       : ['orderMgmt-catalog', 'qinspect-designcode'],
                     use_llm_enhancement: formData.use_llm_enhancement,
                     backends: formData.backends,
+                    ...(fieldPreferencesInput.trim()
+                      ? { field_preferences: (() => { try { return JSON.parse(fieldPreferencesInput); } catch { return undefined; } })() }
+                      : { field_preferences: [
+                          {
+                            table_name: 'catalog',
+                            field_hints: { code: 'code', style_code: 'code', is_active: 'deleted' },
+                            priority_fields: [],
+                            exclude_fields: []
+                          }
+                        ] }
+                    )
                   },
                   null,
                   2
@@ -353,13 +447,40 @@ export default function KnowledgeGraph() {
                   <Typography variant="h6" gutterBottom>
                     Knowledge Graph: {selectedKG}
                   </Typography>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
                     <Chip label={`${kgEntities.length} Entities`} icon={<Hub />} />
                     <Chip
                       label={`${kgRelationships.length} Relationships`}
                       icon={<AccountTree />}
                     />
                   </Box>
+
+                  {/* Relationship Type Breakdown */}
+                  {kgRelationships.length > 0 && (
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                        Relationship Types:
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                        {Object.entries(
+                          kgRelationships.reduce((acc, rel) => {
+                            acc[rel.relationship_type] = (acc[rel.relationship_type] || 0) + 1;
+                            return acc;
+                          }, {})
+                        )
+                          .sort((a, b) => b[1] - a[1])
+                          .map(([type, count]) => (
+                            <Chip
+                              key={type}
+                              label={`${type} (${count})`}
+                              size="small"
+                              variant="outlined"
+                              color="primary"
+                            />
+                          ))}
+                      </Box>
+                    </Box>
+                  )}
                 </Paper>
 
                 <GraphVisualization entities={kgEntities} relationships={kgRelationships} />
@@ -397,14 +518,46 @@ export default function KnowledgeGraph() {
                       </AccordionSummary>
                       <AccordionDetails>
                         <List dense>
-                          {kgRelationships.slice(0, 50).map((rel, index) => (
-                            <ListItem key={index}>
-                              <ListItemText
-                                primary={`${rel.source_id} → ${rel.target_id}`}
-                                secondary={`Type: ${rel.relationship_type}`}
-                              />
-                            </ListItem>
-                          ))}
+                          {kgRelationships.slice(0, 50).map((rel, index) => {
+                            // Find entity labels for source and target
+                            const sourceEntity = kgEntities.find(e => e.id === rel.source_id);
+                            const targetEntity = kgEntities.find(e => e.id === rel.target_id);
+                            const sourceName = sourceEntity?.label || rel.source_id;
+                            const targetName = targetEntity?.label || rel.target_id;
+
+                            return (
+                              <ListItem key={index}>
+                                <ListItemText
+                                  primary={
+                                    <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                      <Typography component="span" variant="body2" fontWeight="medium">
+                                        {sourceName}
+                                      </Typography>
+                                      <Typography component="span" variant="body2" color="text.secondary">
+                                        →
+                                      </Typography>
+                                      <Chip
+                                        label={rel.relationship_type}
+                                        size="small"
+                                        variant="outlined"
+                                        sx={{ height: 20, fontSize: '0.7rem' }}
+                                      />
+                                      <Typography component="span" variant="body2" color="text.secondary">
+                                        →
+                                      </Typography>
+                                      <Typography component="span" variant="body2" fontWeight="medium">
+                                        {targetName}
+                                      </Typography>
+                                    </Box>
+                                  }
+                                  secondary={
+                                    sourceEntity && targetEntity &&
+                                    `${sourceEntity.type || 'Unknown'} → ${targetEntity.type || 'Unknown'}`
+                                  }
+                                />
+                              </ListItem>
+                            );
+                          })}
                           {kgRelationships.length > 50 && (
                             <ListItem>
                               <ListItemText

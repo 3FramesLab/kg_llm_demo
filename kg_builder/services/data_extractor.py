@@ -177,7 +177,7 @@ class DataExtractor:
             else:
                 return f"jdbc:oracle:thin:@{db_config.host}:{db_config.port}:{db_config.database}"
         elif db_type == "sqlserver":
-            return f"jdbc:sqlserver://{db_config.host}:{db_config.port};databaseName={db_config.database}"
+            return f"jdbc:sqlserver://{db_config.host}:{db_config.port};databaseName={db_config.database};encrypt=true;trustServerCertificate=true"
         elif db_type == "mysql":
             return f"jdbc:mysql://{db_config.host}:{db_config.port}/{db_config.database}"
         elif db_type == "postgresql":

@@ -35,7 +35,9 @@ class ReconciliationRuleGenerator:
         """Initialize the rule generator."""
         self.schema_parser = SchemaParser()
         from kg_builder.services.falkordb_backend import get_falkordb_backend
+        from kg_builder.services.graphiti_backend import get_graphiti_backend
         self.falkordb = get_falkordb_backend()
+        self.graphiti = get_graphiti_backend()
 
     def generate_from_knowledge_graph(
         self,
@@ -59,6 +61,13 @@ class ReconciliationRuleGenerator:
             ReconciliationRuleSet containing generated rules
         """
         logger.info(f"Generating reconciliation rules from KG '{kg_name}'")
+
+        # Auto-load field_preferences from KG metadata if not provided
+        if not field_preferences:
+            kg_metadata = self.graphiti.get_kg_metadata(kg_name)
+            if kg_metadata and 'field_preferences' in kg_metadata:
+                field_preferences = kg_metadata['field_preferences']
+                logger.info(f"Auto-loaded field_preferences from KG metadata: {len(field_preferences)} preference(s)")
 
         # 1. Load schemas
         schemas_info = self._load_schemas(schema_names)
@@ -152,25 +161,41 @@ class ReconciliationRuleGenerator:
     def _get_kg_relationships(self, kg_name: str) -> List[Dict[str, Any]]:
         """Query knowledge graph for all relationships."""
         try:
-            # Query all relationships from FalkorDB
+            # Query all relationships from FalkorDB including source/target columns
             query = """
             MATCH (source)-[r]->(target)
             RETURN
                 source.label AS source_table,
                 target.label AS target_table,
                 type(r) AS relationship_type,
-                properties(r) AS properties
+                properties(r) AS properties,
+                r.source_column AS source_column,
+                r.target_column AS target_column
             """
 
-            result = self.falkordb.execute_query(kg_name, query)
+            # Execute query against FalkorDB (use generic 'query' method)
+            result = self.falkordb.query(kg_name, query)
 
             relationships = []
             for record in result:
+                props = record.get('properties', {})
+
+                # Add source_column and target_column to properties if available
+                source_col = record.get('source_column')
+                target_col = record.get('target_column')
+
+                if source_col and 'source_column' not in props:
+                    props['source_column'] = source_col
+                if target_col and 'target_column' not in props:
+                    props['target_column'] = target_col
+
                 relationships.append({
                     'source_table': record.get('source_table'),
                     'target_table': record.get('target_table'),
                     'relationship_type': record.get('relationship_type'),
-                    'properties': record.get('properties', {})
+                    'properties': props,
+                    'source_column': source_col,
+                    'target_column': target_col
                 })
 
             logger.debug(f"Retrieved {len(relationships)} relationships from KG '{kg_name}'")
@@ -189,24 +214,40 @@ class ReconciliationRuleGenerator:
         """Generate rules from naming patterns and structural analysis."""
         rules = []
 
-        # Get cross-schema relationships only
-        cross_schema_rels = [
-            rel for rel in relationships
-            if rel.get('relationship_type') in ['CROSS_SCHEMA_REFERENCE', 'FOREIGN_KEY']
-        ]
+        # For single schema: use all relationships (intra-schema joins)
+        # For multiple schemas: use cross-schema relationships
+        if len(schema_names) == 1:
+            # Single schema: include all relationship types from KG
+            relevant_rels = [
+                rel for rel in relationships
+                if rel.get('relationship_type') in ['REFERENCES', 'FOREIGN_KEY', 'CROSS_SCHEMA_REFERENCE',
+                                                     'SEMANTIC_REFERENCE', 'INFERRED']
+            ]
+        else:
+            # Multiple schemas: only cross-schema relationships
+            relevant_rels = [
+                rel for rel in relationships
+                if rel.get('relationship_type') in ['CROSS_SCHEMA_REFERENCE', 'FOREIGN_KEY']
+            ]
 
-        for rel in cross_schema_rels:
+        for rel in relevant_rels:
             source_table = rel.get('source_table')
             target_table = rel.get('target_table')
             properties = rel.get('properties', {})
 
-            # Skip if tables are not found or same
-            if not source_table or not target_table or source_table == target_table:
+            # Skip if tables are not found
+            if not source_table or not target_table:
                 continue
 
-            # Extract source and target schemas
-            source_schema = properties.get('source_schema', schema_names[0] if len(schema_names) > 0 else '')
-            target_schema = properties.get('target_schema', schema_names[1] if len(schema_names) > 1 else '')
+            # For single schema, both source and target schema are the same
+            # For multiple schemas, extract from properties
+            if len(schema_names) == 1:
+                source_schema = schema_names[0]
+                target_schema = schema_names[0]
+            else:
+                # Extract source and target schemas
+                source_schema = properties.get('source_schema', schema_names[0] if len(schema_names) > 0 else '')
+                target_schema = properties.get('target_schema', schema_names[1] if len(schema_names) > 1 else '')
 
             # Pattern 1: Foreign Key relationships
             if rel.get('relationship_type') == 'FOREIGN_KEY':
@@ -261,6 +302,57 @@ class ReconciliationRuleGenerator:
                             llm_generated=False,
                             created_at=datetime.utcnow(),
                             metadata={'relationship_type': 'CROSS_SCHEMA_REFERENCE', 'inferred': True}
+                        ))
+
+            # Pattern 2b: REFERENCES and LLM-inferred relationships (SEMANTIC_REFERENCE, INFERRED)
+            elif rel.get('relationship_type') in ['REFERENCES', 'SEMANTIC_REFERENCE', 'INFERRED']:
+                # Try to get column info from multiple sources
+                # Priority: 1. Direct fields, 2. Properties, 3. Infer
+                column_name = rel.get('source_column') or properties.get('column_name') or properties.get('source_column')
+                target_column = rel.get('target_column') or properties.get('target_column')
+
+                # Check if this is an LLM-inferred relationship
+                is_llm_inferred = properties.get('llm_inferred', False)
+                llm_confidence = properties.get('llm_confidence', 0.75)
+                llm_reasoning = properties.get('llm_reasoning', '')
+
+                if column_name:
+                    # If target_column not provided, try to infer it
+                    if not target_column:
+                        # For single schema, get the schema object
+                        schema_obj = schemas_info.get(schema_names[0]) if len(schema_names) == 1 else schemas_info.get(target_schema)
+                        target_column = self._infer_matching_column(
+                            source_table, column_name, target_table, schema_obj
+                        )
+
+                    if target_column:
+                        # Determine match type based on relationship type
+                        if rel.get('relationship_type') == 'SEMANTIC_REFERENCE':
+                            match_type = ReconciliationMatchType.SEMANTIC
+                        else:
+                            match_type = ReconciliationMatchType.EXACT
+
+                        rules.append(ReconciliationRule(
+                            rule_id=f"RULE_{generate_uid()}",
+                            rule_name=f"{rel.get('relationship_type')}_{source_table}_{target_table}",
+                            source_schema=source_schema,
+                            source_table=source_table,
+                            source_columns=[column_name],
+                            target_schema=target_schema,
+                            target_table=target_table,
+                            target_columns=[target_column],
+                            match_type=match_type,
+                            transformation=None,
+                            confidence_score=llm_confidence if is_llm_inferred else 0.80,
+                            reasoning=llm_reasoning if llm_reasoning else f"Relationship inferred from column {column_name}",
+                            validation_status="LIKELY" if is_llm_inferred else "VALID",
+                            llm_generated=is_llm_inferred,
+                            created_at=datetime.utcnow(),
+                            metadata={
+                                'relationship_type': rel.get('relationship_type'),
+                                'llm_inferred': is_llm_inferred,
+                                'data_type_match': properties.get('data_type_match', '')
+                            }
                         ))
 
         # Pattern 3: Look for matching column names across schemas
@@ -379,6 +471,7 @@ class ReconciliationRuleGenerator:
                         target_columns=rule_dict.get('target_columns', []),
                         match_type=ReconciliationMatchType(rule_dict.get('match_type', 'semantic')),
                         transformation=rule_dict.get('transformation'),
+                        filter_conditions=rule_dict.get('filter_conditions'),  # ✅ Add filter conditions
                         confidence_score=rule_dict.get('confidence', 0.7),
                         reasoning=rule_dict.get('reasoning', 'LLM-inferred relationship'),
                         validation_status=rule_dict.get('validation_status', 'UNCERTAIN'),
@@ -391,7 +484,68 @@ class ReconciliationRuleGenerator:
                     logger.error(f"Error creating rule from LLM response: {e}")
                     continue
 
-            logger.debug(f"Generated {len(rules)} LLM-based rules")
+            # If no LLM rules were produced and this is a single-schema scenario,
+            # fall back to generating simple rules from user-provided field hints.
+            if len(rules) == 0 and len(schemas_info) == 1 and field_preferences:
+                try:
+                    schema_name, schema_obj = next(iter(schemas_info.items()))
+                    # Build quick lookup maps
+                    table_columns_map = {
+                        t_name: {col.name.lower(): col.name for col in t_schema.columns}
+                        for t_name, t_schema in schema_obj.tables.items()
+                    }
+
+                    fallback_count = 0
+                    for pref in field_preferences:
+                        # Support both dict and Pydantic model objects
+                        src_table = pref.get('table_name') if isinstance(pref, dict) else getattr(pref, 'table_name', None)
+                        hints = pref.get('field_hints', {}) if isinstance(pref, dict) else getattr(pref, 'field_hints', {})
+                        if not src_table or not hints:
+                            continue
+
+                        src_cols_lower = set(table_columns_map.get(src_table, {}).keys())
+                        for src_col, tgt_col in hints.items():
+                            src_col_l = str(src_col).lower()
+                            tgt_col_l = str(tgt_col).lower()
+
+                            # Ensure source column exists in the source table
+                            if src_col_l not in src_cols_lower:
+                                continue
+
+                            # Search for target column in other tables within the same schema
+                            for tgt_table, cols_map in table_columns_map.items():
+                                if tgt_table == src_table:
+                                    continue
+                                if tgt_col_l in cols_map:
+                                    # Use original-cased column names
+                                    resolved_src_col = table_columns_map[src_table][src_col_l]
+                                    resolved_tgt_col = cols_map[tgt_col_l]
+
+                                    rules.append(ReconciliationRule(
+                                        rule_id=f"RULE_{generate_uid()}",
+                                        rule_name=f"Hint_Match_{src_table}_{resolved_src_col}_to_{tgt_table}_{resolved_tgt_col}",
+                                        source_schema=schema_name,
+                                        source_table=src_table,
+                                        source_columns=[resolved_src_col],
+                                        target_schema=schema_name,
+                                        target_table=tgt_table,
+                                        target_columns=[resolved_tgt_col],
+                                        match_type=ReconciliationMatchType.EXACT,
+                                        transformation=None,
+                                        confidence_score=0.8,
+                                        reasoning="Derived from user-provided field_hints within single schema",
+                                        validation_status="LIKELY",
+                                        llm_generated=False,
+                                        created_at=datetime.utcnow(),
+                                        metadata={"source": "fallback_field_hints"}
+                                    ))
+                                    fallback_count += 1
+                    if fallback_count > 0:
+                        logger.info(f"LLM produced no rules; generated {fallback_count} fallback rule(s) from field_hints for single schema '{schema_name}'")
+                except Exception as e:
+                    logger.error(f"Error generating fallback rules from field_hints: {e}")
+
+            logger.debug(f"Generated {len(rules)} LLM-based rules (including any single-schema fallback)")
             return rules
 
         except Exception as e:

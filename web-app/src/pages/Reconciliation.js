@@ -58,6 +58,9 @@ export default function Reconciliation() {
     min_confidence: 0.7,
   });
 
+  // Optional field preferences (JSON) to guide rule generation
+  const [fieldPreferencesInput, setFieldPreferencesInput] = useState('');
+
   useEffect(() => {
     loadInitialData();
   }, []);
@@ -90,9 +93,31 @@ export default function Reconciliation() {
     setSuccess(null);
 
     try {
-      const response = await generateRules(formData);
+      // Build request payload explicitly so we can optionally add field_preferences
+      const payload = {
+        schema_names: formData.schema_names,
+        kg_name: formData.kg_name,
+        use_llm_enhancement: formData.use_llm_enhancement,
+        min_confidence: formData.min_confidence,
+      };
+
+      if (fieldPreferencesInput.trim()) {
+        try {
+          payload.field_preferences = JSON.parse(fieldPreferencesInput);
+        } catch (e) {
+          setError('Invalid JSON in field preferences: ' + e.message);
+          setLoading(false);
+          return;
+        }
+      }
+
+      const response = await generateRules(payload);
+      const ruleCount =
+        typeof response.data.rules_count !== 'undefined'
+          ? response.data.rules_count
+          : response.data.rule_count;
       setSuccess(
-        `Generated ${response.data.rule_count} rules in ruleset "${response.data.ruleset_id}"`
+        `Generated ${ruleCount} rules in ruleset "${response.data.ruleset_id}"`
       );
       loadInitialData();
       setTabValue(1);
@@ -102,7 +127,6 @@ export default function Reconciliation() {
       setLoading(false);
     }
   };
-
   const handleLoadRuleset = async (rulesetId) => {
     setLoading(true);
     setError(null);
@@ -172,7 +196,7 @@ export default function Reconciliation() {
           Reconciliation Rule Generation
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Generate data matching rules from knowledge graphs
+          Generate intelligent rules from knowledge graphs for single-schema joins or cross-schema data reconciliation
         </Typography>
       </Box>
 
@@ -203,8 +227,22 @@ export default function Reconciliation() {
                 Generate Reconciliation Rules
               </Typography>
 
+              {formData.schema_names.length === 1 && (
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  <strong>Single Schema Mode:</strong> Generating join/query rules within one database for referential integrity and table relationships.
+                </Alert>
+              )}
+              {formData.schema_names.length >= 2 && (
+                <Alert severity="success" sx={{ mb: 2 }}>
+                  <strong>Multi-Schema Mode:</strong> Generating cross-schema reconciliation rules to match data across different databases.
+                </Alert>
+              )}
+
               <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
-                Select Schemas
+                Select Schemas (1 or more)
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                Single schema: Generate join rules within database. Multiple schemas: Generate cross-database reconciliation rules.
               </Typography>
               <Paper variant="outlined" sx={{ p: 2, maxHeight: 200, overflow: 'auto', mb: 2 }}>
                 {schemas.map((schema) => (
@@ -241,18 +279,22 @@ export default function Reconciliation() {
                 ))}
               </TextField>
 
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={formData.use_llm_enhancement}
-                    onChange={(e) =>
-                      setFormData({ ...formData, use_llm_enhancement: e.target.checked })
-                    }
-                  />
-                }
-                label="Use LLM Enhancement for Semantic Rules"
-                sx={{ mt: 2 }}
-              />
+              <Box sx={{ mt: 2 }}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.use_llm_enhancement}
+                      onChange={(e) =>
+                        setFormData({ ...formData, use_llm_enhancement: e.target.checked })
+                      }
+                    />
+                  }
+                  label="Use LLM Enhancement for Semantic Rules"
+                />
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', ml: 4 }}>
+                  LLM will intelligently infer relationships {formData.schema_names.length === 1 ? 'within the schema' : 'across schemas'} and generate high-quality rules.
+                </Typography>
+              </Box>
 
               <Box sx={{ mt: 3 }}>
                 <Typography gutterBottom>
@@ -273,6 +315,49 @@ export default function Reconciliation() {
                 />
               </Box>
 
+              {/* Field Preferences (Optional) */}
+              {formData.use_llm_enhancement && (
+                <Accordion sx={{ mt: 2 }}>
+                  <AccordionSummary expandIcon={<ExpandMore />}>
+                    <Typography>Field Preferences (Optional - Advanced)</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                      Guide LLM rule generation with table-specific field hints. Provide a JSON array
+                      where each object targets a table and includes field_hints, priority_fields, and exclude_fields.
+                    </Typography>
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={8}
+                      label="Field Preferences (JSON)"
+                      placeholder={JSON.stringify([
+                        {
+                          table_name: "hana_material_master",
+                          field_hints: {
+                            MATERIAL: "PLANNING_SKU"
+                          },
+                          priority_fields: ["MATERIAL", "MATERIAL_DESC"],
+                          exclude_fields: ["INTERNAL_NOTES", "TEMP_FIELD"]
+                        },
+                        {
+                          table_name: "brz_lnd_OPS_EXCEL_GPU",
+                          field_hints: {
+                            PLANNING_SKU: "MATERIAL",
+                            GPU_MODEL: "PRODUCT_TYPE"
+                          },
+                          priority_fields: ["PLANNING_SKU", "GPU_MODEL"],
+                          exclude_fields: ["STAGING_FLAG"]
+                        }
+                      ], null, 2)}
+                      value={fieldPreferencesInput}
+                      onChange={(e) => setFieldPreferencesInput(e.target.value)}
+                      helperText="Provide field hints to guide LLM and fallback rule generation. Leave empty to skip."
+                    />
+                  </AccordionDetails>
+                </Accordion>
+              )}
+
               <Box sx={{ mt: 3 }}>
                 <Button
                   variant="contained"
@@ -292,7 +377,7 @@ export default function Reconciliation() {
           <Grid item xs={12} md={6}>
             <Paper sx={{ p: 3 }}>
               <Typography variant="h6" gutterBottom>
-                Request Placeholder
+                Request Example
               </Typography>
               <Box
                 component="pre"
@@ -309,10 +394,23 @@ export default function Reconciliation() {
                     schema_names:
                       formData.schema_names.length > 0
                         ? formData.schema_names
-                        : ['orderMgmt-catalog', 'qinspect-designcode'],
-                    kg_name: formData.kg_name || 'unified_kg',
+                        : formData.schema_names.length === 1
+                          ? ['hana_material_master']
+                          : ['orderMgmt-catalog', 'qinspect-designcode'],
+                    kg_name: formData.kg_name || (formData.schema_names.length === 1 ? 'single_kg' : 'unified_kg'),
                     use_llm_enhancement: formData.use_llm_enhancement,
                     min_confidence: formData.min_confidence,
+                    ...(fieldPreferencesInput.trim()
+                      ? { field_preferences: (() => { try { return JSON.parse(fieldPreferencesInput); } catch { return undefined; } })() }
+                      : { field_preferences: [
+                          {
+                            table_name: 'catalog',
+                            field_hints: { code: 'code', style_code: 'code', is_active: 'deleted' },
+                            priority_fields: [],
+                            exclude_fields: []
+                          }
+                        ] }
+                    )
                   },
                   null,
                   2
@@ -322,7 +420,12 @@ export default function Reconciliation() {
               <Divider sx={{ my: 2 }} />
 
               <Typography variant="h6" gutterBottom>
-                Response Placeholder
+                Response Example
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                {formData.schema_names.length === 1
+                  ? 'Single schema: Rules for joining tables within the same database'
+                  : 'Multi-schema: Rules for matching data across different databases'}
               </Typography>
               <Box
                 component="pre"
@@ -335,29 +438,58 @@ export default function Reconciliation() {
                   maxHeight: 400,
                 }}
               >
-                {JSON.stringify(
-                  {
-                    ruleset_id: 'RECON_ABC12345',
-                    rule_count: 12,
-                    rules: [
-                      {
-                        rule_id: 'RULE_001',
-                        rule_name: 'catalog_product_to_designcode_item',
-                        source_schema: 'orderMgmt-catalog',
-                        source_table: 'catalog',
-                        source_columns: ['product_id'],
-                        target_schema: 'qinspect-designcode',
-                        target_table: 'designcode',
-                        target_columns: ['item_id'],
-                        match_type: 'semantic',
-                        confidence_score: 0.85,
-                        reasoning: 'LLM matched product_id to item_id based on semantic similarity',
-                      },
-                    ],
-                    created_at: '2024-10-22T10:30:45Z',
-                  },
-                  null,
-                  2
+                {formData.schema_names.length === 1 ? (
+                  JSON.stringify(
+                    {
+                      ruleset_id: 'RECON_ABC12345',
+                      rule_count: 8,
+                      rules: [
+                        {
+                          rule_id: 'RULE_001',
+                          rule_name: 'SEMANTIC_REFERENCE_orders_customers',
+                          source_schema: 'hana_material_master',
+                          source_table: 'orders',
+                          source_columns: ['customer_id'],
+                          target_schema: 'hana_material_master',
+                          target_table: 'customers',
+                          target_columns: ['id'],
+                          match_type: 'exact',
+                          confidence_score: 0.95,
+                          reasoning: 'Foreign key relationship for referential integrity',
+                          llm_generated: false,
+                        },
+                      ],
+                      created_at: '2024-10-25T10:30:45Z',
+                    },
+                    null,
+                    2
+                  )
+                ) : (
+                  JSON.stringify(
+                    {
+                      ruleset_id: 'RECON_ABC12345',
+                      rule_count: 12,
+                      rules: [
+                        {
+                          rule_id: 'RULE_001',
+                          rule_name: 'catalog_product_to_designcode_item',
+                          source_schema: 'orderMgmt-catalog',
+                          source_table: 'catalog',
+                          source_columns: ['product_id'],
+                          target_schema: 'qinspect-designcode',
+                          target_table: 'designcode',
+                          target_columns: ['item_id'],
+                          match_type: 'semantic',
+                          confidence_score: 0.85,
+                          reasoning: 'LLM matched product_id to item_id based on semantic similarity',
+                          llm_generated: true,
+                        },
+                      ],
+                      created_at: '2024-10-25T10:30:45Z',
+                    },
+                    null,
+                    2
+                  )
                 )}
               </Box>
             </Paper>

@@ -118,15 +118,16 @@ class GraphitiBackend:
         with open(graph_dir / "relationships.json", "w") as f:
             json.dump(rels_data, f, indent=2, default=str)
         
-        # Store metadata
+        # Store metadata (including field_preferences)
         metadata = {
             "name": kg.name,
             "schema_file": kg.schema_file,
             "created_at": kg.created_at.isoformat(),
             "nodes_count": len(kg.nodes),
             "relationships_count": len(kg.relationships),
+            **kg.metadata  # ✅ Include KG metadata (field_preferences, etc.)
         }
-        
+
         with open(graph_dir / "metadata.json", "w") as f:
             json.dump(metadata, f, indent=2, default=str)
         
@@ -251,6 +252,22 @@ class GraphitiBackend:
         except Exception as e:
             logger.error(f"Error listing graphs: {e}")
             return []
+
+    def get_kg_metadata(self, kg_name: str) -> Optional[Dict[str, Any]]:
+        """Get metadata for a specific knowledge graph."""
+        try:
+            graph_dir = self.storage_path / kg_name
+            metadata_file = graph_dir / "metadata.json"
+
+            if metadata_file.exists():
+                with open(metadata_file, 'r') as f:
+                    return json.load(f)
+            else:
+                logger.warning(f"No metadata found for KG '{kg_name}'")
+                return None
+        except Exception as e:
+            logger.error(f"Error retrieving metadata for KG '{kg_name}': {e}")
+            return None
     
     def delete_graph(self, kg_name: str) -> bool:
         """Delete a graph."""

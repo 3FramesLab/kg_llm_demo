@@ -143,6 +143,49 @@ export default function GraphVisualization({ entities, relationships }) {
           linkCurvature={0.2}
           linkWidth={(link) => (highlightLinks.has(link) ? 3 : 1)}
           linkColor={(link) => (highlightLinks.has(link) ? '#ff6b6b' : '#999999')}
+          linkCanvasObjectMode={() => 'after'}
+          linkCanvasObject={(link, ctx, globalScale) => {
+            const label = link.type;
+            if (!label) return;
+
+            const fontSize = Math.max(10, 12 / globalScale);
+            ctx.font = `${fontSize}px Arial, Sans-Serif`;
+
+            // Calculate position at the middle of the link
+            const start = link.source;
+            const end = link.target;
+            const textPos = {
+              x: start.x + (end.x - start.x) * 0.5,
+              y: start.y + (end.y - start.y) * 0.5,
+            };
+
+            const textWidth = ctx.measureText(label).width;
+            const padding = fontSize * 0.3;
+            const bckgDimensions = [textWidth + padding * 2, fontSize + padding];
+
+            const isHighlighted = highlightLinks.has(link);
+
+            // Draw background for label
+            ctx.fillStyle = isHighlighted ? 'rgba(255, 107, 107, 0.9)' : 'rgba(255, 255, 255, 0.9)';
+            ctx.strokeStyle = isHighlighted ? '#ff6b6b' : '#999999';
+            ctx.lineWidth = 1;
+
+            ctx.beginPath();
+            ctx.roundRect(
+              textPos.x - bckgDimensions[0] / 2,
+              textPos.y - bckgDimensions[1] / 2,
+              ...bckgDimensions,
+              3
+            );
+            ctx.fill();
+            ctx.stroke();
+
+            // Draw label text
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = isHighlighted ? '#ffffff' : '#333333';
+            ctx.fillText(label, textPos.x, textPos.y);
+          }}
           nodeCanvasObject={(node, ctx, globalScale) => {
             const label = node.name;
             const fontSize = Math.max(14, 16 / globalScale);
@@ -205,8 +248,17 @@ export default function GraphVisualization({ entities, relationships }) {
         />
       </Box>
       <Box sx={{ mt: 2, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-        <Typography variant="caption" color="text.secondary" sx={{ mr: 2 }}>
-          Node size represents number of connections. Hover over nodes to highlight connections.
+        <Typography variant="caption" color="text.secondary">
+          • Node size represents number of connections
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          • Arrows show relationship direction
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          • Relationship labels displayed on links
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          • Hover over nodes to highlight connections
         </Typography>
       </Box>
     </Paper>

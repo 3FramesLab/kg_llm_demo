@@ -22,6 +22,8 @@ import {
   TableRow,
   Tabs,
   Tab,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import { PlayArrow, ExpandMore } from '@mui/icons-material';
 import { executeReconciliation, listRulesets } from '../services/api';
@@ -40,27 +42,13 @@ export default function Execution() {
   });
 
   // Form state for direct execution mode
+  // Database configs are read from .env file
+  // Results are automatically saved to results/ folder
   const [execFormData, setExecFormData] = useState({
     ruleset_id: '',
     limit: 1000,
-    source_db_config: {
-      db_type: 'oracle',
-      host: 'localhost',
-      port: 1521,
-      database: 'ORCL',
-      username: '',
-      password: '',
-      service_name: '',
-    },
-    target_db_config: {
-      db_type: 'oracle',
-      host: 'localhost',
-      port: 1521,
-      database: 'ORCL',
-      username: '',
-      password: '',
-      service_name: '',
-    },
+    include_matched: true,
+    include_unmatched: true,
   });
 
   const [results, setResults] = useState(null);
@@ -298,151 +286,51 @@ export default function Execution() {
               <TextField
                 fullWidth
                 type="number"
-                label="Limit"
+                label="Limit (max records per query)"
                 value={execFormData.limit}
                 onChange={(e) => setExecFormData({ ...execFormData, limit: parseInt(e.target.value) })}
                 margin="normal"
               />
 
-              <Accordion sx={{ mt: 2 }}>
-                <AccordionSummary expandIcon={<ExpandMore />}>
-                  <Typography>Source Database Configuration</Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <TextField
-                    fullWidth
-                    label="Host"
-                    value={execFormData.source_db_config.host}
-                    onChange={(e) =>
-                      setExecFormData({
-                        ...execFormData,
-                        source_db_config: { ...execFormData.source_db_config, host: e.target.value },
-                      })
-                    }
-                    margin="dense"
-                  />
-                  <TextField
-                    fullWidth
-                    type="number"
-                    label="Port"
-                    value={execFormData.source_db_config.port}
-                    onChange={(e) =>
-                      setExecFormData({
-                        ...execFormData,
-                        source_db_config: { ...execFormData.source_db_config, port: parseInt(e.target.value) },
-                      })
-                    }
-                    margin="dense"
-                  />
-                  <TextField
-                    fullWidth
-                    label="Database"
-                    value={execFormData.source_db_config.database}
-                    onChange={(e) =>
-                      setExecFormData({
-                        ...execFormData,
-                        source_db_config: { ...execFormData.source_db_config, database: e.target.value },
-                      })
-                    }
-                    margin="dense"
-                  />
-                  <TextField
-                    fullWidth
-                    label="Username"
-                    value={execFormData.source_db_config.username}
-                    onChange={(e) =>
-                      setExecFormData({
-                        ...execFormData,
-                        source_db_config: { ...execFormData.source_db_config, username: e.target.value },
-                      })
-                    }
-                    margin="dense"
-                  />
-                  <TextField
-                    fullWidth
-                    type="password"
-                    label="Password"
-                    value={execFormData.source_db_config.password}
-                    onChange={(e) =>
-                      setExecFormData({
-                        ...execFormData,
-                        source_db_config: { ...execFormData.source_db_config, password: e.target.value },
-                      })
-                    }
-                    margin="dense"
-                  />
-                </AccordionDetails>
-              </Accordion>
+              <Box sx={{ mt: 2, mb: 2 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Execution Options
+                </Typography>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={execFormData.include_matched}
+                      onChange={(e) =>
+                        setExecFormData({ ...execFormData, include_matched: e.target.checked })
+                      }
+                    />
+                  }
+                  label="Include Matched Records"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={execFormData.include_unmatched}
+                      onChange={(e) =>
+                        setExecFormData({ ...execFormData, include_unmatched: e.target.checked })
+                      }
+                    />
+                  }
+                  label="Include Unmatched Records"
+                />
+              </Box>
 
-              <Accordion sx={{ mt: 1 }}>
-                <AccordionSummary expandIcon={<ExpandMore />}>
-                  <Typography>Target Database Configuration</Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <TextField
-                    fullWidth
-                    label="Host"
-                    value={execFormData.target_db_config.host}
-                    onChange={(e) =>
-                      setExecFormData({
-                        ...execFormData,
-                        target_db_config: { ...execFormData.target_db_config, host: e.target.value },
-                      })
-                    }
-                    margin="dense"
-                  />
-                  <TextField
-                    fullWidth
-                    type="number"
-                    label="Port"
-                    value={execFormData.target_db_config.port}
-                    onChange={(e) =>
-                      setExecFormData({
-                        ...execFormData,
-                        target_db_config: { ...execFormData.target_db_config, port: parseInt(e.target.value) },
-                      })
-                    }
-                    margin="dense"
-                  />
-                  <TextField
-                    fullWidth
-                    label="Database"
-                    value={execFormData.target_db_config.database}
-                    onChange={(e) =>
-                      setExecFormData({
-                        ...execFormData,
-                        target_db_config: { ...execFormData.target_db_config, database: e.target.value },
-                      })
-                    }
-                    margin="dense"
-                  />
-                  <TextField
-                    fullWidth
-                    label="Username"
-                    value={execFormData.target_db_config.username}
-                    onChange={(e) =>
-                      setExecFormData({
-                        ...execFormData,
-                        target_db_config: { ...execFormData.target_db_config, username: e.target.value },
-                      })
-                    }
-                    margin="dense"
-                  />
-                  <TextField
-                    fullWidth
-                    type="password"
-                    label="Password"
-                    value={execFormData.target_db_config.password}
-                    onChange={(e) =>
-                      setExecFormData({
-                        ...execFormData,
-                        target_db_config: { ...execFormData.target_db_config, password: e.target.value },
-                      })
-                    }
-                    margin="dense"
-                  />
-                </AccordionDetails>
-              </Accordion>
+              <Alert severity="info" sx={{ mt: 2, mb: 2 }}>
+                <Typography variant="body2">
+                  <strong>Database Configuration:</strong> Source and target database credentials are configured in the <code>.env</code> file.
+                </Typography>
+              </Alert>
+
+              <Alert severity="success" sx={{ mt: 2, mb: 2 }}>
+                <Typography variant="body2">
+                  <strong>Results Storage:</strong> Execution results are automatically saved to <code>results/</code> folder as JSON files with generated SQL queries.
+                </Typography>
+              </Alert>
 
               <Box sx={{ mt: 3 }}>
                 <Button
@@ -461,7 +349,7 @@ export default function Execution() {
           <Grid item xs={12} md={6}>
             <Paper sx={{ p: 3 }}>
               <Typography variant="h6" gutterBottom>
-                Response Placeholder
+                Request Payload
               </Typography>
               <Box
                 component="pre"
@@ -471,32 +359,70 @@ export default function Execution() {
                   borderRadius: 1,
                   overflow: 'auto',
                   fontSize: '0.875rem',
-                  maxHeight: 600,
+                  maxHeight: 200,
                 }}
               >
                 {JSON.stringify(
                   {
-                    mode: 'direct_execution',
-                    ruleset_id: 'RECON_ABC12345',
-                    execution_time: '2024-10-22T10:45:00Z',
-                    results: {
-                      RULE_001: {
-                        matched_count: 1247,
-                        unmatched_source_count: 53,
-                        unmatched_target_count: 28,
-                        matched_records: [
-                          { source_product_id: 'P001', target_item_id: 'P001' },
-                          { source_product_id: 'P002', target_item_id: 'P002' },
-                        ],
+                    ruleset_id: execFormData.ruleset_id || 'RECON_ABC12345',
+                    limit: execFormData.limit,
+                    include_matched: execFormData.include_matched,
+                    include_unmatched: execFormData.include_unmatched,
+                  },
+                  null,
+                  2
+                )}
+              </Box>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                Database configs are read from .env file. Results are saved to results/ folder.
+              </Typography>
+
+              <Divider sx={{ my: 2 }} />
+
+              <Typography variant="h6" gutterBottom>
+                Response Placeholder
+              </Typography>
+              <Box
+                component="pre"
+                sx={{
+                  p: 2,
+                  bgcolor: 'grey.100',
+                  borderRadius: 1,
+                  overflow: 'auto',
+                  fontSize: '0.75rem',
+                  maxHeight: 400,
+                }}
+              >
+                {JSON.stringify(
+                  {
+                    success: true,
+                    matched_count: 1247,
+                    unmatched_source_count: 53,
+                    unmatched_target_count: 28,
+                    execution_time_ms: 2500,
+                    inactive_count: 12,
+                    result_file_path: 'results/reconciliation_result_RECON_ABC12345_20251025_120530.json',
+                    generated_sql: [
+                      {
+                        rule_id: 'RULE_001',
+                        rule_name: 'Match_by_ID',
+                        query_type: 'matched',
+                        source_sql: 'SELECT s.*, t.* FROM schema1.table1 s INNER JOIN schema2.table2 t ON s.id = t.id LIMIT 1000',
+                        target_sql: null,
+                        description: 'Find matched records between table1 and table2',
                       },
-                    },
-                    summary: {
-                      total_rules_executed: 12,
-                      total_matched: 8934,
-                      total_unmatched_source: 412,
-                      total_unmatched_target: 287,
-                      overall_match_rate: 0.78,
-                    },
+                      {
+                        rule_id: 'RULE_001',
+                        rule_name: 'Match_by_ID',
+                        query_type: 'unmatched_source',
+                        source_sql: 'SELECT s.* FROM schema1.table1 s WHERE NOT EXISTS (SELECT 1 FROM schema2.table2 t WHERE s.id = t.id) LIMIT 1000',
+                        target_sql: null,
+                        description: 'Find records in table1 not found in table2',
+                      },
+                    ],
+                    matched_records: [],
+                    unmatched_source: [],
+                    unmatched_target: [],
                   },
                   null,
                   2

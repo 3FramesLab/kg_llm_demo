@@ -232,7 +232,7 @@ class RuleValidator:
 
         elif db_type == "sqlserver" or db_type == "mssql":
             # SQL Server: jdbc:sqlserver://host:port;databaseName=dbname
-            return f"jdbc:sqlserver://{db_config.host}:{db_config.port};databaseName={db_config.database}"
+            return f"jdbc:sqlserver://{db_config.host}:{db_config.port};databaseName={db_config.database};encrypt=true;trustServerCertificate=true"
 
         elif db_type == "postgresql" or db_type == "postgres":
             # PostgreSQL: jdbc:postgresql://host:port/database

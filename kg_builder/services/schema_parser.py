@@ -171,17 +171,44 @@ class SchemaParser:
     def build_knowledge_graph(
         schema_name: str,
         kg_name: str,
-        schema: DatabaseSchema
+        schema: DatabaseSchema,
+        use_llm: bool = False,
+        field_preferences: Optional[List[Any]] = None
     ) -> KnowledgeGraph:
-        """Build a complete knowledge graph from schema."""
+        """Build a complete knowledge graph from schema.
+
+        Args:
+            schema_name: Name of the schema
+            kg_name: Name for the knowledge graph
+            schema: Parsed database schema
+            use_llm: Whether to use LLM for relationship enhancement
+            field_preferences: User-specific field hints to guide LLM
+
+        Returns:
+            Knowledge graph with entities and relationships
+        """
         nodes = SchemaParser.extract_entities(schema)
         relationships = SchemaParser.extract_relationships(schema, nodes)
+
+        # Enhance relationships with LLM if enabled
+        if use_llm:
+            # Prepare schema in dict format for LLM enhancement
+            schemas_dict = {schema_name: schema}
+            relationships = SchemaParser._enhance_relationships_with_llm(
+                relationships, schemas_dict, field_preferences=field_preferences
+            )
+
+        # Store field_preferences in metadata for later use
+        metadata = {}
+        if field_preferences:
+            metadata['field_preferences'] = field_preferences
 
         kg = KnowledgeGraph(
             name=kg_name,
             nodes=nodes,
             relationships=relationships,
-            schema_file=schema_name
+            schema_file=schema_name,
+            metadata=metadata
         )
 
         logger.info(f"Built KG '{kg_name}' with {len(nodes)} nodes and {len(relationships)} relationships")
@@ -191,7 +218,8 @@ class SchemaParser:
     def build_merged_knowledge_graph(
         schema_names: List[str],
         kg_name: str,
-        use_llm: bool = True
+        use_llm: bool = True,
+        field_preferences: Optional[List[Any]] = None
     ) -> KnowledgeGraph:
         """Build a unified knowledge graph from multiple schemas with cross-schema relationships.
 
@@ -199,6 +227,7 @@ class SchemaParser:
             schema_names: List of schema names to merge
             kg_name: Name for the generated KG
             use_llm: Whether to use LLM for relationship enhancement
+            field_preferences: User-specific field hints to guide LLM
 
         Returns:
             Unified knowledge graph with cross-schema relationships
@@ -234,14 +263,20 @@ class SchemaParser:
         # Enhance relationships with LLM if enabled
         if use_llm:
             all_relationships = SchemaParser._enhance_relationships_with_llm(
-                all_relationships, all_schemas
+                all_relationships, all_schemas, field_preferences=field_preferences
             )
+
+        # Store field_preferences in metadata for later use
+        metadata = {}
+        if field_preferences:
+            metadata['field_preferences'] = field_preferences
 
         kg = KnowledgeGraph(
             name=kg_name,
             nodes=all_nodes,
             relationships=all_relationships,
-            schema_file=",".join(schema_names)
+            schema_file=",".join(schema_names),
+            metadata=metadata
         )
 
         logger.info(
@@ -333,13 +368,15 @@ class SchemaParser:
     @staticmethod
     def _enhance_relationships_with_llm(
         relationships: List[GraphRelationship],
-        schemas: Dict[str, DatabaseSchema]
+        schemas: Dict[str, DatabaseSchema],
+        field_preferences: Optional[List[Any]] = None
     ) -> List[GraphRelationship]:
         """Enhance relationships with LLM analysis (inference, descriptions, confidence scoring).
 
         Args:
             relationships: List of relationships to enhance
             schemas: Dictionary of schemas
+            field_preferences: User-specific field hints to guide LLM
 
         Returns:
             Enhanced relationships with LLM analysis
@@ -371,7 +408,7 @@ class SchemaParser:
 
             # Step 1: Infer additional relationships
             logger.info("Step 1: Inferring additional relationships...")
-            inferred_rels = llm_service.infer_relationships(schemas_info, rels_dict)
+            inferred_rels = llm_service.infer_relationships(schemas_info, rels_dict, field_preferences=field_preferences)
 
             # Step 2: Enhance descriptions
             logger.info("Step 2: Enhancing relationship descriptions...")
@@ -406,10 +443,21 @@ class SchemaParser:
                 # Update relationship properties with LLM data
                 updated_props = rel.properties.copy() if rel.properties else {}
 
+                # Get source and target columns from scored data if not present in original relationship
+                source_col = rel.source_column
+                target_col = rel.target_column
+
                 if scored:
                     updated_props['llm_confidence'] = scored.get('confidence', 0.0)
                     updated_props['llm_reasoning'] = scored.get('reasoning', '')
                     updated_props['llm_validation_status'] = scored.get('validation_status', '')
+                    updated_props['llm_risk_factors'] = scored.get('risk_factors', [])
+                    updated_props['llm_recommendation'] = scored.get('recommendation', '')
+                    # Use column info from scored relationship if not already set
+                    if not source_col and scored.get('source_column'):
+                        source_col = scored.get('source_column')
+                    if not target_col and scored.get('target_column'):
+                        target_col = scored.get('target_column')
 
                 if enhanced:
                     updated_props['llm_description'] = enhanced.get('description', '')
@@ -420,7 +468,8 @@ class SchemaParser:
                     target_id=rel.target_id,
                     relationship_type=rel.relationship_type,
                     properties=updated_props,
-                    source_column=rel.source_column
+                    source_column=source_col,
+                    target_column=target_col
                 )
                 enhanced_relationships.append(updated_rel)
 
@@ -438,8 +487,11 @@ class SchemaParser:
                             'llm_inferred': True,
                             'llm_confidence': inferred.get('confidence', 0.0),
                             'llm_reasoning': inferred.get('reasoning', ''),
-                            'llm_description': f"Inferred: {inferred.get('reasoning', '')}"
-                        }
+                            'llm_description': f"Inferred: {inferred.get('reasoning', '')}",
+                            'data_type_match': inferred.get('data_type_match')
+                        },
+                        source_column=inferred.get('source_column'),
+                        target_column=inferred.get('target_column')
                     )
                     enhanced_relationships.append(inferred_rel)
 

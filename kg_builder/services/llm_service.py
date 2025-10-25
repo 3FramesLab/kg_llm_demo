@@ -56,31 +56,64 @@ class LLMService:
         try:
             schema_str = json.dumps(schema, indent=2)
             
-            prompt = f"""Analyze this database schema and extract key entities with their business purposes.
+            prompt = f"""You are a database schema analyst extracting business entities from technical database schemas.
 
-Schema:
+=== OBJECTIVE ===
+Analyze the database schema and identify key business entities (tables) with their purposes and characteristics.
+
+=== SCHEMA ===
 {schema_str}
 
-For each table/entity, provide:
-1. Entity name
-2. Business purpose (what it represents)
-3. Key attributes (important columns)
-4. Entity type (e.g., "Master Data", "Transaction", "Reference")
+=== ENTITY CLASSIFICATION ===
 
-Return as JSON with this structure:
-{{
+**Master Data**: Core business entities that are relatively static
+- Examples: Customers, Products, Vendors, Employees, Locations
+- Characteristics: Low change frequency, referenced by many tables
+
+**Transaction Data**: Records of business events/activities
+- Examples: Orders, Invoices, Payments, Shipments
+- Characteristics: High volume, time-stamped, immutable after creation
+
+**Reference Data**: Lookup tables, codes, classifications
+- Examples: Status codes, Categories, Types, Countries
+- Characteristics: Small, stable, used for validation/classification
+
+**Audit/Log Data**: System tracking and history
+- Examples: Audit logs, Change history, User activity
+- Characteristics: Append-only, timestamps, user tracking
+
+**Junction/Bridge Data**: Many-to-many relationship tables
+- Examples: Order_Items, User_Roles, Product_Categories
+- Characteristics: Composite keys, links two entities
+
+=== ANALYSIS GUIDELINES ===
+- Identify the business purpose of each table
+- Classify entity type based on characteristics above
+- List key attributes (primary keys, foreign keys, unique identifiers, important business fields)
+- Note any data quality concerns (nullable important fields, missing constraints)
+- Consider relationships to other entities
+
+=== OUTPUT FORMAT (JSON) ===
+{{{{
     "entities": [
-        {{
-            "name": "entity_name",
-            "purpose": "business purpose",
-            "type": "entity_type",
-            "key_attributes": ["attr1", "attr2"],
-            "description": "detailed description"
-        }}
+        {{{{
+            "name": "catalog",
+            "purpose": "Stores product catalog information including pricing, vendor details, and product specifications",
+            "type": "Master Data",
+            "key_attributes": ["id", "uuid", "code", "vendor_uid", "tenant_uid", "price"],
+            "description": "Central product catalog table. Contains 142 columns covering product details, pricing, vendor relationships, and inventory. Tenant-scoped with soft delete support.",
+            "primary_keys": ["id"],
+            "unique_identifiers": ["uuid", "code"],
+            "foreign_key_references": ["vendor_uid", "tenant_uid", "sub_cat_uid"],
+            "data_quality_notes": "Large table with many nullable fields. Consider data completeness validation."
+        }}}}
     ]
-}}"""
+}}}}
 
-            logger.debug(f"Entity Extraction Prompt:\n{prompt}")
+Return ONLY valid JSON, no additional text.
+"""
+
+            logger.debug(f"Entity Extraction Prompt:\\n{prompt}")
 
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -133,33 +166,88 @@ Return as JSON with this structure:
         try:
             schema_str = json.dumps(schema, indent=2)
             
-            prompt = f"""Analyze this database schema and extract all relationships between entities.
+            prompt = f"""You are a database schema analyst extracting relationships between entities in a database schema.
 
-Schema:
+=== OBJECTIVE ===
+Identify all relationships between tables, including explicit foreign keys and implicit semantic relationships.
+
+=== SCHEMA ===
 {schema_str}
 
-For each relationship, identify:
-1. Source entity
-2. Target entity
-3. Relationship type (e.g., "HAS", "BELONGS_TO", "REFERENCES", "CONTAINS")
-4. Cardinality (1:1, 1:N, N:N)
-5. Business meaning
+=== RELATIONSHIP TYPES ===
 
-Return as JSON with this structure:
-{{
+**REFERENCES**: Foreign key relationship (explicit or implicit)
+- Example: orders.customer_id references customers.id
+- Pattern: Column with _id, _uid, _key suffix
+
+**HAS**: Ownership/containment (one-to-many)
+- Example: Customer HAS Orders
+- Pattern: Parent entity contains child entities
+
+**BELONGS_TO**: Inverse of HAS (many-to-one)
+- Example: Order BELONGS_TO Customer
+- Pattern: Child entity belongs to parent
+
+**CONTAINS**: Composition relationship
+- Example: Order CONTAINS Order_Items
+- Pattern: Strong ownership, child can't exist without parent
+
+**ASSOCIATES_WITH**: Many-to-many relationship
+- Example: Products ASSOCIATES_WITH Categories (via junction table)
+- Pattern: Junction/bridge table with two foreign keys
+
+**INHERITS_FROM**: Hierarchical relationship
+- Example: Sub_Category INHERITS_FROM Category
+- Pattern: Self-referencing or parent-child hierarchy
+
+**TRACKS**: Audit/history relationship
+- Example: Audit_Log TRACKS Entity_Changes
+- Pattern: Temporal tracking, timestamps
+
+=== CARDINALITY NOTATION ===
+- **1:1** (One-to-One): Each record in A relates to exactly one record in B
+- **1:N** (One-to-Many): Each record in A relates to multiple records in B
+- **N:1** (Many-to-One): Multiple records in A relate to one record in B
+- **N:N** (Many-to-Many): Multiple records in A relate to multiple records in B (requires junction table)
+
+=== DETECTION GUIDELINES ===
+- Look for explicit foreign key constraints
+- Identify columns with naming patterns: _id, _uid, _key, _code
+- Match column names to table names (e.g., customer_id references customers table)
+- Consider data types (foreign keys usually match primary key types)
+- Identify junction tables (tables with multiple foreign keys, composite primary keys)
+- Note self-referencing relationships (parent_id in same table)
+
+=== OUTPUT FORMAT (JSON) ===
+{{{{
     "relationships": [
-        {{
-            "source": "source_entity",
-            "target": "target_entity",
-            "type": "relationship_type",
-            "cardinality": "1:N",
-            "description": "business meaning of relationship",
-            "foreign_key": "column_name or null"
-        }}
+        {{{{
+            "source": "catalog",
+            "target": "vendors",
+            "type": "REFERENCES",
+            "cardinality": "N:1",
+            "description": "Each catalog item is supplied by one vendor. Enables vendor performance tracking and supply chain management.",
+            "foreign_key": "vendor_uid",
+            "confidence": 0.95,
+            "detection_method": "foreign_key_pattern"
+        }}}},
+        {{{{
+            "source": "orders",
+            "target": "customers",
+            "type": "BELONGS_TO",
+            "cardinality": "N:1",
+            "description": "Each order belongs to one customer. Supports customer order history and analytics.",
+            "foreign_key": "customer_id",
+            "confidence": 0.98,
+            "detection_method": "explicit_foreign_key"
+        }}}}
     ]
-}}"""
+}}}}
 
-            logger.debug(f"Relationship Extraction Prompt:\n{prompt}")
+Return ONLY valid JSON, no additional text.
+"""
+
+            logger.debug(f"Relationship Extraction Prompt:\\n{prompt}")
 
             response = self.client.chat.completions.create(
                 model=self.model,
