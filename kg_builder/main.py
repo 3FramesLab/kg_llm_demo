@@ -44,7 +44,7 @@ app.add_middleware(
 )
 
 # Include routes
-app.include_router(router, prefix="/api/v1", tags=["Knowledge Graph"])
+app.include_router(router, prefix="/v1", tags=["Knowledge Graph"])
 
 # Root endpoint
 @app.get("/")

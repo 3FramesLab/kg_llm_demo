@@ -114,7 +114,22 @@ export default function KnowledgeGraph() {
       // Parse and add field_preferences if provided
       if (fieldPreferencesInput.trim()) {
         try {
-          payload.field_preferences = JSON.parse(fieldPreferencesInput);
+          let parsed = JSON.parse(fieldPreferencesInput);
+
+          // Handle both formats:
+          // 1. Direct array: [{ table_name: "...", ... }]
+          // 2. Wrapped object: { field_preferences: [{ table_name: "...", ... }] }
+          if (parsed.field_preferences && Array.isArray(parsed.field_preferences)) {
+            payload.field_preferences = parsed.field_preferences;
+          } else if (Array.isArray(parsed)) {
+            payload.field_preferences = parsed;
+          } else {
+            setError('Field preferences must be a JSON array or object with field_preferences array');
+            setLoading(false);
+            return;
+          }
+
+          console.log('✅ Field preferences parsed:', payload.field_preferences);
         } catch (err) {
           setError('Invalid JSON in field preferences: ' + err.message);
           setLoading(false);
@@ -140,7 +155,9 @@ export default function KnowledgeGraph() {
       // Reload KGs list
       loadInitialData();
     } catch (err) {
-      setError(err.response?.data?.detail || err.message);
+      const errorMsg = err.response?.data?.detail || err.message || 'Unknown error occurred';
+      setError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
+      console.error('KG Generation Error:', err);
     } finally {
       setLoading(false);
     }
@@ -159,7 +176,9 @@ export default function KnowledgeGraph() {
       setKgRelationships(relationshipsRes.data.relationships || []);
       setTabValue(1);
     } catch (err) {
-      setError(err.response?.data?.detail || err.message);
+      const errorMsg = err.response?.data?.detail || err.message || 'Failed to load KG';
+      setError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
+      console.error('Load KG Error:', err);
     } finally {
       setLoading(false);
     }
@@ -195,7 +214,9 @@ export default function KnowledgeGraph() {
         setKgRelationships([]);
       }
     } catch (err) {
-      setError(err.response?.data?.detail || err.message);
+      const errorMsg = err.response?.data?.detail || err.message || 'Failed to delete KG';
+      setError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
+      console.error('Delete KG Error:', err);
     }
   };
 
@@ -225,7 +246,7 @@ export default function KnowledgeGraph() {
 
       {error && (
         <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>
-          {error}
+          {typeof error === 'string' ? error : JSON.stringify(error)}
         </Alert>
       )}
 
@@ -316,6 +337,9 @@ export default function KnowledgeGraph() {
                   <AccordionDetails>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                       Guide LLM inference with specific field hints. Provide JSON array with table-specific preferences.
+                    </Typography>
+                    <Typography variant="caption" color="info.main" sx={{ mb: 2, display: 'block' }}>
+                      💡 Tip: Paste either a JSON array directly or an object with "field_preferences" key. Both formats are supported.
                     </Typography>
                     <TextField
                       fullWidth

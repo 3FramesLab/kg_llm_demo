@@ -9,7 +9,8 @@ import KnowledgeGraph from './pages/KnowledgeGraph';
 import Reconciliation from './pages/Reconciliation';
 import NaturalLanguage from './pages/NaturalLanguage';
 import Execution from './pages/Execution';
-import MongoDBResults from './pages/MongoDBResults';
+import KPIManagement from './pages/KPIManagement';
+import KPIResults from './pages/KPIResults';
 
 const theme = createTheme({
   palette: {
@@ -48,7 +49,8 @@ function App() {
             <Route path="/reconciliation" element={<Reconciliation />} />
             <Route path="/natural-language" element={<NaturalLanguage />} />
             <Route path="/execution" element={<Execution />} />
-            <Route path="/mongodb-results" element={<MongoDBResults />} />
+            <Route path="/kpi-management" element={<KPIManagement />} />
+            <Route path="/kpi-results" element={<KPIResults />} />
           </Routes>
         </Layout>
       </Router>

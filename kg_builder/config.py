@@ -201,3 +201,40 @@ def get_landing_db_config():
 
     return config
 
+
+# KPI File-Based Storage Configuration
+KPI_STORAGE_TYPE = os.getenv("KPI_STORAGE_TYPE", "file")  # Options: "file", "mongodb"
+KPI_DATA_DIR = DATA_DIR / "kpi"
+KPI_RESULTS_RETENTION_DAYS = int(os.getenv("KPI_RESULTS_RETENTION_DAYS", "90"))
+KPI_ENABLE_CACHING = os.getenv("KPI_ENABLE_CACHING", "true").lower() == "true"
+
+# Ensure KPI directories exist
+KPI_DATA_DIR.mkdir(exist_ok=True, parents=True)
+
+
+# Local SQLite database for storing reconciliation results (for KPI queries)
+RESULTS_DB_PATH = DATA_DIR / os.getenv("RESULTS_DB_PATH", "reconciliation_results.db")
+
+
+def get_database_connection():
+    """
+    Get a connection to the local SQLite database for reconciliation results.
+
+    This database stores reconciliation execution results that can be queried
+    by the KPI system for calculations and evidence drill-down.
+
+    Returns:
+        sqlite3.Connection: SQLite database connection
+    """
+    import sqlite3
+
+    # Ensure database directory exists
+    RESULTS_DB_PATH.parent.mkdir(exist_ok=True, parents=True)
+
+    conn = sqlite3.connect(str(RESULTS_DB_PATH))
+
+    # Enable foreign keys
+    conn.execute("PRAGMA foreign_keys = ON")
+
+    return conn
+

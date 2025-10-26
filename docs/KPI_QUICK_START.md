@@ -1,52 +1,210 @@
-# KPI Quick Start Guide
+# KPI Feature - Quick Start Guide ✅
 
-## 🚀 Get Started in 5 Minutes
+## 🚀 Getting Started in 5 Minutes
 
-### Step 1: Verify Installation
+### Step 1: Create a KPI via Web App
+
+1. Navigate to **KPI Management** page
+2. Click **Create KPI** button
+3. Fill in the form:
+   - **KPI Name:** "Material Match Rate"
+   - **Description:** "Percentage of materials matched"
+   - **Type:** "Match Rate (%)"
+   - **Ruleset:** Select your ruleset
+   - **Warning Threshold:** 80
+   - **Critical Threshold:** 70
+   - **Operator:** "Less Than"
+4. Click **Create**
+
+### Step 2: View KPI Results
+
+1. Navigate to **KPI Results** page
+2. See all your KPIs displayed as cards
+3. Click **View Evidence** to drill down into records
+
+### Step 3: Drill Down into Evidence
+
+1. In the evidence dialog, filter by status (optional)
+2. Adjust limit for pagination
+3. Click **Refresh** to load evidence records
+4. View detailed record data in the table
+
+---
+
+## 📊 KPI Types Quick Reference
+
+| Type | Use Case | Example |
+|------|----------|---------|
+| **Match Rate** | % of matched records | 85% match rate |
+| **Unmatched Source** | Count of unmatched source records | 150 unmatched |
+| **Unmatched Target** | Count of unmatched target records | 200 unmatched |
+| **Inactive Count** | Count of inactive records | 50 inactive |
+| **Data Quality Score** | Overall data quality | 90% quality |
+
+---
+
+## 🔧 API Quick Reference
+
+### Create KPI
 ```bash
-# Check if pymongo is installed
-python -c "import pymongo; print('pymongo installed')"
-
-# If not installed:
-pip install pymongo
+curl -X POST http://localhost:8000/v1/reconciliation/kpi/create \
+  -H "Content-Type: application/json" \
+  -d '{
+    "kpi_name": "Material Match Rate",
+    "kpi_type": "match_rate",
+    "ruleset_id": "RECON_ABC123",
+    "thresholds": {
+      "warning_threshold": 80,
+      "critical_threshold": 70,
+      "comparison_operator": "less_than"
+    }
+  }'
 ```
 
-### Step 2: Start MongoDB
+### List KPIs
 ```bash
-# Using Docker
-docker run -d -p 27017:27017 --name mongodb mongo:latest
-
-# Or if MongoDB is already running locally
-# Just ensure it's accessible at localhost:27017
+curl http://localhost:8000/v1/reconciliation/kpi/list
 ```
 
-### Step 3: Run Unit Tests
+### Get KPI
 ```bash
-# Test KPI calculations (no MongoDB required)
-python test_kpi_calculations.py
-
-# Expected output: ✓ All tests passed successfully!
+curl http://localhost:8000/v1/reconciliation/kpi/KPI_ABC123
 ```
 
-### Step 4: Run Integration Tests
+### Get Evidence
 ```bash
-# Test KPI service with MongoDB
-python test_kpi_service.py
-
-# Expected output: ✓ All KPI tests passed successfully!
+curl -X POST http://localhost:8000/v1/reconciliation/kpi/KPI_ABC123/evidence \
+  -H "Content-Type: application/json" \
+  -d '{
+    "kpi_id": "KPI_ABC123",
+    "match_status": "unmatched_source",
+    "limit": 100,
+    "offset": 0
+  }'
 ```
 
 ---
 
-## 💻 Using KPI Service in Code
+## 📁 File Locations
 
-### Basic Usage
-```python
-from kg_builder.services.kpi_service import KPIService
+| Type | Location | Example |
+|------|----------|---------|
+| **Config** | `kpi_configs/` | `kpi_config_KPI_ABC123.json` |
+| **Results** | `kpi_results/` | `kpi_result_KPI_ABC123_20251026_143022.json` |
+| **Evidence** | `kpi_evidence/` | `kpi_evidence_KPI_ABC123_20251026_143022.json` |
 
-# Initialize service
-kpi_service = KPIService()
-kpi_service._ensure_indexes()
+---
+
+## 🎯 Threshold Configuration
+
+### Less Than (Default)
+```
+Value < Critical → CRITICAL
+Value < Warning → WARNING
+Value >= Warning → PASS
+```
+
+**Example:** Match rate < 70% = CRITICAL, < 80% = WARNING
+
+### Greater Than
+```
+Value > Critical → CRITICAL
+Value > Warning → WARNING
+Value <= Warning → PASS
+```
+
+**Example:** Unmatched count > 200 = CRITICAL, > 100 = WARNING
+
+---
+
+## 📊 Status Meanings
+
+| Status | Meaning | Action |
+|--------|---------|--------|
+| **PASS** | KPI within acceptable range | No action needed |
+| **WARNING** | KPI approaching threshold | Review and monitor |
+| **CRITICAL** | KPI exceeded critical threshold | Investigate immediately |
+
+---
+
+## 🔍 Evidence Drill-Down
+
+### Match Status Filters
+- **matched** - Records found in both source and target
+- **unmatched_source** - Records only in source
+- **unmatched_target** - Records only in target
+- **inactive** - Inactive records (is_active = 0 or NULL)
+
+### Evidence Record Fields
+- **record_id** - Primary key of the record
+- **record_data** - Full record from master table
+- **match_status** - Status of the record
+- **rule_name** - Rule that matched/failed
+
+---
+
+## 💡 Common Use Cases
+
+### Use Case 1: Monitor Match Quality
+```
+KPI Type: Match Rate
+Threshold: Warning at 80%, Critical at 70%
+Action: Alert when match rate drops below 80%
+```
+
+### Use Case 2: Track Unmatched Records
+```
+KPI Type: Unmatched Source Count
+Threshold: Warning at 100, Critical at 200
+Action: Alert when unmatched count exceeds 100
+```
+
+### Use Case 3: Monitor Data Quality
+```
+KPI Type: Data Quality Score
+Threshold: Warning at 85%, Critical at 75%
+Action: Alert when quality drops below 85%
+```
+
+---
+
+## 🐛 Troubleshooting
+
+### KPI Not Appearing
+- Check if KPI is enabled
+- Verify ruleset ID is correct
+- Check `kpi_configs/` directory
+
+### Evidence Not Loading
+- Verify KPI has been calculated
+- Check `kpi_evidence/` directory
+- Try refreshing the page
+
+### Wrong Status
+- Verify threshold values
+- Check comparison operator
+- Review calculation formula
+
+---
+
+## 📚 Full Documentation
+
+For detailed information, see:
+- **Complete Guide:** `KPI_FEATURE_COMPLETE_GUIDE.md`
+- **API Reference:** `KPI_FEATURE_COMPLETE_GUIDE.md#-api-endpoints`
+- **Data Models:** `KPI_FEATURE_COMPLETE_GUIDE.md#-data-models`
+
+---
+
+## ✅ Checklist
+
+- [ ] Created at least one KPI
+- [ ] Viewed KPI results
+- [ ] Drilled down into evidence records
+- [ ] Tested threshold alerts
+- [ ] Reviewed evidence data
+
+You're ready to use KPIs! 🎉
 
 # Calculate RCR
 rcr = kpi_service.calculate_rcr(

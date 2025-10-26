@@ -27,7 +27,7 @@ def print_header(title):
 def test_health_check():
     """Test the health check endpoint."""
     print_header("1. Health Check")
-    response = requests.get(f"{BASE_URL}/health")
+    response = requests.get(f"{BASE_URL}/v1/health")
     print(f"Status Code: {response.status_code}")
     pprint(response.json())
     return response.json()
@@ -36,7 +36,7 @@ def test_health_check():
 def list_available_schemas():
     """List available schemas."""
     print_header("2. List Available Schemas")
-    response = requests.get(f"{BASE_URL}/schemas")
+    response = requests.get(f"{BASE_URL}/v1/schemas")
     print(f"Status Code: {response.status_code}")
     result = response.json()
     pprint(result)
@@ -57,7 +57,7 @@ def generate_knowledge_graph(schema_names, kg_name="test_reconciliation_kg"):
     print("Request:")
     pprint(request_data)
 
-    response = requests.post(f"{BASE_URL}/kg/generate", json=request_data)
+    response = requests.post(f"{BASE_URL}/v1/kg/generate", json=request_data)
     print(f"\nStatus Code: {response.status_code}")
 
     if response.status_code == 200:
@@ -85,7 +85,7 @@ def generate_reconciliation_rules(schema_names, kg_name="test_reconciliation_kg"
     print("Request:")
     pprint(request_data)
 
-    response = requests.post(f"{BASE_URL}/reconciliation/generate", json=request_data)
+    response = requests.post(f"{BASE_URL}/v1/reconciliation/generate", json=request_data)
     print(f"\nStatus Code: {response.status_code}")
 
     if response.status_code == 200:
@@ -117,7 +117,7 @@ def list_rulesets():
     """List all saved rulesets."""
     print_header("5. List All Rulesets")
 
-    response = requests.get(f"{BASE_URL}/reconciliation/rulesets")
+    response = requests.get(f"{BASE_URL}/v1/reconciliation/rulesets")
     print(f"Status Code: {response.status_code}")
 
     if response.status_code == 200:
@@ -142,7 +142,7 @@ def get_ruleset_details(ruleset_id):
     """Get detailed information about a specific ruleset."""
     print_header(f"6. Get Ruleset Details: {ruleset_id}")
 
-    response = requests.get(f"{BASE_URL}/reconciliation/rulesets/{ruleset_id}")
+    response = requests.get(f"{BASE_URL}/v1/reconciliation/rulesets/{ruleset_id}")
     print(f"Status Code: {response.status_code}")
 
     if response.status_code == 200:
@@ -163,7 +163,7 @@ def export_ruleset_to_sql(ruleset_id):
     """Export a ruleset as SQL statements."""
     print_header(f"7. Export Ruleset to SQL: {ruleset_id}")
 
-    response = requests.get(f"{BASE_URL}/reconciliation/rulesets/{ruleset_id}/export/sql")
+    response = requests.get(f"{BASE_URL}/v1/reconciliation/rulesets/{ruleset_id}/export/sql")
     print(f"Status Code: {response.status_code}")
 
     if response.status_code == 200:
@@ -243,7 +243,7 @@ def run_demo():
         print(f"✓ Knowledge graph '{kg_name}' created")
         print(f"✓ Reconciliation ruleset '{ruleset_id}' generated")
         print(f"✓ {rules_result['rules_count']} rules created")
-        print(f"\nYou can view the ruleset at: {BASE_URL}/reconciliation/rulesets/{ruleset_id}")
+        print(f"\nYou can view the ruleset at: {BASE_URL}/v1/reconciliation/rulesets/{ruleset_id}")
 
     except requests.exceptions.ConnectionError:
         print("\nError: Could not connect to the API server.")

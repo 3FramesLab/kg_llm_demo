@@ -15,7 +15,11 @@ from kg_builder.models import (
     ValidationResult, RuleExecutionRequest, RuleExecutionResponse,
     NLRelationshipRequest, NLRelationshipResponse, KnowledgeGraph,
     KPICalculationRequest, KPICalculationResponse,
-    LandingExecutionRequest, LandingExecutionResponse
+    LandingExecutionRequest, LandingExecutionResponse,
+    KPICreateRequest, KPIResultResponse, KPIEvidenceDrillDownRequest,
+    KPIEvidenceDrillDownResponse, KPIDefinitionRequest, KPIUpdateRequest,
+    KPIExecutionRequest, BatchExecutionRequest, EvidenceRequest,
+    KPIListResponse, KPIExecutionResponse, KPIResultsListResponse
 )
 from kg_builder.services.schema_parser import SchemaParser
 from kg_builder.services.falkordb_backend import get_falkordb_backend
@@ -1550,4 +1554,460 @@ async def get_latest_rei(ruleset_id: str):
     except Exception as e:
         logger.error(f"Error retrieving REI: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# File-Based KPI Management Endpoints
+# ============================================================================
+
+@router.post("/reconciliation/kpi/create")
+async def create_kpi(request: KPIDefinitionRequest):
+    """
+    Create a new KPI configuration (file-based storage).
+
+    This endpoint allows users to create and configure KPIs based on reconciliation results.
+    KPI definitions are stored in JSON files without requiring MongoDB.
+
+    Args:
+        request: KPI creation request with name, type, thresholds, and ruleset ID
+
+    Returns:
+        Success response with created KPI ID
+
+    Example request:
+    ```json
+    {
+      "kpi_name": "Material Match Rate",
+      "kpi_description": "Percentage of materials matched between source and target",
+      "kpi_type": "match_rate",
+      "ruleset_id": "RECON_ABC123",
+      "thresholds": {
+        "warning_threshold": 80.0,
+        "critical_threshold": 70.0,
+        "comparison_operator": "less_than"
+      },
+      "enabled": true
+    }
+    ```
+    """
+    try:
+        from kg_builder.services.kpi_file_service import KPIFileService
+
+        service = KPIFileService()
+        kpi_dict = request.model_dump()
+        kpi_id = service.create_kpi_definition(kpi_dict)
+
+        logger.info(f"Created KPI: {kpi_id} - {request.kpi_name}")
+
+        return {
+            "success": True,
+            "kpi_id": kpi_id,
+            "message": f"KPI '{request.kpi_name}' created successfully"
+        }
+
+    except Exception as e:
+        logger.error(f"Error creating KPI: {e}", exc_info=True)
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+
+@router.get("/reconciliation/kpi/list")
+async def list_kpis(ruleset_id: Optional[str] = None):
+    """
+    List all KPI configurations, optionally filtered by ruleset (file-based).
+
+    Args:
+        ruleset_id: Optional ruleset ID to filter KPIs
+
+    Returns:
+        List of KPI configurations
+    """
+    try:
+        from kg_builder.services.kpi_file_service import KPIFileService
+
+        service = KPIFileService()
+        kpis = service.list_kpi_definitions(ruleset_id)
+
+        logger.info(f"Listed {len(kpis)} KPIs")
+
+        return {
+            "success": True,
+            "count": len(kpis),
+            "kpis": kpis
+        }
+
+    except Exception as e:
+        logger.error(f"Error listing KPIs: {e}", exc_info=True)
+        return {
+            "success": False,
+            "error": str(e),
+            "kpis": []
+        }
+
+
+@router.get("/reconciliation/kpi/{kpi_id}")
+async def get_kpi(kpi_id: str):
+    """
+    Get KPI configuration by ID (file-based).
+
+    Args:
+        kpi_id: KPI ID
+
+    Returns:
+        KPI configuration
+    """
+    try:
+        from kg_builder.services.kpi_file_service import KPIFileService
+
+        service = KPIFileService()
+        kpi = service.get_kpi_definition(kpi_id)
+
+        if not kpi:
+            raise HTTPException(status_code=404, detail=f"KPI not found: {kpi_id}")
+
+        return {
+            "success": True,
+            "kpi": kpi
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving KPI: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/reconciliation/kpi/{kpi_id}/evidence")
+async def get_kpi_evidence(kpi_id: str, request: EvidenceRequest):
+    """
+    Retrieve evidence data for KPI drill-down (file-based).
+
+    This endpoint returns the detailed records that contributed to the KPI calculation,
+    allowing users to drill down and analyze specific records. Data is queried directly
+    from the source database.
+
+    Args:
+        kpi_id: KPI ID
+        request: Evidence drill-down request with filters and pagination
+
+    Returns:
+        Evidence records with drill-down capability
+
+    Example request:
+    ```json
+    {
+      "match_status": "unmatched_source",
+      "limit": 100,
+      "offset": 0
+    }
+    ```
+    """
+    try:
+        from kg_builder.services.kpi_file_service import KPIFileService
+
+        service = KPIFileService()
+        result = service.get_evidence_data(
+            kpi_id=kpi_id,
+            match_status=request.match_status,
+            limit=request.limit,
+            offset=request.offset
+        )
+
+        if not result.get("success"):
+            return {
+                "success": False,
+                "kpi_id": kpi_id,
+                "error": result.get("error", "Unknown error"),
+                "evidence_records": [],
+                "total_count": 0
+            }
+
+        logger.info(
+            f"Retrieved {result['total_count']} evidence records for KPI {kpi_id}"
+        )
+
+        return {
+            "success": True,
+            "kpi_id": kpi_id,
+            "evidence_records": result["evidence_records"],
+            "total_count": result["total_count"],
+            "limit": result["limit"],
+            "offset": result["offset"]
+        }
+
+    except Exception as e:
+        logger.error(f"Error retrieving KPI evidence: {e}", exc_info=True)
+        return {
+            "success": False,
+            "kpi_id": kpi_id,
+            "error": str(e),
+            "evidence_records": [],
+            "total_count": 0
+        }
+
+
+@router.put("/reconciliation/kpi/{kpi_id}")
+async def update_kpi(kpi_id: str, request: KPIUpdateRequest):
+    """
+    Update an existing KPI configuration (file-based).
+
+    Args:
+        kpi_id: KPI ID to update
+        request: Update request with fields to modify
+
+    Returns:
+        Success response
+    """
+    try:
+        from kg_builder.services.kpi_file_service import KPIFileService
+
+        service = KPIFileService()
+        updates = {k: v for k, v in request.model_dump().items() if v is not None}
+        success = service.update_kpi_definition(kpi_id, updates)
+
+        if not success:
+            raise HTTPException(status_code=404, detail=f"KPI not found: {kpi_id}")
+
+        logger.info(f"Updated KPI: {kpi_id}")
+
+        return {
+            "success": True,
+            "message": f"KPI {kpi_id} updated successfully"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating KPI: {e}", exc_info=True)
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+
+@router.delete("/reconciliation/kpi/{kpi_id}")
+async def delete_kpi(kpi_id: str):
+    """
+    Delete a KPI configuration (file-based).
+
+    Args:
+        kpi_id: KPI ID to delete
+
+    Returns:
+        Success response
+    """
+    try:
+        from kg_builder.services.kpi_file_service import KPIFileService
+
+        service = KPIFileService()
+        success = service.delete_kpi_definition(kpi_id)
+
+        if not success:
+            raise HTTPException(status_code=404, detail=f"KPI not found: {kpi_id}")
+
+        logger.info(f"Deleted KPI: {kpi_id}")
+
+        return {
+            "success": True,
+            "message": f"KPI {kpi_id} deleted successfully"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting KPI: {e}", exc_info=True)
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+
+@router.post("/reconciliation/kpi/{kpi_id}/execute")
+async def execute_kpi(kpi_id: str, request: KPIExecutionRequest):
+    """
+    Execute a KPI and calculate its value (file-based).
+
+    This endpoint runs the KPI calculation against the current data and stores the result.
+
+    Args:
+        kpi_id: KPI ID to execute
+        request: Execution request with optional overrides
+
+    Returns:
+        KPI execution result
+    """
+    try:
+        from kg_builder.services.kpi_file_service import KPIFileService
+
+        service = KPIFileService()
+        result = service.execute_kpi(kpi_id, request.ruleset_id)
+
+        logger.info(
+            f"Executed KPI {kpi_id}: value={result['calculated_value']}, status={result['status']}"
+        )
+
+        return {
+            "success": True,
+            "result": result,
+            "result_id": result["result_id"]
+        }
+
+    except Exception as e:
+        logger.error(f"Error executing KPI: {e}", exc_info=True)
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+
+@router.post("/reconciliation/kpi/execute/batch")
+async def execute_multiple_kpis(request: BatchExecutionRequest):
+    """
+    Execute multiple KPIs in batch (file-based).
+
+    Args:
+        request: Batch execution request with list of KPI IDs
+
+    Returns:
+        Results for all executed KPIs
+    """
+    try:
+        from kg_builder.services.kpi_file_service import KPIFileService
+
+        service = KPIFileService()
+        results = []
+        errors = []
+
+        for kpi_id in request.kpi_ids:
+            try:
+                result = service.execute_kpi(kpi_id, request.ruleset_id)
+                results.append(result)
+            except Exception as e:
+                errors.append({
+                    "kpi_id": kpi_id,
+                    "error": str(e)
+                })
+
+        logger.info(f"Executed {len(results)} KPIs successfully, {len(errors)} failed")
+
+        return {
+            "success": True,
+            "results": results,
+            "errors": errors,
+            "total_executed": len(results),
+            "total_failed": len(errors)
+        }
+
+    except Exception as e:
+        logger.error(f"Error executing batch KPIs: {e}", exc_info=True)
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+
+@router.get("/reconciliation/kpi/results")
+async def list_kpi_results(kpi_id: Optional[str] = None, limit: int = 50):
+    """
+    List KPI execution results (file-based).
+
+    Args:
+        kpi_id: Optional KPI ID to filter results
+        limit: Maximum number of results to return
+
+    Returns:
+        List of KPI results
+    """
+    try:
+        from kg_builder.services.kpi_file_service import KPIFileService
+
+        service = KPIFileService()
+        results = service.list_kpi_results(kpi_id, limit)
+
+        logger.info(f"Listed {len(results)} KPI results")
+
+        return {
+            "success": True,
+            "results": results,
+            "count": len(results)
+        }
+
+    except Exception as e:
+        logger.error(f"Error listing KPI results: {e}", exc_info=True)
+        return {
+            "success": False,
+            "error": str(e),
+            "results": []
+        }
+
+
+@router.get("/reconciliation/kpi/results/{result_id}")
+async def get_kpi_result(result_id: str):
+    """
+    Get a specific KPI result by ID (file-based).
+
+    Args:
+        result_id: Result ID
+
+    Returns:
+        KPI result details
+    """
+    try:
+        from kg_builder.services.kpi_file_service import KPIFileService
+
+        service = KPIFileService()
+        result = service.get_kpi_result(result_id)
+
+        if not result:
+            raise HTTPException(status_code=404, detail=f"Result not found: {result_id}")
+
+        return {
+            "success": True,
+            "result": result
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving KPI result: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/reconciliation/kpi/results/{result_id}")
+async def delete_kpi_result(result_id: str):
+    """
+    Delete a KPI result (file-based).
+
+    Args:
+        result_id: Result ID to delete
+
+    Returns:
+        Success response
+    """
+    try:
+        from kg_builder.services.kpi_file_service import KPIFileService
+
+        service = KPIFileService()
+        success = service.delete_kpi_result(result_id)
+
+        if not success:
+            raise HTTPException(status_code=404, detail=f"Result not found: {result_id}")
+
+        logger.info(f"Deleted KPI result: {result_id}")
+
+        return {
+            "success": True,
+            "message": f"Result {result_id} deleted successfully"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting KPI result: {e}", exc_info=True)
+        return {
+            "success": False,
+            "error": str(e)
+        }
 

@@ -1,0 +1,13 @@
+{
+  "ruleset_id": "RECON_1BA98FEB",
+  "execution_timestamp": "2025-10-26T20:18:19.844959",
+  "matched_count": 0,
+  "unmatched_source_count": 0,
+  "unmatched_target_count": 0,
+  "execution_time_ms": 73.33707809448242,
+  "inactive_count": 0,
+  "matched_records": [],
+  "unmatched_source": [],
+  "unmatched_target": [],
+  "generated_sql": []
+}

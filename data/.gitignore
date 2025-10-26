@@ -1,0 +1,3 @@
+# Ignore all KPI data files
+kpi/
+*.json

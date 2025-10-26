@@ -302,6 +302,7 @@ class ReconciliationExecutor:
         Count inactive records in the source database.
 
         Looks for records where is_active = 0 or is_active IS NULL in the source table.
+        If the is_active column doesn't exist, returns 0.
 
         Args:
             source_conn: Database connection
@@ -309,7 +310,7 @@ class ReconciliationExecutor:
             db_type: Database type (mysql, oracle, etc.)
 
         Returns:
-            Count of inactive records
+            Count of inactive records (0 if is_active column doesn't exist)
         """
         try:
             if not ruleset.rules:
@@ -326,7 +327,75 @@ class ReconciliationExecutor:
             table_quoted = self._quote_identifier(source_table, db_type)
             is_active_quoted = self._quote_identifier("is_active", db_type)
 
-            # Build query to count inactive records
+            # First, check if the is_active column exists
+            cursor = source_conn.cursor()
+            column_exists = False
+
+            try:
+                # Try to check if column exists (database-specific approach)
+                if db_type == "sqlserver":
+                    # SQL Server - check INFORMATION_SCHEMA
+                    check_query = f"""
+                    SELECT COUNT(*)
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_NAME = '{source_table}'
+                    AND COLUMN_NAME = 'is_active'
+                    """
+                    if source_schema:
+                        check_query = f"""
+                        SELECT COUNT(*)
+                        FROM INFORMATION_SCHEMA.COLUMNS
+                        WHERE TABLE_SCHEMA = '{source_schema}'
+                        AND TABLE_NAME = '{source_table}'
+                        AND COLUMN_NAME = 'is_active'
+                        """
+                elif db_type == "oracle":
+                    # Oracle - check ALL_TAB_COLUMNS
+                    check_query = f"""
+                    SELECT COUNT(*)
+                    FROM ALL_TAB_COLUMNS
+                    WHERE TABLE_NAME = UPPER('{source_table}')
+                    AND COLUMN_NAME = UPPER('is_active')
+                    """
+                    if source_schema:
+                        check_query += f" AND OWNER = UPPER('{source_schema}')"
+                else:
+                    # MySQL/PostgreSQL - check INFORMATION_SCHEMA
+                    check_query = f"""
+                    SELECT COUNT(*)
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_NAME = '{source_table}'
+                    AND COLUMN_NAME = 'is_active'
+                    """
+                    if source_schema:
+                        check_query += f" AND TABLE_SCHEMA = '{source_schema}'"
+
+                cursor.execute(check_query)
+                result = cursor.fetchone()
+                column_exists = result and result[0] > 0
+
+            except Exception as check_error:
+                # If checking fails, try to query the column directly
+                logger.debug(f"Column existence check failed, trying direct query: {check_error}")
+                try:
+                    test_query = f"SELECT {is_active_quoted} FROM {schema_quoted}.{table_quoted} WHERE 1=0"
+                    cursor.execute(test_query)
+                    column_exists = True
+                except:
+                    try:
+                        test_query = f"SELECT {is_active_quoted} FROM {table_quoted} WHERE 1=0"
+                        cursor.execute(test_query)
+                        column_exists = True
+                    except:
+                        column_exists = False
+
+            # If column doesn't exist, return 0
+            if not column_exists:
+                logger.info(f"Column 'is_active' does not exist in {source_schema}.{source_table}. Skipping inactive count.")
+                cursor.close()
+                return 0
+
+            # Column exists, proceed with counting inactive records
             query = f"""
             SELECT COUNT(*) as inactive_count
             FROM {schema_quoted}.{table_quoted}
@@ -336,7 +405,6 @@ class ReconciliationExecutor:
             self._log_sql_query("INACTIVE_COUNT", f"{source_schema}.{source_table}", query, "FIRST")
 
             # Execute query
-            cursor = source_conn.cursor()
             try:
                 cursor.execute(query)
             except Exception as schema_error:
@@ -360,7 +428,7 @@ class ReconciliationExecutor:
             return inactive_count
 
         except Exception as e:
-            logger.warning(f"Failed to count inactive records: {e}")
+            logger.warning(f"Failed to count inactive records: {e}. Returning 0.")
             # Return 0 if we can't count (don't fail the entire execution)
             return 0
 

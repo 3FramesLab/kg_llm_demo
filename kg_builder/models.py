@@ -587,3 +587,164 @@ class StagingTableMetadata(BaseModel):
     size_bytes: Optional[int] = None
     status: str = Field(default="active", description="active, expired, deleted")
 
+
+# KPI Models
+class KPIType(str, Enum):
+    """Types of KPIs that can be created."""
+    MATCH_RATE = "match_rate"                          # Percentage of matched records
+    UNMATCHED_SOURCE_COUNT = "unmatched_source_count"  # Count of unmatched source records
+    UNMATCHED_TARGET_COUNT = "unmatched_target_count"  # Count of unmatched target records
+    INACTIVE_RECORD_COUNT = "inactive_record_count"    # Count of inactive records
+    MATCH_PERCENTAGE = "match_percentage"              # Match percentage (0-100)
+    DATA_QUALITY_SCORE = "data_quality_score"          # Overall data quality score
+
+
+class KPIThresholds(BaseModel):
+    """Threshold configuration for KPI alerts."""
+    warning_threshold: float = Field(..., description="Warning threshold value")
+    critical_threshold: float = Field(..., description="Critical threshold value")
+    comparison_operator: str = Field(
+        default="less_than",
+        description="Comparison operator: less_than, greater_than, equal_to"
+    )
+
+
+class KPICreateRequest(BaseModel):
+    """Request to create a new KPI."""
+    kpi_name: str = Field(..., description="Name of the KPI")
+    kpi_description: Optional[str] = Field(default=None, description="Description of the KPI")
+    kpi_type: KPIType = Field(..., description="Type of KPI")
+    ruleset_id: str = Field(..., description="Associated ruleset ID")
+    thresholds: KPIThresholds = Field(..., description="Warning and critical thresholds")
+    enabled: bool = Field(default=True, description="Whether KPI is enabled")
+
+
+class KPIConfiguration(BaseModel):
+    """Stored KPI configuration."""
+    kpi_id: str = Field(..., description="Unique KPI identifier")
+    kpi_name: str
+    kpi_description: Optional[str] = None
+    kpi_type: KPIType
+    ruleset_id: str
+    thresholds: KPIThresholds
+    enabled: bool
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class KPIEvidenceRecord(BaseModel):
+    """Evidence record for KPI drill-down."""
+    record_id: Optional[str] = Field(default=None, description="Primary key of the record")
+    record_data: Dict[str, Any] = Field(..., description="Full record data from master table")
+    match_status: str = Field(..., description="matched, unmatched_source, unmatched_target, inactive")
+    rule_name: Optional[str] = Field(default=None, description="Rule that matched/failed")
+
+
+class KPIResult(BaseModel):
+    """Result of KPI calculation."""
+    kpi_id: str
+    kpi_name: str
+    kpi_type: KPIType
+    ruleset_id: str
+    calculated_value: float = Field(..., description="The calculated KPI value")
+    thresholds: KPIThresholds
+    status: str = Field(..., description="pass, warning, or critical")
+    execution_timestamp: datetime = Field(default_factory=datetime.utcnow)
+    evidence_count: int = Field(default=0, description="Number of evidence records")
+    evidence_file_path: Optional[str] = Field(default=None, description="Path to evidence data file")
+    calculation_details: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Details of how KPI was calculated"
+    )
+
+
+class KPIResultResponse(BaseModel):
+    """Response containing KPI result."""
+    success: bool
+    kpi_result: Optional[KPIResult] = None
+    result_file_path: Optional[str] = Field(default=None, description="Path to saved KPI result file")
+    error: Optional[str] = None
+
+
+class KPIEvidenceDrillDownRequest(BaseModel):
+    """Request to retrieve evidence data for a KPI."""
+    kpi_id: str
+    match_status: Optional[str] = Field(
+        default=None,
+        description="Filter by match_status: matched, unmatched_source, unmatched_target, inactive"
+    )
+    limit: int = Field(default=1000, description="Maximum number of records to return")
+    offset: int = Field(default=0, description="Offset for pagination")
+
+
+class KPIEvidenceDrillDownResponse(BaseModel):
+    """Response containing evidence data for drill-down."""
+    success: bool
+    kpi_id: str
+    kpi_name: str
+    total_evidence_count: int
+    returned_count: int
+    evidence_records: List[KPIEvidenceRecord] = []
+    error: Optional[str] = None
+
+
+# File-based KPI Management Models
+class KPIDefinitionRequest(BaseModel):
+    """Request to create a new KPI definition."""
+    kpi_name: str = Field(..., description="Name of the KPI")
+    kpi_description: Optional[str] = Field(default=None, description="Description of the KPI")
+    kpi_type: str = Field(..., description="Type of KPI (match_rate, unmatched_source_count, etc.)")
+    ruleset_id: str = Field(..., description="Associated ruleset ID")
+    thresholds: Dict[str, Any] = Field(..., description="Warning and critical thresholds")
+    enabled: bool = Field(default=True, description="Whether KPI is enabled")
+
+
+class KPIUpdateRequest(BaseModel):
+    """Request to update a KPI definition."""
+    kpi_name: Optional[str] = Field(default=None, description="Updated KPI name")
+    kpi_description: Optional[str] = Field(default=None, description="Updated description")
+    thresholds: Optional[Dict[str, Any]] = Field(default=None, description="Updated thresholds")
+    enabled: Optional[bool] = Field(default=None, description="Updated enabled status")
+
+
+class KPIExecutionRequest(BaseModel):
+    """Request to execute a KPI."""
+    ruleset_id: Optional[str] = Field(default=None, description="Override ruleset ID if needed")
+
+
+class BatchExecutionRequest(BaseModel):
+    """Request to execute multiple KPIs."""
+    kpi_ids: List[str] = Field(..., description="List of KPI IDs to execute")
+    ruleset_id: Optional[str] = Field(default=None, description="Override ruleset ID if needed")
+
+
+class EvidenceRequest(BaseModel):
+    """Request to retrieve evidence data."""
+    match_status: Optional[str] = Field(default=None, description="Filter by match status")
+    limit: int = Field(default=100, description="Maximum number of records to return")
+    offset: int = Field(default=0, description="Offset for pagination")
+
+
+class KPIListResponse(BaseModel):
+    """Response containing list of KPIs."""
+    success: bool
+    kpis: List[Dict[str, Any]] = Field(default=[], description="List of KPI definitions")
+    total_count: int = Field(default=0, description="Total number of KPIs")
+    error: Optional[str] = None
+
+
+class KPIExecutionResponse(BaseModel):
+    """Response from KPI execution."""
+    success: bool
+    result: Optional[Dict[str, Any]] = Field(default=None, description="KPI execution result")
+    result_id: Optional[str] = Field(default=None, description="Result ID")
+    error: Optional[str] = None
+
+
+class KPIResultsListResponse(BaseModel):
+    """Response containing list of KPI results."""
+    success: bool
+    results: List[Dict[str, Any]] = Field(default=[], description="List of KPI results")
+    total_count: int = Field(default=0, description="Total number of results")
+    error: Optional[str] = None
+

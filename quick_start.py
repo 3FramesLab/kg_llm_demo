@@ -15,7 +15,7 @@ BASE_URL = "http://localhost:8000"
 def check_server():
     """Check if the server is running."""
     try:
-        response = requests.get(f"{BASE_URL}/health", timeout=2)
+        response = requests.get(f"{BASE_URL}/v1/health", timeout=2)
         if response.status_code == 200:
             return True
     except:
@@ -26,7 +26,7 @@ def check_server():
 def get_schemas():
     """Get list of available schemas."""
     try:
-        response = requests.get(f"{BASE_URL}/schemas")
+        response = requests.get(f"{BASE_URL}/v1/schemas")
         if response.status_code == 200:
             return response.json().get('schemas', [])
     except:
@@ -122,7 +122,7 @@ def main():
     print()
 
     try:
-        response = requests.post(f"{BASE_URL}/kg/generate", json=kg_request)
+        response = requests.post(f"{BASE_URL}/v1/kg/generate", json=kg_request)
         response.raise_for_status()
         kg_result = response.json()
 
@@ -155,7 +155,7 @@ def main():
     print()
 
     try:
-        response = requests.post(f"{BASE_URL}/reconciliation/generate", json=rules_request)
+        response = requests.post(f"{BASE_URL}/v1/reconciliation/generate", json=rules_request)
         response.raise_for_status()
         rules_result = response.json()
 
@@ -198,7 +198,7 @@ def main():
 
     try:
         ruleset_id = rules_result['ruleset_id']
-        response = requests.get(f"{BASE_URL}/reconciliation/rulesets/{ruleset_id}/export/sql")
+        response = requests.get(f"{BASE_URL}/v1/reconciliation/rulesets/{ruleset_id}/export/sql")
         response.raise_for_status()
         sql_result = response.json()
 
@@ -218,10 +218,10 @@ def main():
     print(f"  Schemas: {', '.join(selected)}")
     print()
     print("You can view this ruleset anytime at:")
-    print(f"  http://localhost:8000/reconciliation/rulesets/{rules_result['ruleset_id']}")
+    print(f"  http://localhost:8000/v1/reconciliation/rulesets/{rules_result['ruleset_id']}")
     print()
     print("Or via API:")
-    print(f"  curl http://localhost:8000/reconciliation/rulesets/{rules_result['ruleset_id']}")
+    print(f"  curl http://localhost:8000/v1/reconciliation/rulesets/{rules_result['ruleset_id']}")
     print()
     print("Next steps:")
     print("  1. Review the generated rules")

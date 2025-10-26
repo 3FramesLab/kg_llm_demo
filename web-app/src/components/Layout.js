@@ -22,7 +22,8 @@ import {
   CompareArrows as ReconcileIcon,
   Language as NLIcon,
   PlayArrow as ExecuteIcon,
-  Storage as StorageIcon,
+  TrendingUp as KPIIcon,
+  Assessment as ResultsIcon,
 } from '@mui/icons-material';
 
 const drawerWidth = 240;
@@ -34,7 +35,8 @@ const menuItems = [
   { text: 'Reconciliation', icon: <ReconcileIcon />, path: '/reconciliation' },
   { text: 'Natural Language', icon: <NLIcon />, path: '/natural-language' },
   { text: 'Execution', icon: <ExecuteIcon />, path: '/execution' },
-  { text: 'MongoDB Results', icon: <StorageIcon />, path: '/mongodb-results' },
+  { text: 'KPI Management', icon: <KPIIcon />, path: '/kpi-management' },
+  { text: 'KPI Results', icon: <ResultsIcon />, path: '/kpi-results' },
 ];
 
 export default function Layout({ children }) {
