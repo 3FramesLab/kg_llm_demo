@@ -34,6 +34,7 @@ const menuItems = [
   { text: 'Knowledge Graph', icon: <GraphIcon />, path: '/knowledge-graph' },
   { text: 'Reconciliation', icon: <ReconcileIcon />, path: '/reconciliation' },
   { text: 'Natural Language', icon: <NLIcon />, path: '/natural-language' },
+  { text: 'Landing KPI', icon: <KPIIcon />, path: '/landing-kpi' },
 ];
 
 export default function Layout({ children }) {

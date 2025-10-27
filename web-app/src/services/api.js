@@ -22,6 +22,7 @@ export const generateKG = (data) => api.post('/kg/generate', data);
 export const listKGs = () => api.get('/kg');
 export const getKGEntities = (kgName) => api.get(`/kg/${kgName}/entities`);
 export const getKGRelationships = (kgName) => api.get(`/kg/${kgName}/relationships`);
+export const getKGMetadata = (kgName) => api.get(`/kg/${kgName}/metadata`);
 export const queryKG = (kgName, query) => api.post(`/kg/${kgName}/query`, { query });
 export const exportKG = (kgName) => api.get(`/kg/${kgName}/export`);
 export const deleteKG = (kgName) => api.delete(`/kg/${kgName}`);
@@ -55,5 +56,18 @@ export const getMongoDBResult = (documentId) => api.get(`/reconciliation/results
 export const getMongoDBStatistics = (rulesetId) =>
   api.get('/reconciliation/statistics', { params: rulesetId ? { ruleset_id: rulesetId } : {} });
 export const deleteMongoDBResult = (documentId) => api.delete(`/reconciliation/results/${documentId}`);
+
+// Landing KPI CRUD Operations
+export const createKPI = (data) => api.post('/landing-kpi/kpis', data);
+export const listKPIs = (params) => api.get('/landing-kpi/kpis', { params });
+export const getKPI = (kpiId) => api.get(`/landing-kpi/kpis/${kpiId}`);
+export const updateKPI = (kpiId, data) => api.put(`/landing-kpi/kpis/${kpiId}`, data);
+export const deleteKPI = (kpiId) => api.delete(`/landing-kpi/kpis/${kpiId}`);
+
+// Landing KPI Execution
+export const executeKPI = (kpiId, data) => api.post(`/landing-kpi/kpis/${kpiId}/execute`, data);
+export const getKPIExecutions = (kpiId, params) => api.get(`/landing-kpi/kpis/${kpiId}/executions`, { params });
+export const getKPIExecutionResult = (executionId) => api.get(`/landing-kpi/executions/${executionId}`);
+export const getKPIDrilldownData = (executionId, params) => api.get(`/landing-kpi/executions/${executionId}/drilldown`, { params });
 
 export default api;

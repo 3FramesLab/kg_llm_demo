@@ -970,3 +970,121 @@ class NLQueryExecutionResponse(BaseModel):
     error: Optional[str] = Field(None, description="Overall error message")
     table_mapping: Optional[Dict[str, List[str]]] = Field(None, description="Available table aliases and mappings")
 
+
+# ==================== KPI CRUD Models ====================
+
+class KPICreateRequest(BaseModel):
+    """Request model for creating a new KPI."""
+    name: str = Field(..., min_length=1, max_length=255, description="Unique KPI name")
+    alias_name: Optional[str] = Field(None, max_length=255, description="Business-friendly alias")
+    group_name: Optional[str] = Field(None, max_length=255, description="Logical grouping")
+    description: Optional[str] = Field(None, description="Detailed description")
+    nl_definition: str = Field(..., min_length=1, description="Natural language query definition")
+    created_by: Optional[str] = Field(None, max_length=100, description="User who created the KPI")
+
+
+class KPIUpdateRequest(BaseModel):
+    """Request model for updating a KPI."""
+    name: Optional[str] = Field(None, min_length=1, max_length=255, description="KPI name")
+    alias_name: Optional[str] = Field(None, max_length=255, description="Business-friendly alias")
+    group_name: Optional[str] = Field(None, max_length=255, description="Logical grouping")
+    description: Optional[str] = Field(None, description="Detailed description")
+    nl_definition: Optional[str] = Field(None, min_length=1, description="Natural language query definition")
+    is_active: Optional[bool] = Field(None, description="Active status")
+
+
+class KPIDefinition(BaseModel):
+    """Response model for a KPI definition."""
+    id: int = Field(..., description="KPI ID")
+    name: str = Field(..., description="KPI name")
+    alias_name: Optional[str] = Field(None, description="Business-friendly alias")
+    group_name: Optional[str] = Field(None, description="Logical grouping")
+    description: Optional[str] = Field(None, description="Detailed description")
+    nl_definition: str = Field(..., description="Natural language query definition")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
+    created_by: Optional[str] = Field(None, description="User who created the KPI")
+    is_active: bool = Field(default=True, description="Active status")
+
+
+class KPIListResponse(BaseModel):
+    """Response model for listing KPIs."""
+    success: bool = Field(..., description="Whether request was successful")
+    total: int = Field(..., description="Total number of KPIs")
+    kpis: List[KPIDefinition] = Field(default=[], description="List of KPI definitions")
+
+
+# ==================== KPI Execution Models ====================
+
+class KPIExecutionRequest(BaseModel):
+    """Request model for executing a KPI."""
+    kg_name: str = Field(..., description="Knowledge Graph name to use")
+    schemas: List[str] = Field(..., description="List of schema names to query against")
+    definitions: List[str] = Field(..., description="List of NL definitions to execute")
+    use_llm: bool = Field(default=True, description="Whether to use LLM for parsing")
+    min_confidence: float = Field(default=0.7, ge=0.0, le=1.0, description="Minimum confidence threshold")
+    limit: int = Field(default=1000, ge=1, le=100000, description="Max records to return")
+    db_type: str = Field(default="sqlserver", description="Database type")
+
+
+class KPIExecutionResult(BaseModel):
+    """Response model for KPI execution result."""
+    id: int = Field(..., description="Execution result ID")
+    kpi_id: int = Field(..., description="KPI ID")
+    kg_name: str = Field(..., description="Knowledge Graph name used")
+    select_schema: str = Field(..., description="Schema used")
+    ruleset_name: Optional[str] = Field(None, description="Ruleset used")
+    db_type: str = Field(..., description="Database type")
+    limit_records: int = Field(..., description="Record limit")
+    use_llm: bool = Field(..., description="LLM usage flag")
+    excluded_fields: Optional[List[str]] = Field(None, description="Excluded fields")
+
+    generated_sql: Optional[str] = Field(None, description="Generated SQL query")
+    number_of_records: int = Field(default=0, description="Number of records returned")
+    joined_columns: Optional[List[List[str]]] = Field(None, description="Join columns used")
+    sql_query_type: Optional[str] = Field(None, description="Query type classification")
+    operation: Optional[str] = Field(None, description="Operation type")
+
+    execution_status: str = Field(..., description="Execution status")
+    execution_timestamp: datetime = Field(..., description="Execution timestamp")
+    execution_time_ms: Optional[float] = Field(None, description="Execution time in ms")
+    confidence_score: Optional[float] = Field(None, ge=0.0, le=1.0, description="Confidence score")
+    error_message: Optional[str] = Field(None, description="Error message if failed")
+
+    result_data: Optional[List[Dict[str, Any]]] = Field(None, description="Query results")
+    source_table: Optional[str] = Field(None, description="Source table")
+    target_table: Optional[str] = Field(None, description="Target table")
+
+
+class KPIExecutionResponse(BaseModel):
+    """Response model for KPI execution."""
+    success: bool = Field(..., description="Whether execution was successful")
+    message: str = Field(..., description="Response message")
+    execution_result: KPIExecutionResult = Field(..., description="Execution result details")
+
+
+class KPIExecutionListResponse(BaseModel):
+    """Response model for listing execution results."""
+    success: bool = Field(..., description="Whether request was successful")
+    total: int = Field(..., description="Total number of executions")
+    executions: List[KPIExecutionResult] = Field(default=[], description="List of execution results")
+
+
+# ==================== Drill-down Models ====================
+
+class DrilldownRequest(BaseModel):
+    """Request model for drill-down data."""
+    page: int = Field(default=1, ge=1, description="Page number")
+    page_size: int = Field(default=50, ge=1, le=1000, description="Records per page")
+
+
+class DrilldownResponse(BaseModel):
+    """Response model for drill-down data."""
+    success: bool = Field(..., description="Whether request was successful")
+    execution_id: int = Field(..., description="Execution ID")
+    page: int = Field(..., description="Current page")
+    page_size: int = Field(..., description="Records per page")
+    total: int = Field(..., description="Total records")
+    total_pages: int = Field(..., description="Total pages")
+    data: List[Dict[str, Any]] = Field(default=[], description="Drill-down data")
+

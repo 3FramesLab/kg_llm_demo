@@ -10,6 +10,7 @@ import { Close, Edit, Delete, ZoomIn, ZoomOut, CenterFocusStrong } from '@mui/ic
  * Props:
  * - entities: Array of entity objects with id, label, type
  * - relationships: Array of relationship objects with source_id, target_id, relationship_type
+ * - tableAliases: Object mapping table names to their business-friendly aliases
  * - onNodeClick: Callback when a node is clicked
  * - onLinkClick: Callback when a link is clicked
  * - onDeleteEntity: Callback to delete an entity
@@ -18,6 +19,7 @@ import { Close, Edit, Delete, ZoomIn, ZoomOut, CenterFocusStrong } from '@mui/ic
 export default function KnowledgeGraphEditor({
   entities = [],
   relationships = [],
+  tableAliases = {},
   onNodeClick,
   onLinkClick,
   onDeleteEntity,
@@ -533,6 +535,50 @@ export default function KnowledgeGraphEditor({
                 </Box>
               </Box>
             </Zoom>
+          ) : Object.keys(tableAliases).length > 0 ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <Box
+                sx={{
+                  p: 1.5,
+                  background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                  color: 'white',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <Typography variant="body2" fontWeight="700" fontSize="0.85rem">📊 Table Aliases</Typography>
+              </Box>
+              <Box sx={{ flex: 1, overflowY: 'auto', p: 1.5 }}>
+                <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.65rem', display: 'block', mb: 1 }}>
+                  LLM-Learned Business Names
+                </Typography>
+                {Object.entries(tableAliases).map(([tableName, aliases]) => (
+                  <Box key={tableName} sx={{ mb: 1.5 }}>
+                    <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ fontSize: '0.7rem' }}>
+                      {tableName}
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                      {Array.isArray(aliases) && aliases.map((alias, idx) => (
+                        <Chip
+                          key={idx}
+                          label={alias}
+                          size="small"
+                          sx={{
+                            bgcolor: '#e0f7f4',
+                            color: '#00897b',
+                            fontWeight: 600,
+                            fontSize: '0.7rem',
+                            height: 22,
+                          }}
+                        />
+                      ))}
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
           ) : (
             <Box sx={{ p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 1.5 }}>
               <Box

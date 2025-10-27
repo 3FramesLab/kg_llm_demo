@@ -11,6 +11,7 @@ import NaturalLanguage from './pages/NaturalLanguage';
 import Execution from './pages/Execution';
 import KPIManagement from './pages/KPIManagement';
 import KPIResults from './pages/KPIResults';
+import LandingKPIManagement from './pages/LandingKPIManagement';
 
 const theme = createTheme({
   palette: {
@@ -51,6 +52,7 @@ function App() {
             <Route path="/execution" element={<Execution />} />
             <Route path="/kpi-management" element={<KPIManagement />} />
             <Route path="/kpi-results" element={<KPIResults />} />
+            <Route path="/landing-kpi" element={<LandingKPIManagement />} />
           </Routes>
         </Layout>
       </Router>

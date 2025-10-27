@@ -21,7 +21,9 @@ from kg_builder.models import (
     KPIExecutionRequest, BatchExecutionRequest, EvidenceRequest,
     KPIListResponse, KPIExecutionResponse, KPIResultsListResponse,
     RelationshipPair, KGRelationshipType,
-    NLQueryExecutionRequest, NLQueryExecutionResponse
+    NLQueryExecutionRequest, NLQueryExecutionResponse,
+    KPIDefinition, KPIUpdateRequest as KPIUpdateRequestNew,
+    KPIExecutionResult, DrilldownRequest, DrilldownResponse
 )
 from kg_builder.services.schema_parser import SchemaParser
 from kg_builder.services.falkordb_backend import get_falkordb_backend
@@ -392,7 +394,7 @@ async def get_relationships(kg_name: str, backend: str = "graphiti"):
         else:
             backend_obj = get_graphiti_backend()
             relationships = backend_obj.get_relationships(kg_name)
-        
+
         return {
             "success": True,
             "kg_name": kg_name,
@@ -401,6 +403,29 @@ async def get_relationships(kg_name: str, backend: str = "graphiti"):
         }
     except Exception as e:
         logger.error(f"Error retrieving relationships: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/kg/{kg_name}/metadata")
+async def get_kg_metadata(kg_name: str, backend: str = "graphiti"):
+    """Get metadata for a knowledge graph, including table aliases."""
+    try:
+        backend_obj = get_graphiti_backend()
+        metadata = backend_obj.get_kg_metadata(kg_name)
+
+        if not metadata:
+            raise HTTPException(status_code=404, detail=f"Metadata not found for KG '{kg_name}'")
+
+        return {
+            "success": True,
+            "kg_name": kg_name,
+            "metadata": metadata,
+            "table_aliases": metadata.get("table_aliases", {})
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving KG metadata: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -2558,4 +2583,225 @@ async def execute_nl_queries(request: NLQueryExecutionRequest):
             failed=len(request.definitions),
             error=str(e)
         )
+
+
+# ==================== Landing KPI CRUD Endpoints ====================
+
+def get_landing_kpi_service():
+    """Get Landing KPI service instance."""
+    from kg_builder.services.landing_kpi_service import LandingKPIService
+    return LandingKPIService()
+
+
+@router.post("/landing-kpi/kpis", tags=["Landing KPI"], response_model=dict)
+async def create_kpi(request: KPICreateRequest):
+    """Create a new KPI definition."""
+    try:
+        service = get_landing_kpi_service()
+        kpi = service.create_kpi(request.dict())
+        return {
+            "success": True,
+            "message": f"KPI '{kpi['name']}' created successfully",
+            "kpi": kpi
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error creating KPI: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/landing-kpi/kpis", tags=["Landing KPI"], response_model=dict)
+async def list_kpis(
+    group_name: Optional[str] = None,
+    is_active: Optional[bool] = True,
+    search: Optional[str] = None
+):
+    """List all KPI definitions with optional filters."""
+    try:
+        service = get_landing_kpi_service()
+        filters = {}
+        if group_name:
+            filters['group_name'] = group_name
+        if is_active is not None:
+            filters['is_active'] = is_active
+        if search:
+            filters['search'] = search
+
+        kpis = service.list_kpis(filters if filters else None)
+        return {
+            "success": True,
+            "total": len(kpis),
+            "kpis": kpis
+        }
+    except Exception as e:
+        logger.error(f"Error listing KPIs: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/landing-kpi/kpis/{kpi_id}", tags=["Landing KPI"], response_model=dict)
+async def get_kpi(kpi_id: int):
+    """Get a specific KPI definition."""
+    try:
+        service = get_landing_kpi_service()
+        kpi = service.get_kpi(kpi_id)
+        if not kpi:
+            raise HTTPException(status_code=404, detail=f"KPI ID {kpi_id} not found")
+        return {
+            "success": True,
+            "kpi": kpi
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting KPI: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/landing-kpi/kpis/{kpi_id}", tags=["Landing KPI"], response_model=dict)
+async def update_kpi(kpi_id: int, request: KPIUpdateRequestNew):
+    """Update a KPI definition."""
+    try:
+        service = get_landing_kpi_service()
+        kpi = service.get_kpi(kpi_id)
+        if not kpi:
+            raise HTTPException(status_code=404, detail=f"KPI ID {kpi_id} not found")
+
+        updated_kpi = service.update_kpi(kpi_id, request.dict(exclude_unset=True))
+        return {
+            "success": True,
+            "message": f"KPI ID {kpi_id} updated successfully",
+            "kpi": updated_kpi
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating KPI: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/landing-kpi/kpis/{kpi_id}", tags=["Landing KPI"], response_model=dict)
+async def delete_kpi(kpi_id: int):
+    """Delete (soft delete) a KPI definition."""
+    try:
+        service = get_landing_kpi_service()
+        kpi = service.get_kpi(kpi_id)
+        if not kpi:
+            raise HTTPException(status_code=404, detail=f"KPI ID {kpi_id} not found")
+
+        service.delete_kpi(kpi_id)
+        return {
+            "success": True,
+            "message": f"KPI ID {kpi_id} deleted successfully"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting KPI: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/landing-kpi/kpis/{kpi_id}/execute", tags=["Landing KPI"], response_model=dict)
+async def execute_kpi(kpi_id: int, request: KPIExecutionRequest):
+    """Execute a KPI and store results.
+
+    This endpoint creates an execution record and starts the KPI execution
+    in the background using the NL Query Executor.
+
+    Returns immediately with execution_id for polling results.
+    """
+    try:
+        import threading
+        from kg_builder.services.landing_kpi_executor import get_landing_kpi_executor
+
+        service = get_landing_kpi_service()
+        kpi = service.get_kpi(kpi_id)
+        if not kpi:
+            raise HTTPException(status_code=404, detail=f"KPI ID {kpi_id} not found")
+
+        # Create execution record (status: pending)
+        execution = service.execute_kpi(kpi_id, request.dict())
+        execution_id = execution['id']
+
+        # Start async execution in background thread
+        executor = get_landing_kpi_executor()
+        thread = threading.Thread(
+            target=executor.execute_kpi_async,
+            args=(kpi_id, execution_id, request.dict()),
+            daemon=True
+        )
+        thread.start()
+        logger.info(f"Started background execution thread for KPI {kpi_id}, Execution {execution_id}")
+
+        return {
+            "success": True,
+            "message": f"KPI execution started (ID: {execution_id})",
+            "execution_id": execution_id,
+            "execution_result": execution
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error executing KPI: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/landing-kpi/kpis/{kpi_id}/executions", tags=["Landing KPI"], response_model=dict)
+async def get_kpi_executions(kpi_id: int, status: Optional[str] = None):
+    """Get execution history for a KPI."""
+    try:
+        service = get_landing_kpi_service()
+        kpi = service.get_kpi(kpi_id)
+        if not kpi:
+            raise HTTPException(status_code=404, detail=f"KPI ID {kpi_id} not found")
+
+        filters = {'status': status} if status else None
+        executions = service.get_execution_results(kpi_id, filters)
+        return {
+            "success": True,
+            "total": len(executions),
+            "executions": executions
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting KPI executions: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/landing-kpi/executions/{execution_id}", tags=["Landing KPI"], response_model=dict)
+async def get_execution_result(execution_id: int):
+    """Get a specific execution result."""
+    try:
+        service = get_landing_kpi_service()
+        execution = service.get_execution_result(execution_id)
+        if not execution:
+            raise HTTPException(status_code=404, detail=f"Execution ID {execution_id} not found")
+
+        return {
+            "success": True,
+            "execution": execution
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting execution result: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/landing-kpi/executions/{execution_id}/drilldown", tags=["Landing KPI"], response_model=dict)
+async def get_drilldown_data(execution_id: int, page: int = 1, page_size: int = 50):
+    """Get paginated drill-down data for an execution result."""
+    try:
+        service = get_landing_kpi_service()
+        drilldown = service.get_drilldown_data(execution_id, page, page_size)
+        return {
+            "success": True,
+            **drilldown
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error getting drilldown data: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 

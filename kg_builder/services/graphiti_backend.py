@@ -129,10 +129,15 @@ class GraphitiBackend:
             **kg.metadata  # ✅ Include KG metadata (field_preferences, etc.)
         }
 
+        logger.info(f"💾 Storing metadata for KG '{kg.name}':")
+        logger.info(f"   - table_aliases from kg: {kg.table_aliases}")
+        logger.info(f"   - kg.metadata: {kg.metadata}")
+        logger.info(f"   - Final metadata to store: {metadata}")
+
         with open(graph_dir / "metadata.json", "w") as f:
             json.dump(metadata, f, indent=2, default=str)
-        
-        logger.info(f"Stored graph '{kg.name}' locally at {graph_dir}")
+
+        logger.info(f"✅ Stored graph '{kg.name}' locally at {graph_dir}")
     
     def query(self, kg_name: str, query_str: str) -> List[Dict[str, Any]]:
         """Execute a query on a graph."""
@@ -260,14 +265,20 @@ class GraphitiBackend:
             graph_dir = self.storage_path / kg_name
             metadata_file = graph_dir / "metadata.json"
 
+            logger.info(f"📖 Reading metadata for KG '{kg_name}' from {metadata_file}")
+
             if metadata_file.exists():
                 with open(metadata_file, 'r') as f:
-                    return json.load(f)
+                    metadata = json.load(f)
+                logger.info(f"✅ Loaded metadata for KG '{kg_name}':")
+                logger.info(f"   - table_aliases: {metadata.get('table_aliases', {})}")
+                logger.info(f"   - Full metadata keys: {list(metadata.keys())}")
+                return metadata
             else:
-                logger.warning(f"No metadata found for KG '{kg_name}'")
+                logger.warning(f"❌ No metadata file found for KG '{kg_name}' at {metadata_file}")
                 return None
         except Exception as e:
-            logger.error(f"Error retrieving metadata for KG '{kg_name}': {e}")
+            logger.error(f"❌ Error retrieving metadata for KG '{kg_name}': {e}")
             return None
     
     def delete_graph(self, kg_name: str) -> bool:

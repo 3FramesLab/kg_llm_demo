@@ -253,20 +253,39 @@ class SchemaParser:
                 relationships, schemas_dict, field_preferences=field_preferences
             )
 
+        # Extract table aliases using LLM if enabled
+        table_aliases = {}
+        if use_llm:
+            logger.info(f"🔍 Attempting to extract table aliases (use_llm={use_llm})")
+            schemas_dict = {schema_name: schema}
+            table_aliases = SchemaParser._extract_table_aliases(schemas_dict)
+            logger.info(f"✅ Table aliases extraction complete: {len(table_aliases)} tables with aliases")
+            logger.info(f"📋 Table aliases extracted: {table_aliases}")
+        else:
+            logger.info(f"⚠️  LLM disabled (use_llm={use_llm}), skipping table aliases extraction")
+
         # Store field_preferences in metadata for later use
         metadata = {}
         if field_preferences:
             metadata['field_preferences'] = field_preferences
+
+        logger.info(f"🏗️  Creating KnowledgeGraph with:")
+        logger.info(f"   - Name: {kg_name}")
+        logger.info(f"   - Nodes: {len(nodes)}")
+        logger.info(f"   - Relationships: {len(relationships)}")
+        logger.info(f"   - Table aliases: {table_aliases}")
+        logger.info(f"   - Metadata: {metadata}")
 
         kg = KnowledgeGraph(
             name=kg_name,
             nodes=nodes,
             relationships=relationships,
             schema_file=schema_name,
-            metadata=metadata
+            metadata=metadata,
+            table_aliases=table_aliases
         )
 
-        logger.info(f"Built KG '{kg_name}' with {len(nodes)} nodes and {len(relationships)} relationships")
+        logger.info(f"✅ Built KG '{kg_name}' with {len(nodes)} nodes and {len(relationships)} relationships")
         return kg
 
     @staticmethod
@@ -324,12 +343,25 @@ class SchemaParser:
         # Extract table aliases using LLM if enabled
         table_aliases = {}
         if use_llm:
+            logger.info(f"🔍 Attempting to extract table aliases (use_llm={use_llm})")
             table_aliases = SchemaParser._extract_table_aliases(all_schemas)
+            logger.info(f"✅ Table aliases extraction complete: {len(table_aliases)} tables with aliases")
+            logger.info(f"📋 Table aliases extracted: {table_aliases}")
+        else:
+            logger.info(f"⚠️  LLM disabled (use_llm={use_llm}), skipping table aliases extraction")
 
         # Store field_preferences in metadata for later use
         metadata = {}
         if field_preferences:
             metadata['field_preferences'] = field_preferences
+
+        logger.info(f"🏗️  Creating merged KnowledgeGraph with:")
+        logger.info(f"   - Name: {kg_name}")
+        logger.info(f"   - Schemas: {schema_names}")
+        logger.info(f"   - Nodes: {len(all_nodes)}")
+        logger.info(f"   - Relationships: {len(all_relationships)}")
+        logger.info(f"   - Table aliases: {table_aliases}")
+        logger.info(f"   - Metadata: {metadata}")
 
         kg = KnowledgeGraph(
             name=kg_name,
@@ -341,7 +373,7 @@ class SchemaParser:
         )
 
         logger.info(
-            f"Built merged KG '{kg_name}' from {len(schema_names)} schemas "
+            f"✅ Built merged KG '{kg_name}' from {len(schema_names)} schemas "
             f"with {len(all_nodes)} nodes and {len(all_relationships)} relationships"
         )
         return kg
@@ -443,23 +475,26 @@ class SchemaParser:
             from kg_builder.services.llm_service import get_llm_service
 
             llm_service = get_llm_service()
+            logger.info(f"🔍 LLM Service enabled: {llm_service.is_enabled()}")
 
             if not llm_service.is_enabled():
-                logger.warning("LLM service disabled, skipping table alias extraction")
+                logger.warning("❌ LLM service disabled, skipping table alias extraction")
                 return table_aliases
 
-            logger.info("Extracting table aliases using LLM...")
+            logger.info("🚀 Extracting table aliases using LLM...")
 
             # Extract aliases for each table across all schemas
             for schema_name, schema in schemas.items():
+                logger.info(f"Processing schema: {schema_name} with {len(schema.tables)} tables")
                 for table_name, table in schema.tables.items():
                     # Get column names
                     column_names = [col.name for col in table.columns]
+                    logger.info(f"  Extracting aliases for table: {table_name} with {len(column_names)} columns")
 
                     # Get table description from metadata if available
                     table_description = f"Table from {schema_name} schema"
-                    if schema.metadata and schema_name in schema.metadata:
-                        table_description = schema.metadata.get(schema_name, {}).get("description", table_description)
+                    # Note: schema.metadata typically contains field_preferences, not table descriptions
+                    # So we just use the default description
 
                     # Extract aliases using LLM
                     result = llm_service.extract_table_aliases(

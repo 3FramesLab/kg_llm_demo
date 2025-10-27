@@ -469,17 +469,19 @@ Return ONLY valid JSON with this structure (no other text):
             )
 
             result_text = response.choices[0].message.content
-            logger.debug(f"LLM Response for table aliases:\n{result_text}")
+            logger.info(f"📝 LLM Raw Response for table '{table_name}':\n{result_text}")
 
             # Extract JSON from response
             import re
             json_match = re.search(r'\{.*\}', result_text, re.DOTALL)
             if not json_match:
-                logger.warning(f"No JSON found in LLM response for table {table_name}")
+                logger.warning(f"❌ No JSON found in LLM response for table {table_name}")
+                logger.warning(f"Response was: {result_text[:200]}")
                 return {"table_name": table_name, "aliases": [], "error": "No JSON in response"}
 
             result = json.loads(json_match.group())
-            logger.info(f"✓ Extracted aliases for {table_name}: {result.get('aliases', [])}")
+            logger.info(f"✅ Successfully extracted aliases for {table_name}: {result.get('aliases', [])}")
+            logger.info(f"   Reasoning: {result.get('reasoning', 'N/A')}")
             return result
 
         except APIError as e:

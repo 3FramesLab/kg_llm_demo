@@ -58,6 +58,7 @@ import {
   listSchemas,
   getKGEntities,
   getKGRelationships,
+  getKGMetadata,
   exportKG,
   deleteKG,
   checkLLMStatus,
@@ -99,6 +100,7 @@ export default function KnowledgeGraph() {
   const [selectedKG, setSelectedKG] = useState(null);
   const [kgEntities, setKgEntities] = useState([]);
   const [kgRelationships, setKgRelationships] = useState([]);
+  const [kgTableAliases, setKgTableAliases] = useState({});
 
   // Search and filter state for entities and relationships
   const [entitySearchTerm, setEntitySearchTerm] = useState('');
@@ -226,14 +228,16 @@ export default function KnowledgeGraph() {
   const handleLoadKG = async (kgName) => {
     setLoading(true);
     try {
-      const [entitiesRes, relationshipsRes] = await Promise.all([
+      const [entitiesRes, relationshipsRes, metadataRes] = await Promise.all([
         getKGEntities(kgName),
         getKGRelationships(kgName),
+        getKGMetadata(kgName).catch(() => ({ data: { metadata: {}, table_aliases: {} } })),
       ]);
 
       setSelectedKG(kgName);
       setKgEntities(entitiesRes.data.entities || []);
       setKgRelationships(relationshipsRes.data.relationships || []);
+      setKgTableAliases(metadataRes.data?.table_aliases || {});
       setTabValue(1);
     } catch (err) {
       const errorMsg = err.response?.data?.detail || err.message || 'Failed to load KG';
@@ -1250,7 +1254,7 @@ export default function KnowledgeGraph() {
                         Graph Visualization
                       </Typography>
                     </Box>
-                    <KnowledgeGraphEditor entities={kgEntities} relationships={kgRelationships} />
+                    <KnowledgeGraphEditor entities={kgEntities} relationships={kgRelationships} tableAliases={kgTableAliases} />
                   </Paper>
 
                   {/* Enhanced Entities and Relationships Accordions */}

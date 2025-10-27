@@ -2,6 +2,7 @@
 Main FastAPI application for Knowledge Graph Builder.
 """
 import logging
+import logging.config
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,34 +17,27 @@ from kg_builder.config import (
     LOG_LEVEL
 )
 from kg_builder.routes import router
+from kg_builder.logging_config import LOGGING_CONFIG
 
 # Configure logging with console handler
 import sys
 
-# Clear any existing handlers
-root_logger = logging.getLogger()
-for handler in root_logger.handlers[:]:
-    root_logger.removeHandler(handler)
+# Configure logging that works with uvicorn on Windows (both CLI and python -m)
+def setup_logging():
+    """Setup logging configuration that works with uvicorn on Windows."""
+    # Apply the logging config
+    logging.config.dictConfig(LOGGING_CONFIG)
 
-# Create console handler
-console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-console_handler.setFormatter(formatter)
+    # Update levels based on LOG_LEVEL from config
+    logging.getLogger('kg_builder').setLevel(getattr(logging, LOG_LEVEL))
 
-# Configure root logger
-root_logger.setLevel(getattr(logging, LOG_LEVEL))
-root_logger.addHandler(console_handler)
+    logger = logging.getLogger(__name__)
+    logger.info(f"Logging configured at {LOG_LEVEL} level")
+    print(f"[STARTUP] Logging configured at {LOG_LEVEL} level - Console handler active", flush=True)
+    return logger
 
-# Set specific loggers to INFO to ensure SQL queries are visible
-logging.getLogger('kg_builder').setLevel(logging.INFO)
-logging.getLogger('kg_builder.services.nl_query_executor').setLevel(logging.INFO)
-logging.getLogger('kg_builder.services.nl_sql_generator').setLevel(logging.INFO)
-logging.getLogger('kg_builder.services.nl_query_parser').setLevel(logging.INFO)
-
-logger = logging.getLogger(__name__)
-logger.info(f"Logging configured at {LOG_LEVEL} level")
-print(f"✅ Logging configured at {LOG_LEVEL} level - Console handler active")
+# Setup logging before creating the app
+logger = setup_logging()
 
 # Create FastAPI app
 app = FastAPI(
@@ -128,12 +122,16 @@ app.openapi = custom_openapi
 
 if __name__ == "__main__":
     import uvicorn
-    
+
+    print("[STARTUP] Starting uvicorn server...", flush=True)
+
     uvicorn.run(
         "kg_builder.main:app",
         host="0.0.0.0",
         port=8000,
         reload=True,
-        log_level=LOG_LEVEL.lower()
+        log_level=LOG_LEVEL.lower(),
+        log_config=LOGGING_CONFIG,
+        use_colors=True  # Enable colors for better visibility on Windows
     )
 
