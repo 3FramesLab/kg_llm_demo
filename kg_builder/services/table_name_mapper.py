@@ -16,19 +16,22 @@ logger = logging.getLogger(__name__)
 class TableNameMapper:
     """Maps business terms to actual table names."""
 
-    def __init__(self, schemas_info: Dict[str, any] = None):
+    def __init__(self, schemas_info: Dict[str, any] = None, learned_aliases: Dict[str, List[str]] = None):
         """
         Initialize the mapper.
 
         Args:
             schemas_info: Dictionary of schema information with tables
+            learned_aliases: LLM-learned business-friendly aliases from KG (optional)
         """
         self.schemas_info = schemas_info or {}
+        self.learned_aliases = learned_aliases or {}
         self.table_aliases = self._build_aliases()
 
     def _build_aliases(self) -> Dict[str, str]:
         """
         Build a mapping of aliases to actual table names.
+        Includes both hardcoded aliases and LLM-learned aliases.
 
         Returns:
             Dictionary mapping aliases to table names
@@ -45,19 +48,19 @@ class TableNameMapper:
             # Add common abbreviations
             # e.g., "brz_lnd_RBP_GPU" -> "rbp", "rbp_gpu", "gpu"
             parts = table_name.lower().split('_')
-            
+
             # Add last part (e.g., "gpu")
             if parts:
                 aliases[parts[-1]] = table_name
 
             # Add meaningful parts (skip "brz", "lnd")
             meaningful_parts = [p for p in parts if p not in ['brz', 'lnd']]
-            
+
             # Add combined meaningful parts
             if meaningful_parts:
                 combined = '_'.join(meaningful_parts)
                 aliases[combined] = table_name
-                
+
                 # Add first meaningful part (e.g., "rbp")
                 aliases[meaningful_parts[0]] = table_name
 
@@ -65,14 +68,24 @@ class TableNameMapper:
             if 'rbp' in table_name.lower():
                 aliases['rbp'] = table_name
                 aliases['rbp_gpu'] = table_name
-                
+
             if 'ops' in table_name.lower() and 'excel' in table_name.lower():
                 aliases['ops'] = table_name
                 aliases['ops_excel'] = table_name
                 aliases['ops excel'] = table_name
                 aliases['opsexcel'] = table_name
 
-        logger.debug(f"Built {len(aliases)} table aliases")
+        # Add LLM-learned aliases (highest priority - override hardcoded ones)
+        if self.learned_aliases:
+            logger.info(f"Adding {len(self.learned_aliases)} LLM-learned table aliases")
+            for table_name, learned_alias_list in self.learned_aliases.items():
+                for alias in learned_alias_list:
+                    alias_lower = alias.lower().strip()
+                    if alias_lower:
+                        aliases[alias_lower] = table_name
+                        logger.debug(f"Added learned alias: '{alias_lower}' → '{table_name}'")
+
+        logger.debug(f"Built {len(aliases)} table aliases (including {len(self.learned_aliases)} learned)")
         return aliases
 
     def _get_all_tables(self) -> List[str]:
@@ -180,15 +193,16 @@ class TableNameMapper:
         return table_info
 
 
-def get_table_name_mapper(schemas_info: Dict[str, any] = None) -> TableNameMapper:
+def get_table_name_mapper(schemas_info: Dict[str, any] = None, learned_aliases: Dict[str, List[str]] = None) -> TableNameMapper:
     """
     Factory function to get a TableNameMapper instance.
 
     Args:
         schemas_info: Dictionary of schema information
+        learned_aliases: LLM-learned business-friendly aliases from KG (optional)
 
     Returns:
         TableNameMapper instance
     """
-    return TableNameMapper(schemas_info)
+    return TableNameMapper(schemas_info, learned_aliases)
 

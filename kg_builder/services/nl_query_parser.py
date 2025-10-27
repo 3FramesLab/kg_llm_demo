@@ -63,7 +63,10 @@ class NLQueryParser:
         self.excluded_fields = set(excluded_fields) if excluded_fields else None  # Kept for backward compatibility
         self.classifier = get_nl_query_classifier()
         self.llm_service = get_llm_service()
-        self.table_mapper = get_table_name_mapper(schemas_info)
+
+        # Initialize table mapper with learned aliases from KG if available
+        learned_aliases = kg.table_aliases if kg else {}
+        self.table_mapper = get_table_name_mapper(schemas_info, learned_aliases)
 
     def parse(self, definition: str, use_llm: bool = True) -> QueryIntent:
         """

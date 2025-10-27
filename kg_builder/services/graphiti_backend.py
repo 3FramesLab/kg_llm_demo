@@ -118,13 +118,14 @@ class GraphitiBackend:
         with open(graph_dir / "relationships.json", "w") as f:
             json.dump(rels_data, f, indent=2, default=str)
         
-        # Store metadata (including field_preferences)
+        # Store metadata (including field_preferences and table_aliases)
         metadata = {
             "name": kg.name,
             "schema_file": kg.schema_file,
             "created_at": kg.created_at.isoformat(),
             "nodes_count": len(kg.nodes),
             "relationships_count": len(kg.relationships),
+            "table_aliases": kg.table_aliases,  # ✅ Include LLM-learned table aliases
             **kg.metadata  # ✅ Include KG metadata (field_preferences, etc.)
         }
 

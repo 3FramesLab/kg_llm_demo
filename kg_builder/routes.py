@@ -2407,14 +2407,28 @@ async def execute_nl_queries(request: NLQueryExecutionRequest):
                     )
                     relationships.append(relationship)
 
+                # Load metadata including table_aliases
+                metadata = {}
+                table_aliases = {}
+                try:
+                    kg_metadata = graphiti.get_kg_metadata(request.kg_name)
+                    if kg_metadata:
+                        table_aliases = kg_metadata.get('table_aliases', {})
+                        # Store other metadata (excluding table_aliases which goes to KG field)
+                        metadata = {k: v for k, v in kg_metadata.items() if k != 'table_aliases'}
+                except Exception as e:
+                    logger.warning(f"Could not load KG metadata: {e}")
+
                 kg = KnowledgeGraph(
                     name=request.kg_name,
                     nodes=nodes,
                     relationships=relationships,
-                    schema_file=",".join(request.schemas) if request.schemas else "unknown"
+                    schema_file=",".join(request.schemas) if request.schemas else "unknown",
+                    metadata=metadata,
+                    table_aliases=table_aliases
                 )
 
-            logger.info(f"✓ KG loaded: {len(kg.nodes)} nodes, {len(kg.relationships)} relationships")
+            logger.info(f"✓ KG loaded: {len(kg.nodes)} nodes, {len(kg.relationships)} relationships, {len(kg.table_aliases)} table aliases")
 
         except Exception as e:
             logger.error(f"Failed to load KG: {e}")

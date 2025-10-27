@@ -321,6 +321,11 @@ class SchemaParser:
                 all_relationships, all_schemas, field_preferences=field_preferences
             )
 
+        # Extract table aliases using LLM if enabled
+        table_aliases = {}
+        if use_llm:
+            table_aliases = SchemaParser._extract_table_aliases(all_schemas)
+
         # Store field_preferences in metadata for later use
         metadata = {}
         if field_preferences:
@@ -331,7 +336,8 @@ class SchemaParser:
             nodes=all_nodes,
             relationships=all_relationships,
             schema_file=",".join(schema_names),
-            metadata=metadata
+            metadata=metadata,
+            table_aliases=table_aliases
         )
 
         logger.info(
@@ -419,6 +425,61 @@ class SchemaParser:
                         return table_name
 
         return None
+
+    @staticmethod
+    def _extract_table_aliases(schemas: Dict[str, DatabaseSchema]) -> Dict[str, List[str]]:
+        """
+        Extract business-friendly aliases for each table using LLM.
+
+        Args:
+            schemas: Dictionary of database schemas
+
+        Returns:
+            Dictionary mapping table names to their aliases
+        """
+        table_aliases = {}
+
+        try:
+            from kg_builder.services.llm_service import get_llm_service
+
+            llm_service = get_llm_service()
+
+            if not llm_service.is_enabled():
+                logger.warning("LLM service disabled, skipping table alias extraction")
+                return table_aliases
+
+            logger.info("Extracting table aliases using LLM...")
+
+            # Extract aliases for each table across all schemas
+            for schema_name, schema in schemas.items():
+                for table_name, table in schema.tables.items():
+                    # Get column names
+                    column_names = [col.name for col in table.columns]
+
+                    # Get table description from metadata if available
+                    table_description = f"Table from {schema_name} schema"
+                    if schema.metadata and schema_name in schema.metadata:
+                        table_description = schema.metadata.get(schema_name, {}).get("description", table_description)
+
+                    # Extract aliases using LLM
+                    result = llm_service.extract_table_aliases(
+                        table_name=table_name,
+                        table_description=table_description,
+                        columns=column_names
+                    )
+
+                    if result.get("aliases"):
+                        table_aliases[table_name] = result["aliases"]
+                        logger.info(f"✓ Extracted aliases for {table_name}: {result['aliases']}")
+                    else:
+                        logger.warning(f"No aliases extracted for {table_name}: {result.get('error', 'Unknown error')}")
+
+            logger.info(f"Extracted aliases for {len(table_aliases)} tables")
+            return table_aliases
+
+        except Exception as e:
+            logger.error(f"Error extracting table aliases: {e}")
+            return table_aliases
 
     @staticmethod
     def _enhance_relationships_with_llm(

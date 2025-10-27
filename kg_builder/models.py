@@ -107,6 +107,10 @@ class KnowledgeGraph(BaseModel):
         default_factory=dict,
         description="Metadata including field_preferences used during generation"
     )
+    table_aliases: Dict[str, List[str]] = Field(
+        default_factory=dict,
+        description="LLM-learned business-friendly names/aliases for each table. Format: {actual_table_name: [alias1, alias2, ...]}"
+    )
 
 
 # API Request/Response models

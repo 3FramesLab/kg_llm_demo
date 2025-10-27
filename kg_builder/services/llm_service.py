@@ -413,6 +413,85 @@ Return as JSON with this structure:
             logger.error(f"Error during LLM schema analysis: {e}")
             return {"analysis": {}, "error": str(e)}
 
+    def extract_table_aliases(self, table_name: str, table_description: str, columns: List[str]) -> Dict[str, Any]:
+        """
+        Extract business-friendly names/aliases for a database table using LLM.
+
+        Args:
+            table_name: Actual database table name (e.g., 'brz_lnd_RBP_GPU')
+            table_description: Description of what the table contains
+            columns: List of column names in the table
+
+        Returns:
+            Dictionary with table_name and suggested aliases
+        """
+        if not self.enabled:
+            logger.warning("LLM service disabled, cannot extract table aliases")
+            return {"table_name": table_name, "aliases": [], "error": "LLM service disabled"}
+
+        try:
+            # Prepare the prompt
+            columns_str = ", ".join(columns[:10])  # Show first 10 columns
+            if len(columns) > 10:
+                columns_str += f", ... ({len(columns) - 10} more)"
+
+            prompt = f"""Analyze this database table and suggest 2-4 short, business-friendly names/aliases that users might use to refer to this table.
+
+Table Name: {table_name}
+Description: {table_description}
+Columns: {columns_str}
+
+Suggest short business names (1-3 words each) that capture the essence of this table. For example:
+- If table is 'brz_lnd_RBP_GPU', suggest: ['RBP', 'RBP GPU', 'GPU']
+- If table is 'brz_lnd_OPS_EXCEL_GPU', suggest: ['OPS', 'OPS Excel', 'Excel GPU']
+
+Return ONLY valid JSON with this structure (no other text):
+{{
+    "table_name": "{table_name}",
+    "aliases": ["alias1", "alias2", "alias3"],
+    "reasoning": "Brief explanation of why these aliases make sense"
+}}"""
+
+            logger.info(f"Extracting aliases for table: {table_name}")
+
+            response = self.create_chat_completion(
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a database expert. Suggest business-friendly names for database tables. Always return valid JSON."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                max_tokens=200
+            )
+
+            result_text = response.choices[0].message.content
+            logger.debug(f"LLM Response for table aliases:\n{result_text}")
+
+            # Extract JSON from response
+            import re
+            json_match = re.search(r'\{.*\}', result_text, re.DOTALL)
+            if not json_match:
+                logger.warning(f"No JSON found in LLM response for table {table_name}")
+                return {"table_name": table_name, "aliases": [], "error": "No JSON in response"}
+
+            result = json.loads(json_match.group())
+            logger.info(f"✓ Extracted aliases for {table_name}: {result.get('aliases', [])}")
+            return result
+
+        except APIError as e:
+            logger.error(f"OpenAI API error during alias extraction: {e}")
+            return {"table_name": table_name, "aliases": [], "error": str(e)}
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse LLM response as JSON: {e}")
+            return {"table_name": table_name, "aliases": [], "error": "Invalid JSON response"}
+        except Exception as e:
+            logger.error(f"Error during table alias extraction: {e}")
+            return {"table_name": table_name, "aliases": [], "error": str(e)}
+
 
 # Global LLM service instance
 _llm_service: Optional[LLMService] = None
