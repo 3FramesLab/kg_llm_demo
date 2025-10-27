@@ -9,9 +9,23 @@ export default function GraphVisualization({ entities, relationships }) {
   const [highlightLinks, setHighlightLinks] = useState(new Set());
   const [hoverNode, setHoverNode] = useState(null);
 
+  // Create a set of valid entity IDs for validation
+  const validEntityIds = new Set(entities.map((e) => e.id));
+
+  // Filter relationships to only include those with valid source and target nodes
+  const validRelationships = relationships.filter((rel) => {
+    const isValid = validEntityIds.has(rel.source_id) && validEntityIds.has(rel.target_id);
+    if (!isValid) {
+      console.warn(
+        `Skipping relationship: ${rel.source_id} -> ${rel.target_id} (node not found)`
+      );
+    }
+    return isValid;
+  });
+
   // Calculate node sizes based on connections
   const connectionCounts = {};
-  relationships.forEach((rel) => {
+  validRelationships.forEach((rel) => {
     connectionCounts[rel.source_id] = (connectionCounts[rel.source_id] || 0) + 1;
     connectionCounts[rel.target_id] = (connectionCounts[rel.target_id] || 0) + 1;
   });
@@ -28,7 +42,7 @@ export default function GraphVisualization({ entities, relationships }) {
         connections: connections,
       };
     }),
-    links: relationships.map((rel) => ({
+    links: validRelationships.map((rel) => ({
       source: rel.source_id,
       target: rel.target_id,
       type: rel.relationship_type,

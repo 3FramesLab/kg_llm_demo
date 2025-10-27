@@ -432,6 +432,181 @@ class ReconciliationExecutor:
             # Return 0 if we can't count (don't fail the entire execution)
             return 0
 
+    def _build_select_clause(
+        self,
+        rule: ReconciliationRule,
+        db_type: str = "mysql",
+        limit_clause: str = ""
+    ) -> str:
+        """Build SELECT clause with optional column selection."""
+        if rule.select_columns:
+            # Build SELECT with specific columns
+            select_parts = []
+            join_tables = rule.get_join_tables()
+
+            for i, table in enumerate(join_tables):
+                table_alias = f"t{i+1}"
+                if table in rule.select_columns:
+                    columns = rule.select_columns[table]
+                    for col in columns:
+                        select_parts.append(f"{table_alias}.`{col}`")
+                else:
+                    # If table not in select_columns, select all columns
+                    select_parts.append(f"{table_alias}.*")
+
+            select_clause = ", ".join(select_parts)
+        else:
+            # Select all columns
+            join_tables = rule.get_join_tables()
+            select_parts = [f"t{i+1}.*" for i in range(len(join_tables))]
+            select_clause = ", ".join(select_parts)
+
+        # Add limit clause for SQL Server (TOP goes in SELECT)
+        if db_type.lower() == "sqlserver" and limit_clause:
+            return f"SELECT {limit_clause} {select_clause}"
+        else:
+            return f"SELECT {select_clause}"
+
+    def _build_multi_table_join_query(
+        self,
+        rule: ReconciliationRule,
+        db_type: str = "mysql",
+        limit_clause: str = ""
+    ) -> str:
+        """Build SQL query for multi-table joins."""
+        join_tables = rule.get_join_tables()
+        join_order = rule.get_join_order()
+        join_types = rule.get_join_types()
+
+        # Build SELECT clause
+        select_clause = self._build_select_clause(rule, db_type, limit_clause)
+
+        # Build FROM clause with first table
+        first_table = join_order[0]
+        first_table_quoted = self._quote_identifier(first_table, db_type)
+        from_clause = f"FROM {first_table_quoted} t1"
+
+        # Build JOIN clauses
+        join_clauses = []
+        if rule.join_conditions:
+            for i, condition in enumerate(rule.join_conditions):
+                table1 = condition.get('table1')
+                table2 = condition.get('table2')
+                on_clause = condition.get('on', '')
+
+                # Find table indices
+                try:
+                    table1_idx = join_order.index(table1) + 1
+                    table2_idx = join_order.index(table2) + 1
+                except ValueError:
+                    logger.warning(f"Table {table1} or {table2} not found in join_order")
+                    continue
+
+                join_type = join_types[i] if i < len(join_types) else "INNER"
+                table2_quoted = self._quote_identifier(table2, db_type)
+
+                join_clauses.append(
+                    f"{join_type} JOIN {table2_quoted} t{table2_idx} ON {on_clause}"
+                )
+
+        join_clause = "\n".join(join_clauses)
+
+        # Build WHERE clause for filter conditions
+        where_clause = ""
+        if rule.filter_conditions:
+            where_parts = []
+            for key, value in rule.filter_conditions.items():
+                if isinstance(value, str):
+                    where_parts.append(f"t1.`{key}` = '{value}'")
+                else:
+                    where_parts.append(f"t1.`{key}` = {value}")
+            if where_parts:
+                where_clause = "WHERE " + " AND ".join(where_parts)
+
+        # Build complete query
+        if db_type.lower() == "sqlserver":
+            query = f"""
+            {select_clause}
+            {from_clause}
+            {join_clause}
+            {where_clause}
+            """
+        else:
+            query = f"""
+            {select_clause}
+            {from_clause}
+            {join_clause}
+            {where_clause}
+            {limit_clause}
+            """
+
+        return query
+
+    def _execute_multi_table_matched_query(
+        self,
+        source_conn: Any,
+        rule: ReconciliationRule,
+        limit: int,
+        db_type: str = "mysql"
+    ) -> Tuple[List[MatchedRecord], Optional[Dict[str, Any]]]:
+        """Execute query to find matched records for multi-table joins."""
+        try:
+            # Get database-specific limit clause
+            limit_clause = self._get_limit_clause(limit, db_type, is_where_clause=False)
+
+            # Build multi-table join query
+            query = self._build_multi_table_join_query(rule, db_type, limit_clause)
+
+            self._log_sql_query("MATCHED_MULTI", rule.rule_name, query, "FIRST")
+
+            cursor = source_conn.cursor()
+            try:
+                cursor.execute(query)
+            except Exception as e:
+                logger.error(f"Error executing multi-table query: {e}")
+                logger.debug(f"Query was: {query}")
+                return [], None
+
+            # Get column names
+            all_columns = [desc[0] for desc in cursor.description]
+
+            # Fetch results
+            rows = cursor.fetchall()
+            cursor.close()
+
+            matched_records = []
+            for row in rows:
+                row_dict = dict(zip(all_columns, row))
+
+                matched_records.append(MatchedRecord(
+                    source_record=row_dict,
+                    target_record=row_dict,
+                    match_confidence=rule.confidence_score,
+                    rule_used=rule.rule_id,
+                    rule_name=rule.rule_name
+                ))
+
+            logger.debug(f"Found {len(matched_records)} matched records for multi-table rule {rule.rule_name}")
+
+            # Prepare SQL info for response
+            join_tables = rule.get_join_tables()
+            sql_info = {
+                "rule_id": rule.rule_id,
+                "rule_name": rule.rule_name,
+                "query_type": "matched_multi_table",
+                "source_sql": query,
+                "target_sql": None,
+                "description": f"Find matched records across tables: {', '.join(join_tables)}",
+                "tables_joined": join_tables,
+                "columns_selected": rule.select_columns if rule.select_columns else "all"
+            }
+
+            return matched_records, sql_info
+
+        except Exception as e:
+            logger.error(f"Error executing multi-table matched query: {e}")
+            return [], None
+
     def _execute_matched_query(
         self,
         source_conn: Any,
@@ -442,6 +617,13 @@ class ReconciliationExecutor:
     ) -> Tuple[List[MatchedRecord], Optional[Dict[str, Any]]]:
         """Execute query to find matched records. Returns (records, sql_info)."""
         try:
+            # Check if this is a multi-table rule
+            if rule.is_multi_table():
+                return self._execute_multi_table_matched_query(
+                    source_conn, rule, limit, db_type
+                )
+
+            # Original 2-table logic
             # Build JOIN query
             join_conditions = []
             for src_col, tgt_col in zip(rule.source_columns, rule.target_columns):

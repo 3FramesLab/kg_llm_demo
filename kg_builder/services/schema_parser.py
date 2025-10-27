@@ -15,22 +15,77 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
+# Default fields to exclude from KG relationship creation (can be overridden by user)
+DEFAULT_EXCLUDED_FIELDS = {
+    "Product_Line", "product_line", "PRODUCT_LINE", "Product Line",
+    "Business_Unit", "business_unit", "BUSINESS_UNIT", "[Business Unit]", "business unit", "BUSINESS_UNIT_CODE",
+    "[Product Type]", "Product Type", "product_type", "PRODUCT_TYPE",
+}
+
+
+def is_excluded_field(field_name: str, excluded_fields: Optional[set] = None) -> bool:
+    """
+    Check if a field should be excluded from KG relationships.
+
+    Args:
+        field_name: Name of the field to check
+        excluded_fields: Set of fields to exclude (if None, uses DEFAULT_EXCLUDED_FIELDS)
+
+    Returns:
+        bool: True if field should be excluded
+    """
+    if excluded_fields is None:
+        excluded_fields = DEFAULT_EXCLUDED_FIELDS
+    return field_name in excluded_fields
+
+
+def filter_relationship_pairs(
+    pairs: List[Dict[str, Any]],
+    excluded_fields: Optional[set] = None
+) -> List[Dict[str, Any]]:
+    """
+    Filter out relationship pairs that use excluded fields.
+
+    Args:
+        pairs: List of relationship pair dictionaries with source_column and target_column
+        excluded_fields: Set of field names to exclude (if None, uses DEFAULT_EXCLUDED_FIELDS)
+
+    Returns:
+        Filtered list excluding pairs with excluded fields
+    """
+    if excluded_fields is None:
+        excluded_fields = DEFAULT_EXCLUDED_FIELDS
+
+    filtered_pairs = []
+    for pair in pairs:
+        source_col = pair.get("source_column", "")
+        target_col = pair.get("target_column", "")
+
+        # Skip if either column is in the excluded fields list
+        if is_excluded_field(source_col, excluded_fields) or is_excluded_field(target_col, excluded_fields):
+            logger.info(f"Excluding relationship pair: {source_col} -> {target_col} (excluded field)")
+            continue
+
+        filtered_pairs.append(pair)
+
+    return filtered_pairs
+
 
 class SchemaParser:
     """Parses JSON schema files and extracts graph structures."""
-    
+
     @staticmethod
     def load_schema(schema_name: str) -> DatabaseSchema:
         """Load a schema from JSON file."""
         schema_path = SCHEMAS_DIR / f"{schema_name}.json"
-        
+
         if not schema_path.exists():
             raise FileNotFoundError(f"Schema file not found: {schema_path}")
-        
+
         try:
             with open(schema_path, 'r') as f:
                 data = json.load(f)
-            
+
             # Parse tables
             tables = {}
             for table_name, table_data in data.get("tables", {}).items():
@@ -44,7 +99,7 @@ class SchemaParser:
                     foreign_keys=table_data.get("foreign_keys", []),
                     indexes=table_data.get("indexes", [])
                 )
-            
+
             return DatabaseSchema(
                 database=data.get("database", ""),
                 tables=tables,

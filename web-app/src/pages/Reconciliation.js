@@ -9,6 +9,8 @@ import {
   Button,
   FormControlLabel,
   Checkbox,
+  Radio,
+  RadioGroup,
   CircularProgress,
   Alert,
   Card,
@@ -58,8 +60,17 @@ export default function Reconciliation() {
     min_confidence: 0.7,
   });
 
-  // Optional field preferences (JSON) to guide rule generation
+  // Mode selection: 'v1' (field_preferences) or 'v2' (reconciliation_pairs)
+  const [preferenceMode, setPreferenceMode] = useState('v1');
+
+  // V1: Optional field preferences (JSON) to guide rule generation
   const [fieldPreferencesInput, setFieldPreferencesInput] = useState('');
+
+  // V2: Explicit reconciliation pairs (JSON)
+  const [reconciliationPairsInput, setReconciliationPairsInput] = useState('');
+
+  // V2: Auto-discover additional rules from KG
+  const [autoDiscoverAdditional, setAutoDiscoverAdditional] = useState(true);
 
   useEffect(() => {
     loadInitialData();
@@ -93,7 +104,7 @@ export default function Reconciliation() {
     setSuccess(null);
 
     try {
-      // Build request payload explicitly so we can optionally add field_preferences
+      // Build request payload explicitly so we can optionally add field_preferences or reconciliation_pairs
       const payload = {
         schema_names: formData.schema_names,
         kg_name: formData.kg_name,
@@ -101,7 +112,8 @@ export default function Reconciliation() {
         min_confidence: formData.min_confidence,
       };
 
-      if (fieldPreferencesInput.trim()) {
+      // V1 Mode: Add field_preferences
+      if (preferenceMode === 'v1' && fieldPreferencesInput.trim()) {
         try {
           payload.field_preferences = JSON.parse(fieldPreferencesInput);
         } catch (e) {
@@ -111,14 +123,33 @@ export default function Reconciliation() {
         }
       }
 
+      // V2 Mode: Add reconciliation_pairs and auto_discover_additional
+      if (preferenceMode === 'v2') {
+        if (reconciliationPairsInput.trim()) {
+          try {
+            payload.reconciliation_pairs = JSON.parse(reconciliationPairsInput);
+          } catch (e) {
+            setError('Invalid JSON in reconciliation pairs: ' + e.message);
+            setLoading(false);
+            return;
+          }
+        }
+        payload.auto_discover_additional = autoDiscoverAdditional;
+      }
+
       const response = await generateRules(payload);
       const ruleCount =
         typeof response.data.rules_count !== 'undefined'
           ? response.data.rules_count
           : response.data.rule_count;
-      setSuccess(
-        `Generated ${ruleCount} rules in ruleset "${response.data.ruleset_id}"`
-      );
+
+      // Show explicit vs discovered counts in success message
+      let successMsg = `Generated ${ruleCount} rules in ruleset "${response.data.ruleset_id}"`;
+      if (response.data.message && response.data.message.includes('explicit')) {
+        successMsg = response.data.message + ` - Ruleset ID: "${response.data.ruleset_id}"`;
+      }
+
+      setSuccess(successMsg);
       loadInitialData();
       setTabValue(1);
     } catch (err) {
@@ -315,48 +346,136 @@ export default function Reconciliation() {
                 />
               </Box>
 
-              {/* Field Preferences (Optional) */}
-              {formData.use_llm_enhancement && (
-                <Accordion sx={{ mt: 2 }}>
-                  <AccordionSummary expandIcon={<ExpandMore />}>
-                    <Typography>Field Preferences (Optional - Advanced)</Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                      Guide LLM rule generation with table-specific field hints. Provide a JSON array
-                      where each object targets a table and includes field_hints, priority_fields, and exclude_fields.
-                    </Typography>
-                    <TextField
-                      fullWidth
-                      multiline
-                      rows={8}
-                      label="Field Preferences (JSON)"
-                      placeholder={JSON.stringify([
-                        {
-                          table_name: "hana_material_master",
-                          field_hints: {
-                            MATERIAL: "PLANNING_SKU"
-                          },
-                          priority_fields: ["MATERIAL", "MATERIAL_DESC"],
-                          exclude_fields: ["INTERNAL_NOTES", "TEMP_FIELD"]
-                        },
-                        {
-                          table_name: "brz_lnd_OPS_EXCEL_GPU",
-                          field_hints: {
-                            PLANNING_SKU: "MATERIAL",
-                            GPU_MODEL: "PRODUCT_TYPE"
-                          },
-                          priority_fields: ["PLANNING_SKU", "GPU_MODEL"],
-                          exclude_fields: ["STAGING_FLAG"]
-                        }
-                      ], null, 2)}
-                      value={fieldPreferencesInput}
-                      onChange={(e) => setFieldPreferencesInput(e.target.value)}
-                      helperText="Provide field hints to guide LLM and fallback rule generation. Leave empty to skip."
+              {/* Advanced Options: Mode Selector */}
+              <Accordion sx={{ mt: 2 }}>
+                <AccordionSummary expandIcon={<ExpandMore />}>
+                  <Typography>Advanced Options</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Typography variant="subtitle2" sx={{ mb: 2 }}>
+                    Rule Generation Mode
+                  </Typography>
+
+                  {/* Mode Selector */}
+                  <RadioGroup
+                    value={preferenceMode}
+                    onChange={(e) => setPreferenceMode(e.target.value)}
+                    sx={{ mb: 3 }}
+                  >
+                    <FormControlLabel
+                      value="v1"
+                      control={<Radio />}
+                      label="V1: Field Preferences (Table-centric hints)"
                     />
-                  </AccordionDetails>
-                </Accordion>
-              )}
+                    <FormControlLabel
+                      value="v2"
+                      control={<Radio />}
+                      label="V2: Reconciliation Pairs (Explicit source→target) - Recommended"
+                    />
+                  </RadioGroup>
+
+                  {/* V1 Mode: Field Preferences */}
+                  {preferenceMode === 'v1' && (
+                    <Box>
+                      <Alert severity="info" sx={{ mb: 2 }}>
+                        <strong>V1 Mode:</strong> Table-centric field hints. Ambiguous when multiple target tables exist.
+                      </Alert>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                        Guide LLM rule generation with table-specific field hints. Provide a JSON array
+                        where each object targets a table and includes field_hints, priority_fields, and exclude_fields.
+                      </Typography>
+                      <TextField
+                        fullWidth
+                        multiline
+                        rows={8}
+                        label="Field Preferences (JSON)"
+                        placeholder={JSON.stringify([
+                          {
+                            table_name: "hana_material_master",
+                            field_hints: {
+                              MATERIAL: "PLANNING_SKU"
+                            },
+                            priority_fields: ["MATERIAL", "MATERIAL_DESC"],
+                            exclude_fields: ["INTERNAL_NOTES", "TEMP_FIELD"]
+                          },
+                          {
+                            table_name: "brz_lnd_OPS_EXCEL_GPU",
+                            field_hints: {
+                              PLANNING_SKU: "MATERIAL",
+                              GPU_MODEL: "PRODUCT_TYPE"
+                            },
+                            priority_fields: ["PLANNING_SKU", "GPU_MODEL"],
+                            exclude_fields: ["STAGING_FLAG"]
+                          }
+                        ], null, 2)}
+                        value={fieldPreferencesInput}
+                        onChange={(e) => setFieldPreferencesInput(e.target.value)}
+                        helperText="Provide field hints to guide LLM and fallback rule generation. Leave empty to skip."
+                      />
+                    </Box>
+                  )}
+
+                  {/* V2 Mode: Reconciliation Pairs */}
+                  {preferenceMode === 'v2' && (
+                    <Box>
+                      <Alert severity="success" sx={{ mb: 2 }}>
+                        <strong>V2 Mode (Recommended):</strong> Explicit source→target pairs. Unambiguous and precise.
+                      </Alert>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                        Define explicit reconciliation pairs with source table/columns → target table/columns.
+                        Supports filters, transformations, and bidirectional matching.
+                      </Typography>
+                      <TextField
+                        fullWidth
+                        multiline
+                        rows={12}
+                        label="Reconciliation Pairs (JSON)"
+                        placeholder={JSON.stringify([
+                          {
+                            source_table: "hana_material_master",
+                            source_columns: ["MATERIAL"],
+                            target_table: "brz_lnd_OPS_EXCEL_GPU",
+                            target_columns: ["PLANNING_SKU"],
+                            match_type: "exact",
+                            source_filters: null,
+                            target_filters: {
+                              Active_Inactive: "Active"
+                            },
+                            bidirectional: true,
+                            priority: "high"
+                          },
+                          {
+                            source_table: "brz_lnd_OPS_EXCEL_GPU",
+                            source_columns: ["PLANNING_SKU"],
+                            target_table: "brz_lnd_RBP_GPU",
+                            target_columns: ["Material"],
+                            match_type: "exact",
+                            bidirectional: false,
+                            priority: "normal"
+                          }
+                        ], null, 2)}
+                        value={reconciliationPairsInput}
+                        onChange={(e) => setReconciliationPairsInput(e.target.value)}
+                        helperText="Explicit pairs take precedence. Each pair specifies source→target with full control."
+                      />
+
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={autoDiscoverAdditional}
+                            onChange={(e) => setAutoDiscoverAdditional(e.target.checked)}
+                          />
+                        }
+                        label="Auto-discover additional rules from Knowledge Graph"
+                        sx={{ mt: 2 }}
+                      />
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', ml: 4 }}>
+                        Enable to supplement explicit pairs with auto-discovered rules from KG relationships.
+                      </Typography>
+                    </Box>
+                  )}
+                </AccordionDetails>
+              </Accordion>
 
               <Box sx={{ mt: 3 }}>
                 <Button

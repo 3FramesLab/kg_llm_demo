@@ -14,6 +14,8 @@ from kg_builder.models import (
     ReconciliationRule,
     ReconciliationRuleSet,
     ReconciliationMatchType,
+    ReconciliationPair,
+    TableHint,
     DatabaseSchema
 )
 from kg_builder.services.schema_parser import SchemaParser
@@ -45,17 +47,25 @@ class ReconciliationRuleGenerator:
         schema_names: List[str],
         use_llm: bool = True,
         min_confidence: float = 0.7,
-        field_preferences: Optional[List[Dict[str, Any]]] = None
+        field_preferences: Optional[List[Dict[str, Any]]] = None,
+        reconciliation_pairs: Optional[List[ReconciliationPair]] = None,
+        table_hints: Optional[List[TableHint]] = None,
+        auto_discover_additional: bool = True
     ) -> ReconciliationRuleSet:
         """
         Main entry point for rule generation from a knowledge graph.
+
+        Supports both v1 (field_preferences) and v2 (reconciliation_pairs) approaches.
 
         Args:
             kg_name: Name of the knowledge graph to analyze
             schema_names: List of schema names involved
             use_llm: Whether to use LLM for semantic rule generation
             min_confidence: Minimum confidence score for rules (0.0-1.0)
-            field_preferences: User-specific field preferences for rule generation
+            field_preferences: (v1) Legacy table-centric field preferences
+            reconciliation_pairs: (v2 - Recommended) Explicit source→target reconciliation pairs
+            table_hints: (v2) Optional table-level hints for auto-discovery
+            auto_discover_additional: Whether to discover additional rules from KG (default: True)
 
         Returns:
             ReconciliationRuleSet containing generated rules
@@ -63,7 +73,7 @@ class ReconciliationRuleGenerator:
         logger.info(f"Generating reconciliation rules from KG '{kg_name}'")
 
         # Auto-load field_preferences from KG metadata if not provided
-        if not field_preferences:
+        if not field_preferences and not reconciliation_pairs:
             kg_metadata = self.graphiti.get_kg_metadata(kg_name)
             if kg_metadata and 'field_preferences' in kg_metadata:
                 field_preferences = kg_metadata['field_preferences']
@@ -72,26 +82,49 @@ class ReconciliationRuleGenerator:
         # 1. Load schemas
         schemas_info = self._load_schemas(schema_names)
 
-        # 2. Query KG for relationships
-        relationships = self._get_kg_relationships(kg_name)
+        # 2. V2 Approach: Generate rules from explicit reconciliation pairs (takes priority)
+        explicit_rules = []
+        if reconciliation_pairs:
+            logger.info(f"Processing {len(reconciliation_pairs)} explicit reconciliation pairs (v2)")
+            explicit_rules = self._generate_rules_from_pairs(
+                reconciliation_pairs, schemas_info, schema_names
+            )
+            logger.info(f"Generated {len(explicit_rules)} rules from explicit pairs")
 
-        # 3. Generate basic rules from patterns
-        basic_rules = self._generate_pattern_based_rules(
-            relationships, schemas_info, schema_names
-        )
+        # 3. Auto-discovery from KG (optional when using v2)
+        discovered_rules = []
+        if auto_discover_additional or not reconciliation_pairs:
+            # Query KG for relationships
+            relationships = self._get_kg_relationships(kg_name)
 
-        # 4. Enhance with LLM if enabled
-        if use_llm:
-            llm_rules = self._generate_llm_rules(relationships, schemas_info, field_preferences=field_preferences)
-            all_rules = basic_rules + llm_rules
-        else:
-            all_rules = basic_rules
+            # Generate basic rules from patterns
+            pattern_rules = self._generate_pattern_based_rules(
+                relationships, schemas_info, schema_names
+            )
+
+            # Enhance with LLM if enabled
+            llm_rules = []
+            if use_llm:
+                llm_rules = self._generate_llm_rules(
+                    relationships, schemas_info,
+                    field_preferences=field_preferences,
+                    table_hints=table_hints
+                )
+
+            discovered_rules = pattern_rules + llm_rules
+            logger.info(
+                f"Auto-discovered {len(discovered_rules)} rules "
+                f"({len(pattern_rules)} pattern-based, {len(llm_rules)} LLM-based)"
+            )
+
+        # 4. Combine explicit and discovered rules
+        all_rules = explicit_rules + discovered_rules
 
         # 5. Filter by confidence
         filtered_rules = [r for r in all_rules if r.confidence_score >= min_confidence]
 
-        # 6. Remove duplicates
-        unique_rules = self._deduplicate_rules(filtered_rules)
+        # 6. Remove duplicates (explicit rules take precedence)
+        unique_rules = self._deduplicate_rules(filtered_rules, prioritize_explicit=bool(reconciliation_pairs))
 
         # 7. Create ruleset
         ruleset = ReconciliationRuleSet(
@@ -104,8 +137,8 @@ class ReconciliationRuleGenerator:
         )
 
         logger.info(
-            f"Generated {len(unique_rules)} reconciliation rules "
-            f"({len(basic_rules)} pattern-based, {len(llm_rules) if use_llm else 0} LLM-based)"
+            f"Generated {len(unique_rules)} total rules "
+            f"({len(explicit_rules)} explicit, {len(discovered_rules)} discovered)"
         )
 
         return ruleset
@@ -157,6 +190,230 @@ class ReconciliationRuleGenerator:
         except Exception as e:
             logger.warning(f"Failed to extract database name from URL: {database_url}, error: {e}")
             return ""
+
+    def _generate_rules_from_pairs(
+        self,
+        reconciliation_pairs: List[ReconciliationPair],
+        schemas_info: Dict[str, DatabaseSchema],
+        schema_names: List[str]
+    ) -> List[ReconciliationRule]:
+        """
+        Generate rules from explicit reconciliation pairs (v2).
+
+        This method creates rules directly from user-specified source→target pairs,
+        bypassing KG relationship discovery.
+
+        Args:
+            reconciliation_pairs: List of explicit reconciliation pairs
+            schemas_info: Loaded schema information
+            schema_names: List of schema names
+
+        Returns:
+            List of reconciliation rules
+        """
+        rules = []
+
+        for pair in reconciliation_pairs:
+            try:
+                # Find source and target schemas
+                source_schema_name = self._find_schema_for_table(
+                    pair.source_table, schemas_info, schema_names
+                )
+                target_schema_name = self._find_schema_for_table(
+                    pair.target_table, schemas_info, schema_names
+                )
+
+                if not source_schema_name or not target_schema_name:
+                    logger.warning(
+                        f"Could not find schema for tables: {pair.source_table} or {pair.target_table}"
+                    )
+                    continue
+
+                # Validate columns exist
+                if not self._validate_pair_columns(pair, schemas_info, source_schema_name, target_schema_name):
+                    logger.warning(
+                        f"Invalid columns in pair: {pair.source_table}.{pair.source_columns} → "
+                        f"{pair.target_table}.{pair.target_columns}"
+                    )
+                    continue
+
+                # Create rule from pair
+                rule = self._create_rule_from_pair(
+                    pair, source_schema_name, target_schema_name
+                )
+                rules.append(rule)
+
+                # Create reverse rule if bidirectional
+                if pair.bidirectional:
+                    reverse_rule = self._create_reverse_rule(
+                        pair, source_schema_name, target_schema_name
+                    )
+                    rules.append(reverse_rule)
+
+            except Exception as e:
+                logger.error(f"Error processing reconciliation pair {pair.source_table}→{pair.target_table}: {e}")
+                continue
+
+        return rules
+
+    def _find_schema_for_table(
+        self,
+        table_name: str,
+        schemas_info: Dict[str, DatabaseSchema],
+        schema_names: List[str]
+    ) -> Optional[str]:
+        """Find which schema contains a given table."""
+        for schema_name, schema in schemas_info.items():
+            if table_name in schema.tables:
+                # Return database name if available, otherwise schema name
+                db_name = self._extract_database_name(schema.database)
+                return db_name if db_name else schema_name
+        return None
+
+    def _validate_pair_columns(
+        self,
+        pair: ReconciliationPair,
+        schemas_info: Dict[str, DatabaseSchema],
+        source_schema_name: str,
+        target_schema_name: str
+    ) -> bool:
+        """Validate that columns in a reconciliation pair exist in schemas."""
+        try:
+            # Find source schema
+            source_schema = None
+            for schema_name, schema in schemas_info.items():
+                db_name = self._extract_database_name(schema.database)
+                if schema_name == source_schema_name or db_name == source_schema_name:
+                    source_schema = schema
+                    break
+
+            if not source_schema:
+                return False
+
+            # Validate source table and columns
+            source_table = source_schema.tables.get(pair.source_table)
+            if not source_table:
+                logger.debug(f"Source table '{pair.source_table}' not found")
+                return False
+
+            source_col_names = {col.name.lower() for col in source_table.columns}
+            for col in pair.source_columns:
+                if col.lower() not in source_col_names:
+                    logger.debug(f"Source column '{col}' not found in {pair.source_table}")
+                    return False
+
+            # Find target schema
+            target_schema = None
+            for schema_name, schema in schemas_info.items():
+                db_name = self._extract_database_name(schema.database)
+                if schema_name == target_schema_name or db_name == target_schema_name:
+                    target_schema = schema
+                    break
+
+            if not target_schema:
+                return False
+
+            # Validate target table and columns
+            target_table = target_schema.tables.get(pair.target_table)
+            if not target_table:
+                logger.debug(f"Target table '{pair.target_table}' not found")
+                return False
+
+            target_col_names = {col.name.lower() for col in target_table.columns}
+            for col in pair.target_columns:
+                if col.lower() not in target_col_names:
+                    logger.debug(f"Target column '{col}' not found in {pair.target_table}")
+                    return False
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Error validating pair columns: {e}")
+            return False
+
+    def _create_rule_from_pair(
+        self,
+        pair: ReconciliationPair,
+        source_schema_name: str,
+        target_schema_name: str
+    ) -> ReconciliationRule:
+        """Create a reconciliation rule from an explicit pair."""
+        # Use confidence_override if provided, otherwise use defaults based on match type
+        confidence_map = {
+            ReconciliationMatchType.EXACT: 0.95,
+            ReconciliationMatchType.FUZZY: 0.85,
+            ReconciliationMatchType.SEMANTIC: 0.80
+        }
+        confidence = pair.confidence_override if pair.confidence_override else confidence_map.get(pair.match_type, 0.90)
+
+        # Create rule name
+        rule_name = f"Explicit_{pair.source_table}_to_{pair.target_table}"
+
+        # Build filter conditions from source_filters and target_filters
+        filter_conditions = {}
+        if pair.source_filters:
+            for col, value in pair.source_filters.items():
+                filter_conditions[f"source.{col}"] = value
+        if pair.target_filters:
+            for col, value in pair.target_filters.items():
+                filter_conditions[f"target.{col}"] = value
+
+        return ReconciliationRule(
+            rule_id=f"RULE_{generate_uid()}",
+            rule_name=rule_name,
+            source_schema=source_schema_name,
+            source_table=pair.source_table,
+            source_columns=pair.source_columns,
+            target_schema=target_schema_name,
+            target_table=pair.target_table,
+            target_columns=pair.target_columns,
+            match_type=pair.match_type,
+            transformation=pair.transformation,
+            filter_conditions=filter_conditions if filter_conditions else None,
+            confidence_score=confidence,
+            reasoning=f"Explicit user-defined reconciliation pair (priority: {pair.priority})",
+            validation_status="VALID",
+            llm_generated=False,
+            created_at=datetime.utcnow(),
+            metadata={
+                'source': 'explicit_pair_v2',
+                'priority': pair.priority,
+                'bidirectional': pair.bidirectional
+            }
+        )
+
+    def _create_reverse_rule(
+        self,
+        pair: ReconciliationPair,
+        source_schema_name: str,
+        target_schema_name: str
+    ) -> ReconciliationRule:
+        """Create a reverse rule for bidirectional pairs."""
+        # Swap source and target
+        reverse_pair = ReconciliationPair(
+            source_table=pair.target_table,
+            source_columns=pair.target_columns,
+            target_table=pair.source_table,
+            target_columns=pair.source_columns,
+            match_type=pair.match_type,
+            source_filters=pair.target_filters,
+            target_filters=pair.source_filters,
+            transformation=pair.transformation,
+            bidirectional=False,  # Don't create reverse of reverse
+            priority=pair.priority,
+            confidence_override=pair.confidence_override
+        )
+
+        # Create rule with swapped schemas
+        rule = self._create_rule_from_pair(
+            reverse_pair, target_schema_name, source_schema_name
+        )
+
+        # Update rule name to indicate reverse
+        rule.rule_name = f"Reverse_{pair.target_table}_to_{pair.source_table}"
+        rule.metadata['source'] = 'explicit_pair_v2_reverse'
+
+        return rule
 
     def _get_kg_relationships(self, kg_name: str) -> List[Dict[str, Any]]:
         """Query knowledge graph for all relationships."""
@@ -427,7 +684,8 @@ class ReconciliationRuleGenerator:
         self,
         relationships: List[Dict[str, Any]],
         schemas_info: Dict[str, DatabaseSchema],
-        field_preferences: Optional[List[Dict[str, Any]]] = None
+        field_preferences: Optional[List[Dict[str, Any]]] = None,
+        table_hints: Optional[List[TableHint]] = None
     ) -> List[ReconciliationRule]:
         """Generate semantic rules using LLM analysis."""
         try:
@@ -700,8 +958,21 @@ class ReconciliationRuleGenerator:
 
         return None
 
-    def _deduplicate_rules(self, rules: List[ReconciliationRule]) -> List[ReconciliationRule]:
-        """Remove duplicate rules, keeping the highest confidence version."""
+    def _deduplicate_rules(
+        self,
+        rules: List[ReconciliationRule],
+        prioritize_explicit: bool = False
+    ) -> List[ReconciliationRule]:
+        """
+        Remove duplicate rules, keeping the highest confidence or explicit version.
+
+        Args:
+            rules: List of rules to deduplicate
+            prioritize_explicit: If True, explicit rules (v2) take precedence over discovered rules
+
+        Returns:
+            Deduplicated list of rules
+        """
         unique_rules = {}
 
         for rule in rules:
@@ -711,9 +982,29 @@ class ReconciliationRuleGenerator:
                 rule.target_schema, rule.target_table, tuple(sorted(rule.target_columns))
             )
 
-            # Keep the rule with higher confidence
-            if key not in unique_rules or rule.confidence_score > unique_rules[key].confidence_score:
+            is_explicit = rule.metadata.get('source', '').startswith('explicit_pair_v2')
+
+            # Decide whether to keep this rule
+            if key not in unique_rules:
+                # No existing rule, keep this one
                 unique_rules[key] = rule
+            else:
+                existing_rule = unique_rules[key]
+                existing_is_explicit = existing_rule.metadata.get('source', '').startswith('explicit_pair_v2')
+
+                if prioritize_explicit:
+                    # V2 mode: Explicit rules always win
+                    if is_explicit and not existing_is_explicit:
+                        unique_rules[key] = rule
+                    elif is_explicit and existing_is_explicit and rule.confidence_score > existing_rule.confidence_score:
+                        unique_rules[key] = rule
+                    elif not is_explicit and not existing_is_explicit and rule.confidence_score > existing_rule.confidence_score:
+                        unique_rules[key] = rule
+                    # If existing is explicit and new is not, keep existing
+                else:
+                    # V1 mode: Keep highest confidence
+                    if rule.confidence_score > existing_rule.confidence_score:
+                        unique_rules[key] = rule
 
         return list(unique_rules.values())
 

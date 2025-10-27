@@ -138,9 +138,23 @@ class KGGenerationRequest(BaseModel):
         default=True,
         description="Use LLM for relationship inference, descriptions, and confidence scoring"
     )
+
+    # V1: Field preferences (legacy - ambiguous table hints)
     field_preferences: Optional[List['FieldPreference']] = Field(
         default=None,
-        description="User-specific field hints to guide LLM relationship inference"
+        description="User-specific field hints to guide LLM relationship inference (v1 - deprecated)"
+    )
+
+    # V2: Explicit relationship pairs (recommended)
+    relationship_pairs: Optional[List[dict]] = Field(
+        default=None,
+        description="Explicit source→target relationship pairs to add to KG (v2 - recommended)"
+    )
+
+    # Field exclusion configuration
+    excluded_fields: Optional[List[str]] = Field(
+        default=None,
+        description="List of field names to exclude from automatic KG relationship creation (case-sensitive)"
     )
 
     @field_validator('schema_names', mode='before')
@@ -245,6 +259,52 @@ class ReconciliationRule(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     metadata: Dict[str, Any] = {}
 
+    # ===== NEW: Multi-table join support =====
+    # For backward compatibility, these are optional
+    join_tables: Optional[List[str]] = Field(
+        default=None,
+        description="List of tables to join (for multi-table joins). If None, uses source_table and target_table."
+    )
+    join_conditions: Optional[List[Dict[str, Any]]] = Field(
+        default=None,
+        description="Join conditions between tables. Format: [{'table1': 'name', 'table2': 'name', 'on': 'condition'}, ...]"
+    )
+    join_order: Optional[List[str]] = Field(
+        default=None,
+        description="Order in which to join tables. If None, uses join_tables order."
+    )
+    join_type: Optional[List[str]] = Field(
+        default=None,
+        description="Join type for each join (INNER, LEFT, RIGHT, FULL). Length should be len(join_tables)-1"
+    )
+    select_columns: Optional[Dict[str, List[str]]] = Field(
+        default=None,
+        description="Columns to select from each table. Format: {'table_name': ['col1', 'col2'], ...}. If None, selects all columns."
+    )
+
+    def is_multi_table(self) -> bool:
+        """Check if this is a multi-table rule."""
+        return self.join_tables is not None and len(self.join_tables) > 2
+
+    def get_join_tables(self) -> List[str]:
+        """Get list of tables to join."""
+        if self.join_tables:
+            return self.join_tables
+        return [self.source_table, self.target_table]
+
+    def get_join_order(self) -> List[str]:
+        """Get join order."""
+        if self.join_order:
+            return self.join_order
+        return self.get_join_tables()
+
+    def get_join_types(self) -> List[str]:
+        """Get join types for each join."""
+        if self.join_type:
+            return self.join_type
+        # Default: INNER for all joins
+        return ["INNER"] * (len(self.get_join_tables()) - 1)
+
 
 class ReconciliationRuleSet(BaseModel):
     """Collection of reconciliation rules."""
@@ -256,8 +316,101 @@ class ReconciliationRuleSet(BaseModel):
     generated_from_kg: str  # KG name
 
 
+class KGRelationshipType(str, Enum):
+    """Types of relationships in Knowledge Graph."""
+    MATCHES = "MATCHES"                      # Fields match/equal (e.g., product_id = item_id)
+    REFERENCES = "REFERENCES"                # Foreign key reference
+    FOREIGN_KEY = "FOREIGN_KEY"              # Explicit foreign key constraint
+    CROSS_SCHEMA_REFERENCE = "CROSS_SCHEMA_REFERENCE"  # Reference across schemas
+    SEMANTIC_REFERENCE = "SEMANTIC_REFERENCE"  # LLM-inferred semantic relationship
+    CONTAINS = "CONTAINS"                    # One-to-many (e.g., Order contains OrderItems)
+    BELONGS_TO = "BELONGS_TO"                # Many-to-one (reverse of CONTAINS)
+    RELATED_TO = "RELATED_TO"                # Generic relationship
+
+
+class RelationshipPair(BaseModel):
+    """
+    Explicit relationship pair for KG creation (v2 - Recommended for KG building).
+
+    This model defines explicit directional relationships between tables/columns
+    that will be stored in the Knowledge Graph. Simpler than ReconciliationPair
+    since it's for KG creation, not rule execution.
+    """
+    source_table: str = Field(..., description="Source table name")
+    source_column: str = Field(..., description="Source column name")
+    target_table: str = Field(..., description="Target table name")
+    target_column: str = Field(..., description="Target column name")
+    relationship_type: KGRelationshipType = Field(
+        default=KGRelationshipType.MATCHES,
+        description="Type of relationship (MATCHES, REFERENCES, CONTAINS, etc.)"
+    )
+    confidence: float = Field(
+        default=0.95,
+        ge=0.0,
+        le=1.0,
+        description="Confidence score for this relationship (0.0-1.0)"
+    )
+    bidirectional: bool = Field(
+        default=False,
+        description="If true, also create reverse relationship"
+    )
+    metadata: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Additional metadata (e.g., {'source': 'user_defined', 'notes': '...'})"
+    )
+
+
+class ReconciliationPair(BaseModel):
+    """Explicit source-to-target reconciliation pair (v2 - Recommended)."""
+    source_table: str = Field(..., description="Source table name")
+    source_columns: List[str] = Field(..., description="Source columns to match")
+    target_table: str = Field(..., description="Target table name")
+    target_columns: List[str] = Field(..., description="Target columns to match")
+    match_type: ReconciliationMatchType = Field(
+        default=ReconciliationMatchType.EXACT,
+        description="Type of match (EXACT, FUZZY, SEMANTIC)"
+    )
+    source_filters: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Filter conditions for source table (e.g., {'status': 'active'})"
+    )
+    target_filters: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Filter conditions for target table (e.g., {'Active_Inactive': 'Active'})"
+    )
+    transformation: Optional[str] = Field(
+        default=None,
+        description="SQL transformation to apply (e.g., 'UPPER(source_column)')"
+    )
+    bidirectional: bool = Field(
+        default=False,
+        description="If true, also create reverse rule (target -> source)"
+    )
+    priority: str = Field(
+        default="normal",
+        description="Priority level: high, normal, low"
+    )
+    confidence_override: Optional[float] = Field(
+        default=None,
+        description="Override auto-calculated confidence score"
+    )
+
+
+class TableHint(BaseModel):
+    """Table-level hints for discovery (v2 - Optional supplement to reconciliation_pairs)."""
+    table_name: str = Field(..., description="Table name")
+    priority_fields: List[str] = Field(
+        default=[],
+        description="Fields to prioritize for matching"
+    )
+    exclude_fields: List[str] = Field(
+        default=[],
+        description="Fields to exclude from auto-discovery"
+    )
+
+
 class FieldPreference(BaseModel):
-    """User preference for specific fields in rule generation."""
+    """User preference for specific fields in rule generation (v1 - Legacy)."""
     table_name: str = Field(..., description="Table name")
     priority_fields: List[str] = Field(
         default=[],
@@ -278,7 +431,7 @@ class FieldPreference(BaseModel):
 
 
 class RuleGenerationRequest(BaseModel):
-    """Request model for generating reconciliation rules."""
+    """Request model for generating reconciliation rules (supports v1 and v2)."""
     schema_names: List[str] = Field(..., description="List of schema names to reconcile")
     kg_name: str = Field(..., description="Knowledge graph to use for rule generation")
     use_llm_enhancement: bool = Field(default=True, description="Use LLM for semantic rule generation")
@@ -287,9 +440,29 @@ class RuleGenerationRequest(BaseModel):
         default=[ReconciliationMatchType.EXACT, ReconciliationMatchType.SEMANTIC],
         description="Types of matches to generate"
     )
+
+    # V2: Explicit reconciliation pairs (recommended)
+    reconciliation_pairs: Optional[List[ReconciliationPair]] = Field(
+        default=None,
+        description="Explicit source-target pairs (v2 recommended approach). Takes precedence over field_preferences."
+    )
+
+    # V2: Table-level hints for auto-discovery
+    table_hints: Optional[List[TableHint]] = Field(
+        default=None,
+        description="Table-level hints for auto-discovery (v2). Used alongside reconciliation_pairs."
+    )
+
+    # V2: Auto-discovery control
+    auto_discover_additional: bool = Field(
+        default=True,
+        description="Allow KG to discover additional relationships beyond reconciliation_pairs"
+    )
+
+    # V1: Legacy field preferences (maintained for backward compatibility)
     field_preferences: Optional[List[FieldPreference]] = Field(
         default=None,
-        description="User-specific field preferences for rule generation"
+        description="User-specific field preferences (v1 legacy). Use reconciliation_pairs instead."
     )
 
 
@@ -747,4 +920,45 @@ class KPIResultsListResponse(BaseModel):
     results: List[Dict[str, Any]] = Field(default=[], description="List of KPI results")
     total_count: int = Field(default=0, description="Total number of results")
     error: Optional[str] = None
+
+
+# NL Query Execution Models
+class NLQueryExecutionRequest(BaseModel):
+    """Request to execute NL definitions as data queries."""
+    kg_name: str = Field(..., description="Knowledge graph name")
+    schemas: List[str] = Field(..., description="List of schema names")
+    definitions: List[str] = Field(..., description="List of NL definitions to execute")
+    use_llm: bool = Field(default=True, description="Use LLM for parsing")
+    min_confidence: float = Field(default=0.7, description="Minimum confidence threshold")
+    limit: int = Field(default=1000, description="Maximum records per query")
+    db_type: str = Field(default="mysql", description="Database type")
+
+
+class NLQueryResultItem(BaseModel):
+    """Result from executing a single NL query."""
+    definition: str = Field(..., description="Original definition")
+    query_type: str = Field(..., description="Type of query")
+    operation: Optional[str] = Field(None, description="Operation type")
+    sql: str = Field(..., description="Generated SQL")
+    record_count: int = Field(..., description="Number of records returned")
+    records: List[Dict[str, Any]] = Field(default=[], description="Query results")
+    join_columns: Optional[List[List[str]]] = Field(None, description="Join columns used")
+    confidence: float = Field(..., description="Confidence score")
+    execution_time_ms: float = Field(..., description="Execution time in milliseconds")
+    error: Optional[str] = Field(None, description="Error message if any")
+    source_table: Optional[str] = Field(None, description="Resolved source table name")
+    target_table: Optional[str] = Field(None, description="Resolved target table name")
+
+
+class NLQueryExecutionResponse(BaseModel):
+    """Response from NL query execution."""
+    success: bool = Field(..., description="Whether execution was successful")
+    kg_name: str = Field(..., description="Knowledge graph name")
+    total_definitions: int = Field(..., description="Total definitions processed")
+    successful: int = Field(..., description="Number of successful queries")
+    failed: int = Field(..., description="Number of failed queries")
+    results: List[NLQueryResultItem] = Field(default=[], description="Query results")
+    statistics: Optional[Dict[str, Any]] = Field(None, description="Execution statistics")
+    error: Optional[str] = Field(None, description="Overall error message")
+    table_mapping: Optional[Dict[str, List[str]]] = Field(None, description="Available table aliases and mappings")
 

@@ -17,12 +17,33 @@ from kg_builder.config import (
 )
 from kg_builder.routes import router
 
-# Configure logging
-logging.basicConfig(
-    level=getattr(logging, LOG_LEVEL),
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# Configure logging with console handler
+import sys
+
+# Clear any existing handlers
+root_logger = logging.getLogger()
+for handler in root_logger.handlers[:]:
+    root_logger.removeHandler(handler)
+
+# Create console handler
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(formatter)
+
+# Configure root logger
+root_logger.setLevel(getattr(logging, LOG_LEVEL))
+root_logger.addHandler(console_handler)
+
+# Set specific loggers to INFO to ensure SQL queries are visible
+logging.getLogger('kg_builder').setLevel(logging.INFO)
+logging.getLogger('kg_builder.services.nl_query_executor').setLevel(logging.INFO)
+logging.getLogger('kg_builder.services.nl_sql_generator').setLevel(logging.INFO)
+logging.getLogger('kg_builder.services.nl_query_parser').setLevel(logging.INFO)
+
 logger = logging.getLogger(__name__)
+logger.info(f"Logging configured at {LOG_LEVEL} level")
+print(f"✅ Logging configured at {LOG_LEVEL} level - Console handler active")
 
 # Create FastAPI app
 app = FastAPI(

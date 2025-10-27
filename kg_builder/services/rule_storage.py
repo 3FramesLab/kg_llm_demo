@@ -12,6 +12,7 @@ from datetime import datetime
 
 from kg_builder.models import ReconciliationRuleSet, ReconciliationRule
 from kg_builder.config import DATA_DIR
+from kg_builder.services.schema_parser import SchemaParser
 
 logger = logging.getLogger(__name__)
 
@@ -200,7 +201,7 @@ class ReconciliationRuleStorage:
         query_type: str = "all"
     ) -> Optional[str]:
         """
-        Export a ruleset as SQL statements.
+        Export a ruleset as SQL statements with specific columns from schema.
 
         Args:
             ruleset_id: ID of the ruleset to export
@@ -217,6 +218,37 @@ class ReconciliationRuleStorage:
 
         if not ruleset:
             return None
+
+        # Load schema information for all tables involved
+        schema_parser = SchemaParser()
+        schemas_cache = {}  # Cache loaded schemas
+
+        def get_table_columns(schema_name: str, table_name: str) -> List[str]:
+            """Get all column names for a table from the schema."""
+            try:
+                # Try to load schema if not cached
+                if schema_name not in schemas_cache:
+                    try:
+                        schema = schema_parser.load_schema(schema_name)
+                        schemas_cache[schema_name] = schema
+                    except Exception as e:
+                        logger.warning(f"Could not load schema '{schema_name}': {e}")
+                        return []
+
+                schema = schemas_cache.get(schema_name)
+                if not schema:
+                    return []
+
+                # Find the table and return its columns
+                table = schema.tables.get(table_name)
+                if table:
+                    return [col.name for col in table.columns]
+                else:
+                    logger.warning(f"Table '{table_name}' not found in schema '{schema_name}'")
+                    return []
+            except Exception as e:
+                logger.warning(f"Error getting columns for {schema_name}.{table_name}: {e}")
+                return []
 
         sql_statements = []
         sql_statements.append(f"-- ============================================================================")
@@ -240,9 +272,24 @@ class ReconciliationRuleStorage:
             source_cols_list = ', '.join([f"s.{col}" for col in rule.source_columns])
             target_cols_list = ', '.join([f"t.{col}" for col in rule.target_columns])
 
-            # All source columns
-            source_all_cols = "s.*"
-            target_all_cols = "t.*"
+            # Get all columns from schema for source and target tables
+            source_columns = get_table_columns(rule.source_schema, rule.source_table)
+            target_columns = get_table_columns(rule.target_schema, rule.target_table)
+
+            # Generate qualified column lists
+            if source_columns:
+                source_all_cols = ',\n    '.join([f"s.{col}" for col in source_columns])
+                logger.info(f"Using {len(source_columns)} specific columns for {rule.source_schema}.{rule.source_table}")
+            else:
+                source_all_cols = "s.*"
+                logger.warning(f"Schema not available, using s.* for {rule.source_schema}.{rule.source_table}")
+
+            if target_columns:
+                target_all_cols = ',\n    '.join([f"t.{col}" for col in target_columns])
+                logger.info(f"Using {len(target_columns)} specific columns for {rule.target_schema}.{rule.target_table}")
+            else:
+                target_all_cols = "t.*"
+                logger.warning(f"Schema not available, using t.* for {rule.target_schema}.{rule.target_table}")
 
             # Generate JOIN condition
             join_conditions = []

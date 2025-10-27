@@ -33,6 +33,7 @@ import {
   AccountTree,
   Hub,
 } from '@mui/icons-material';
+import { Radio, RadioGroup } from '@mui/material';
 import {
   generateKG,
   listKGs,
@@ -63,8 +64,17 @@ export default function KnowledgeGraph() {
     field_preferences: null,
   });
 
-  // Field preferences input (JSON string)
+  // Input mode: 'field_preferences' (v1) or 'relationship_pairs' (v2)
+  const [inputMode, setInputMode] = useState('field_preferences');
+
+  // Field preferences input (JSON string - v1)
   const [fieldPreferencesInput, setFieldPreferencesInput] = useState('');
+
+  // Relationship pairs input (JSON string - v2)
+  const [relationshipPairsInput, setRelationshipPairsInput] = useState('');
+
+  // Excluded fields input (JSON array - list of field names to exclude)
+  const [excludedFieldsInput, setExcludedFieldsInput] = useState('');
 
   // Selected KG details
   const [selectedKG, setSelectedKG] = useState(null);
@@ -111,8 +121,8 @@ export default function KnowledgeGraph() {
         payload.schema_name = formData.schema_name;
       }
 
-      // Parse and add field_preferences if provided
-      if (fieldPreferencesInput.trim()) {
+      // V1: Add field_preferences if in v1 mode
+      if (inputMode === 'field_preferences' && fieldPreferencesInput.trim()) {
         try {
           let parsed = JSON.parse(fieldPreferencesInput);
 
@@ -132,6 +142,30 @@ export default function KnowledgeGraph() {
           console.log('✅ Field preferences parsed:', payload.field_preferences);
         } catch (err) {
           setError('Invalid JSON in field preferences: ' + err.message);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // V2: Add relationship_pairs if in v2 mode
+      if (inputMode === 'relationship_pairs' && relationshipPairsInput.trim()) {
+        try {
+          payload.relationship_pairs = JSON.parse(relationshipPairsInput);
+          console.log('✅ Relationship pairs parsed:', payload.relationship_pairs);
+        } catch (err) {
+          setError('Invalid JSON in relationship pairs: ' + err.message);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Add excluded_fields if provided
+      if (excludedFieldsInput.trim()) {
+        try {
+          payload.excluded_fields = JSON.parse(excludedFieldsInput);
+          console.log('✅ Excluded fields parsed:', payload.excluded_fields);
+        } catch (err) {
+          setError('Invalid JSON in excluded fields: ' + err.message);
           setLoading(false);
           return;
         }
@@ -332,21 +366,48 @@ export default function KnowledgeGraph() {
               {formData.use_llm_enhancement && llmStatus.enabled && (
                 <Accordion sx={{ mt: 2 }}>
                   <AccordionSummary expandIcon={<ExpandMore />}>
-                    <Typography>Field Preferences (Optional - Advanced)</Typography>
+                    <Typography>Advanced Options (Optional)</Typography>
                   </AccordionSummary>
                   <AccordionDetails>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                      Guide LLM inference with specific field hints. Provide JSON array with table-specific preferences.
+                    {/* Mode Selector */}
+                    <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                      Relationship Input Mode
                     </Typography>
-                    <Typography variant="caption" color="info.main" sx={{ mb: 2, display: 'block' }}>
-                      💡 Tip: Paste either a JSON array directly or an object with "field_preferences" key. Both formats are supported.
-                    </Typography>
-                    <TextField
-                      fullWidth
-                      multiline
-                      rows={8}
-                      label="Field Preferences (JSON)"
-                      placeholder={JSON.stringify([
+                    <RadioGroup
+                      value={inputMode}
+                      onChange={(e) => setInputMode(e.target.value)}
+                      sx={{ mb: 2 }}
+                    >
+                      <FormControlLabel
+                        value="field_preferences"
+                        control={<Radio />}
+                        label="V1: Field Preferences (Table hints - deprecated)"
+                      />
+                      <FormControlLabel
+                        value="relationship_pairs"
+                        control={<Radio />}
+                        label="V2: Relationship Pairs (Explicit source→target) - Recommended"
+                      />
+                    </RadioGroup>
+
+                    {/* V1: Field Preferences */}
+                    {inputMode === 'field_preferences' && (
+                      <Box>
+                        <Alert severity="warning" sx={{ mb: 2 }}>
+                          <strong>V1 Mode (Deprecated):</strong> Table-centric hints. Consider using V2 for clarity.
+                        </Alert>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                          Guide LLM inference with specific field hints. Provide JSON array with table-specific preferences.
+                        </Typography>
+                        <Typography variant="caption" color="info.main" sx={{ mb: 2, display: 'block' }}>
+                          💡 Tip: Paste either a JSON array directly or an object with "field_preferences" key. Both formats are supported.
+                        </Typography>
+                        <TextField
+                          fullWidth
+                          multiline
+                          rows={8}
+                          label="Field Preferences (JSON)"
+                          placeholder={JSON.stringify([
                         {
                           table_name: "hana_material_master",
                           field_hints: {
@@ -365,13 +426,93 @@ export default function KnowledgeGraph() {
                           exclude_fields: ["STAGING_FLAG"]
                         }
                       ], null, 2)}
-                      value={fieldPreferencesInput}
-                      onChange={(e) => setFieldPreferencesInput(e.target.value)}
-                      helperText="Provide field hints to guide LLM relationship inference. Leave empty to let LLM infer automatically."
-                    />
+                          value={fieldPreferencesInput}
+                          onChange={(e) => setFieldPreferencesInput(e.target.value)}
+                          helperText="Provide field hints to guide LLM relationship inference. Leave empty to let LLM infer automatically."
+                        />
+                      </Box>
+                    )}
+
+                    {/* V2: Relationship Pairs */}
+                    {inputMode === 'relationship_pairs' && (
+                      <Box>
+                        <Alert severity="success" sx={{ mb: 2 }}>
+                          <strong>V2 Mode (Recommended):</strong> Explicit source→target pairs stored in KG. No ambiguity!
+                        </Alert>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                          Define explicit relationships with source→target column precision.
+                        </Typography>
+                        <TextField
+                          fullWidth
+                          multiline
+                          rows={12}
+                          label="Relationship Pairs (JSON)"
+                          placeholder={JSON.stringify([
+                            {
+                              source_table: "hana_material_master",
+                              source_column: "MATERIAL",
+                              target_table: "brz_lnd_OPS_EXCEL_GPU",
+                              target_column: "PLANNING_SKU",
+                              relationship_type: "MATCHES",
+                              confidence: 0.98,
+                              bidirectional: true
+                            },
+                            {
+                              source_table: "brz_lnd_OPS_EXCEL_GPU",
+                              source_column: "PLANNING_SKU",
+                              target_table: "brz_lnd_RBP_GPU",
+                              target_column: "Material",
+                              relationship_type: "MATCHES"
+                            }
+                          ], null, 2)}
+                          value={relationshipPairsInput}
+                          onChange={(e) => setRelationshipPairsInput(e.target.value)}
+                          helperText="Explicit pairs are added to the Knowledge Graph with clear source→target direction."
+                        />
+                      </Box>
+                    )}
                   </AccordionDetails>
                 </Accordion>
               )}
+
+              {/* Excluded Fields Configuration */}
+              <Accordion sx={{ mt: 2 }}>
+                <AccordionSummary expandIcon={<ExpandMore />}>
+                  <Typography variant="subtitle1">
+                    ⛔ Excluded Fields (Optional)
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Alert severity="info" sx={{ mb: 2 }}>
+                    <strong>Field Exclusion:</strong> Specify fields to exclude from automatic relationship detection.
+                    This prevents certain columns (like "Product_Line", "Business_Unit", etc.) from being used in KG relationships.
+                  </Alert>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    Provide a JSON array of field names (case-sensitive) to exclude from relationship creation.
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={8}
+                    label="Excluded Fields (JSON Array)"
+                    placeholder={JSON.stringify([
+                      "Product_Line",
+                      "product_line",
+                      "PRODUCT_LINE",
+                      "Business_Unit",
+                      "business_unit",
+                      "BUSINESS_UNIT",
+                      "Product Type",
+                      "[Product Type]",
+                      "Business Unit",
+                      "[Business Unit]"
+                    ], null, 2)}
+                    value={excludedFieldsInput}
+                    onChange={(e) => setExcludedFieldsInput(e.target.value)}
+                    helperText="Fields in this list will not be used for automatic relationship detection. Leave empty to use system defaults."
+                  />
+                </AccordionDetails>
+              </Accordion>
 
               <Box sx={{ mt: 3 }}>
                 <Button
@@ -410,16 +551,33 @@ export default function KnowledgeGraph() {
                       : ['orderMgmt-catalog', 'qinspect-designcode'],
                     use_llm_enhancement: formData.use_llm_enhancement,
                     backends: formData.backends,
-                    ...(fieldPreferencesInput.trim()
-                      ? { field_preferences: (() => { try { return JSON.parse(fieldPreferencesInput); } catch { return undefined; } })() }
-                      : { field_preferences: [
-                          {
-                            table_name: 'catalog',
-                            field_hints: { code: 'code', style_code: 'code', is_active: 'deleted' },
-                            priority_fields: [],
-                            exclude_fields: []
-                          }
-                        ] }
+                    // Show field_preferences or relationship_pairs based on mode
+                    ...(inputMode === 'field_preferences'
+                      ? (fieldPreferencesInput.trim()
+                          ? { field_preferences: (() => { try { return JSON.parse(fieldPreferencesInput); } catch { return undefined; } })() }
+                          : { field_preferences: [
+                              {
+                                table_name: 'catalog',
+                                field_hints: { code: 'code', style_code: 'code', is_active: 'deleted' },
+                                priority_fields: [],
+                                exclude_fields: []
+                              }
+                            ] }
+                        )
+                      : (relationshipPairsInput.trim()
+                          ? { relationship_pairs: (() => { try { return JSON.parse(relationshipPairsInput); } catch { return undefined; } })() }
+                          : { relationship_pairs: [
+                              {
+                                source_table: 'hana_material_master',
+                                source_column: 'MATERIAL',
+                                target_table: 'brz_lnd_OPS_EXCEL_GPU',
+                                target_column: 'PLANNING_SKU',
+                                relationship_type: 'MATCHES',
+                                confidence: 0.98,
+                                bidirectional: true
+                              }
+                            ] }
+                        )
                     )
                   },
                   null,

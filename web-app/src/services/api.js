@@ -46,6 +46,9 @@ export const parseNLRelationships = (data) => api.post('/kg/relationships/natura
 export const integrateNLRelationships = (data) => api.post('/kg/integrate-nl-relationships', data);
 export const getKGStatistics = (data) => api.post('/kg/statistics', data);
 
+// Natural Language Query Execution (NEW)
+export const executeNLQueries = (data) => api.post('/kg/nl-queries/execute', data);
+
 // MongoDB Reconciliation Results
 export const listMongoDBResults = (params) => api.get('/reconciliation/results', { params });
 export const getMongoDBResult = (documentId) => api.get(`/reconciliation/results/${documentId}`);

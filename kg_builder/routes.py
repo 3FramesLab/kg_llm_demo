@@ -19,7 +19,9 @@ from kg_builder.models import (
     KPICreateRequest, KPIResultResponse, KPIEvidenceDrillDownRequest,
     KPIEvidenceDrillDownResponse, KPIDefinitionRequest, KPIUpdateRequest,
     KPIExecutionRequest, BatchExecutionRequest, EvidenceRequest,
-    KPIListResponse, KPIExecutionResponse, KPIResultsListResponse
+    KPIListResponse, KPIExecutionResponse, KPIResultsListResponse,
+    RelationshipPair, KGRelationshipType,
+    NLQueryExecutionRequest, NLQueryExecutionResponse
 )
 from kg_builder.services.schema_parser import SchemaParser
 from kg_builder.services.falkordb_backend import get_falkordb_backend
@@ -32,6 +34,84 @@ from kg_builder.services.nl_relationship_parser import get_nl_relationship_parse
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+def get_source_database_connection():
+    """
+    Get JDBC connection to source database.
+
+    Returns:
+        Database connection object or None if not configured
+    """
+    try:
+        import jaydebeapi
+        import glob
+        import os
+        from kg_builder.config import get_source_db_config, JDBC_DRIVERS_PATH
+
+        db_config = get_source_db_config()
+        if not db_config:
+            logger.warning("Source database is not configured")
+            return None
+
+        # Build JDBC URL
+        db_type = db_config.db_type.lower()
+        if db_type == "oracle":
+            if db_config.service_name:
+                jdbc_url = f"jdbc:oracle:thin:@{db_config.host}:{db_config.port}/{db_config.service_name}"
+            else:
+                jdbc_url = f"jdbc:oracle:thin:@{db_config.host}:{db_config.port}:{db_config.database}"
+        elif db_type == "sqlserver":
+            jdbc_url = f"jdbc:sqlserver://{db_config.host}:{db_config.port};databaseName={db_config.database};encrypt=true;trustServerCertificate=true"
+        elif db_type == "mysql":
+            jdbc_url = f"jdbc:mysql://{db_config.host}:{db_config.port}/{db_config.database}"
+        elif db_type == "postgresql":
+            jdbc_url = f"jdbc:postgresql://{db_config.host}:{db_config.port}/{db_config.database}"
+        else:
+            logger.error(f"Unsupported database type: {db_type}")
+            return None
+
+        # Get driver class
+        drivers = {
+            "oracle": "oracle.jdbc.OracleDriver",
+            "sqlserver": "com.microsoft.sqlserver.jdbc.SQLServerDriver",
+            "mysql": "com.mysql.cj.jdbc.Driver",
+            "postgresql": "org.postgresql.Driver"
+        }
+        driver_class = drivers.get(db_type)
+
+        # Get driver JAR
+        jar_patterns = {
+            "oracle": "ojdbc*.jar",
+            "sqlserver": "mssql-jdbc*.jar",
+            "mysql": "mysql-connector-j*.jar",
+            "postgresql": "postgresql-*.jar"
+        }
+        pattern = os.path.join(JDBC_DRIVERS_PATH, jar_patterns.get(db_type, "*.jar"))
+        jars = glob.glob(pattern)
+
+        if not jars:
+            logger.error(f"No JDBC driver found for {db_type} at {pattern}")
+            return None
+
+        driver_jar = jars[0]
+
+        logger.info(f"Connecting to source database: {db_type} at {db_config.host}:{db_config.port}/{db_config.database}")
+
+        # Connect
+        conn = jaydebeapi.connect(
+            driver_class,
+            jdbc_url,
+            [db_config.username, db_config.password],
+            driver_jar
+        )
+
+        logger.info("Successfully connected to source database")
+        return conn
+
+    except Exception as e:
+        logger.error(f"Failed to connect to source database: {e}")
+        return None
 
 
 @router.get("/health", response_model=HealthCheckResponse)
@@ -88,7 +168,11 @@ async def parse_schema(schema_name: str):
 
 @router.post("/kg/generate", response_model=KGGenerationResponse)
 async def generate_knowledge_graph(request: KGGenerationRequest):
-    """Generate a knowledge graph from one or multiple schemas."""
+    """
+    Generate a knowledge graph from one or multiple schemas.
+
+    Supports both auto-detection and explicit relationship pairs (v2).
+    """
     try:
         start_time = time.time()
 
@@ -115,6 +199,52 @@ async def generate_knowledge_graph(request: KGGenerationRequest):
                 field_preferences=request.field_preferences
             )
 
+        # Add explicit relationship pairs if provided (v2)
+        explicit_pairs_added = 0
+        if request.relationship_pairs:
+            logger.info(f"Adding {len(request.relationship_pairs)} explicit relationship pairs to KG")
+
+            from kg_builder.services.kg_relationship_service import add_explicit_relationships_to_kg
+            from kg_builder.services.schema_parser import filter_relationship_pairs
+
+            # Prepare excluded fields set
+            excluded_fields_set = set(request.excluded_fields) if request.excluded_fields else None
+            if excluded_fields_set:
+                logger.info(f"Using {len(excluded_fields_set)} user-defined excluded fields")
+            else:
+                logger.info("Using default excluded fields")
+
+            # Filter out pairs with excluded fields
+            filtered_pairs_dict = filter_relationship_pairs(request.relationship_pairs, excluded_fields_set)
+            logger.info(f"Filtered pairs: {len(request.relationship_pairs)} → {len(filtered_pairs_dict)}")
+
+            # Prepare schemas info for validation
+            schemas_info = {}
+            for schema_name in schema_names:
+                try:
+                    schema = SchemaParser.load_schema(schema_name)
+                    schemas_info[schema_name] = {
+                        "tables": list(schema.tables.keys()),
+                        "columns": {
+                            table_name: [col.name for col in table.columns]
+                            for table_name, table in schema.tables.items()
+                        }
+                    }
+                except Exception as e:
+                    logger.warning(f"Failed to load schema {schema_name}: {e}")
+
+            try:
+                # Convert dict pairs to RelationshipPair objects
+                pairs = [RelationshipPair(**pair_dict) for pair_dict in filtered_pairs_dict]
+
+                # Add explicit pairs to KG
+                kg, explicit_pairs_added = add_explicit_relationships_to_kg(kg, pairs, schemas_info)
+                logger.info(f"Added {explicit_pairs_added} explicit relationship pairs to KG")
+
+            except Exception as e:
+                logger.error(f"Failed to process explicit relationship pairs: {e}")
+                # Continue with KG generation even if pairs fail
+
         backends_used = []
 
         # Store in FalkorDB if requested
@@ -134,10 +264,15 @@ async def generate_knowledge_graph(request: KGGenerationRequest):
 
         elapsed_ms = (time.time() - start_time) * 1000
 
+        # Build message
+        message = f"Knowledge graph '{request.kg_name}' generated successfully from {len(schema_names)} schema(s)"
+        if explicit_pairs_added > 0:
+            message += f" with {explicit_pairs_added} explicit relationship pair(s)"
+
         return KGGenerationResponse(
             success=True,
             schemas_processed=schema_names,
-            message=f"Knowledge graph '{request.kg_name}' generated successfully from {len(schema_names)} schema(s)",
+            message=message,
             kg_name=request.kg_name,
             nodes_count=len(kg.nodes),
             relationships_count=len(kg.relationships),
@@ -429,14 +564,52 @@ async def generate_reconciliation_rules(request: RuleGenerationRequest):
     This endpoint analyzes a knowledge graph to automatically generate rules
     for matching and linking data across different schemas.
 
-    Example request:
+    Supports both v1 (field_preferences) and v2 (reconciliation_pairs) approaches.
+
+    Example v1 request (legacy):
     ```json
     {
       "schema_names": ["orderMgmt-catalog", "vendorDB-suppliers"],
       "kg_name": "unified_kg",
       "use_llm_enhancement": true,
       "min_confidence": 0.7,
-      "match_types": ["exact", "semantic"]
+      "field_preferences": [
+        {
+          "table_name": "products",
+          "priority_fields": ["product_id"],
+          "field_hints": {"product_id": "item_id"}
+        }
+      ]
+    }
+    ```
+
+    Example v2 request (recommended):
+    ```json
+    {
+      "schema_names": ["hana-material-schema", "ops-excel-schema", "rbp-gpu-schema"],
+      "kg_name": "material_kg",
+      "use_llm_enhancement": true,
+      "min_confidence": 0.75,
+      "reconciliation_pairs": [
+        {
+          "source_table": "hana_material_master",
+          "source_columns": ["MATERIAL"],
+          "target_table": "brz_lnd_OPS_EXCEL_GPU",
+          "target_columns": ["PLANNING_SKU"],
+          "match_type": "exact",
+          "source_filters": null,
+          "target_filters": {"Active_Inactive": "Active"},
+          "bidirectional": true
+        },
+        {
+          "source_table": "brz_lnd_OPS_EXCEL_GPU",
+          "source_columns": ["PLANNING_SKU"],
+          "target_table": "brz_lnd_RBP_GPU",
+          "target_columns": ["Material"],
+          "match_type": "exact"
+        }
+      ],
+      "auto_discover_additional": true
     }
     ```
 
@@ -452,13 +625,16 @@ async def generate_reconciliation_rules(request: RuleGenerationRequest):
         # Get reconciliation service
         recon_service = get_reconciliation_service()
 
-        # Generate rules
+        # Generate rules (supports both v1 and v2)
         ruleset = recon_service.generate_from_knowledge_graph(
             kg_name=request.kg_name,
             schema_names=request.schema_names,
             use_llm=request.use_llm_enhancement,
             min_confidence=request.min_confidence,
-            field_preferences=request.field_preferences
+            field_preferences=request.field_preferences,
+            reconciliation_pairs=request.reconciliation_pairs,
+            table_hints=request.table_hints,
+            auto_discover_additional=request.auto_discover_additional
         )
 
         # Save ruleset
@@ -467,13 +643,21 @@ async def generate_reconciliation_rules(request: RuleGenerationRequest):
 
         elapsed_ms = (time.time() - start_time) * 1000
 
+        # Determine how many explicit vs discovered rules
+        explicit_count = sum(1 for r in ruleset.rules if r.metadata.get('source', '').startswith('explicit_pair_v2'))
+        discovered_count = len(ruleset.rules) - explicit_count
+
+        message = f"Generated {len(ruleset.rules)} reconciliation rules"
+        if request.reconciliation_pairs:
+            message += f" ({explicit_count} explicit, {discovered_count} auto-discovered)"
+
         return RuleGenerationResponse(
             success=True,
             ruleset_id=ruleset.ruleset_id,
             rules_count=len(ruleset.rules),
             rules=ruleset.rules,
             generation_time_ms=elapsed_ms,
-            message=f"Generated {len(ruleset.rules)} reconciliation rules"
+            message=message
         )
 
     except Exception as e:
@@ -1207,8 +1391,8 @@ async def add_natural_language_relationships(request: NLRelationshipRequest):
                 schemas_info[schema_name] = {
                     "tables": list(schema.tables.keys()),
                     "columns": {
-                        table.name: list(table.columns.keys())
-                        for table in schema.tables.values()
+                        table_name: [col.name for col in table.columns]
+                        for table_name, table in schema.tables.items()
                     }
                 }
             logger.debug(f"Loaded {len(schemas_info)} schemas")
@@ -1270,10 +1454,16 @@ async def add_natural_language_relationships(request: NLRelationshipRequest):
 
 
 class KGIntegrationRequest(BaseModel):
-    """Request model for KG integration with NL relationships."""
+    """Request model for KG integration with NL relationships and/or explicit pairs."""
     kg_name: str
-    nl_definitions: List[str]
     schemas: List[str]
+
+    # V1: Natural language definitions (ambiguous)
+    nl_definitions: Optional[List[str]] = []
+
+    # V2: Explicit relationship pairs (recommended)
+    relationship_pairs: Optional[List[dict]] = []  # Will be converted to RelationshipPair
+
     use_llm: bool = True
     min_confidence: float = 0.7
     merge_strategy: str = "union"
@@ -1303,11 +1493,7 @@ async def integrate_nl_relationships_to_kg(request: KGIntegrationRequest):
 
         logger.info(f"Loaded KG with {len(kg.nodes)} nodes and {len(kg.relationships)} relationships")
 
-        # Step 2: Parse natural language definitions
-        logger.info(f"Parsing {len(request.nl_definitions)} NL definitions")
-        parser = get_nl_relationship_parser()
-
-        # Prepare schemas info
+        # Prepare schemas info for both NL parsing and pair validation
         schemas_info = {}
         for schema_name in request.schemas:
             try:
@@ -1315,32 +1501,70 @@ async def integrate_nl_relationships_to_kg(request: KGIntegrationRequest):
                 schemas_info[schema_name] = {
                     "tables": list(schema.tables.keys()),
                     "columns": {
-                        table.name: list(table.columns.keys())
-                        for table in schema.tables.values()
+                        table_name: [col.name for col in table.columns]
+                        for table_name, table in schema.tables.items()
                     }
                 }
             except Exception as e:
                 logger.warning(f"Failed to load schema {schema_name}: {e}")
 
-        # Parse all definitions
+        # Step 2a: Parse natural language definitions (V1)
         all_nl_relationships = []
         parse_errors = []
 
-        for definition in request.nl_definitions:
+        if request.nl_definitions:
+            logger.info(f"Parsing {len(request.nl_definitions)} NL definitions")
+            parser = get_nl_relationship_parser()
+
+            for definition in request.nl_definitions:
+                try:
+                    parsed = parser.parse(definition, schemas_info, use_llm=request.use_llm)
+                    filtered = [r for r in parsed if r.confidence >= request.min_confidence]
+                    all_nl_relationships.extend(filtered)
+                except Exception as e:
+                    error_msg = f"Failed to parse '{definition}': {str(e)}"
+                    logger.warning(error_msg)
+                    parse_errors.append(error_msg)
+
+            logger.info(f"Parsed {len(all_nl_relationships)} NL relationships")
+
+        # Step 2b: Process explicit relationship pairs (V2 - Recommended)
+        explicit_pair_count = 0
+        if request.relationship_pairs:
+            logger.info(f"Processing {len(request.relationship_pairs)} explicit relationship pairs (v2)")
+
+            from kg_builder.services.kg_relationship_service import add_explicit_relationships_to_kg
+            from kg_builder.services.schema_parser import filter_relationship_pairs
+
             try:
-                parsed = parser.parse(definition, schemas_info, use_llm=request.use_llm)
-                filtered = [r for r in parsed if r.confidence >= request.min_confidence]
-                all_nl_relationships.extend(filtered)
+                # Prepare excluded fields set
+                excluded_fields_set = set(request.excluded_fields) if request.excluded_fields else None
+                if excluded_fields_set:
+                    logger.info(f"Using {len(excluded_fields_set)} user-defined excluded fields")
+                else:
+                    logger.info("Using default excluded fields")
+
+                # Filter out pairs with excluded fields
+                filtered_pairs_dict = filter_relationship_pairs(request.relationship_pairs, excluded_fields_set)
+                logger.info(f"Filtered pairs: {len(request.relationship_pairs)} → {len(filtered_pairs_dict)}")
+
+                # Convert dict pairs to RelationshipPair objects
+                pairs = [RelationshipPair(**pair_dict) for pair_dict in filtered_pairs_dict]
+
+                # Add explicit pairs to KG
+                kg, added_count = add_explicit_relationships_to_kg(kg, pairs, schemas_info)
+                explicit_pair_count = added_count
+                logger.info(f"Added {explicit_pair_count} explicit relationship pairs to KG")
+
             except Exception as e:
-                error_msg = f"Failed to parse '{definition}': {str(e)}"
-                logger.warning(error_msg)
+                error_msg = f"Failed to process explicit relationship pairs: {str(e)}"
+                logger.error(error_msg)
                 parse_errors.append(error_msg)
 
-        logger.info(f"Parsed {len(all_nl_relationships)} NL relationships")
-
-        # Step 3: Add NL relationships to KG
-        logger.info("Adding NL relationships to knowledge graph")
-        kg = SchemaParser.add_nl_relationships_to_kg(kg, all_nl_relationships)
+        # Step 3: Add NL relationships to KG (if any)
+        if all_nl_relationships:
+            logger.info("Adding NL relationships to knowledge graph")
+            kg = SchemaParser.add_nl_relationships_to_kg(kg, all_nl_relationships)
 
         # Step 4: Merge relationships
         logger.info(f"Merging relationships using strategy: {request.merge_strategy}")
@@ -1363,6 +1587,8 @@ async def integrate_nl_relationships_to_kg(request: KGIntegrationRequest):
             "nodes_count": len(kg.nodes),
             "relationships_count": len(kg.relationships),
             "nl_relationships_added": len(all_nl_relationships),
+            "explicit_pairs_added": explicit_pair_count,
+            "total_relationships": len(kg.relationships),
             "statistics": stats,
             "errors": parse_errors,
             "processing_time_ms": processing_time_ms,
@@ -2010,4 +2236,184 @@ async def delete_kpi_result(result_id: str):
             "success": False,
             "error": str(e)
         }
+
+
+# Natural Language Query Execution Endpoints
+@router.post("/kg/nl-queries/execute", response_model=NLQueryExecutionResponse)
+async def execute_nl_queries(request: NLQueryExecutionRequest):
+    """
+    Execute natural language definitions as data queries.
+
+    Each definition is:
+    1. Classified as a query type (comparison, filter, aggregation, etc.)
+    2. Parsed to extract intent (source table, target table, operation, filters)
+    3. Uses Knowledge Graph to infer join columns
+    4. Generates SQL query
+    5. Executes query and returns results
+
+    This is different from /kg/integrate-nl-relationships which adds relationships to KG.
+    This endpoint executes queries and returns actual data results.
+
+    Args:
+        request: NLQueryExecutionRequest with definitions to execute
+
+    Returns:
+        NLQueryExecutionResponse with query results and statistics
+
+    Example:
+        POST /v1/kg/nl-queries/execute
+        {
+            "kg_name": "KG_101",
+            "schemas": ["newdqschema"],
+            "definitions": [
+                "Show me all products in RBP GPU which are not in OPS Excel",
+                "Show me all products in RBP GPU which are in active OPS Excel"
+            ],
+            "use_llm": true,
+            "min_confidence": 0.7,
+            "limit": 1000,
+            "db_type": "mysql"
+        }
+    """
+    try:
+        from kg_builder.services.nl_query_classifier import get_nl_query_classifier
+        from kg_builder.services.nl_query_parser import get_nl_query_parser
+        from kg_builder.services.nl_query_executor import get_nl_query_executor
+        from kg_builder.services.schema_parser import SchemaParser
+
+        logger.info(f"Executing {len(request.definitions)} NL queries for KG: {request.kg_name}")
+
+        # Step 1: Load or build knowledge graph
+        try:
+            kg = SchemaParser.build_merged_knowledge_graph(
+                schema_names=request.schemas,
+                kg_name=request.kg_name,
+                use_llm=request.use_llm
+            )
+            logger.info(f"Loaded KG with {len(kg.relationships)} relationships")
+        except Exception as e:
+            logger.error(f"Failed to build KG: {e}")
+            return NLQueryExecutionResponse(
+                success=False,
+                kg_name=request.kg_name,
+                total_definitions=len(request.definitions),
+                successful=0,
+                failed=len(request.definitions),
+                error=f"Failed to build knowledge graph: {str(e)}"
+            )
+
+        # Step 2: Get schemas info
+        schemas_info = {}
+        for schema_name in request.schemas:
+            try:
+                schema_data = SchemaParser.load_schema(schema_name)
+                schemas_info[schema_name] = schema_data
+            except Exception as e:
+                logger.warning(f"Failed to load schema {schema_name}: {e}")
+
+        # Step 3: Parse each definition
+        parser = get_nl_query_parser(kg, schemas_info)
+        intents = []
+
+        for definition in request.definitions:
+            try:
+                intent = parser.parse(definition, use_llm=request.use_llm)
+                intents.append(intent)
+                logger.debug(f"Parsed intent: {intent.to_dict()}")
+            except Exception as e:
+                logger.error(f"Failed to parse definition '{definition}': {e}")
+
+        # Step 4: Execute queries
+        executor = get_nl_query_executor(request.db_type)
+
+        # Get database connection from source database
+        logger.info(f"Getting source database connection for query execution (db_type: {request.db_type})")
+        connection = get_source_database_connection()
+
+        results = []
+        try:
+            if connection:
+                logger.info(f"Executing {len(intents)} queries against source database")
+                results = executor.execute_batch(intents, connection, request.limit)
+            else:
+                # Return results with SQL but no execution
+                logger.warning("No database connection available - returning SQL only")
+                for intent in intents:
+                    from kg_builder.services.nl_sql_generator import get_nl_sql_generator
+                    generator = get_nl_sql_generator(request.db_type)
+                    try:
+                        sql = generator.generate(intent)
+                        from kg_builder.services.nl_query_executor import QueryResult
+                        result = QueryResult(
+                            definition=intent.definition,
+                            query_type=intent.query_type,
+                            operation=intent.operation,
+                            sql=sql,
+                            record_count=0,
+                            records=[],
+                            join_columns=intent.join_columns,
+                            confidence=intent.confidence,
+                            execution_time_ms=0.0,
+                            error="No database connection available"
+                        )
+                        results.append(result)
+                    except Exception as e:
+                        from kg_builder.services.nl_query_executor import QueryResult
+                        result = QueryResult(
+                            definition=intent.definition,
+                            query_type=intent.query_type,
+                            operation=intent.operation,
+                            sql="",
+                            record_count=0,
+                            records=[],
+                            join_columns=intent.join_columns,
+                            confidence=intent.confidence,
+                            execution_time_ms=0.0,
+                            error=str(e)
+                        )
+                        results.append(result)
+        finally:
+            # Close database connection
+            if connection:
+                try:
+                    connection.close()
+                    logger.info("Database connection closed")
+                except Exception as e:
+                    logger.warning(f"Error closing database connection: {e}")
+
+        # Step 5: Get table mapping information
+        from kg_builder.services.table_name_mapper import get_table_name_mapper
+        mapper = get_table_name_mapper(schemas_info)
+        table_mapping = mapper.get_table_info()
+
+        # Step 6: Build response
+        successful = len([r for r in results if r.error is None])
+        failed = len([r for r in results if r.error is not None])
+
+        statistics = executor.get_statistics(results)
+
+        response = NLQueryExecutionResponse(
+            success=failed == 0,
+            kg_name=request.kg_name,
+            total_definitions=len(request.definitions),
+            successful=successful,
+            failed=failed,
+            results=[r.to_dict() for r in results],
+            statistics=statistics,
+            table_mapping=table_mapping
+        )
+
+        logger.info(f"NL query execution complete: {successful} successful, {failed} failed")
+        return response
+
+    except Exception as e:
+        logger.error(f"Error executing NL queries: {e}", exc_info=True)
+        return NLQueryExecutionResponse(
+            success=False,
+            kg_name=request.kg_name,
+            total_definitions=len(request.definitions),
+            successful=0,
+            failed=len(request.definitions),
+            error=str(e)
+        )
 

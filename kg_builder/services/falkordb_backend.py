@@ -141,16 +141,42 @@ class FalkorDBBackend:
     
     def get_entities(self, kg_name: str) -> List[Dict[str, Any]]:
         """Get all entities from a graph."""
-        query = "MATCH (n) RETURN n.id as id, labels(n) as labels, properties(n) as properties"
-        return self.query(kg_name, query)
+        query = "MATCH (n) RETURN n.id as id, labels(n)[0] as label, properties(n) as properties"
+        results = self.query(kg_name, query)
+
+        # Ensure all results have the required fields
+        formatted_results = []
+        for result in results:
+            formatted_result = {
+                "id": result.get("id"),
+                "label": result.get("label", "Unknown"),
+                "properties": result.get("properties", {}),
+                "type": result.get("label", "Unknown")  # Add type field for frontend
+            }
+            formatted_results.append(formatted_result)
+
+        return formatted_results
     
     def get_relationships(self, kg_name: str) -> List[Dict[str, Any]]:
         """Get all relationships from a graph."""
         query = """
-        MATCH (a)-[r]->(b) 
-        RETURN a.id as source, type(r) as relationship_type, b.id as target, properties(r) as properties
+        MATCH (a)-[r]->(b)
+        RETURN a.id as source_id, type(r) as relationship_type, b.id as target_id, properties(r) as properties
         """
-        return self.query(kg_name, query)
+        results = self.query(kg_name, query)
+
+        # Ensure all results have the required fields
+        formatted_results = []
+        for result in results:
+            formatted_result = {
+                "source_id": result.get("source_id"),
+                "target_id": result.get("target_id"),
+                "relationship_type": result.get("relationship_type", "UNKNOWN"),
+                "properties": result.get("properties", {})
+            }
+            formatted_results.append(formatted_result)
+
+        return formatted_results
     
     def get_entity_relationships(self, kg_name: str, entity_id: str) -> List[Dict[str, Any]]:
         """Get relationships for a specific entity."""

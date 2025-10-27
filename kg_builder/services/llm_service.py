@@ -24,7 +24,8 @@ class LLMService:
         self.model = OPENAI_MODEL
         self.temperature = OPENAI_TEMPERATURE
         self.max_tokens = OPENAI_MAX_TOKENS
-        
+        self._use_max_completion_tokens = None  # Auto-detect on first use
+
         if self.enabled:
             try:
                 self.client = OpenAI(api_key=OPENAI_API_KEY)
@@ -34,10 +35,62 @@ class LLMService:
                 self.enabled = False
         else:
             logger.warning("LLM Service disabled: OPENAI_API_KEY not set or LLM extraction disabled")
-    
+
     def is_enabled(self) -> bool:
         """Check if LLM service is enabled and available."""
         return self.enabled
+
+    def create_chat_completion(self, messages: List[Dict], max_tokens: Optional[int] = None, **kwargs):
+        """
+        Create a chat completion with automatic parameter adaptation for different OpenAI model versions.
+
+        Args:
+            messages: Chat messages
+            max_tokens: Maximum tokens (optional, uses default if not provided)
+            **kwargs: Additional parameters for the API call
+
+        Returns:
+            OpenAI chat completion response
+        """
+        if max_tokens is None:
+            max_tokens = self.max_tokens
+
+        # Auto-detect which parameter to use on first call
+        if self._use_max_completion_tokens is None:
+            try:
+                # Try with max_completion_tokens (newer models)
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    max_completion_tokens=max_tokens,
+                    messages=messages,
+                    **kwargs
+                )
+                self._use_max_completion_tokens = True
+                logger.debug("Using max_completion_tokens parameter for OpenAI API")
+                return response
+            except Exception as e:
+                if "max_completion_tokens" in str(e) or "unsupported_parameter" in str(e):
+                    # Fall back to max_tokens (older models)
+                    self._use_max_completion_tokens = False
+                    logger.debug("Falling back to max_tokens parameter for OpenAI API")
+                else:
+                    raise
+
+        # Use the detected parameter
+        if self._use_max_completion_tokens:
+            return self.client.chat.completions.create(
+                model=self.model,
+                max_completion_tokens=max_tokens,
+                messages=messages,
+                **kwargs
+            )
+        else:
+            return self.client.chat.completions.create(
+                model=self.model,
+                max_tokens=max_tokens,
+                messages=messages,
+                **kwargs
+            )
     
     def extract_entities(self, schema: Dict[str, Any]) -> Dict[str, Any]:
         """
