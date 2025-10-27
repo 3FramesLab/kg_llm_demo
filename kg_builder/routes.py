@@ -245,6 +245,40 @@ async def generate_knowledge_graph(request: KGGenerationRequest):
                 logger.error(f"Failed to process explicit relationship pairs: {e}")
                 # Continue with KG generation even if pairs fail
 
+        # Final step: Filter ALL relationships in KG to remove excluded fields
+        # This ensures that relationships from LLM inference, pattern matching, etc. are also filtered
+        if request.excluded_fields:
+            excluded_fields_set = set(request.excluded_fields)
+            logger.info(f"Applying final filter to remove relationships with excluded fields: {len(excluded_fields_set)} fields")
+
+            from kg_builder.services.schema_parser import is_excluded_field
+
+            original_count = len(kg.relationships)
+            filtered_relationships = []
+
+            for rel in kg.relationships:
+                # Check if relationship has column properties
+                if rel.properties:
+                    source_col = rel.properties.get("source_column")
+                    target_col = rel.properties.get("target_column")
+
+                    if source_col and target_col:
+                        # Check if either column is excluded
+                        if is_excluded_field(source_col, excluded_fields_set) or is_excluded_field(target_col, excluded_fields_set):
+                            logger.debug(f"⛔ Removing relationship from KG (excluded field): {rel.source_id} ({source_col}) → {rel.target_id} ({target_col})")
+                            continue  # Skip this relationship
+
+                # Keep this relationship
+                filtered_relationships.append(rel)
+
+            kg.relationships = filtered_relationships
+            removed_count = original_count - len(filtered_relationships)
+
+            if removed_count > 0:
+                logger.info(f"✓ Filtered KG relationships: {original_count} → {len(filtered_relationships)} (removed {removed_count} with excluded fields)")
+            else:
+                logger.info(f"✓ No relationships removed by exclusion filter")
+
         backends_used = []
 
         # Store in FalkorDB if requested
@@ -1464,6 +1498,9 @@ class KGIntegrationRequest(BaseModel):
     # V2: Explicit relationship pairs (recommended)
     relationship_pairs: Optional[List[dict]] = []  # Will be converted to RelationshipPair
 
+    # Field exclusion configuration
+    excluded_fields: Optional[List[str]] = None
+
     use_llm: bool = True
     min_confidence: float = 0.7
     merge_strategy: str = "union"
@@ -1569,6 +1606,40 @@ async def integrate_nl_relationships_to_kg(request: KGIntegrationRequest):
         # Step 4: Merge relationships
         logger.info(f"Merging relationships using strategy: {request.merge_strategy}")
         kg = SchemaParser.merge_relationships(kg, strategy=request.merge_strategy)
+
+        # Step 4.5: Final filter to remove relationships with excluded fields
+        # This ensures all relationships from all sources respect exclusions
+        if request.excluded_fields:
+            excluded_fields_set = set(request.excluded_fields)
+            logger.info(f"Applying final filter to remove relationships with excluded fields: {len(excluded_fields_set)} fields")
+
+            from kg_builder.services.schema_parser import is_excluded_field
+
+            original_count = len(kg.relationships)
+            filtered_relationships = []
+
+            for rel in kg.relationships:
+                # Check if relationship has column properties
+                if rel.properties:
+                    source_col = rel.properties.get("source_column")
+                    target_col = rel.properties.get("target_column")
+
+                    if source_col and target_col:
+                        # Check if either column is excluded
+                        if is_excluded_field(source_col, excluded_fields_set) or is_excluded_field(target_col, excluded_fields_set):
+                            logger.debug(f"⛔ Removing relationship from KG (excluded field): {rel.source_id} ({source_col}) → {rel.target_id} ({target_col})")
+                            continue  # Skip this relationship
+
+                # Keep this relationship
+                filtered_relationships.append(rel)
+
+            kg.relationships = filtered_relationships
+            removed_count = original_count - len(filtered_relationships)
+
+            if removed_count > 0:
+                logger.info(f"✓ Filtered KG relationships: {original_count} → {len(filtered_relationships)} (removed {removed_count} with excluded fields)")
+            else:
+                logger.info(f"✓ No relationships removed by exclusion filter")
 
         # Step 5: Get statistics
         stats = SchemaParser.get_relationship_statistics(kg)
@@ -2283,23 +2354,77 @@ async def execute_nl_queries(request: NLQueryExecutionRequest):
 
         logger.info(f"Executing {len(request.definitions)} NL queries for KG: {request.kg_name}")
 
-        # Step 1: Load or build knowledge graph
+        # Step 1: Load knowledge graph from storage (don't rebuild!)
         try:
-            kg = SchemaParser.build_merged_knowledge_graph(
-                schema_names=request.schemas,
-                kg_name=request.kg_name,
-                use_llm=request.use_llm
-            )
-            logger.info(f"Loaded KG with {len(kg.relationships)} relationships")
+            # Try to load from Graphiti first
+            from kg_builder.services.graphiti_backend import get_graphiti_backend
+
+            graphiti = get_graphiti_backend()
+
+            # Get entities and relationships from storage
+            entities_data = graphiti.get_entities(request.kg_name)
+            relationships_data = graphiti.get_relationships(request.kg_name)
+
+            if not entities_data and not relationships_data:
+                logger.warning(f"KG '{request.kg_name}' not found in storage, building from scratch")
+                kg = SchemaParser.build_merged_knowledge_graph(
+                    schema_names=request.schemas,
+                    kg_name=request.kg_name,
+                    use_llm=request.use_llm
+                )
+            else:
+                # Reconstruct KG from storage
+                logger.info(f"Loading KG '{request.kg_name}' from storage: {len(entities_data)} entities, {len(relationships_data)} relationships")
+
+                from kg_builder.models import GraphNode, GraphRelationship, KnowledgeGraph
+
+                # Convert entities
+                nodes = []
+                for entity in entities_data:
+                    # Handle labels (Graphiti stores as array, GraphNode expects single label string)
+                    labels = entity.get('labels', [])
+                    label = labels[0] if labels else 'Node'
+
+                    node = GraphNode(
+                        id=entity.get('id', ''),
+                        label=label,
+                        properties=entity.get('properties', {}),
+                        source_table=entity.get('source_table'),
+                        source_column=entity.get('source_column')
+                    )
+                    nodes.append(node)
+
+                # Convert relationships
+                relationships = []
+                for rel in relationships_data:
+                    relationship = GraphRelationship(
+                        source_id=rel.get('source_id', ''),
+                        target_id=rel.get('target_id', ''),
+                        relationship_type=rel.get('relationship_type', 'RELATES_TO'),
+                        properties=rel.get('properties', {}),
+                        source_column=rel.get('source_column'),
+                        target_column=rel.get('target_column')
+                    )
+                    relationships.append(relationship)
+
+                kg = KnowledgeGraph(
+                    name=request.kg_name,
+                    nodes=nodes,
+                    relationships=relationships,
+                    schema_file=",".join(request.schemas) if request.schemas else "unknown"
+                )
+
+            logger.info(f"✓ KG loaded: {len(kg.nodes)} nodes, {len(kg.relationships)} relationships")
+
         except Exception as e:
-            logger.error(f"Failed to build KG: {e}")
+            logger.error(f"Failed to load KG: {e}")
             return NLQueryExecutionResponse(
                 success=False,
                 kg_name=request.kg_name,
                 total_definitions=len(request.definitions),
                 successful=0,
                 failed=len(request.definitions),
-                error=f"Failed to build knowledge graph: {str(e)}"
+                error=f"Failed to load knowledge graph: {str(e)}"
             )
 
         # Step 2: Get schemas info
@@ -2312,7 +2437,10 @@ async def execute_nl_queries(request: NLQueryExecutionRequest):
                 logger.warning(f"Failed to load schema {schema_name}: {e}")
 
         # Step 3: Parse each definition
-        parser = get_nl_query_parser(kg, schemas_info)
+        # Pass excluded_fields to parser to filter join columns
+        if request.excluded_fields:
+            logger.info(f"Using {len(request.excluded_fields)} excluded fields for query generation")
+        parser = get_nl_query_parser(kg, schemas_info, request.excluded_fields)
         intents = []
 
         for definition in request.definitions:

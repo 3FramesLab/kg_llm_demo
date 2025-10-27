@@ -58,6 +58,9 @@ export default function NaturalLanguage() {
   // Explicit relationship pairs (JSON input)
   const [relationshipPairsInput, setRelationshipPairsInput] = useState('');
 
+  // Excluded fields input (JSON array)
+  const [excludedFieldsInput, setExcludedFieldsInput] = useState('');
+
   const [results, setResults] = useState(null);
   const [rulesetData, setRulesetData] = useState(null);
   const [queryResults, setQueryResults] = useState(null);
@@ -142,6 +145,19 @@ export default function NaturalLanguage() {
         }
       }
 
+      // Add excluded_fields if provided
+      if (excludedFieldsInput.trim()) {
+        try {
+          integratePayload.excluded_fields = JSON.parse(excludedFieldsInput);
+          console.log('✅ Excluded fields parsed:', integratePayload.excluded_fields);
+        } catch (err) {
+          setError('Invalid JSON in excluded fields: ' + err.message);
+          setLoading(false);
+          setCurrentStep(null);
+          return;
+        }
+      }
+
       const integrateResponse = await integrateNLRelationships(integratePayload);
       setResults(integrateResponse.data);
 
@@ -220,6 +236,18 @@ export default function NaturalLanguage() {
         db_type: formData.db_type,
       };
 
+      // Add excluded_fields if provided
+      if (excludedFieldsInput.trim()) {
+        try {
+          payload.excluded_fields = JSON.parse(excludedFieldsInput);
+          console.log('✅ Excluded fields parsed:', payload.excluded_fields);
+        } catch (err) {
+          setError('Invalid JSON in excluded fields: ' + err.message);
+          setLoading(false);
+          return;
+        }
+      }
+
       const response = await executeNLQueries(payload);
       setQueryResults(response.data);
 
@@ -266,13 +294,12 @@ export default function NaturalLanguage() {
       {/* Tab Navigation */}
       <Paper sx={{ mb: 3 }}>
         <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
-          <Tab label="Integrate Relationships" value="integrate" />
           <Tab label="Execute Queries" value="execute" />
         </Tabs>
       </Paper>
 
-      {/* Integrate Tab */}
-      {activeTab === 'integrate' && (
+      {/* Integrate Tab - HIDDEN */}
+      {activeTab === 'integrate' && false && (
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3 }}>
@@ -457,6 +484,33 @@ export default function NaturalLanguage() {
                 valueLabelDisplay="auto"
               />
             </Box>
+
+            <Divider sx={{ my: 3 }} />
+
+            <Typography variant="subtitle1" gutterBottom>
+              ⛔ Excluded Fields (Optional)
+            </Typography>
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Specify fields to exclude from relationship creation. These fields won't be used to link tables in the Knowledge Graph.
+            </Alert>
+            <TextField
+              fullWidth
+              multiline
+              rows={6}
+              label="Excluded Fields (JSON Array)"
+              placeholder={JSON.stringify([
+                "Product_Line",
+                "product_line",
+                "Business_Unit",
+                "business_unit",
+                "[Product Type]",
+                "Product Type"
+              ], null, 2)}
+              value={excludedFieldsInput}
+              onChange={(e) => setExcludedFieldsInput(e.target.value)}
+              helperText="Provide a JSON array of field names to exclude. Leave empty to allow all fields."
+              margin="normal"
+            />
 
             {currentStep && (
               <Alert severity="info" sx={{ mb: 2 }}>
@@ -804,6 +858,38 @@ export default function NaturalLanguage() {
                 ]}
               />
             </Box>
+
+            {/* Excluded Fields - HIDDEN */}
+            {false && (
+            <>
+            <Divider sx={{ my: 3 }} />
+
+            <Typography variant="subtitle1" gutterBottom>
+              ⛔ Excluded Fields (Optional)
+            </Typography>
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Specify fields to exclude from join column detection. These fields won't be used to link tables in SQL generation.
+            </Alert>
+            <TextField
+              fullWidth
+              multiline
+              rows={6}
+              label="Excluded Fields (JSON Array)"
+              placeholder={JSON.stringify([
+                "Product_Line",
+                "product_line",
+                "Business_Unit",
+                "business_unit",
+                "[Product Type]",
+                "Product Type"
+              ], null, 2)}
+              value={excludedFieldsInput}
+              onChange={(e) => setExcludedFieldsInput(e.target.value)}
+              helperText="Provide a JSON array of field names to exclude. Leave empty to allow all fields."
+              margin="normal"
+            />
+            </>
+            )}
 
             <Button
               fullWidth

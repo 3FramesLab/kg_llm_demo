@@ -475,7 +475,8 @@ export default function KnowledgeGraph() {
                 </Accordion>
               )}
 
-              {/* Excluded Fields Configuration */}
+              {/* Excluded Fields Configuration - HIDDEN */}
+              {false && (
               <Accordion sx={{ mt: 2 }}>
                 <AccordionSummary expandIcon={<ExpandMore />}>
                   <Typography variant="subtitle1">
@@ -513,6 +514,7 @@ export default function KnowledgeGraph() {
                   />
                 </AccordionDetails>
               </Accordion>
+              )}
 
               <Box sx={{ mt: 3 }}>
                 <Button

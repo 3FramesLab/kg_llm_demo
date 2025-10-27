@@ -41,6 +41,8 @@ class NLSQLGenerator:
         """
         logger.info(f"🔧 Generating SQL for: {intent.definition}")
         logger.info(f"   Query Type: {intent.query_type}, Operation: {intent.operation}")
+        if intent.filters:
+            logger.info(f"   Filters: {intent.filters}")
 
         if intent.query_type == "comparison_query":
             sql = self._generate_comparison_query(intent)
@@ -118,9 +120,20 @@ INNER JOIN {target} t ON s.{source_col} = t.{target_col}
             """.strip()
 
         # Add filters if present
+        # Filters typically apply to the target table in multi-table queries
         if intent.filters:
-            where_clause = self._build_where_clause(intent.filters, "s")
-            sql += f"\nWHERE {where_clause}"
+            logger.info(f"   Adding filters to WHERE clause: {intent.filters}")
+            where_clause = self._build_where_clause(intent.filters, "t")
+            if intent.operation == "NOT_IN":
+                # For NOT_IN, append to existing WHERE clause
+                sql += f"\nAND {where_clause}"
+                logger.info(f"   WHERE clause (appended): {where_clause}")
+            else:
+                # For IN and others, add new WHERE clause
+                sql += f"\nWHERE {where_clause}"
+                logger.info(f"   WHERE clause (new): {where_clause}")
+        else:
+            logger.debug(f"   No filters to apply")
 
         return sql
 
@@ -158,8 +171,16 @@ INNER JOIN {target} t ON s.{source_col} = t.{target_col}
             sql = f"SELECT * FROM {source}"
 
         # Add filters
+        # Filters typically apply to the target table in multi-table queries
         if intent.filters:
-            where_clause = self._build_where_clause(intent.filters, "s" if intent.target_table else None)
+            if intent.target_table:
+                # For multi-table filters, apply to target table (t)
+                where_clause = self._build_where_clause(intent.filters, "t")
+                logger.info(f"   Adding filters to target table: {intent.filters}")
+            else:
+                # For single-table filters, apply to source table (s)
+                where_clause = self._build_where_clause(intent.filters, "s")
+                logger.info(f"   Adding filters to source table: {intent.filters}")
             sql += f"\nWHERE {where_clause}"
 
         return sql

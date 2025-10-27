@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 # Default fields to exclude from KG relationship creation (can be overridden by user)
 DEFAULT_EXCLUDED_FIELDS = {
     "Product_Line", "product_line", "PRODUCT_LINE", "Product Line",
-    "Business_Unit", "business_unit", "BUSINESS_UNIT", "[Business Unit]", "business unit", "BUSINESS_UNIT_CODE",
+    "Business_Unit", "business_unit", "BUSINESS_UNIT", "Business Unit", "[Business Unit]", "business unit", "BUSINESS_UNIT_CODE",
     "[Product Type]", "Product Type", "product_type", "PRODUCT_TYPE",
 }
 

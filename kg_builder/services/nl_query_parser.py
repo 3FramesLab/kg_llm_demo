@@ -49,16 +49,18 @@ class QueryIntent:
 class NLQueryParser:
     """Parse NL definitions into executable query intents."""
 
-    def __init__(self, kg: Optional[KnowledgeGraph] = None, schemas_info: Optional[Dict] = None):
+    def __init__(self, kg: Optional[KnowledgeGraph] = None, schemas_info: Optional[Dict] = None, excluded_fields: Optional[List[str]] = None):
         """
         Initialize parser.
 
         Args:
-            kg: Knowledge graph for join inference
-            schemas_info: Schema information
+            kg: Knowledge graph for join inference (SINGLE SOURCE OF TRUTH)
+            schemas_info: Schema information (for table/column validation only)
+            excluded_fields: DEPRECATED - exclusions should be applied during KG generation
         """
         self.kg = kg
         self.schemas_info = schemas_info or {}
+        self.excluded_fields = set(excluded_fields) if excluded_fields else None  # Kept for backward compatibility
         self.classifier = get_nl_query_classifier()
         self.llm_service = get_llm_service()
         self.table_mapper = get_table_name_mapper(schemas_info)
@@ -112,7 +114,7 @@ class NLQueryParser:
                         )
                         intent.confidence = 0.3  # Very low confidence
 
-        logger.info(f"Parsed intent: query_type={intent.query_type}, source={intent.source_table}, target={intent.target_table}, join_cols={intent.join_columns}")
+        logger.info(f"Parsed intent: query_type={intent.query_type}, source={intent.source_table}, target={intent.target_table}, join_cols={intent.join_columns}, filters={intent.filters}")
         return intent
 
     def _parse_with_llm(
@@ -138,12 +140,13 @@ class NLQueryParser:
                         "content": prompt
                     }
                 ],
-                max_tokens=500,
-                temperature=0.3
+                max_tokens=500
+                # Note: temperature parameter removed - gpt-5 doesn't support temperature=0.3
+                # Will use model's default temperature
             )
 
             result_text = response.choices[0].message.content
-            logger.debug(f"LLM Response:\n{result_text}")
+            logger.info(f"LLM Response:\n{result_text}")
 
             return self._parse_llm_response(result_text, def_type, operation)
 
@@ -214,10 +217,13 @@ class NLQueryParser:
             logger.info(f"Set target_table: {intent.target_table}")
 
         # Extract filters (simple pattern)
-        if "active" in definition.lower():
-            intent.filters.append({"column": "status", "value": "active"})
-        if "inactive" in definition.lower():
-            intent.filters.append({"column": "status", "value": "inactive"})
+        # NOTE: Removed hardcoded "status" column assumption
+        # The actual status/active column names vary by table (e.g., Active_Inactive, Status, etc.)
+        # Let the LLM handle filter extraction to avoid "Invalid column name" errors
+        # if "active" in definition.lower():
+        #     intent.filters.append({"column": "status", "value": "active"})
+        # if "inactive" in definition.lower():
+        #     intent.filters.append({"column": "status", "value": "inactive"})
 
         # Reclassify if we have two tables and IN/NOT_IN operation
         if intent.source_table and intent.target_table and operation in ["IN", "NOT_IN"]:
@@ -244,7 +250,7 @@ class NLQueryParser:
             # Extract JSON from response
             json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
             if not json_match:
-                logger.warning("No JSON found in LLM response")
+                logger.warning(f"No JSON found in LLM response. Response text: {response_text[:500]}")
                 return QueryIntent(
                     definition="",
                     query_type=def_type.value,
@@ -254,16 +260,23 @@ class NLQueryParser:
 
             data = json.loads(json_match.group())
 
+            filters = data.get("filters", [])
             intent = QueryIntent(
                 definition=data.get("definition", ""),
                 query_type=def_type.value,
                 source_table=data.get("source_table", "").lower() if data.get("source_table") else None,
                 target_table=data.get("target_table", "").lower() if data.get("target_table") else None,
                 operation=operation or data.get("operation", "IN"),
-                filters=data.get("filters", []),
+                filters=filters,
                 confidence=float(data.get("confidence", 0.75)),
                 reasoning=data.get("reasoning", "LLM-inferred query intent")
             )
+
+            # Log extracted filters
+            if filters:
+                logger.info(f"✓ Extracted filters from LLM: {filters}")
+            else:
+                logger.debug(f"No filters extracted from LLM response")
 
             return intent
 
@@ -319,16 +332,22 @@ class NLQueryParser:
 
         try:
             logger.info(f"Searching KG for join columns between '{source}' and '{target}'")
-            logger.debug(f"KG has {len(self.kg.relationships)} relationships")
+            logger.info(f"KG has {len(self.kg.relationships)} relationships")
 
             # Query KG for relationships between tables
             for rel in self.kg.relationships:
                 source_id = rel.source_id.lower() if rel.source_id else ""
                 target_id = rel.target_id.lower() if rel.target_id else ""
 
-                if (source_id == source.lower() and target_id == target.lower()) or \
-                   (source_id == target.lower() and target_id == source.lower()):
+                # Check if relationship matches in forward or reverse direction
+                is_forward = (source_id == source.lower() and target_id == target.lower())
+                is_reverse = (source_id == target.lower() and target_id == source.lower())
 
+                logger.debug(f"Checking relationship: {source_id} → {target_id}")
+                logger.debug(f"  Looking for: {source.lower()} → {target.lower()}")
+                logger.debug(f"  is_forward={is_forward}, is_reverse={is_reverse}")
+
+                if is_forward or is_reverse:
                     logger.debug(f"Found matching relationship: {rel.source_id} → {rel.target_id} (type: {rel.relationship_type})")
                     logger.debug(f"Relationship properties: {rel.properties}")
 
@@ -337,20 +356,18 @@ class NLQueryParser:
                     target_col = rel.properties.get("target_column") if rel.properties else None
 
                     if source_col and target_col:
-                        logger.info(f"✓ Found join columns from KG: {source_col} ←→ {target_col}")
-                        return [(source_col, target_col)]
+                        # If relationship is in reverse direction, swap the columns
+                        if is_reverse:
+                            logger.info(f"✓ Found join columns from KG (reversed): {target_col} ←→ {source_col}")
+                            return [(target_col, source_col)]  # Swap columns for reverse direction
+                        else:
+                            logger.info(f"✓ Found join columns from KG: {source_col} ←→ {target_col}")
+                            return [(source_col, target_col)]
                     else:
                         logger.warning(f"Relationship found but missing columns: source_column={source_col}, target_column={target_col}")
 
             logger.warning(f"No join columns found in KG for {source} ←→ {target}")
-            logger.info("Attempting to infer join columns from schema...")
-
-            # Fallback: Try to infer from schema
-            inferred_cols = self._infer_join_columns_from_schema(source, target)
-            if inferred_cols:
-                logger.info(f"✓ Inferred join columns from schema: {inferred_cols}")
-                return inferred_cols
-
+            logger.warning("⚠️  KG is the single source of truth - no schema fallback. Ensure KG has complete relationships.")
             return None
 
         except Exception as e:
@@ -396,10 +413,19 @@ class NLQueryParser:
             matching_cols = []
             for src_col_lower, src_col in source_cols_lower.items():
                 if src_col_lower in target_cols_lower:
-                    matching_cols.append((src_col, target_cols_lower[src_col_lower]))
+                    tgt_col = target_cols_lower[src_col_lower]
+
+                    # Filter out excluded fields
+                    if self.excluded_fields:
+                        from kg_builder.services.schema_parser import is_excluded_field
+                        if is_excluded_field(src_col, self.excluded_fields) or is_excluded_field(tgt_col, self.excluded_fields):
+                            logger.debug(f"⛔ Skipping matching column (excluded field): {src_col} ←→ {tgt_col}")
+                            continue
+
+                    matching_cols.append((src_col, tgt_col))
 
             if matching_cols:
-                logger.info(f"Found {len(matching_cols)} matching column(s)")
+                logger.info(f"Found {len(matching_cols)} matching column(s) after filtering")
                 return matching_cols
 
             # Look for common ID patterns
@@ -412,6 +438,13 @@ class NLQueryParser:
                             src_base = src_col_lower.replace('_id', '').replace('_uid', '').replace('_key', '').replace('_code', '')
                             tgt_base = tgt_col_lower.replace('_id', '').replace('_uid', '').replace('_key', '').replace('_code', '')
                             if src_base and tgt_base and (src_base == tgt_base or src_base in tgt_base or tgt_base in src_base):
+                                # Filter out excluded fields
+                                if self.excluded_fields:
+                                    from kg_builder.services.schema_parser import is_excluded_field
+                                    if is_excluded_field(src_col, self.excluded_fields) or is_excluded_field(tgt_col, self.excluded_fields):
+                                        logger.debug(f"⛔ Skipping ID match (excluded field): {src_col} ←→ {tgt_col}")
+                                        continue
+
                                 logger.info(f"Found potential ID match: {src_col} ←→ {tgt_col}")
                                 return [(src_col, tgt_col)]
 
@@ -473,18 +506,24 @@ IMPORTANT RULES:
 1. ONLY extract table names from this list: {table_names_str}
 2. NEVER treat common English words as table names. Exclude: {common_words_str}
 3. Look for business terms that might map to table names (e.g., "RBP" → "brz_lnd_RBP_GPU", "OPS Excel" → "brz_lnd_OPS_EXCEL_GPU")
-4. Extract filters like "active", "inactive", status conditions, etc.
+4. EXTRACT FILTERS: Look for keywords like "active", "inactive", "status", and map them to actual column names in the target table
 5. Identify the operation: NOT_IN (not in), IN (in), EQUALS (equals), CONTAINS (contains), AGGREGATE (count/sum/etc)
+
+FILTER EXTRACTION GUIDE:
+- "active" or "inactive" → Look for columns like: Active_Inactive, Status, State, Flag, etc.
+- For target table in multi-table queries, check its columns for status-related fields
+- Always include the correct column name from the schema, not generic names
 
 EXAMPLES:
 - Query: "Show me all products in RBP which are not in OPS Excel"
   → source_table: "brz_lnd_RBP_GPU", target_table: "brz_lnd_OPS_EXCEL_GPU", operation: "NOT_IN", filters: []
 
 - Query: "Show me all active products in RBP GPU"
-  → source_table: "brz_lnd_RBP_GPU", target_table: null, operation: "IN", filters: [{{"column": "status", "value": "active"}}]
+  → source_table: "brz_lnd_RBP_GPU", target_table: null, operation: "IN", filters: []
 
 - Query: "Show me products in RBP which are in active OPS Excel"
-  → source_table: "brz_lnd_RBP_GPU", target_table: "brz_lnd_OPS_EXCEL_GPU", operation: "IN", filters: [{{"column": "status", "value": "active"}}]
+  → source_table: "brz_lnd_RBP_GPU", target_table: "brz_lnd_OPS_EXCEL_GPU", operation: "IN", filters: [{{"column": "Active_Inactive", "value": "Active"}}]
+  (Filter applies to target table brz_lnd_OPS_EXCEL_GPU which has Active_Inactive column)
 
 Definition Type: {def_type.value}
 Operation Type: {operation or "Unknown"}
@@ -509,8 +548,9 @@ Extract and return ONLY valid JSON with this structure (no other text):
 
 def get_nl_query_parser(
     kg: Optional[KnowledgeGraph] = None,
-    schemas_info: Optional[Dict] = None
+    schemas_info: Optional[Dict] = None,
+    excluded_fields: Optional[List[str]] = None
 ) -> NLQueryParser:
     """Get or create NL query parser instance."""
-    return NLQueryParser(kg, schemas_info)
+    return NLQueryParser(kg, schemas_info, excluded_fields)
 

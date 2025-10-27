@@ -932,6 +932,10 @@ class NLQueryExecutionRequest(BaseModel):
     min_confidence: float = Field(default=0.7, description="Minimum confidence threshold")
     limit: int = Field(default=1000, description="Maximum records per query")
     db_type: str = Field(default="mysql", description="Database type")
+    excluded_fields: Optional[List[str]] = Field(
+        default=None,
+        description="List of field names to exclude from query generation (prevents using these columns as join keys)"
+    )
 
 
 class NLQueryResultItem(BaseModel):
