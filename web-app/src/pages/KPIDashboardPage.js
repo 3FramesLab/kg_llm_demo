@@ -1,8 +1,8 @@
 import React from 'react';
-import KPIDashboard from '../components/KPIDashboard';
+import KPIDashboardVega from '../components/KPIDashboardVega';
 
 const KPIDashboardPage = () => {
-  return <KPIDashboard />;
+  return <KPIDashboardVega />;
 };
 
 export default KPIDashboardPage;

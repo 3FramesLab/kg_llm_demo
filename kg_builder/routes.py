@@ -2897,7 +2897,7 @@ async def get_drilldown_data(execution_id: int, page: int = 1, page_size: int = 
 
 # ==================== Landing KPI Dashboard Endpoints ====================
 
-@router.get("/v1/landing-kpi/dashboard", tags=["Landing KPI Dashboard"], response_model=dict)
+@router.get("/landing-kpi/dashboard", tags=["Landing KPI Dashboard"], response_model=dict)
 async def get_kpi_dashboard():
     """
     Get all KPIs grouped by group name with their latest execution summary.
@@ -2939,7 +2939,7 @@ async def get_kpi_dashboard():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/v1/landing-kpi/{kpi_id}/latest-results", tags=["Landing KPI Dashboard"], response_model=dict)
+@router.get("/landing-kpi/{kpi_id}/latest-results", tags=["Landing KPI Dashboard"], response_model=dict)
 async def get_kpi_latest_results(kpi_id: int):
     """
     Get the SQL results from the most recent execution for a specific KPI.

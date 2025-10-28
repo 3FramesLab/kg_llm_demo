@@ -46,7 +46,7 @@ const KPIResultsViewDialog = ({ open, onClose, kpi }) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`${API_BASE_URL}/v1/landing-kpi/${kpi.id}/latest-results`);
+      const response = await fetch(`${API_BASE_URL}/landing-kpi/${kpi.id}/latest-results`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch results: ${response.statusText}`);
