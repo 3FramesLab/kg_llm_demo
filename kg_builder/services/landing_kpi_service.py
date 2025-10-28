@@ -306,21 +306,21 @@ class LandingKPIService:
         """Get paginated drill-down data for execution result."""
         conn = self._get_connection()
         cursor = conn.cursor()
-        
+
         try:
             # Get execution result
             execution = self.get_execution_result(execution_id)
             if not execution:
                 raise ValueError(f"Execution ID {execution_id} not found")
-            
+
             result_data = execution.get('result_data', [])
             total = len(result_data)
-            
+
             # Calculate pagination
             offset = (page - 1) * page_size
             paginated_data = result_data[offset:offset + page_size]
             total_pages = (total + page_size - 1) // page_size
-            
+
             return {
                 'execution_id': execution_id,
                 'page': page,
@@ -329,6 +329,166 @@ class LandingKPIService:
                 'total_pages': total_pages,
                 'data': paginated_data
             }
+        finally:
+            conn.close()
+
+    # ==================== Dashboard Operations ====================
+
+    def get_dashboard_data(self) -> Dict[str, Any]:
+        """
+        Get all KPIs grouped by group name with their latest execution summary.
+
+        Returns:
+            Dictionary with structure:
+            {
+                "groups": [
+                    {
+                        "group_name": "Data Quality",
+                        "kpis": [
+                            {
+                                "id": 1,
+                                "name": "Inactive Products",
+                                "definition": "Show me all...",
+                                "latest_execution": {
+                                    "executed_at": "2025-10-28T13:50:55",
+                                    "record_count": 42,
+                                    "status": "success"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        """
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        try:
+            # Get all active KPIs with their latest execution
+            cursor.execute("""
+                SELECT
+                    k.id,
+                    k.name,
+                    k.nl_definition,
+                    k.description,
+                    k.group_name,
+                    e.kg_name,
+                    e.execution_timestamp,
+                    e.number_of_records,
+                    e.execution_status,
+                    e.execution_time_ms,
+                    e.error_message,
+                    ROW_NUMBER() OVER (PARTITION BY k.id ORDER BY e.execution_timestamp DESC) as rn
+                FROM kpi_definitions k
+                LEFT JOIN kpi_execution_results e ON k.id = e.kpi_id
+                WHERE k.is_active = 1
+                ORDER BY k.created_at DESC
+            """)
+
+            rows = cursor.fetchall()
+
+            # Group by group_name
+            group_dict = {}
+            for row in rows:
+                row_dict = dict(row)
+
+                # Skip if this is not the latest execution for this KPI
+                if row_dict.get('rn') and row_dict['rn'] > 1:
+                    continue
+
+                group_name = row_dict.get('group_name') or 'Ungrouped'
+
+                if group_name not in group_dict:
+                    group_dict[group_name] = []
+
+                kpi_entry = {
+                    'id': row_dict['id'],
+                    'name': row_dict['name'],
+                    'definition': row_dict['nl_definition'],
+                    'description': row_dict.get('description'),
+                    'kg_name': row_dict.get('kg_name'),
+                    'latest_execution': None
+                }
+
+                # Add latest execution if available (excluding execution_time_ms)
+                if row_dict.get('execution_timestamp'):
+                    kpi_entry['latest_execution'] = {
+                        'executed_at': row_dict['execution_timestamp'],
+                        'record_count': row_dict.get('number_of_records', 0),
+                        'status': row_dict.get('execution_status', 'unknown'),
+                        'error_message': row_dict.get('error_message')
+                    }
+
+                group_dict[group_name].append(kpi_entry)
+
+            # Convert to list format
+            groups = [
+                {
+                    'group_name': group_name,
+                    'kpis': kpis
+                }
+                for group_name, kpis in sorted(group_dict.items())
+            ]
+
+            logger.info(f"✓ Dashboard data retrieved: {len(groups)} Groups with {sum(len(group['kpis']) for group in groups)} KPIs")
+            return {'groups': groups}
+
+        finally:
+            conn.close()
+
+    def get_latest_results(self, kpi_id: int) -> Optional[Dict[str, Any]]:
+        """
+        Get the SQL results from the most recent execution for a specific KPI.
+
+        Returns:
+            Dictionary with SQL query, result data, column names, and metadata
+        """
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        try:
+            # Get the latest execution for this KPI
+            cursor.execute("""
+                SELECT * FROM kpi_execution_results
+                WHERE kpi_id = ?
+                ORDER BY execution_timestamp DESC
+                LIMIT 1
+            """, (kpi_id,))
+
+            row = cursor.fetchone()
+            if not row:
+                return None
+
+            execution = dict(row)
+
+            # Parse JSON fields
+            if execution.get('result_data'):
+                execution['result_data'] = json.loads(execution['result_data'])
+            if execution.get('joined_columns'):
+                execution['joined_columns'] = json.loads(execution['joined_columns'])
+
+            # Extract column names from result data
+            column_names = []
+            if execution.get('result_data') and len(execution['result_data']) > 0:
+                column_names = list(execution['result_data'][0].keys())
+
+            return {
+                'execution_id': execution['id'],
+                'kpi_id': kpi_id,
+                'sql_query': execution.get('generated_sql'),
+                'result_data': execution.get('result_data', []),
+                'column_names': column_names,
+                'record_count': execution.get('number_of_records', 0),
+                'execution_status': execution.get('execution_status'),
+                'execution_timestamp': execution.get('execution_timestamp'),
+                'execution_time_ms': execution.get('execution_time_ms'),
+                'confidence_score': execution.get('confidence_score'),
+                'error_message': execution.get('error_message'),
+                'source_table': execution.get('source_table'),
+                'target_table': execution.get('target_table'),
+                'operation': execution.get('operation')
+            }
+
         finally:
             conn.close()
 

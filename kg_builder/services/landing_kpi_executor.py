@@ -114,9 +114,13 @@ class LandingKPIExecutor:
             from kg_builder.services.graphiti_backend import get_graphiti_backend
             from kg_builder.models import KnowledgeGraph, GraphNode, GraphRelationship
 
+            logger.info(f"Loading Knowledge Graph: {kg_name}")
             graphiti = get_graphiti_backend()
             entities_data = graphiti.get_entities(kg_name)
             relationships_data = graphiti.get_relationships(kg_name)
+
+            logger.info(f"  - Entities found: {len(entities_data) if entities_data else 0}")
+            logger.info(f"  - Relationships found: {len(relationships_data) if relationships_data else 0}")
 
             # Convert to KnowledgeGraph object
             nodes = [GraphNode(**entity) for entity in entities_data] if entities_data else []
@@ -128,6 +132,9 @@ class LandingKPIExecutor:
                 kg_metadata = graphiti.get_kg_metadata(kg_name)
                 if kg_metadata:
                     table_aliases = kg_metadata.get('table_aliases', {})
+                    logger.info(f"  - Table aliases loaded: {len(table_aliases)}")
+                    if table_aliases:
+                        logger.debug(f"    Aliases: {table_aliases}")
             except Exception as e:
                 logger.warning(f"Could not load KG metadata: {e}")
 
@@ -146,12 +153,31 @@ class LandingKPIExecutor:
             logger.info(f"Query Type: {query_type}")
 
             # Step 3: Parse the query
-            parser = get_nl_query_parser(kg=kg)
+            logger.info(f"Parsing with LLM enabled: {use_llm}")
+
+            # Extract schemas_info from KG for LLM prompt
+            schemas_info = _extract_schemas_info_from_kg(kg)
+            logger.info(f"Extracted schemas_info with {len(schemas_info)} schema(s)")
+
+            parser = get_nl_query_parser(kg=kg, schemas_info=schemas_info)
+
+            # Check if LLM service is available
+            from kg_builder.services.llm_service import get_llm_service
+            llm_service = get_llm_service()
+            logger.info(f"LLM Service enabled: {llm_service.is_enabled()}")
+
             intent = parser.parse(
                 nl_definition,
                 use_llm=use_llm
             )
-            logger.info(f"Parsed Intent: {intent}")
+            logger.info(f"✓ Parsed Intent:")
+            logger.info(f"  - Query Type: {intent.query_type}")
+            logger.info(f"  - Source Table: {intent.source_table}")
+            logger.info(f"  - Target Table: {intent.target_table}")
+            logger.info(f"  - Operation: {intent.operation}")
+            logger.info(f"  - Join Columns: {intent.join_columns}")
+            logger.info(f"  - Confidence: {intent.confidence}")
+            logger.info(f"  - Filters: {intent.filters}")
 
             # Step 4: Get database connection
             connection = _get_source_database_connection(db_type=db_type)
@@ -274,6 +300,80 @@ def _get_source_database_connection(db_type: str = 'sqlserver') -> Optional[Any]
     except Exception as e:
         logger.error(f"Failed to connect to source database: {e}")
         return None
+
+
+def _extract_schemas_info_from_kg(kg) -> Dict[str, Any]:
+    """
+    Extract table and column information from KG nodes for LLM prompt.
+
+    The LLM needs to know what tables exist and their columns to properly
+    resolve business terms (e.g., "RBP GPU") to actual table names
+    (e.g., "brz_lnd_RBP_GPU").
+
+    Args:
+        kg: Knowledge Graph with nodes containing table metadata
+
+    Returns:
+        Dictionary in schemas_info format for NL Query Parser
+    """
+    try:
+        table_info = {}
+
+        # Extract table nodes from KG
+        for node in kg.nodes:
+            if node.properties.get("type") == "Table":
+                table_name = node.label
+                columns = node.properties.get("columns", [])
+
+                # Extract column names
+                column_names = []
+                for col in columns:
+                    if isinstance(col, dict):
+                        col_name = col.get("name")
+                        if col_name:
+                            column_names.append(col_name)
+                    elif hasattr(col, 'name'):
+                        column_names.append(col.name)
+
+                table_info[table_name] = {"columns": column_names}
+                logger.debug(f"Extracted table '{table_name}' with {len(column_names)} columns")
+
+        if not table_info:
+            logger.warning("No table information extracted from KG nodes")
+            return {}
+
+        # Create schemas_info structure that NL Query Parser expects
+        # The parser expects: schemas_info[schema_name].tables[table_name].columns
+        class ColumnSchema:
+            def __init__(self, name):
+                self.name = name
+
+        class TableSchema:
+            def __init__(self, columns_list):
+                self.columns = [ColumnSchema(col) for col in columns_list]
+
+        class TablesContainer:
+            def __init__(self, tables_dict):
+                for table_name, table_data in tables_dict.items():
+                    setattr(self, table_name, TableSchema(table_data["columns"]))
+
+            def keys(self):
+                return [attr for attr in dir(self) if not attr.startswith('_')]
+
+            def items(self):
+                return [(name, getattr(self, name)) for name in self.keys()]
+
+        class SchemaContainer:
+            def __init__(self, tables_dict):
+                self.tables = TablesContainer(tables_dict)
+
+        schemas_info = {"schema": SchemaContainer(table_info)}
+        logger.info(f"✓ Extracted schemas_info: {len(table_info)} tables")
+        return schemas_info
+
+    except Exception as e:
+        logger.error(f"Error extracting schemas_info from KG: {e}")
+        return {}
 
 
 def get_landing_kpi_executor() -> LandingKPIExecutor:

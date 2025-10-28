@@ -24,6 +24,7 @@ import {
   PlayArrow as ExecuteIcon,
   TrendingUp as KPIIcon,
   Assessment as ResultsIcon,
+  BarChart as BarChartIcon,
 } from '@mui/icons-material';
 
 const drawerWidth = 240;
@@ -35,6 +36,7 @@ const menuItems = [
   { text: 'Reconciliation', icon: <ReconcileIcon />, path: '/reconciliation' },
   { text: 'Natural Language', icon: <NLIcon />, path: '/natural-language' },
   { text: 'Landing KPI', icon: <KPIIcon />, path: '/landing-kpi' },
+  { text: 'KPI Dashboard', icon: <BarChartIcon />, path: '/kpi-dashboard' },
 ];
 
 export default function Layout({ children }) {

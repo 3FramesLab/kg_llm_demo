@@ -2805,3 +2805,101 @@ async def get_drilldown_data(execution_id: int, page: int = 1, page_size: int = 
         logger.error(f"Error getting drilldown data: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# ==================== Landing KPI Dashboard Endpoints ====================
+
+@router.get("/v1/landing-kpi/dashboard", tags=["Landing KPI Dashboard"], response_model=dict)
+async def get_kpi_dashboard():
+    """
+    Get all KPIs grouped by group name with their latest execution summary.
+
+    Returns:
+        {
+            "success": true,
+            "groups": [
+                {
+                    "group_name": "Data Quality",
+                    "kpis": [
+                        {
+                            "id": 1,
+                            "name": "Inactive Products in RBP",
+                            "definition": "Show me all...",
+                            "description": "...",
+                            "kg_name": "KG_102",
+                            "latest_execution": {
+                                "executed_at": "2025-10-28T13:50:55",
+                                "record_count": 42,
+                                "status": "success",
+                                "error_message": null
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    """
+    try:
+        service = get_landing_kpi_service()
+        dashboard_data = service.get_dashboard_data()
+        return {
+            "success": True,
+            **dashboard_data
+        }
+    except Exception as e:
+        logger.error(f"Error getting dashboard data: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/v1/landing-kpi/{kpi_id}/latest-results", tags=["Landing KPI Dashboard"], response_model=dict)
+async def get_kpi_latest_results(kpi_id: int):
+    """
+    Get the SQL results from the most recent execution for a specific KPI.
+
+    Returns:
+        {
+            "success": true,
+            "results": {
+                "execution_id": 123,
+                "kpi_id": 1,
+                "sql_query": "SELECT * FROM ...",
+                "result_data": [...],
+                "column_names": ["col1", "col2", ...],
+                "record_count": 42,
+                "execution_status": "success",
+                "execution_timestamp": "2025-10-28T13:50:55",
+                "execution_time_ms": 1234.56,
+                "confidence_score": 0.85,
+                "error_message": null,
+                "source_table": "brz_lnd_RBP_GPU",
+                "target_table": "brz_lnd_OPS_EXCEL_GPU",
+                "operation": "NOT_IN"
+            }
+        }
+    """
+    try:
+        service = get_landing_kpi_service()
+
+        # Verify KPI exists
+        kpi = service.get_kpi(kpi_id)
+        if not kpi:
+            raise HTTPException(status_code=404, detail=f"KPI ID {kpi_id} not found")
+
+        # Get latest results
+        results = service.get_latest_results(kpi_id)
+        if not results:
+            return {
+                "success": True,
+                "results": None,
+                "message": "No execution results found for this KPI"
+            }
+
+        return {
+            "success": True,
+            "results": results
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting latest results for KPI {kpi_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
