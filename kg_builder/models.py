@@ -96,6 +96,37 @@ class GraphRelationship(BaseModel):
     target_column: Optional[str] = None
 
 
+class JoinPath(BaseModel):
+    """Represents a join path between two tables."""
+    source_table: str
+    target_table: str
+    path: List[str]  # List of table names in the path
+    confidence: float
+    length: int
+
+    def score(self) -> float:
+        """Calculate composite score for path selection."""
+        # 70% confidence, 30% path length (shorter is better)
+        return (self.confidence * 0.7) + ((1 / self.length) * 0.3)
+
+
+class AdditionalColumn(BaseModel):
+    """Requested column from related table."""
+    column_name: str
+    source_table: str
+    alias: Optional[str] = None
+    confidence: float = 0.0
+    join_path: Optional[List[str]] = None
+
+    def __init__(self, **data):
+        """Initialize and auto-generate alias if not provided."""
+        super().__init__(**data)
+        if not self.alias:
+            # Format: {table_short}_{column_name}
+            table_short = self.source_table.split('_')[-1].lower()
+            self.alias = f"{table_short}_{self.column_name.lower()}"
+
+
 class KnowledgeGraph(BaseModel):
     """Represents a complete knowledge graph."""
     name: str

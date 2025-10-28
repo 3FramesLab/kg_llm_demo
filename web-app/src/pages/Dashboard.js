@@ -15,9 +15,8 @@ import {
   Error,
   Storage,
   AccountTree,
-  CompareArrows,
 } from '@mui/icons-material';
-import { checkHealth, checkLLMStatus, listSchemas, listKGs, listRulesets } from '../services/api';
+import { checkHealth, checkLLMStatus, listSchemas, listKGs } from '../services/api';
 
 export default function Dashboard() {
   const [health, setHealth] = useState(null);
@@ -25,7 +24,6 @@ export default function Dashboard() {
   const [stats, setStats] = useState({
     schemas: 0,
     knowledgeGraphs: 0,
-    rulesets: 0,
   });
 
   useEffect(() => {
@@ -34,12 +32,11 @@ export default function Dashboard() {
 
   const loadDashboardData = async () => {
     try {
-      const [healthRes, llmRes, schemasRes, kgsRes, rulesetsRes] = await Promise.all([
+      const [healthRes, llmRes, schemasRes, kgsRes] = await Promise.all([
         checkHealth(),
         checkLLMStatus(),
         listSchemas(),
         listKGs(),
-        listRulesets(),
       ]);
 
       setHealth(healthRes.data);
@@ -47,7 +44,6 @@ export default function Dashboard() {
       setStats({
         schemas: schemasRes.data.count || 0,
         knowledgeGraphs: kgsRes.data.graphs?.length || 0,
-        rulesets: rulesetsRes.data.rulesets?.length || 0,
       });
     } catch (error) {
       console.error('Error loading dashboard:', error);
@@ -86,20 +82,8 @@ export default function Dashboard() {
                 </Box>
                 <Box sx={{ mt: 2 }}>
                   <Chip
-                    label={`FalkorDB: ${health.falkordb_connected ? 'Connected' : 'Disconnected'}`}
-                    color={health.falkordb_connected ? 'success' : 'error'}
-                    size="small"
-                    sx={{ mr: 1, mb: 1 }}
-                  />
-                  <Chip
                     label={`Graphiti: ${health.graphiti_available ? 'Available' : 'Unavailable'}`}
                     color={health.graphiti_available ? 'success' : 'warning'}
-                    size="small"
-                    sx={{ mr: 1, mb: 1 }}
-                  />
-                  <Chip
-                    label={`LLM: ${health.llm_enabled ? 'Enabled' : 'Disabled'}`}
-                    color={health.llm_enabled ? 'success' : 'warning'}
                     size="small"
                     sx={{ mb: 1 }}
                   />
@@ -154,7 +138,7 @@ export default function Dashboard() {
 
       {/* Statistics */}
       <Grid container spacing={3}>
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -173,7 +157,7 @@ export default function Dashboard() {
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -187,25 +171,6 @@ export default function Dashboard() {
               </Box>
               <Typography variant="body2">
                 Generated knowledge graphs from schemas
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <CompareArrows color="primary" sx={{ fontSize: 40, mr: 2 }} />
-                <Box>
-                  <Typography variant="h4">{stats.rulesets}</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Reconciliation Rulesets
-                  </Typography>
-                </Box>
-              </Box>
-              <Typography variant="body2">
-                Generated reconciliation rulesets
               </Typography>
             </CardContent>
           </Card>
@@ -229,10 +194,10 @@ export default function Dashboard() {
               <strong>Natural Language:</strong> Add custom relationships using plain English
             </li>
             <li>
-              <strong>Reconciliation:</strong> Generate rules for data matching
+              <strong>KPI Management:</strong> Create and manage KPI definitions
             </li>
             <li>
-              <strong>Execution:</strong> Execute reconciliation rules and view results
+              <strong>KPI Dashboard:</strong> Monitor KPI execution results
             </li>
           </ol>
         </Typography>

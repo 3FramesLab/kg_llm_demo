@@ -186,7 +186,7 @@ class LandingKPIExecutor:
                 raise ValueError("Could not establish database connection")
 
             # Step 5: Execute the query
-            executor = get_nl_query_executor(db_type)
+            executor = get_nl_query_executor(db_type, kg=kg)  # Pass KG for join condition resolution
             query_result = executor.execute(
                 intent,
                 connection,

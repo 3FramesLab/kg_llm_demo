@@ -143,7 +143,7 @@ const KPIDashboard = () => {
             KPI Dashboard
           </Typography>
           <Typography variant="body2" color="textSecondary">
-            {totalKPIs} KPI{totalKPIs !== 1 ? 's' : ''} across {groups.length} Group{groups.length !== 1 ? 's' : ''}
+            {totalKPIs} KPI{totalKPIs !== 1 ? 's' : ''}
           </Typography>
         </Box>
         <Button variant="outlined" onClick={handleRefresh}>
@@ -151,118 +151,77 @@ const KPIDashboard = () => {
         </Button>
       </Box>
 
-      {/* Group Cards - Horizontal Layout */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        {groups.map((group) => (
-          <Box key={group.group_name}>
-            {/* Group Header */}
-            <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                {group.group_name}
+      {/* KPI Cards - Horizontal Layout (Slim Cards) */}
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 1,
+        }}
+      >
+        {groups.flatMap((group) => group.kpis).map((kpi) => (
+          <Card
+            key={kpi.id}
+            sx={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: 2,
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                boxShadow: 4,
+                backgroundColor: 'rgba(0,0,0,0.02)',
+              },
+            }}
+          >
+            {/* Left Section - KPI Info */}
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                {kpi.name}
               </Typography>
-              <Chip
-                label={`${group.kpis.length} KPI${group.kpis.length !== 1 ? 's' : ''}`}
+              {kpi.description && (
+                <Typography variant="body2" color="textSecondary">
+                  {kpi.description}
+                </Typography>
+              )}
+            </Box>
+
+            {/* Middle Section - Execution Status */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mx: 3 }}>
+              {kpi.latest_execution ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  {getStatusIcon(kpi.latest_execution.status)}
+                  <Chip
+                    label={kpi.latest_execution.status || 'pending'}
+                    size="small"
+                    color={getStatusColor(kpi.latest_execution.status)}
+                    variant="outlined"
+                  />
+                  <Typography variant="body2" sx={{ ml: 1 }}>
+                    <strong>{kpi.latest_execution.record_count}</strong> records
+                  </Typography>
+                </Box>
+              ) : (
+                <Typography variant="body2" color="textSecondary">
+                  No executions yet
+                </Typography>
+              )}
+            </Box>
+
+            {/* Right Section - Actions */}
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button
                 size="small"
-                color="primary"
                 variant="outlined"
-              />
+                startIcon={<VisibilityIcon />}
+                onClick={() => handleViewResults(kpi)}
+                disabled={!kpi.latest_execution}
+              >
+                View Results
+              </Button>
             </Box>
-
-            {/* KPI Cards - Horizontal Scroll */}
-            <Box
-              sx={{
-                display: 'flex',
-                gap: 2,
-                overflowX: 'auto',
-                pb: 2,
-                '&::-webkit-scrollbar': {
-                  height: 8,
-                },
-                '&::-webkit-scrollbar-track': {
-                  backgroundColor: 'rgba(0,0,0,0.05)',
-                  borderRadius: 4,
-                },
-                '&::-webkit-scrollbar-thumb': {
-                  backgroundColor: 'rgba(0,0,0,0.2)',
-                  borderRadius: 4,
-                  '&:hover': {
-                    backgroundColor: 'rgba(0,0,0,0.3)',
-                  },
-                },
-              }}
-            >
-              {group.kpis.map((kpi) => (
-                <Card
-                  key={kpi.id}
-                  sx={{
-                    minWidth: 300,
-                    maxWidth: 350,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      boxShadow: 6,
-                      transform: 'translateY(-4px)',
-                    },
-                  }}
-                >
-                  <CardContent sx={{ flex: 1 }}>
-                    {/* KPI Name */}
-                    <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
-                      {kpi.name}
-                    </Typography>
-
-                    {/* KPI Description */}
-                    {kpi.description && (
-                      <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                        {kpi.description}
-                      </Typography>
-                    )}
-
-                    {/* Latest Execution Info */}
-                    {kpi.latest_execution ? (
-                      <Box sx={{ mt: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                          {getStatusIcon(kpi.latest_execution.status)}
-                          <Chip
-                            label={kpi.latest_execution.status || 'pending'}
-                            size="small"
-                            color={getStatusColor(kpi.latest_execution.status)}
-                            variant="outlined"
-                          />
-                        </Box>
-
-                        <Typography variant="body2" sx={{ mb: 0.5 }}>
-                          <strong>Records:</strong> {kpi.latest_execution.record_count}
-                        </Typography>
-
-                        {kpi.latest_execution.error_message && (
-                          <Alert severity="error" sx={{ mt: 1 }}>
-                            {kpi.latest_execution.error_message}
-                          </Alert>
-                        )}
-                      </Box>
-                    ) : (
-                      <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
-                        No executions yet
-                      </Typography>
-                    )}
-                  </CardContent>
-
-                  <CardActions>
-                    <Button
-                      size="small"
-                      startIcon={<VisibilityIcon />}
-                      onClick={() => handleViewResults(kpi)}
-                      disabled={!kpi.latest_execution}
-                    >
-                      View Results
-                    </Button>
-                  </CardActions>
-                </Card>
-              ))}
-            </Box>
-          </Box>
+          </Card>
         ))}
       </Box>
 

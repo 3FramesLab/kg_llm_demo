@@ -94,16 +94,7 @@ const KPIList = ({ onEdit, onExecute, onViewHistory, refreshTrigger }) => {
     fetchKPIs();
   };
 
-  const getGroupColor = (group) => {
-    const colors = {
-      'Data Quality': 'primary',
-      'Reconciliation': 'secondary',
-      'Performance': 'success',
-      'Compliance': 'warning',
-      'Other': 'default',
-    };
-    return colors[group] || 'default';
-  };
+
 
   if (loading && kpis.length === 0) {
     return (
@@ -116,7 +107,7 @@ const KPIList = ({ onEdit, onExecute, onViewHistory, refreshTrigger }) => {
   return (
     <Box>
       {/* Filters */}
-      <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+      <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <TextField
           label="Search KPIs"
           variant="outlined"
@@ -127,12 +118,12 @@ const KPIList = ({ onEdit, onExecute, onViewHistory, refreshTrigger }) => {
           sx={{ flex: 1, minWidth: '200px' }}
         />
         <TextField
-          label="Filter by Group"
+          label="Group"
           variant="outlined"
           size="small"
           value={groupFilter}
           onChange={handleGroupFilterChange}
-          placeholder="e.g., Data Quality"
+          placeholder="Enter group name"
           sx={{ flex: 1, minWidth: '200px' }}
         />
         <Button variant="contained" onClick={handleApplyFilters}>
@@ -154,10 +145,10 @@ const KPIList = ({ onEdit, onExecute, onViewHistory, refreshTrigger }) => {
             <TableRow>
               <TableCell sx={{ fontWeight: 'bold' }}>Name</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>Alias</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Group</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', minWidth: '150px' }}>Group</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>Description</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>NL Definition</TableCell>
-              <TableCell sx={{ fontWeight: 'bold', textAlign: 'center' }}>Actions</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', textAlign: 'center', minWidth: '200px' }}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -179,16 +170,7 @@ const KPIList = ({ onEdit, onExecute, onViewHistory, refreshTrigger }) => {
                     )}
                   </TableCell>
                   <TableCell>
-                    {kpi.group_name ? (
-                      <Chip
-                        label={kpi.group_name}
-                        size="small"
-                        color={getGroupColor(kpi.group_name)}
-                        variant="outlined"
-                      />
-                    ) : (
-                      <span style={{ color: '#999' }}>-</span>
-                    )}
+                    {kpi.group_name || <span style={{ color: '#999' }}>-</span>}
                   </TableCell>
                   <TableCell sx={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {kpi.description || '-'}

@@ -73,7 +73,7 @@ const LandingKPIManagement = () => {
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
-          Landing KPI Management
+          KPI Management
         </Typography>
         <Typography variant="body1" color="textSecondary">
           Create, manage, and execute Key Performance Indicators using natural language definitions
@@ -124,7 +124,7 @@ const LandingKPIManagement = () => {
         {activeTab === 1 && (
           <Box sx={{ py: 3 }}>
             <Typography variant="h6" sx={{ mb: 2 }}>
-              About Landing KPI Management
+              About KPI Management
             </Typography>
             <Typography variant="body2" paragraph>
               The Landing KPI Management system allows you to:
