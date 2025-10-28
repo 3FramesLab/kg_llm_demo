@@ -2449,6 +2449,7 @@ async def execute_nl_queries(request: NLQueryExecutionRequest):
                 "Show me all products in RBP GPU which are in active OPS Excel"
             ],
             "use_llm": true,
+            "use_llm_sql_generation": false,
             "min_confidence": 0.7,
             "limit": 1000,
             "db_type": "mysql"
@@ -2580,7 +2581,8 @@ async def execute_nl_queries(request: NLQueryExecutionRequest):
                 logger.error(f"Failed to parse definition '{definition}': {e}")
 
         # Step 4: Execute queries
-        executor = get_nl_query_executor(request.db_type, kg=kg)  # Pass KG for join condition resolution
+        # Pass use_llm_sql_generation flag to enable LLM-based SQL generation
+        executor = get_nl_query_executor(request.db_type, kg=kg, use_llm=request.use_llm_sql_generation)
 
         # Get database connection from source database
         logger.info(f"Getting source database connection for query execution (db_type: {request.db_type})")
@@ -2596,7 +2598,7 @@ async def execute_nl_queries(request: NLQueryExecutionRequest):
                 logger.warning("No database connection available - returning SQL only")
                 for intent in intents:
                     from kg_builder.services.nl_sql_generator import NLSQLGenerator
-                    generator = NLSQLGenerator(request.db_type, kg=kg)  # Pass KG for join condition resolution
+                    generator = NLSQLGenerator(request.db_type, kg=kg, use_llm=request.use_llm_sql_generation)
                     try:
                         sql = generator.generate(intent)
                         from kg_builder.services.nl_query_executor import QueryResult

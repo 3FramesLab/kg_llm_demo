@@ -42,6 +42,38 @@ class TableNotFoundError(ColumnInclusionError):
 
 
 @dataclass
+class Filter:
+    """Enhanced filter with operator support (Phase 2)."""
+    column: str
+    operator: str = "="  # =, >, <, >=, <=, !=, LIKE, IN, NOT IN, BETWEEN, IS NULL, IS NOT NULL
+    value: Any = None
+    logic: str = "AND"  # AND, OR
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "column": self.column,
+            "operator": self.operator,
+            "value": self.value,
+            "logic": self.logic
+        }
+
+
+@dataclass
+class OrderBy:
+    """Order by clause (Phase 4)."""
+    column: str
+    direction: str = "ASC"  # ASC, DESC
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "column": self.column,
+            "direction": self.direction
+        }
+
+
+@dataclass
 class QueryIntent:
     """Parsed intent from NL definition."""
     definition: str
@@ -49,20 +81,52 @@ class QueryIntent:
     source_table: Optional[str] = None
     target_table: Optional[str] = None
     operation: Optional[str] = None  # NOT_IN, IN, EQUALS, CONTAINS, AGGREGATE
-    filters: List[Dict[str, Any]] = None
+    filters: List[Dict[str, Any]] = None  # Legacy format for backward compatibility
+    filters_v2: List[Filter] = None  # Phase 2: Enhanced filters with operators
     join_columns: Optional[List[Tuple[str, str]]] = None  # [(source_col, target_col), ...]
     confidence: float = 0.75
     reasoning: str = ""
-    additional_columns: List[AdditionalColumn] = None  # NEW: Columns from related tables
+    additional_columns: List[AdditionalColumn] = None
+    # Phase 4: Complex query support
+    group_by_columns: List[str] = None
+    having_conditions: List[Filter] = None
+    order_by: List[OrderBy] = None
+    limit: Optional[int] = None
+    offset: Optional[int] = None
 
     def __post_init__(self):
         """Initialize default values."""
         if self.filters is None:
             self.filters = []
+        if self.filters_v2 is None:
+            self.filters_v2 = []
         if self.join_columns is None:
             self.join_columns = []
         if self.additional_columns is None:
             self.additional_columns = []
+        if self.group_by_columns is None:
+            self.group_by_columns = []
+        if self.having_conditions is None:
+            self.having_conditions = []
+        if self.order_by is None:
+            self.order_by = []
+
+        # Convert legacy filters to filters_v2 if needed
+        if self.filters and not self.filters_v2:
+            self.filters_v2 = self._convert_legacy_filters()
+
+    def _convert_legacy_filters(self) -> List[Filter]:
+        """Convert legacy filter format to Filter objects."""
+        converted = []
+        for f in self.filters:
+            if isinstance(f, dict):
+                converted.append(Filter(
+                    column=f.get("column", ""),
+                    operator=f.get("operator", "="),
+                    value=f.get("value"),
+                    logic=f.get("logic", "AND")
+                ))
+        return converted
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
@@ -73,6 +137,13 @@ class QueryIntent:
                 col.dict() if hasattr(col, 'dict') else asdict(col)
                 for col in self.additional_columns
             ]
+        # Convert Filter objects to dicts
+        if self.filters_v2:
+            data['filters_v2'] = [f.to_dict() for f in self.filters_v2]
+        if self.having_conditions:
+            data['having_conditions'] = [h.to_dict() for h in self.having_conditions]
+        if self.order_by:
+            data['order_by'] = [o.to_dict() for o in self.order_by]
         return data
 
 

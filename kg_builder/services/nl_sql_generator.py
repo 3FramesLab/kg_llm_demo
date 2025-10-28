@@ -25,20 +25,33 @@ logger = logging.getLogger(__name__)
 class NLSQLGenerator:
     """Generate SQL from NL query intents."""
 
-    def __init__(self, db_type: str = "mysql", kg: Optional["KnowledgeGraph"] = None):
+    def __init__(self, db_type: str = "mysql", kg: Optional["KnowledgeGraph"] = None, use_llm: bool = False):
         """
         Initialize generator.
 
         Args:
             db_type: Database type (mysql, postgresql, sqlserver, oracle)
             kg: Optional Knowledge Graph for join column resolution
+            use_llm: Whether to use LLM-based SQL generation (with Python fallback)
         """
         self.db_type = db_type.lower()
         self.kg = kg  # Store KG reference for join condition resolution
+        self.use_llm = use_llm
+        self.llm_generator = None
+
+        # Initialize LLM generator if requested
+        if use_llm:
+            try:
+                from kg_builder.services.llm_sql_generator import LLMSQLGenerator
+                self.llm_generator = LLMSQLGenerator(db_type, kg)
+                logger.info("✓ LLM SQL Generator initialized")
+            except Exception as e:
+                logger.warning(f"Failed to initialize LLM generator: {e}")
+                self.use_llm = False
 
     def generate(self, intent: QueryIntent) -> str:
         """
-        Generate SQL from query intent.
+        Generate SQL from query intent with optional LLM fallback.
 
         Args:
             intent: QueryIntent object
@@ -48,11 +61,38 @@ class NLSQLGenerator:
         """
         logger.info(f"🔧 Generating SQL for: {intent.definition}")
         logger.info(f"   Query Type: {intent.query_type}, Operation: {intent.operation}")
+        logger.info(f"   Using: {'LLM' if self.use_llm else 'Python'} generator")
         if intent.filters:
             logger.info(f"   Filters: {intent.filters}")
         if intent.additional_columns:
             logger.info(f"   Additional Columns: {len(intent.additional_columns)}")
 
+        # Try LLM generation first if enabled
+        if self.use_llm and self.llm_generator:
+            try:
+                sql = self.llm_generator.generate(intent)
+                logger.info(f"✅ SQL Generated Successfully (via LLM)")
+                return sql
+            except Exception as e:
+                logger.warning(f"⚠️ LLM generation failed, falling back to Python: {e}")
+                logger.info(f"   Fallback reason: {str(e)[:100]}")
+                # Fall through to Python generation
+
+        # Python-based generation (original implementation)
+        sql = self._generate_python(intent)
+        logger.info(f"✅ SQL Generated Successfully (via Python)")
+        return sql
+
+    def _generate_python(self, intent: QueryIntent) -> str:
+        """
+        Generate SQL using Python-based templates (original implementation).
+
+        Args:
+            intent: QueryIntent object
+
+        Returns:
+            str: Generated SQL query
+        """
         if intent.query_type == "comparison_query":
             sql = self._generate_comparison_query(intent)
         elif intent.query_type == "filter_query":
@@ -64,11 +104,10 @@ class NLSQLGenerator:
         else:
             raise ValueError(f"Unsupported query type: {intent.query_type}")
 
-        # NEW: Add additional columns if present
+        # Add additional columns if present
         if intent.additional_columns:
             sql = self._add_additional_columns_to_sql(sql, intent)
 
-        logger.info(f"✅ SQL Generated Successfully")
         return sql
 
     def _generate_comparison_query(self, intent: QueryIntent) -> str:
@@ -261,12 +300,12 @@ INNER JOIN {target} t ON s.{source_col} = t.{target_col}
 
         return sql
 
-    def _build_where_clause(self, filters: List[Dict[str, Any]], table_alias: Optional[str] = None) -> str:
+    def _build_where_clause(self, filters, table_alias: Optional[str] = None) -> str:
         """
-        Build WHERE clause from filters.
+        Build WHERE clause from filters with operator support (Phase 2).
 
         Args:
-            filters: List of filter dictionaries
+            filters: List of Filter objects or filter dictionaries
             table_alias: Optional table alias prefix
 
         Returns:
@@ -275,8 +314,19 @@ INNER JOIN {target} t ON s.{source_col} = t.{target_col}
         conditions = []
 
         for filter_item in filters:
-            column = filter_item.get("column", "")
-            value = filter_item.get("value", "")
+            # Handle both Filter objects and dict format
+            if hasattr(filter_item, 'column'):
+                # Filter object
+                column = filter_item.column
+                operator = getattr(filter_item, 'operator', '=')
+                value = filter_item.value
+                logic = getattr(filter_item, 'logic', 'AND')
+            else:
+                # Dict format
+                column = filter_item.get("column", "")
+                operator = filter_item.get("operator", "=")
+                value = filter_item.get("value", "")
+                logic = filter_item.get("logic", "AND")
 
             if not column:
                 continue
@@ -286,15 +336,99 @@ INNER JOIN {target} t ON s.{source_col} = t.{target_col}
             if table_alias:
                 column = f"{table_alias}.{column}"
 
-            # Handle different value types
-            if isinstance(value, str):
-                value = f"'{value}'"
-            elif value is None:
-                value = "NULL"
+            # Build condition based on operator (Phase 2 enhancement)
+            condition = self._build_condition(column, operator, value)
+            conditions.append(condition)
 
-            conditions.append(f"{column} = {value}")
+        # Join conditions with logic (default AND)
+        if not conditions:
+            return "1=1"
 
-        return " AND ".join(conditions) if conditions else "1=1"
+        # For now, use AND for all (Phase 2 can enhance to support mixed AND/OR)
+        return " AND ".join(conditions)
+
+    def _build_condition(self, column: str, operator: str, value: Any) -> str:
+        """
+        Build a single condition with operator support (Phase 2).
+
+        Args:
+            column: Column name (already quoted)
+            operator: Operator (=, >, <, >=, <=, !=, LIKE, IN, BETWEEN, IS NULL, etc.)
+            value: Value(s)
+
+        Returns:
+            str: SQL condition
+        """
+        operator = operator.upper().strip()
+
+        # Null checks
+        if operator in ("IS NULL", "IS NOT NULL"):
+            return f"{column} {operator}"
+
+        # BETWEEN
+        if operator == "BETWEEN":
+            if isinstance(value, (list, tuple)) and len(value) == 2:
+                val1 = self._format_value(value[0])
+                val2 = self._format_value(value[1])
+                return f"{column} BETWEEN {val1} AND {val2}"
+            else:
+                # Fallback if value not in correct format
+                return f"{column} = {self._format_value(value)}"
+
+        # IN / NOT IN
+        if operator in ("IN", "NOT IN"):
+            if isinstance(value, (list, tuple)):
+                values = ", ".join([self._format_value(v) for v in value])
+                return f"{column} {operator} ({values})"
+            elif isinstance(value, str) and ',' in value:
+                # Handle comma-separated string
+                values = ", ".join([self._format_value(v.strip()) for v in value.split(',')])
+                return f"{column} {operator} ({values})"
+            else:
+                # Single value
+                return f"{column} {operator} ({self._format_value(value)})"
+
+        # LIKE / NOT LIKE
+        if operator in ("LIKE", "NOT LIKE"):
+            formatted_value = self._format_value(value)
+            # If value doesn't have wildcards, add them
+            if isinstance(value, str) and '%' not in value and '_' not in value:
+                formatted_value = f"'%{value}%'"
+            return f"{column} {operator} {formatted_value}"
+
+        # Standard comparison operators: =, >, <, >=, <=, !=, <>
+        if operator in ("=", ">", "<", ">=", "<=", "!=", "<>"):
+            formatted_value = self._format_value(value)
+            return f"{column} {operator} {formatted_value}"
+
+        # Default fallback to =
+        formatted_value = self._format_value(value)
+        return f"{column} = {formatted_value}"
+
+    def _format_value(self, value: Any) -> str:
+        """
+        Format a value for SQL.
+
+        Args:
+            value: Value to format
+
+        Returns:
+            str: Formatted value
+        """
+        if value is None:
+            return "NULL"
+        elif isinstance(value, str):
+            # Escape single quotes
+            escaped = value.replace("'", "''")
+            return f"'{escaped}'"
+        elif isinstance(value, bool):
+            return "TRUE" if value else "FALSE"
+        elif isinstance(value, (int, float)):
+            return str(value)
+        else:
+            # Default: convert to string
+            escaped = str(value).replace("'", "''")
+            return f"'{escaped}'"
 
     def _add_additional_columns_to_sql(self, base_sql: str, intent: QueryIntent) -> str:
         """
@@ -486,7 +620,17 @@ INNER JOIN {target} t ON s.{source_col} = t.{target_col}
             return f"`{identifier}`"
 
 
-def get_nl_sql_generator(db_type: str = "mysql", kg: Optional["KnowledgeGraph"] = None) -> NLSQLGenerator:
-    """Get or create NL SQL generator instance."""
-    return NLSQLGenerator(db_type, kg=kg)
+def get_nl_sql_generator(db_type: str = "mysql", kg: Optional["KnowledgeGraph"] = None, use_llm: bool = False) -> NLSQLGenerator:
+    """
+    Get or create NL SQL generator instance.
+
+    Args:
+        db_type: Database type (mysql, postgresql, sqlserver, oracle)
+        kg: Optional Knowledge Graph for join column resolution
+        use_llm: Whether to use LLM-based SQL generation (with Python fallback)
+
+    Returns:
+        NLSQLGenerator instance
+    """
+    return NLSQLGenerator(db_type, kg=kg, use_llm=use_llm)
 

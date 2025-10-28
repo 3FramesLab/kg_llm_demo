@@ -964,6 +964,7 @@ class NLQueryExecutionRequest(BaseModel):
     schemas: List[str] = Field(..., description="List of schema names")
     definitions: List[str] = Field(..., description="List of NL definitions to execute")
     use_llm: bool = Field(default=True, description="Use LLM for parsing")
+    use_llm_sql_generation: bool = Field(default=False, description="Use LLM for SQL generation (experimental, with Python fallback)")
     min_confidence: float = Field(default=0.7, description="Minimum confidence threshold")
     limit: int = Field(default=1000, description="Maximum records per query")
     db_type: str = Field(default="mysql", description="Database type")
