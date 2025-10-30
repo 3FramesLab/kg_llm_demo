@@ -104,9 +104,9 @@ export default function Execution() {
   };
 
   return (
-    <Container maxWidth="xl">
+    <Container maxWidth="xl" sx={{ py: 1.5  }}>
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom>
+        <Typography variant="h5" fontWeight="700" sx={{ mb: 0.25, lineHeight: 1.2, fontSize: '1.15rem' }} gutterBottom>
           Reconciliation Execution
         </Typography>
         <Typography variant="body1" color="text.secondary">
@@ -137,7 +137,7 @@ export default function Execution() {
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
             <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" fontWeight="700" fontSize="0.95rem" gutterBottom>
                 SQL Export Mode
               </Typography>
               <Typography variant="body2" color="text.secondary" paragraph>
@@ -189,7 +189,7 @@ export default function Execution() {
 
           <Grid item xs={12} md={6}>
             <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" fontWeight="700" fontSize="0.95rem" gutterBottom>
                 Request Placeholder
               </Typography>
               <Box
@@ -199,7 +199,7 @@ export default function Execution() {
                   bgcolor: 'grey.100',
                   borderRadius: 1,
                   overflow: 'auto',
-                  fontSize: '0.875rem',
+                  fontSize: '0.75rem',
                 }}
               >
                 {JSON.stringify(
@@ -215,7 +215,7 @@ export default function Execution() {
 
               <Divider sx={{ my: 2 }} />
 
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" fontWeight="700" fontSize="0.95rem" gutterBottom>
                 Response Placeholder
               </Typography>
               <Box
@@ -225,7 +225,7 @@ export default function Execution() {
                   bgcolor: 'grey.100',
                   borderRadius: 1,
                   overflow: 'auto',
-                  fontSize: '0.875rem',
+                  fontSize: '0.75rem',
                   maxHeight: 300,
                 }}
               >
@@ -256,7 +256,7 @@ export default function Execution() {
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
             <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" fontWeight="700" fontSize="0.95rem" gutterBottom>
                 Direct Execution Mode
               </Typography>
               <Typography variant="body2" color="text.secondary" paragraph>
@@ -348,7 +348,7 @@ export default function Execution() {
 
           <Grid item xs={12} md={6}>
             <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" fontWeight="700" fontSize="0.95rem" gutterBottom>
                 Request Payload
               </Typography>
               <Box
@@ -358,7 +358,7 @@ export default function Execution() {
                   bgcolor: 'grey.100',
                   borderRadius: 1,
                   overflow: 'auto',
-                  fontSize: '0.875rem',
+                  fontSize: '0.75rem',
                   maxHeight: 200,
                 }}
               >
@@ -379,7 +379,7 @@ export default function Execution() {
 
               <Divider sx={{ my: 2 }} />
 
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" fontWeight="700" fontSize="0.95rem" gutterBottom>
                 Response Placeholder
               </Typography>
               <Box
@@ -440,7 +440,7 @@ export default function Execution() {
             {results ? (
               <>
                 <Paper sx={{ p: 3, mb: 3 }}>
-                  <Typography variant="h6" gutterBottom>
+                  <Typography variant="h6" fontWeight="700" fontSize="0.95rem" gutterBottom>
                     Execution Results
                   </Typography>
                   <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
@@ -467,7 +467,7 @@ export default function Execution() {
 
                 {results.mode === 'sql_export' && results.sql_queries && (
                   <Paper sx={{ p: 3 }}>
-                    <Typography variant="h6" gutterBottom>
+                    <Typography variant="h6" fontWeight="700" fontSize="0.95rem" gutterBottom>
                       Generated SQL Queries
                     </Typography>
                     {Object.entries(results.sql_queries).map(([ruleId, queries]) => (
@@ -476,7 +476,7 @@ export default function Execution() {
                           <Typography>{ruleId}</Typography>
                         </AccordionSummary>
                         <AccordionDetails>
-                          <Box component="pre" sx={{ overflow: 'auto', fontSize: '0.875rem' }}>
+                          <Box component="pre" sx={{ overflow: 'auto', fontSize: '0.75rem' }}>
                             {typeof queries === 'object'
                               ? JSON.stringify(queries, null, 2)
                               : queries}

@@ -30,6 +30,7 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DownloadIcon from '@mui/icons-material/Download';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import AssessmentIcon from '@mui/icons-material/Assessment';
 
 const KPIResults = () => {
   const [kpis, setKpis] = useState([]);
@@ -152,19 +153,6 @@ const KPIResults = () => {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'pass':
-        return 'success';
-      case 'warning':
-        return 'warning';
-      case 'critical':
-        return 'error';
-      default:
-        return 'default';
-    }
-  };
-
   const kpiTypeLabels = {
     match_rate: 'Match Rate (%)',
     match_percentage: 'Match Percentage (%)',
@@ -182,86 +170,214 @@ const KPIResults = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Box>
-          <Typography variant="h4" gutterBottom>
-            KPI Results
-          </Typography>
-          <Typography variant="body1" color="textSecondary">
-            View KPI calculations and drill down into evidence data
-          </Typography>
+    <Container maxWidth="xl" sx={{ py: 1.5  }}>
+      {/* Header Section */}
+      <Paper
+        elevation={0}
+        sx={{
+          mb: 4,
+          p: 4,
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          borderRadius: 3,
+          color: 'white'
+        }}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box>
+            <Typography variant="h5" fontWeight="700" sx={{ mb: 0.25, lineHeight: 1.2, fontSize: '1.15rem' }}>
+              KPI Dashboard
+            </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 400, fontSize: '0.8rem' }}>
+              Monitor key performance indicators and analyze evidence data
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<RefreshIcon />}
+            onClick={loadKPIs}
+            disabled={loading}
+            sx={{
+              bgcolor: 'rgba(255, 255, 255, 0.2)',
+              color: 'white',
+              backdropFilter: 'blur(10px)',
+              '&:hover': {
+                bgcolor: 'rgba(255, 255, 255, 0.3)',
+              },
+              px: 2,
+              py: 0.75,
+              borderRadius: 1,
+              textTransform: 'none',
+              fontSize: '0.85rem',
+              fontWeight: 700
+            }}
+          >
+            Refresh Data
+          </Button>
         </Box>
-        <Button
-          variant="outlined"
-          startIcon={<RefreshIcon />}
-          onClick={loadKPIs}
-          disabled={loading}
-        >
-          Refresh
-        </Button>
-      </Box>
+      </Paper>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {error && (
+        <Alert
+          severity="error"
+          sx={{
+            mb: 3,
+            borderRadius: 2,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+          }}
+        >
+          {error}
+        </Alert>
+      )}
 
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-          <CircularProgress />
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
+          <CircularProgress size={60} thickness={4} />
         </Box>
       ) : (
-        <Grid container spacing={2}>
+        <Grid container spacing={3}>
           {kpis.length === 0 ? (
             <Grid item xs={12}>
-              <Alert severity="info">
-                No KPIs found. Create a KPI in the KPI Management section to get started.
-              </Alert>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 6,
+                  textAlign: 'center',
+                  borderRadius: 3,
+                  border: '2px dashed #e0e0e0',
+                  bgcolor: '#fafafa'
+                }}
+              >
+                <AssessmentIcon sx={{ fontSize: 64, color: '#bdbdbd', mb: 2 }} />
+                <Typography variant="h6" color="textSecondary" gutterBottom>
+                  No KPIs Available
+                </Typography>
+                <Typography variant="body2" color="textSecondary">
+                  Create a KPI in the KPI Management section to get started.
+                </Typography>
+              </Paper>
             </Grid>
           ) : (
             kpis.map((kpi) => (
-              <Grid item xs={12} md={6} key={kpi.kpi_id}>
-                <Card>
-                  <CardContent>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="h6" gutterBottom>
+              <Grid item xs={12} md={6} lg={4} key={kpi.kpi_id}>
+                <Card
+                  elevation={0}
+                  sx={{
+                    height: '100%',
+                    borderRadius: 3,
+                    border: '1px solid #e0e0e0',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 12px 24px rgba(0,0,0,0.1)',
+                      borderColor: '#667eea'
+                    }
+                  }}
+                >
+                  <CardContent sx={{ p: 3 }}>
+                    {/* KPI Header */}
+                    <Box sx={{ mb: 3 }}>
+                      <Typography
+                        variant="h6"
+                        fontWeight="700"
+                        fontSize="0.95rem"
+                        sx={{
+                          mb: 1,
+                          color: '#1a1a1a'
+                        }}
+                      >
                         {kpi.kpi_name}
                       </Typography>
-                      <Typography variant="body2" color="textSecondary" gutterBottom>
+                      <Typography
+                        variant="body2"
+                        fontSize="0.8rem"
+                        sx={{
+                          color: '#666',
+                          lineHeight: 1.6
+                        }}
+                      >
                         {kpi.kpi_description}
                       </Typography>
                     </Box>
 
-                    <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    {/* KPI Metadata */}
+                    <Box sx={{ mb: 3, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                       <Chip
                         label={kpiTypeLabels[kpi.kpi_type] || kpi.kpi_type}
                         size="small"
-                        variant="outlined"
+                        sx={{
+                          bgcolor: '#e3f2fd',
+                          color: '#1976d2',
+                          fontWeight: 500,
+                          fontSize: '0.7rem',
+                          border: 'none'
+                        }}
                       />
                       <Chip
                         label={`Ruleset: ${kpi.ruleset_id}`}
                         size="small"
-                        variant="outlined"
+                        sx={{
+                          bgcolor: '#f3e5f5',
+                          color: '#7b1fa2',
+                          fontWeight: 500,
+                          fontSize: '0.7rem',
+                          border: 'none'
+                        }}
                       />
                     </Box>
 
-                    <Box sx={{ mb: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
-                      <Typography variant="body2" color="textSecondary">
-                        Thresholds
-                      </Typography>
-                      <Typography variant="body2">
-                        Warning: {kpi.thresholds.warning_threshold} | Critical:{' '}
-                        {kpi.thresholds.critical_threshold}
-                      </Typography>
-                      <Typography variant="body2" color="textSecondary">
-                        Operator: {kpi.thresholds.comparison_operator}
+                    {/* Thresholds Section */}
+                    <Box
+                      sx={{
+                        mb: 3,
+                        p: 2.5,
+                        bgcolor: '#f8f9fa',
+                        borderRadius: 2,
+                        border: '1px solid #e9ecef'
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
+                        <Box>
+                          <Typography variant="caption" fontSize="0.65rem" sx={{ color: '#666', display: 'block', mb: 0.5 }}>
+                            Warning
+                          </Typography>
+                          <Typography variant="body2" fontSize="0.8rem" sx={{ fontWeight: 600, color: '#ed6c02' }}>
+                            {kpi.thresholds.warning_threshold}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" fontSize="0.65rem" sx={{ color: '#666', display: 'block', mb: 0.5 }}>
+                            Critical
+                          </Typography>
+                          <Typography variant="body2" fontSize="0.8rem" sx={{ fontWeight: 600, color: '#d32f2f' }}>
+                            {kpi.thresholds.critical_threshold}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Typography variant="caption" fontSize="0.65rem" sx={{ color: '#666' }}>
+                        Operator: <strong>{kpi.thresholds.comparison_operator}</strong>
                       </Typography>
                     </Box>
 
-                    <Box sx={{ display: 'flex', gap: 1 }}>
+                    {/* Action Buttons */}
+                    <Box sx={{ display: 'flex', gap: 1.5 }}>
                       <Button
                         variant="contained"
                         size="small"
+                        fullWidth
                         endIcon={<ExpandMoreIcon />}
                         onClick={() => handleDrillDown(kpi)}
+                        sx={{
+                          py: 0.9,
+                          borderRadius: 1,
+                          fontSize: '0.85rem',
+                          fontWeight: 700,
+                          textTransform: 'none',
+                          bgcolor: '#667eea',
+                          '&:hover': {
+                            bgcolor: '#5568d3'
+                          }
+                        }}
                       >
                         View Evidence
                       </Button>
@@ -269,6 +385,20 @@ const KPIResults = () => {
                         variant="outlined"
                         size="small"
                         startIcon={<DownloadIcon />}
+                        sx={{
+                          py: 0.9,
+                          px: 2,
+                          borderRadius: 1,
+                          fontSize: '0.85rem',
+                          fontWeight: 700,
+                          textTransform: 'none',
+                          borderColor: '#e0e0e0',
+                          color: '#666',
+                          '&:hover': {
+                            borderColor: '#667eea',
+                            bgcolor: 'rgba(102, 126, 234, 0.04)'
+                          }
+                        }}
                       >
                         Export
                       </Button>
@@ -287,99 +417,233 @@ const KPIResults = () => {
         onClose={() => setEvidenceDialogOpen(false)}
         maxWidth="lg"
         fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            maxHeight: '90vh'
+          }
+        }}
       >
-        <DialogTitle>
-          Evidence Data - {selectedKPI?.kpi_name}
-        </DialogTitle>
-        <DialogContent sx={{ pt: 2 }}>
+        <DialogTitle
+          sx={{
+            bgcolor: '#f8f9fa',
+            borderBottom: '1px solid #e0e0e0',
+            py: 3
+          }}
+        >
+          <Typography variant="h6" fontWeight="700" fontSize="0.95rem" sx={{ color: '#1a1a1a' }}>
+            Evidence Data
+          </Typography>
           {selectedKPI && (
-            <Box sx={{ mb: 2, p: 1.5, backgroundColor: '#f0f7ff', borderRadius: 1, border: '1px solid #b3d9ff' }}>
-              <Typography variant="body2" color="textSecondary">
-                <strong>KPI Type:</strong> {selectedKPI.kpi_type}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                <strong>Ruleset:</strong> {selectedKPI.ruleset_id}
-              </Typography>
-            </Box>
+            <Typography variant="body2" fontSize="0.8rem" sx={{ color: '#666', mt: 0.5 }}>
+              {selectedKPI.kpi_name}
+            </Typography>
+          )}
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          {selectedKPI && (
+            <Paper
+              elevation={0}
+              sx={{
+                mb: 3,
+                p: 2.5,
+                bgcolor: '#f0f7ff',
+                borderRadius: 2,
+                border: '1px solid #b3d9ff'
+              }}
+            >
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  <Typography variant="caption" fontSize="0.65rem" sx={{ color: '#666', display: 'block', mb: 0.5 }}>
+                    KPI Type
+                  </Typography>
+                  <Typography variant="body2" fontSize="0.8rem" sx={{ fontWeight: 600, color: '#1976d2' }}>
+                    {kpiTypeLabels[selectedKPI.kpi_type] || selectedKPI.kpi_type}
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="caption" fontSize="0.65rem" sx={{ color: '#666', display: 'block', mb: 0.5 }}>
+                    Ruleset ID
+                  </Typography>
+                  <Typography variant="body2" fontSize="0.8rem" sx={{ fontWeight: 600, color: '#1976d2' }}>
+                    {selectedKPI.ruleset_id}
+                  </Typography>
+                </Grid>
+              </Grid>
+            </Paper>
           )}
 
-          <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
-            <FormControl sx={{ minWidth: 200 }}>
-              <InputLabel>Filter by Status</InputLabel>
-              <Select
-                value={matchStatusFilter}
-                label="Filter by Status"
-                onChange={(e) => setMatchStatusFilter(e.target.value)}
+          {/* Filter Controls */}
+          <Paper
+            elevation={0}
+            sx={{
+              mb: 3,
+              p: 2.5,
+              bgcolor: '#fafafa',
+              borderRadius: 2,
+              border: '1px solid #e0e0e0'
+            }}
+          >
+            <Typography variant="subtitle2" fontSize="0.8rem" sx={{ mb: 2, fontWeight: 600, color: '#1a1a1a' }}>
+              Filter Options
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+              <FormControl sx={{ minWidth: 220 }} size="small">
+                <InputLabel>Filter by Status</InputLabel>
+                <Select
+                  value={matchStatusFilter}
+                  label="Filter by Status"
+                  onChange={(e) => setMatchStatusFilter(e.target.value)}
+                  sx={{ bgcolor: 'white', borderRadius: 1.5 }}
+                >
+                  <MenuItem value="">All Statuses</MenuItem>
+                  {Object.entries(matchStatusLabels).map(([key, label]) => (
+                    <MenuItem key={key} value={key}>
+                      {label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <TextField
+                label="Limit"
+                type="number"
+                size="small"
+                value={evidenceLimit}
+                onChange={(e) => setEvidenceLimit(parseInt(e.target.value))}
+                sx={{ width: 120, bgcolor: 'white', borderRadius: 1.5 }}
+              />
+
+              <Button
+                variant="contained"
+                size="small"
+                onClick={() => handleDrillDown(selectedKPI)}
+                disabled={evidenceLoading}
+                sx={{
+                  py: 0.9,
+                  px: 2,
+                  borderRadius: 1,
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  textTransform: 'none',
+                  bgcolor: '#667eea',
+                  '&:hover': {
+                    bgcolor: '#5568d3'
+                  }
+                }}
               >
-                <MenuItem value="">All Statuses</MenuItem>
-                {Object.entries(matchStatusLabels).map(([key, label]) => (
-                  <MenuItem key={key} value={key}>
-                    {label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+                {evidenceLoading ? <CircularProgress size={20} sx={{ color: 'white' }} /> : 'Apply Filters'}
+              </Button>
+            </Box>
+          </Paper>
 
-            <TextField
-              label="Limit"
-              type="number"
-              value={evidenceLimit}
-              onChange={(e) => setEvidenceLimit(parseInt(e.target.value))}
-              sx={{ width: 100 }}
-            />
-
-            <Button
-              variant="contained"
-              onClick={() => handleDrillDown(selectedKPI)}
-              disabled={evidenceLoading}
-            >
-              {evidenceLoading ? <CircularProgress size={24} /> : 'Refresh'}
-            </Button>
-          </Box>
-
+          {/* Evidence Table */}
           {evidenceLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-              <CircularProgress />
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
+              <CircularProgress size={50} thickness={4} />
             </Box>
           ) : (
-            <TableContainer>
-              <Table size="small">
-                <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
+            <TableContainer
+              component={Paper}
+              elevation={0}
+              sx={{
+                borderRadius: 2,
+                border: '1px solid #e0e0e0',
+                maxHeight: '500px'
+              }}
+            >
+              <Table stickyHeader>
+                <TableHead>
                   <TableRow>
-                    <TableCell><strong>Record ID</strong></TableCell>
-                    <TableCell><strong>Status</strong></TableCell>
-                    <TableCell><strong>Rule</strong></TableCell>
-                    <TableCell><strong>Data</strong></TableCell>
+                    <TableCell
+                      sx={{
+                        bgcolor: '#f8f9fa',
+                        fontWeight: 700,
+                        color: '#1a1a1a',
+                        borderBottom: '2px solid #e0e0e0',
+                        py: 2
+                      }}
+                    >
+                      Record ID
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        bgcolor: '#f8f9fa',
+                        fontWeight: 700,
+                        color: '#1a1a1a',
+                        borderBottom: '2px solid #e0e0e0',
+                        py: 2
+                      }}
+                    >
+                      Status
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        bgcolor: '#f8f9fa',
+                        fontWeight: 700,
+                        color: '#1a1a1a',
+                        borderBottom: '2px solid #e0e0e0',
+                        py: 2
+                      }}
+                    >
+                      Rule
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        bgcolor: '#f8f9fa',
+                        fontWeight: 700,
+                        color: '#1a1a1a',
+                        borderBottom: '2px solid #e0e0e0',
+                        py: 2
+                      }}
+                    >
+                      Data
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {evidenceData.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} align="center" sx={{ py: 3 }}>
+                      <TableCell colSpan={4} align="center" sx={{ py: 6, border: 'none' }}>
                         <Box sx={{ textAlign: 'center' }}>
-                          <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-                            ℹ️ No evidence records found
+                          <AssessmentIcon sx={{ fontSize: 48, color: '#bdbdbd', mb: 2 }} />
+                          <Typography variant="body1" fontSize="0.8rem" sx={{ fontWeight: 600, color: '#666', mb: 1 }}>
+                            No Evidence Records Found
                           </Typography>
-                          <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 1 }}>
+                          <Typography variant="body2" fontSize="0.8rem" color="textSecondary" sx={{ mb: 2 }}>
                             This could mean:
                           </Typography>
-                          <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
-                            • No reconciliation data exists for this ruleset
-                          </Typography>
-                          <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
-                            • No records match the selected filter
-                          </Typography>
-                          <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
-                            • Check browser console for detailed error logs
-                          </Typography>
+                          <Box sx={{ textAlign: 'left', display: 'inline-block' }}>
+                            <Typography variant="body2" fontSize="0.8rem" color="textSecondary" sx={{ mb: 0.5 }}>
+                              • No reconciliation data exists for this ruleset
+                            </Typography>
+                            <Typography variant="body2" fontSize="0.8rem" color="textSecondary" sx={{ mb: 0.5 }}>
+                              • No records match the selected filter
+                            </Typography>
+                            <Typography variant="body2" fontSize="0.8rem" color="textSecondary">
+                              • Check browser console for detailed error logs
+                            </Typography>
+                          </Box>
                         </Box>
                       </TableCell>
                     </TableRow>
                   ) : (
                     evidenceData.map((record, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell>{record.record_id || 'N/A'}</TableCell>
-                        <TableCell>
+                      <TableRow
+                        key={idx}
+                        sx={{
+                          '&:hover': {
+                            bgcolor: '#f8f9fa'
+                          },
+                          '&:last-child td': {
+                            borderBottom: 'none'
+                          }
+                        }}
+                      >
+                        <TableCell sx={{ py: 2, color: '#1a1a1a', fontWeight: 500 }}>
+                          {record.record_id || 'N/A'}
+                        </TableCell>
+                        <TableCell sx={{ py: 2 }}>
                           <Chip
                             label={matchStatusLabels[record.match_status] || record.match_status}
                             size="small"
@@ -390,11 +654,26 @@ const KPIResults = () => {
                                 ? 'warning'
                                 : 'error'
                             }
+                            sx={{ fontWeight: 600, fontSize: '0.7rem' }}
                           />
                         </TableCell>
-                        <TableCell>{record.rule_name || 'N/A'}</TableCell>
-                        <TableCell>
-                          <Typography variant="body2" sx={{ maxWidth: 300, overflow: 'auto' }}>
+                        <TableCell sx={{ py: 2, color: '#666' }}>
+                          {record.rule_name || 'N/A'}
+                        </TableCell>
+                        <TableCell sx={{ py: 2 }}>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              maxWidth: 400,
+                              overflow: 'auto',
+                              color: '#666',
+                              fontFamily: 'monospace',
+                              fontSize: '0.75rem',
+                              bgcolor: '#f8f9fa',
+                              p: 1,
+                              borderRadius: 1
+                            }}
+                          >
                             {JSON.stringify(record.record_data).substring(0, 100)}...
                           </Typography>
                         </TableCell>
@@ -406,8 +685,30 @@ const KPIResults = () => {
             </TableContainer>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEvidenceDialogOpen(false)}>Close</Button>
+        <DialogActions
+          sx={{
+            px: 3,
+            py: 2.5,
+            borderTop: '1px solid #e0e0e0',
+            bgcolor: '#fafafa'
+          }}
+        >
+          <Button
+            onClick={() => setEvidenceDialogOpen(false)}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+              px: 3,
+              py: 1,
+              borderRadius: 1.5,
+              color: '#666',
+              '&:hover': {
+                bgcolor: '#e0e0e0'
+              }
+            }}
+          >
+            Close
+          </Button>
         </DialogActions>
       </Dialog>
     </Container>

@@ -264,12 +264,12 @@ const KPIManagement = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container maxWidth="xl" sx={{ py: 1.5  }}>
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom>
+        <Typography variant="h5" fontWeight="700" sx={{ mb: 0.25, lineHeight: 1.2, fontSize: '1.15rem' }} gutterBottom>
           KPI Management
         </Typography>
-        <Typography variant="body1" color="textSecondary">
+        <Typography variant="body2" fontSize="0.8rem" color="textSecondary">
           Create and manage Key Performance Indicators for reconciliation monitoring
         </Typography>
       </Box>
@@ -341,7 +341,8 @@ const KPIManagement = () => {
                         variant="body2"
                         sx={{
                           color: kpi.enabled ? 'green' : 'red',
-                          fontWeight: 'bold',
+                          fontWeight: 600,
+                          fontSize: '0.8rem'
                         }}
                       >
                         {kpi.enabled ? 'Enabled' : 'Disabled'}
@@ -490,8 +491,8 @@ const KPIManagement = () => {
               </Box>
 
               <Box>
-                <Typography variant="subtitle2" color="textSecondary">Calculated Value</Typography>
-                <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                <Typography variant="subtitle2" fontSize="0.8rem" color="textSecondary">Calculated Value</Typography>
+                <Typography variant="h6" fontWeight="700" fontSize="0.95rem" sx={{ color: '#1976d2' }}>
                   {executionResult.calculated_value}
                 </Typography>
               </Box>
@@ -501,7 +502,8 @@ const KPIManagement = () => {
                 <Typography
                   variant="body1"
                   sx={{
-                    fontWeight: 'bold',
+                    fontWeight: 600,
+                    fontSize: '0.8rem',
                     color:
                       executionResult.status === 'OK' ? 'green' :
                       executionResult.status === 'WARNING' ? 'orange' :

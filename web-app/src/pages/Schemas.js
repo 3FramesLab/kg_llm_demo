@@ -11,8 +11,9 @@ import {
   Button,
   CircularProgress,
   Alert,
+  Fade,
 } from '@mui/material';
-import { Refresh, Description } from '@mui/icons-material';
+import { Refresh, Description, Storage, Info, CheckCircle } from '@mui/icons-material';
 import { listSchemas } from '../services/api';
 
 export default function Schemas() {
@@ -38,110 +39,283 @@ export default function Schemas() {
   };
 
   return (
-    <Container maxWidth="lg">
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom>
-          Database Schemas
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Available database schemas for knowledge graph generation
-        </Typography>
+    <Container maxWidth="xl" sx={{ py: 1.5 }}>
+      {/* Enhanced Gradient Header */}
+      <Box
+        sx={{
+          mb: 3,
+          p: 2,
+          borderRadius: 2,
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white',
+          boxShadow: '0 4px 20px rgba(102, 126, 234, 0.3)',
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+          <Storage sx={{ fontSize: 28 }} />
+          <Box>
+            <Typography variant="h5" fontWeight="700" sx={{ mb: 0.25, lineHeight: 1.2, fontSize: '1.15rem' }}>
+              Database Schemas
+            </Typography>
+            <Typography variant="body2" fontSize="0.8rem" sx={{ opacity: 0.95, fontWeight: 400 }}>
+              Available database schemas for knowledge graph generation
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Stats in Header */}
+        {!loading && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1.5 }}>
+            <CheckCircle sx={{ fontSize: 18 }} />
+            <Typography variant="body2" fontSize="0.8rem" sx={{ opacity: 0.95, fontWeight: 600 }}>
+              {schemas.length} {schemas.length === 1 ? 'Schema' : 'Schemas'} Available
+            </Typography>
+          </Box>
+        )}
       </Box>
 
-      <Box sx={{ mb: 2 }}>
+      {/* Action Button */}
+      <Box sx={{ mb: 3 }}>
         <Button
           variant="contained"
+          size="medium"
           startIcon={<Refresh />}
           onClick={loadSchemas}
           disabled={loading}
+          sx={{
+            py: 1,
+            px: 2.5,
+            borderRadius: 1.5,
+            fontSize: '0.85rem',
+            fontWeight: 600,
+            textTransform: 'none',
+            boxShadow: '0 2px 8px rgba(102, 126, 234, 0.25)',
+            '&:hover': {
+              boxShadow: '0 4px 12px rgba(102, 126, 234, 0.35)',
+              transform: 'translateY(-1px)',
+            },
+            transition: 'all 0.3s ease',
+          }}
         >
           Refresh Schemas
         </Button>
       </Box>
 
+      {/* Loading State */}
       {loading && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-          <CircularProgress />
-        </Box>
+        <Fade in={loading}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', my: 6 }}>
+            <CircularProgress size={48} thickness={4} />
+          </Box>
+        </Fade>
       )}
 
+      {/* Error State */}
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          Error loading schemas: {error}
-        </Alert>
+        <Fade in={!!error}>
+          <Alert
+            severity="error"
+            sx={{
+              mb: 3,
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'error.light',
+              fontWeight: 600,
+            }}
+          >
+            Error loading schemas: {error}
+          </Alert>
+        </Fade>
       )}
 
-      {!loading && schemas.length === 0 && (
-        <Alert severity="info">
-          No schemas found. Place JSON schema files in the <code>schemas/</code> directory.
-        </Alert>
+      {/* Empty State */}
+      {!loading && schemas.length === 0 && !error && (
+        <Fade in={!loading && schemas.length === 0}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 4,
+              borderRadius: 2,
+              border: '2px dashed',
+              borderColor: 'divider',
+              textAlign: 'center',
+              background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.03) 0%, rgba(118, 75, 162, 0.03) 100%)',
+            }}
+          >
+            <Storage sx={{ fontSize: 64, color: 'text.secondary', mb: 2, opacity: 0.5 }} />
+            <Typography variant="h6" fontWeight="700" fontSize="0.95rem" gutterBottom>
+              No Schemas Found
+            </Typography>
+            <Typography variant="body2" fontSize="0.8rem" color="text.secondary">
+              Place JSON schema files in the <code style={{
+                padding: '2px 6px',
+                borderRadius: '4px',
+                background: 'rgba(0,0,0,0.05)',
+                fontWeight: 600,
+              }}>schemas/</code> directory to get started.
+            </Typography>
+          </Paper>
+        </Fade>
       )}
 
+      {/* Schemas List */}
       {!loading && schemas.length > 0 && (
-        <Paper>
-          <List>
-            {schemas.map((schema, index) => (
-              <ListItem
-                key={index}
-                divider={index < schemas.length - 1}
-                secondaryAction={
-                  <Chip
-                    icon={<Description />}
-                    label="JSON Schema"
-                    size="small"
-                    color="primary"
-                    variant="outlined"
-                  />
-                }
-              >
-                <ListItemText
-                  primary={
-                    <Typography variant="h6" component="span">
-                      {schema}
-                    </Typography>
+        <Fade in={!loading && schemas.length > 0}>
+          <Paper
+            elevation={0}
+            sx={{
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'divider',
+              overflow: 'hidden',
+            }}
+          >
+            <List sx={{ p: 0 }}>
+              {schemas.map((schema, index) => (
+                <ListItem
+                  key={index}
+                  divider={index < schemas.length - 1}
+                  sx={{
+                    py: 2,
+                    px: 2.5,
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      backgroundColor: 'rgba(102, 126, 234, 0.04)',
+                      transform: 'translateX(4px)',
+                    },
+                  }}
+                  secondaryAction={
+                    <Chip
+                      icon={<Description sx={{ fontSize: 18 }} />}
+                      label="JSON Schema"
+                      size="medium"
+                      color="primary"
+                      variant="outlined"
+                      sx={{
+                        fontWeight: 600,
+                        borderRadius: 1.5,
+                        borderWidth: 2,
+                      }}
+                    />
                   }
-                  secondary={`Location: schemas/${schema}.json`}
-                />
-              </ListItem>
-            ))}
-          </List>
-        </Paper>
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, mr: 2 }}>
+                    <Box
+                      sx={{
+                        p: 1.5,
+                        borderRadius: 1.5,
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minWidth: 48,
+                      }}
+                    >
+                      <Storage sx={{ color: 'white', fontSize: 24 }} />
+                    </Box>
+                    <ListItemText
+                      primary={
+                        <Typography variant="h6" fontWeight="700" fontSize="0.95rem" component="span" sx={{ mb: 0.5 }}>
+                          {schema}
+                        </Typography>
+                      }
+                      secondary={
+                        <Typography variant="body2" fontSize="0.8rem" color="text.secondary" sx={{ mt: 0.5 }}>
+                          Location: <code style={{
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            background: 'rgba(0,0,0,0.05)',
+                            fontWeight: 600,
+                            fontSize: '0.75rem',
+                          }}>schemas/{schema}.json</code>
+                        </Typography>
+                      }
+                    />
+                  </Box>
+                </ListItem>
+              ))}
+            </List>
+          </Paper>
+        </Fade>
       )}
 
-      <Paper sx={{ p: 3, mt: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          About Database Schemas
-        </Typography>
-        <Typography variant="body2" paragraph>
+      {/* About Section */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: 3,
+          mt: 3,
+          borderRadius: 2,
+          border: '1px solid',
+          borderColor: 'divider',
+          background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.03) 0%, rgba(118, 75, 162, 0.03) 100%)',
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+          <Box
+            sx={{
+              p: 1,
+              borderRadius: 1.5,
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Info sx={{ color: 'white', fontSize: 22 }} />
+          </Box>
+          <Typography variant="h6" fontWeight="700" fontSize="0.95rem">
+            About Database Schemas
+          </Typography>
+        </Box>
+
+        <Typography variant="body2" fontSize="0.8rem" paragraph sx={{ mb: 2, lineHeight: 1.6 }}>
           Database schemas define the structure of your databases including tables, columns, and
           relationships. These schemas are used to generate knowledge graphs and reconciliation
           rules.
         </Typography>
-        <Typography variant="body2" paragraph>
-          <strong>To add a new schema:</strong>
-        </Typography>
-        <ol>
-          <li>
-            <Typography variant="body2">
-              Export your database schema as JSON format
-            </Typography>
-          </li>
-          <li>
-            <Typography variant="body2">
-              Place the file in the <code>schemas/</code> directory
-            </Typography>
-          </li>
-          <li>
-            <Typography variant="body2">
-              Refresh this page to see the new schema
-            </Typography>
-          </li>
-          <li>
-            <Typography variant="body2">
-              Navigate to <strong>Knowledge Graph</strong> to generate a graph from the schema
-            </Typography>
-          </li>
-        </ol>
+
+        <Box
+          sx={{
+            p: 2.5,
+            borderRadius: 1.5,
+            background: 'white',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Typography variant="body2" fontSize="0.85rem" fontWeight="700" sx={{ mb: 2 }}>
+            To add a new schema:
+          </Typography>
+          <Box component="ol" sx={{ pl: 2.5, m: 0 }}>
+            <Box component="li" sx={{ mb: 1.5 }}>
+              <Typography variant="body2" fontSize="0.8rem" sx={{ lineHeight: 1.6 }}>
+                Export your database schema as JSON format
+              </Typography>
+            </Box>
+            <Box component="li" sx={{ mb: 1.5 }}>
+              <Typography variant="body2" fontSize="0.8rem" sx={{ lineHeight: 1.6 }}>
+                Place the file in the <code style={{
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  background: 'rgba(102, 126, 234, 0.1)',
+                  fontWeight: 600,
+                  color: '#667eea',
+                }}>schemas/</code> directory
+              </Typography>
+            </Box>
+            <Box component="li" sx={{ mb: 1.5 }}>
+              <Typography variant="body2" fontSize="0.8rem" sx={{ lineHeight: 1.6 }}>
+                Refresh this page to see the new schema
+              </Typography>
+            </Box>
+            <Box component="li">
+              <Typography variant="body2" fontSize="0.8rem" sx={{ lineHeight: 1.6 }}>
+                Navigate to <strong style={{ color: '#667eea' }}>Knowledge Graph</strong> to generate a graph from the schema
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
       </Paper>
     </Container>
   );
