@@ -14,7 +14,6 @@ import {
   IconButton,
 } from '@mui/material';
 import {
-  CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
   Schedule as ScheduleIcon,
   Visibility as VisibilityIcon,
@@ -63,41 +62,6 @@ const KPIDashboard = () => {
 
   const handleRefresh = () => {
     fetchDashboardData();
-  };
-
-  const getStatusIcon = (status) => {
-    if (!status) return <ScheduleIcon sx={{ fontSize: 16, color: '#fbbf24' }} />;
-    if (status === 'success') return <CheckCircleIcon sx={{ fontSize: 16, color: '#10b981' }} />;
-    if (status === 'failed') return <ErrorIcon sx={{ fontSize: 16, color: '#f87171' }} />;
-    return <ScheduleIcon sx={{ fontSize: 16, color: '#f59e0b' }} />;
-  };
-
-  const getStatusColor = (status) => {
-    if (!status) return 'warning';
-    if (status === 'success') return 'success';
-    if (status === 'failed') return 'error';
-    return 'warning';
-  };
-
-  const getStatusStyles = (status) => {
-    const styles = {
-      success: {
-        bgcolor: '#f0fdf9',
-        color: '#047857',
-        borderColor: '#d1fae5'
-      },
-      failed: {
-        bgcolor: '#fef8f8',
-        color: '#dc2626',
-        borderColor: '#fee2e2'
-      },
-      warning: {
-        bgcolor: '#fffcf5',
-        color: '#d97706',
-        borderColor: '#fed7aa'
-      }
-    };
-    return styles[status] || styles.warning;
   };
 
   if (loading) {
@@ -496,131 +460,46 @@ const KPIDashboard = () => {
                           },
                         }}
                       />
-                      {kpi.latest_execution && (
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          {getStatusIcon(kpi.latest_execution.status)}
-                        </Box>
-                      )}
                     </Box>
 
                     <CardContent sx={{ flex: 1, p: 1.5, display: 'flex', flexDirection: 'column' }}>
-                      {/* KPI Name */}
-                      <Typography
-                        variant="h6"
-                        fontWeight="700"
-                        fontSize="0.9375rem"
-                        sx={{
-                          mb: kpi.description ? 0.5 : 0.75,
-                          color: '#111827',
-                          lineHeight: 1.3,
-                          letterSpacing: '-0.01em',
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                          wordBreak: 'break-word'
-                        }}
-                      >
-                        {kpi.name}
-                      </Typography>
-
-                      {/* KPI Description - Only 1 line if exists */}
-                      {kpi.description && (
-                        <Typography
-                          variant="body2"
-                          fontSize="0.8125rem"
-                          sx={{
-                            color: '#6b7280',
-                            mb: 1,
-                            lineHeight: 1.4,
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden',
-                            wordBreak: 'break-word'
-                          }}
-                        >
-                          {kpi.description}
-                        </Typography>
-                      )}
-
-                      {/* Latest Execution Info - Horizontal Compact */}
+                      {/* KPI Name and Records Row */}
                       {kpi.latest_execution ? (
-                        <Box sx={{ mt: 'auto', display: 'flex', gap: 1 }}>
-                          {/* Status */}
-                          <Box
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1.5, mb: kpi.description ? 0.5 : 1 }}>
+                          {/* KPI Name */}
+                          <Typography
+                            variant="h6"
+                            fontWeight="700"
+                            fontSize="0.9375rem"
                             sx={{
+                              color: '#111827',
+                              lineHeight: 1.3,
+                              letterSpacing: '-0.01em',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
                               flex: 1,
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 0.75,
-                              p: 1,
-                              bgcolor: getStatusStyles(getStatusColor(kpi.latest_execution.status)).bgcolor,
-                              borderRadius: 2,
-                              border: `1px solid ${getStatusStyles(getStatusColor(kpi.latest_execution.status)).borderColor}`,
+                              minWidth: 0
                             }}
                           >
-                            <Box
-                              sx={{
-                                width: 28,
-                                height: 28,
-                                borderRadius: 1.5,
-                                bgcolor: 'white',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                flexShrink: 0
-                              }}
-                            >
-                              {getStatusIcon(kpi.latest_execution.status)}
-                            </Box>
-                            <Box sx={{ minWidth: 0, flex: 1 }}>
-                              <Typography
-                                variant="caption"
-                                sx={{
-                                  display: 'block',
-                                  fontSize: '0.625rem',
-                                  fontWeight: 600,
-                                  color: getStatusStyles(getStatusColor(kpi.latest_execution.status)).color,
-                                  textTransform: 'uppercase',
-                                  letterSpacing: '0.02em',
-                                  lineHeight: 1.2,
-                                }}
-                              >
-                                Status
-                              </Typography>
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  fontSize: '0.75rem',
-                                  fontWeight: 700,
-                                  color: getStatusStyles(getStatusColor(kpi.latest_execution.status)).color,
-                                  textTransform: 'capitalize',
-                                  lineHeight: 1.3,
-                                  whiteSpace: 'nowrap',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis'
-                                }}
-                              >
-                                {kpi.latest_execution.status || 'pending'}
-                              </Typography>
-                            </Box>
-                          </Box>
+                            {kpi.name}
+                          </Typography>
 
                           {/* Records */}
                           <Box
                             sx={{
-                              flex: 1,
                               display: 'flex',
                               alignItems: 'center',
                               gap: 0.75,
-                              p: 1,
+                              px: 1.25,
+                              py: 0.75,
                               bgcolor: '#fafbfc',
                               borderRadius: 2,
-                              border: '1px solid #f3f4f6'
+                              border: '1px solid #f3f4f6',
+                              flexShrink: 0
                             }}
                           >
-                            <Box sx={{ minWidth: 0, flex: 1 }}>
+                            <Box>
                               <Typography
                                 variant="caption"
                                 sx={{
@@ -643,46 +522,87 @@ const KPIDashboard = () => {
                                   color: '#111827',
                                   lineHeight: 1.3,
                                   whiteSpace: 'nowrap',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis'
                                 }}
                               >
                                 {kpi.latest_execution.record_count.toLocaleString()}
                               </Typography>
                             </Box>
                           </Box>
-
-                          {/* Error Message */}
-                          {kpi.latest_execution.error_message && (
-                            <Alert
-                              severity="error"
-                              icon={<ErrorIcon sx={{ fontSize: 14 }} />}
-                              sx={{
-                                mt: 1,
-                                borderRadius: 2,
-                                fontSize: '0.6875rem',
-                                py: 0.5,
-                                bgcolor: '#fef8f8',
-                                border: '1px solid #fee2e2',
-                                boxShadow: 'none',
-                                '& .MuiAlert-icon': {
-                                  fontSize: 14,
-                                  color: '#f87171',
-                                  mr: 0.75
-                                },
-                                '& .MuiAlert-message': {
-                                  color: '#dc2626',
-                                  fontWeight: 500,
-                                  lineHeight: 1.4,
-                                  padding: 0
-                                }
-                              }}
-                            >
-                              {kpi.latest_execution.error_message}
-                            </Alert>
-                          )}
                         </Box>
                       ) : (
+                        <Typography
+                          variant="h6"
+                          fontWeight="700"
+                          fontSize="0.9375rem"
+                          sx={{
+                            mb: kpi.description ? 0.5 : 0.75,
+                            color: '#111827',
+                            lineHeight: 1.3,
+                            letterSpacing: '-0.01em',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                            wordBreak: 'break-word'
+                          }}
+                        >
+                          {kpi.name}
+                        </Typography>
+                      )}
+
+                      {/* KPI Description */}
+                      {kpi.description && (
+                        <Typography
+                          variant="body2"
+                          fontSize="0.8125rem"
+                          sx={{
+                            color: '#6b7280',
+                            mb: 1,
+                            lineHeight: 1.4,
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                            wordBreak: 'break-word'
+                          }}
+                        >
+                          {kpi.description}
+                        </Typography>
+                      )}
+
+                      {/* Error Message */}
+                      {kpi.latest_execution && kpi.latest_execution.error_message && (
+                        <Alert
+                          severity="error"
+                          icon={<ErrorIcon sx={{ fontSize: 14 }} />}
+                          sx={{
+                            mt: 'auto',
+                            mb: 0,
+                            borderRadius: 2,
+                            fontSize: '0.6875rem',
+                            py: 0.5,
+                            bgcolor: '#fef8f8',
+                            border: '1px solid #fee2e2',
+                            boxShadow: 'none',
+                            '& .MuiAlert-icon': {
+                              fontSize: 14,
+                              color: '#f87171',
+                              mr: 0.75
+                            },
+                            '& .MuiAlert-message': {
+                              color: '#dc2626',
+                              fontWeight: 500,
+                              lineHeight: 1.4,
+                              padding: 0
+                            }
+                          }}
+                        >
+                          {kpi.latest_execution.error_message}
+                        </Alert>
+                      )}
+
+                      {/* No Executions Yet State */}
+                      {!kpi.latest_execution && (
                         <Box
                           sx={{
                             mt: 'auto',
