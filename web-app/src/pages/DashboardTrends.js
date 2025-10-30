@@ -14,6 +14,7 @@ import {
   DialogContent,
   DialogActions,
   IconButton,
+  Tooltip,
 } from '@mui/material';
 import {
   Schedule as ScheduleIcon,
@@ -23,7 +24,7 @@ import {
   ShowChart as ShowChartIcon,
   Close as CloseIcon,
 } from '@mui/icons-material';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 import KPIResultsViewDialog from '../components/KPIResultsViewDialog';
 import { API_BASE_URL, getKPIExecutions } from '../services/api';
 
@@ -288,27 +289,23 @@ const DashboardTrend = () => {
           </Box>
 
           {/* Right Side - Refresh Icon */}
-          <IconButton
-            onClick={handleRefresh}
-            sx={{
-              background: 'rgba(255, 255, 255, 0.2)',
-              color: 'white',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-              '&:hover': {
-                background: 'rgba(255, 255, 255, 0.3)',
-                border: '1px solid rgba(255, 255, 255, 0.4)',
-                transform: 'translateY(-1px)',
-                boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)'
-              },
-              width: '48px',
-              height: '48px',
-              borderRadius: 2,
-              boxShadow: 'none',
-              transition: 'all 0.2s ease-in-out',
-            }}
-          >
-            <RefreshIcon sx={{ fontSize: 24 }} />
-          </IconButton>
+          <Tooltip title="Refresh Dashboard">
+            <IconButton
+              onClick={handleRefresh}
+              disabled={loading}
+              sx={{
+                color: 'white',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                },
+                '&:disabled': {
+                  color: 'rgba(255, 255, 255, 0.5)',
+                },
+              }}
+            >
+              <RefreshIcon />
+            </IconButton>
+          </Tooltip>
         </Box>
       </Paper>
 
