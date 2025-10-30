@@ -27,8 +27,9 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Fade,
 } from '@mui/material';
-import { Add, Delete, Send, PlayArrow } from '@mui/icons-material';
+import { Add, Delete, Send, PlayArrow, Psychology, CheckCircle, Info, Settings } from '@mui/icons-material';
 import { integrateNLRelationships, generateRules, listSchemas, listKGs, executeNLQueries } from '../services/api';
 
 export default function NaturalLanguage() {
@@ -266,35 +267,124 @@ export default function NaturalLanguage() {
   };
 
   return (
-    <Container maxWidth="xl">
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom>
-          Natural Language to Reconciliation Rules
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Define relationships using plain English and automatically generate reconciliation rulesets
-        </Typography>
-        <Alert severity="info" sx={{ mt: 2 }}>
-          This page integrates relationships into the Knowledge Graph and then automatically generates reconciliation rules.
-        </Alert>
+    <Container maxWidth="xl" sx={{ py: 1.5 }}>
+      {/* Enhanced Gradient Header */}
+      <Box
+        sx={{
+          mb: 3,
+          p: 2,
+          borderRadius: 2,
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white',
+          boxShadow: '0 4px 20px rgba(102, 126, 234, 0.3)',
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+          <Psychology sx={{ fontSize: 28 }} />
+          <Box>
+            <Typography variant="h5" fontWeight="700" sx={{ mb: 0.25, lineHeight: 1.2, fontSize: '1.15rem' }}>
+              Natural Language to Reconciliation Rules
+            </Typography>
+            <Typography variant="body2" fontSize="0.8rem" sx={{ opacity: 0.95, fontWeight: 400 }}>
+              Define relationships using plain English and automatically generate reconciliation rulesets
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Info in Header */}
+        <Box
+          sx={{
+            mt: 2,
+            p: 1.5,
+            borderRadius: 1.5,
+            background: 'rgba(255, 255, 255, 0.15)',
+            backdropFilter: 'blur(10px)',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Info sx={{ fontSize: 18 }} />
+            <Typography variant="body2" fontSize="0.75rem" sx={{ opacity: 0.95, fontWeight: 500 }}>
+              This page integrates relationships into the Knowledge Graph and then automatically generates reconciliation rules.
+            </Typography>
+          </Box>
+        </Box>
       </Box>
 
+      {/* Error Alert */}
       {error && (
-        <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>
-          {error}
-        </Alert>
+        <Fade in={!!error}>
+          <Alert
+            severity="error"
+            onClose={() => setError(null)}
+            sx={{
+              mb: 3,
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'error.light',
+              fontWeight: 600,
+            }}
+          >
+            {error}
+          </Alert>
+        </Fade>
       )}
 
+      {/* Success Alert */}
       {success && (
-        <Alert severity="success" onClose={() => setSuccess(null)} sx={{ mb: 2 }}>
-          {success}
-        </Alert>
+        <Fade in={!!success}>
+          <Alert
+            severity="success"
+            onClose={() => setSuccess(null)}
+            sx={{
+              mb: 3,
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'success.light',
+              fontWeight: 600,
+            }}
+          >
+            {success}
+          </Alert>
+        </Fade>
       )}
 
-      {/* Tab Navigation */}
-      <Paper sx={{ mb: 3 }}>
-        <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
-          <Tab label="Execute Queries" value="execute" />
+      {/* Enhanced Tab Navigation */}
+      <Paper
+        elevation={0}
+        sx={{
+          mb: 3,
+          borderRadius: 2,
+          border: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
+        <Tabs
+          value={activeTab}
+          onChange={(e, newValue) => setActiveTab(newValue)}
+          sx={{
+            minHeight: 48,
+            '& .MuiTab-root': {
+              textTransform: 'none',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              minHeight: 48,
+              py: 1,
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                backgroundColor: 'action.hover',
+              },
+            },
+            '& .Mui-selected': {
+              color: '#667eea',
+            },
+            '& .MuiTabs-indicator': {
+              height: 3,
+              borderRadius: '3px 3px 0 0',
+              background: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)',
+            },
+          }}
+        >
+          <Tab icon={<PlayArrow />} iconPosition="start" label="Execute Queries" value="execute" />
         </Tabs>
       </Paper>
 
@@ -303,7 +393,7 @@ export default function NaturalLanguage() {
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
+            <Typography variant="h6" fontWeight="700" fontSize="0.95rem" gutterBottom>
               Define Relationships
             </Typography>
 
@@ -540,7 +630,7 @@ export default function NaturalLanguage() {
 
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3, mb: 3 }}>
-            <Typography variant="h6" gutterBottom>
+            <Typography variant="h6" fontWeight="700" fontSize="0.95rem" gutterBottom>
               Request Placeholder
             </Typography>
             <Box
@@ -550,7 +640,7 @@ export default function NaturalLanguage() {
                 bgcolor: 'grey.100',
                 borderRadius: 1,
                 overflow: 'auto',
-                fontSize: '0.875rem',
+                fontSize: '0.75rem',
               }}
             >
               {JSON.stringify(
@@ -579,23 +669,27 @@ export default function NaturalLanguage() {
 
           {results && (
             <Paper sx={{ p: 3, mb: 2 }}>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" fontWeight="700" fontSize="0.95rem" gutterBottom>
                 Step 1: Knowledge Graph Integration
               </Typography>
               <Box sx={{ mb: 2 }}>
                 <Chip
                   label={`${results.total_relationships || 0} Total Relationships`}
                   color="primary"
-                  sx={{ mr: 1 }}
+                  size="small"
+                  sx={{ mr: 1, fontSize: '0.7rem' }}
                 />
                 <Chip
                   label={`${results.nl_relationships_added || 0} Added`}
                   color="success"
-                  sx={{ mr: 1 }}
+                  size="small"
+                  sx={{ mr: 1, fontSize: '0.7rem' }}
                 />
                 <Chip
                   label={`${results.auto_detected_relationships || 0} Auto-detected`}
                   color="info"
+                  size="small"
+                  sx={{ fontSize: '0.7rem' }}
                 />
               </Box>
               <Alert severity="success" sx={{ mt: 2 }}>
@@ -606,14 +700,15 @@ export default function NaturalLanguage() {
 
           {rulesetData && (
             <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" fontWeight="700" fontSize="0.95rem" gutterBottom>
                 Step 2: Reconciliation Rules Generated
               </Typography>
               <Box sx={{ mb: 2 }}>
                 <Chip
                   label={`Ruleset ID: ${rulesetData.ruleset_id}`}
                   color="primary"
-                  sx={{ mr: 1, mb: 1 }}
+                  size="small"
+                  sx={{ fontSize: '0.7rem',mr: 1, mb: 1  }}
                 />
                 <Chip
                   label={`${rulesetData.rules_count} Rules Created`}
@@ -697,12 +792,12 @@ export default function NaturalLanguage() {
 
         <Grid item xs={12}>
           <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
+            <Typography variant="h6" fontWeight="700" fontSize="0.95rem" gutterBottom>
               Supported Formats
             </Typography>
             <Grid container spacing={2}>
               <Grid item xs={12} md={6}>
-                <Typography variant="subtitle2" gutterBottom>
+                <Typography variant="subtitle2" fontSize="0.8rem" gutterBottom>
                   1. Natural Language
                 </Typography>
                 <Box component="code" sx={{ display: 'block', p: 1, bgcolor: 'grey.100' }}>
@@ -712,7 +807,7 @@ export default function NaturalLanguage() {
                 </Box>
               </Grid>
               <Grid item xs={12} md={6}>
-                <Typography variant="subtitle2" gutterBottom>
+                <Typography variant="subtitle2" fontSize="0.8rem" gutterBottom>
                   2. Semi-Structured
                 </Typography>
                 <Box component="code" sx={{ display: 'block', p: 1, bgcolor: 'grey.100' }}>
@@ -720,7 +815,7 @@ export default function NaturalLanguage() {
                 </Box>
               </Grid>
               <Grid item xs={12} md={6}>
-                <Typography variant="subtitle2" gutterBottom>
+                <Typography variant="subtitle2" fontSize="0.8rem" gutterBottom>
                   3. Pseudo-SQL
                 </Typography>
                 <Box component="code" sx={{ display: 'block', p: 1, bgcolor: 'grey.100' }}>
@@ -728,7 +823,7 @@ export default function NaturalLanguage() {
                 </Box>
               </Grid>
               <Grid item xs={12} md={6}>
-                <Typography variant="subtitle2" gutterBottom>
+                <Typography variant="subtitle2" fontSize="0.8rem" gutterBottom>
                   4. Business Rules
                 </Typography>
                 <Box component="code" sx={{ display: 'block', p: 1, bgcolor: 'grey.100' }}>
@@ -743,121 +838,216 @@ export default function NaturalLanguage() {
 
       {/* Execute Queries Tab */}
       {activeTab === 'execute' && (
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Execute NL Queries
-            </Typography>
+        <Fade in={activeTab === 'execute'} timeout={500}>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 3,
+                  borderRadius: 2,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.02) 0%, rgba(118, 75, 162, 0.02) 100%)',
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                  <Box
+                    sx={{
+                      p: 1,
+                      borderRadius: 1.5,
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Settings sx={{ color: 'white', fontSize: 22 }} />
+                  </Box>
+                  <Typography variant="h6" fontWeight="700" fontSize="0.95rem">
+                    Execute NL Queries
+                  </Typography>
+                </Box>
 
-            <TextField
-              fullWidth
-              select
-              label="Knowledge Graph"
-              value={formData.kg_name}
-              onChange={(e) => setFormData({ ...formData, kg_name: e.target.value })}
-              margin="normal"
-              SelectProps={{
-                native: true,
-              }}
-            >
-              <option value="">Select a knowledge graph</option>
-              {kgs.map((kg) => (
-                <option key={kg.name} value={kg.name}>
-                  {kg.name}
-                </option>
-              ))}
-            </TextField>
-
-            <Typography variant="subtitle2" sx={{ mt: 3, mb: 1 }}>
-              Select Schemas
-            </Typography>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-              {schemas.map((schema) => (
-                <Chip
-                  key={schema}
-                  label={schema}
-                  onClick={() => handleSchemaToggle(schema)}
-                  color={formData.schemas.includes(schema) ? 'primary' : 'default'}
-                  variant={formData.schemas.includes(schema) ? 'filled' : 'outlined'}
-                />
-              ))}
-            </Box>
-
-            <Typography variant="subtitle2" sx={{ mt: 3, mb: 1 }}>
-              Query Definitions
-            </Typography>
-            {formData.definitions.map((definition, index) => (
-              <Box key={index} sx={{ display: 'flex', gap: 1, mb: 1 }}>
                 <TextField
                   fullWidth
-                  multiline
-                  rows={2}
-                  placeholder="e.g., Show me all products in RBP GPU which are not in OPS Excel"
-                  value={definition}
-                  onChange={(e) => handleDefinitionChange(index, e.target.value)}
+                  select
+                  label="Knowledge Graph"
+                  value={formData.kg_name}
+                  onChange={(e) => setFormData({ ...formData, kg_name: e.target.value })}
+                  margin="normal"
+                  SelectProps={{
+                    native: true,
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 1.5,
+                      '&:hover fieldset': {
+                        borderColor: '#667eea',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#667eea',
+                      },
+                    },
+                  }}
+                >
+                  <option value="">Select a knowledge graph</option>
+                  {kgs.map((kg) => (
+                    <option key={kg.name} value={kg.name}>
+                      {kg.name}
+                    </option>
+                  ))}
+                </TextField>
+
+                <Typography variant="subtitle2" sx={{ mt: 3, mb: 1.5, fontWeight: 700, fontSize: '0.85rem' }}>
+                  Select Schemas
+                </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                  {schemas.map((schema) => (
+                    <Chip
+                      key={schema}
+                      label={schema}
+                      onClick={() => handleSchemaToggle(schema)}
+                      color={formData.schemas.includes(schema) ? 'primary' : 'default'}
+                      variant={formData.schemas.includes(schema) ? 'filled' : 'outlined'}
+                      sx={{
+                        fontWeight: 600,
+                        borderRadius: 1.5,
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0 2px 8px rgba(102, 126, 234, 0.25)',
+                        },
+                      }}
+                    />
+                  ))}
+                </Box>
+
+                <Typography variant="subtitle2" sx={{ mt: 3, mb: 1.5, fontWeight: 700, fontSize: '0.85rem' }}>
+                  Query Definitions
+                </Typography>
+                {formData.definitions.map((definition, index) => (
+                  <Box key={index} sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={2}
+                      placeholder="e.g., Show me all products in RBP GPU which are not in OPS Excel"
+                      value={definition}
+                      onChange={(e) => handleDefinitionChange(index, e.target.value)}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 1.5,
+                          '&:hover fieldset': {
+                            borderColor: '#667eea',
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#667eea',
+                          },
+                        },
+                      }}
+                    />
+                    {formData.definitions.length > 1 && (
+                      <IconButton
+                        color="error"
+                        onClick={() => handleRemoveDefinition(index)}
+                        size="small"
+                        sx={{
+                          '&:hover': {
+                            backgroundColor: 'error.light',
+                            color: 'white',
+                          },
+                        }}
+                      >
+                        <Delete />
+                      </IconButton>
+                    )}
+                  </Box>
+                ))}
+
+                <Button
+                  startIcon={<Add />}
+                  onClick={handleAddDefinition}
+                  variant="outlined"
+                  sx={{
+                    mb: 2,
+                    borderRadius: 1.5,
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    '&:hover': {
+                      borderColor: '#667eea',
+                      backgroundColor: 'rgba(102, 126, 234, 0.04)',
+                    },
+                  }}
+                >
+                  Add Definition
+                </Button>
+
+                <Divider sx={{ my: 3 }} />
+
+                <TextField
+                  fullWidth
+                  type="number"
+                  label="Result Limit"
+                  value={formData.limit}
+                  onChange={(e) => setFormData({ ...formData, limit: parseInt(e.target.value) })}
+                  margin="normal"
+                  inputProps={{ min: 1, max: 10000 }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 1.5,
+                      '&:hover fieldset': {
+                        borderColor: '#667eea',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#667eea',
+                      },
+                    },
+                  }}
                 />
-                {formData.definitions.length > 1 && (
-                  <IconButton
-                    color="error"
-                    onClick={() => handleRemoveDefinition(index)}
-                    size="small"
-                  >
-                    <Delete />
-                  </IconButton>
-                )}
-              </Box>
-            ))}
 
-            <Button
-              startIcon={<Add />}
-              onClick={handleAddDefinition}
-              variant="outlined"
-              sx={{ mb: 2 }}
-            >
-              Add Definition
-            </Button>
-
-            <Divider sx={{ my: 2 }} />
-
-            <TextField
-              fullWidth
-              type="number"
-              label="Result Limit"
-              value={formData.limit}
-              onChange={(e) => setFormData({ ...formData, limit: parseInt(e.target.value) })}
-              margin="normal"
-              inputProps={{ min: 1, max: 10000 }}
-            />
-
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={formData.use_llm}
-                  onChange={(e) => setFormData({ ...formData, use_llm: e.target.checked })}
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.use_llm}
+                      onChange={(e) => setFormData({ ...formData, use_llm: e.target.checked })}
+                      sx={{
+                        '&.Mui-checked': {
+                          color: '#667eea',
+                        },
+                      }}
+                    />
+                  }
+                  label={<Typography variant="body2" fontSize="0.85rem" fontWeight={600}>Use LLM for Enhanced Parsing</Typography>}
+                  sx={{ mt: 2 }}
                 />
-              }
-              label="Use LLM for Enhanced Parsing"
-              sx={{ mt: 2 }}
-            />
 
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Minimum Confidence: {formData.min_confidence.toFixed(2)}
-              </Typography>
-              <Slider
-                value={formData.min_confidence}
-                onChange={(e, newValue) => setFormData({ ...formData, min_confidence: newValue })}
-                min={0}
-                max={1}
-                step={0.05}
-                marks={[
-                  { value: 0, label: '0' },
-                  { value: 0.5, label: '0.5' },
-                  { value: 1, label: '1' },
-                ]}
-              />
-            </Box>
+                <Box sx={{ mt: 3 }}>
+                  <Typography variant="body2" fontWeight={600} fontSize="0.85rem" gutterBottom>
+                    Minimum Confidence: {formData.min_confidence.toFixed(2)}
+                  </Typography>
+                  <Slider
+                    value={formData.min_confidence}
+                    onChange={(e, newValue) => setFormData({ ...formData, min_confidence: newValue })}
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    marks={[
+                      { value: 0, label: '0' },
+                      { value: 0.5, label: '0.5' },
+                      { value: 1, label: '1' },
+                    ]}
+                    sx={{
+                      color: '#667eea',
+                      '& .MuiSlider-thumb': {
+                        '&:hover, &.Mui-focusVisible': {
+                          boxShadow: '0 0 0 8px rgba(102, 126, 234, 0.16)',
+                        },
+                      },
+                    }}
+                  />
+                </Box>
 
             {/* Excluded Fields - HIDDEN */}
             {false && (
@@ -891,153 +1081,293 @@ export default function NaturalLanguage() {
             </>
             )}
 
-            <Button
-              fullWidth
-              variant="contained"
-              color="primary"
-              startIcon={loading ? <CircularProgress size={20} /> : <PlayArrow />}
-              onClick={handleExecuteQueries}
-              disabled={loading}
-              sx={{ mt: 3 }}
-            >
-              {loading ? 'Executing...' : 'Execute Queries'}
-            </Button>
-          </Paper>
-        </Grid>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  size="large"
+                  color="primary"
+                  startIcon={loading ? <CircularProgress size={20} sx={{ color: 'white' }} /> : <PlayArrow />}
+                  onClick={handleExecuteQueries}
+                  disabled={loading}
+                  sx={{
+                    mt: 3,
+                    py: 1.5,
+                    borderRadius: 1.5,
+                    fontSize: '0.9rem',
+                    fontWeight: 700,
+                    textTransform: 'none',
+                    boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    '&:hover': {
+                      boxShadow: '0 6px 16px rgba(102, 126, 234, 0.4)',
+                      transform: 'translateY(-2px)',
+                      background: 'linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%)',
+                    },
+                    '&:disabled': {
+                      background: 'rgba(0, 0, 0, 0.12)',
+                    },
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  {loading ? 'Executing...' : 'Execute Queries'}
+                </Button>
+              </Paper>
+            </Grid>
 
-        {/* Query Results */}
-        {queryResults && (
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Query Results
-            </Typography>
-
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle2">
-                Total Queries: {queryResults.total_definitions}
-              </Typography>
-              <Typography variant="subtitle2" color="success.main">
-                Successful: {queryResults.successful}
-              </Typography>
-              {queryResults.failed > 0 && (
-                <Typography variant="subtitle2" color="error">
-                  Failed: {queryResults.failed}
-                </Typography>
-              )}
-            </Box>
-
-            {queryResults.statistics && (
-            <Box sx={{ mb: 2, p: 1, bgcolor: 'grey.100', borderRadius: 1 }}>
-              <Typography variant="subtitle2">Statistics</Typography>
-              <Typography variant="body2">
-                Total Records: {queryResults.statistics.total_records}
-              </Typography>
-              <Typography variant="body2">
-                Execution Time: {queryResults.statistics.total_execution_time_ms.toFixed(2)}ms
-              </Typography>
-              <Typography variant="body2">
-                Avg Confidence: {queryResults.statistics.average_confidence.toFixed(2)}
-              </Typography>
-            </Box>
-            )}
-
-            <Divider sx={{ my: 2 }} />
-
-            {queryResults.results && queryResults.results.map((result, index) => (
-            <Box key={index} sx={{ mb: 3, p: 2, border: '1px solid #ddd', borderRadius: 1 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Query {index + 1}: {result.definition}
-              </Typography>
-
-              <Box sx={{ mb: 1 }}>
-                <Chip
-                  label={`Type: ${result.query_type}`}
-                  size="small"
-                  sx={{ mr: 1 }}
-                />
-                {result.operation && (
-                  <Chip
-                    label={`Operation: ${result.operation}`}
-                    size="small"
-                    sx={{ mr: 1 }}
-                  />
-                )}
-                <Chip
-                  label={`Confidence: ${result.confidence.toFixed(2)}`}
-                  size="small"
-                  color={result.confidence >= 0.8 ? 'success' : 'warning'}
-                />
-              </Box>
-
-              {result.error ? (
-                <Alert severity="error" sx={{ mb: 1 }}>
-                  {result.error}
-                </Alert>
-              ) : (
-                <>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    <strong>Records Found:</strong> {result.record_count}
-                  </Typography>
-
-                  {result.join_columns && result.join_columns.length > 0 && (
-                    <Typography variant="body2" sx={{ mb: 1 }}>
-                      <strong>Join Columns:</strong> {result.join_columns.map(jc => `${jc[0]} ← → ${jc[1]}`).join(', ')}
-                    </Typography>
-                  )}
-
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    <strong>Execution Time:</strong> {result.execution_time_ms.toFixed(2)}ms
-                  </Typography>
-
-                  <Box sx={{ mb: 1, p: 1, bgcolor: '#f5f5f5', borderRadius: 1, maxHeight: 150, overflow: 'auto' }}>
-                    <Typography variant="caption" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
-                      <strong>SQL:</strong>
-                    </Typography>
-                    <Typography variant="caption" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.7rem', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
-                      {result.sql}
+            {/* Query Results */}
+            {queryResults && (
+              <Grid item xs={12} md={6}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 3,
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.02) 0%, rgba(118, 75, 162, 0.02) 100%)',
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                    <Box
+                      sx={{
+                        p: 1,
+                        borderRadius: 1.5,
+                        background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <CheckCircle sx={{ color: 'white', fontSize: 22 }} />
+                    </Box>
+                    <Typography variant="h6" fontWeight="700" fontSize="0.95rem">
+                      Query Results
                     </Typography>
                   </Box>
 
-                  {result.records && result.records.length > 0 && (
-                    <Box sx={{ mt: 1 }}>
-                      <Typography variant="caption">
-                        <strong>Sample Records (first 5):</strong>
+                  <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    <Chip
+                      label={`Total: ${queryResults.total_definitions}`}
+                      size="medium"
+                      sx={{
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        borderRadius: 1.5,
+                      }}
+                      color="primary"
+                    />
+                    <Chip
+                      label={`Successful: ${queryResults.successful}`}
+                      size="medium"
+                      sx={{
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        borderRadius: 1.5,
+                      }}
+                      color="success"
+                    />
+                    {queryResults.failed > 0 && (
+                      <Chip
+                        label={`Failed: ${queryResults.failed}`}
+                        size="medium"
+                        sx={{
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          borderRadius: 1.5,
+                        }}
+                        color="error"
+                      />
+                    )}
+                  </Box>
+
+                  {queryResults.statistics && (
+                    <Box
+                      sx={{
+                        mb: 2,
+                        p: 2,
+                        bgcolor: 'rgba(0, 0, 0, 0.03)',
+                        borderRadius: 1.5,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                      }}
+                    >
+                      <Typography variant="subtitle2" fontSize="0.85rem" fontWeight={700} gutterBottom>
+                        Statistics
                       </Typography>
-                      <TableContainer sx={{ mt: 1 }}>
-                        <Table size="small">
-                          <TableHead>
-                            <TableRow sx={{ bgcolor: 'grey.200' }}>
-                              {Object.keys(result.records[0]).map((key) => (
-                                <TableCell key={key} sx={{ fontSize: '0.75rem' }}>
-                                  {key}
-                                </TableCell>
-                              ))}
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {result.records.slice(0, 5).map((record, rIdx) => (
-                              <TableRow key={rIdx}>
-                                {Object.values(record).map((value, vIdx) => (
-                                  <TableCell key={vIdx} sx={{ fontSize: '0.75rem' }}>
-                                    {String(value).substring(0, 50)}
-                                  </TableCell>
-                                ))}
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
+                      <Typography variant="body2" fontSize="0.8rem">
+                        <strong>Total Records:</strong> {queryResults.statistics.total_records}
+                      </Typography>
+                      <Typography variant="body2" fontSize="0.8rem">
+                        <strong>Execution Time:</strong> {queryResults.statistics.total_execution_time_ms.toFixed(2)}ms
+                      </Typography>
+                      <Typography variant="body2" fontSize="0.8rem">
+                        <strong>Avg Confidence:</strong> {queryResults.statistics.average_confidence.toFixed(2)}
+                      </Typography>
                     </Box>
                   )}
-                </>
-              )}
-            </Box>
-            ))}
-          </Paper>
-        </Grid>
-        )}
-      </Grid>
+
+                  <Divider sx={{ my: 2 }} />
+
+                  {queryResults.results && queryResults.results.map((result, index) => (
+                    <Box
+                      key={index}
+                      sx={{
+                        mb: 3,
+                        p: 2.5,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        borderRadius: 2,
+                        background: 'white',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          borderColor: '#667eea',
+                          boxShadow: '0 2px 12px rgba(102, 126, 234, 0.15)',
+                        },
+                      }}
+                    >
+                      <Typography variant="subtitle2" fontSize="0.85rem" fontWeight={700} gutterBottom>
+                        Query {index + 1}: {result.definition}
+                      </Typography>
+
+                      <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                        <Chip
+                          label={`Type: ${result.query_type}`}
+                          size="small"
+                          sx={{
+                            fontSize: '0.7rem',
+                            fontWeight: 600,
+                            borderRadius: 1,
+                          }}
+                        />
+                        {result.operation && (
+                          <Chip
+                            label={`Operation: ${result.operation}`}
+                            size="small"
+                            sx={{
+                              fontSize: '0.7rem',
+                              fontWeight: 600,
+                              borderRadius: 1,
+                            }}
+                          />
+                        )}
+                        <Chip
+                          label={`Confidence: ${result.confidence.toFixed(2)}`}
+                          size="small"
+                          color={result.confidence >= 0.8 ? 'success' : 'warning'}
+                          sx={{
+                            fontSize: '0.7rem',
+                            fontWeight: 600,
+                            borderRadius: 1,
+                          }}
+                        />
+                      </Box>
+
+                      {result.error ? (
+                        <Alert
+                          severity="error"
+                          sx={{
+                            mb: 1,
+                            borderRadius: 1.5,
+                            fontWeight: 600,
+                          }}
+                        >
+                          {result.error}
+                        </Alert>
+                      ) : (
+                        <>
+                          <Typography variant="body2" fontSize="0.8rem" sx={{ mb: 1.5 }}>
+                            <strong>Records Found:</strong> {result.record_count}
+                          </Typography>
+
+                          {result.join_columns && result.join_columns.length > 0 && (
+                            <Typography variant="body2" fontSize="0.8rem" sx={{ mb: 1.5 }}>
+                              <strong>Join Columns:</strong> {result.join_columns.map(jc => `${jc[0]} ← → ${jc[1]}`).join(', ')}
+                            </Typography>
+                          )}
+
+                          <Typography variant="body2" fontSize="0.8rem" sx={{ mb: 1.5 }}>
+                            <strong>Execution Time:</strong> {result.execution_time_ms.toFixed(2)}ms
+                          </Typography>
+
+                          <Box
+                            sx={{
+                              mb: 2,
+                              p: 2,
+                              bgcolor: 'rgba(0, 0, 0, 0.03)',
+                              borderRadius: 1.5,
+                              maxHeight: 150,
+                              overflow: 'auto',
+                              border: '1px solid',
+                              borderColor: 'divider',
+                            }}
+                          >
+                            <Typography variant="caption" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.7rem', fontWeight: 700, mb: 0.5 }}>
+                              SQL:
+                            </Typography>
+                            <Typography variant="caption" component="div" sx={{ fontFamily: 'monospace', fontSize: '0.65rem', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                              {result.sql}
+                            </Typography>
+                          </Box>
+
+                          {result.records && result.records.length > 0 && (
+                            <Box sx={{ mt: 2 }}>
+                              <Typography variant="caption" fontSize="0.75rem" fontWeight={700} gutterBottom>
+                                Sample Records (first 5):
+                              </Typography>
+                              <TableContainer
+                                sx={{
+                                  mt: 1,
+                                  borderRadius: 1.5,
+                                  border: '1px solid',
+                                  borderColor: 'divider',
+                                }}
+                              >
+                                <Table size="small">
+                                  <TableHead>
+                                    <TableRow
+                                      sx={{
+                                        background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%)',
+                                      }}
+                                    >
+                                      {Object.keys(result.records[0]).map((key) => (
+                                        <TableCell key={key} sx={{ fontSize: '0.75rem', fontWeight: 700 }}>
+                                          {key}
+                                        </TableCell>
+                                      ))}
+                                    </TableRow>
+                                  </TableHead>
+                                  <TableBody>
+                                    {result.records.slice(0, 5).map((record, rIdx) => (
+                                      <TableRow
+                                        key={rIdx}
+                                        sx={{
+                                          '&:hover': {
+                                            backgroundColor: 'rgba(102, 126, 234, 0.04)',
+                                          },
+                                          transition: 'background-color 0.3s ease',
+                                        }}
+                                      >
+                                        {Object.values(record).map((value, vIdx) => (
+                                          <TableCell key={vIdx} sx={{ fontSize: '0.75rem' }}>
+                                            {String(value).substring(0, 50)}
+                                          </TableCell>
+                                        ))}
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </TableContainer>
+                            </Box>
+                          )}
+                        </>
+                      )}
+                    </Box>
+                  ))}
+                </Paper>
+              </Grid>
+            )}
+          </Grid>
+        </Fade>
       )}
     </Container>
   );

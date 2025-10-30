@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -16,24 +16,28 @@ import {
   TableHead,
   TableRow,
   Paper,
+  TablePagination,
+  TextField,
+  IconButton,
+  Tooltip,
   Chip,
   Divider,
-  TextField,
-  TablePagination,
 } from '@mui/material';
 import {
   Close as CloseIcon,
   Download as DownloadIcon,
+  FilterAltOff as ClearFiltersIcon,
   ContentCopy as ContentCopyIcon,
 } from '@mui/icons-material';
 import { API_BASE_URL } from '../services/api';
 
-const KPIResultsViewDialog = ({ open, onClose, kpi }) => {
+const KPIResultsViewDialog = ({ open, onClose, kpi, showMetadata = true }) => {
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [columnFilters, setColumnFilters] = useState({});
   const [copiedSQL, setCopiedSQL] = useState(false);
 
   useEffect(() => {
@@ -72,6 +76,19 @@ const KPIResultsViewDialog = ({ open, onClose, kpi }) => {
     setPage(0);
   };
 
+  const handleFilterChange = (columnName, value) => {
+    setColumnFilters(prev => ({
+      ...prev,
+      [columnName]: value
+    }));
+    setPage(0); // Reset to first page when filter changes
+  };
+
+  const handleClearFilters = () => {
+    setColumnFilters({});
+    setPage(0);
+  };
+
   const handleCopySQL = () => {
     if (results?.sql_query) {
       navigator.clipboard.writeText(results.sql_query);
@@ -80,11 +97,34 @@ const KPIResultsViewDialog = ({ open, onClose, kpi }) => {
     }
   };
 
+  // Filter the data based on column filters
+  const filteredData = useMemo(() => {
+    if (!results?.result_data) return [];
+
+    const activeFilters = Object.entries(columnFilters).filter(([_, value]) => value && value.trim() !== '');
+
+    if (activeFilters.length === 0) {
+      return results.result_data;
+    }
+
+    return results.result_data.filter(row => {
+      return activeFilters.every(([columnName, filterValue]) => {
+        const cellValue = String(row[columnName] ?? '').toLowerCase();
+        const searchValue = filterValue.toLowerCase();
+        return cellValue.includes(searchValue);
+      });
+    });
+  }, [results?.result_data, columnFilters]);
+
+  const hasActiveFilters = useMemo(() => {
+    return Object.values(columnFilters).some(value => value && value.trim() !== '');
+  }, [columnFilters]);
+
   const handleDownloadCSV = () => {
-    if (!results?.result_data || results.result_data.length === 0) return;
+    if (!filteredData || filteredData.length === 0) return;
 
     const headers = results.column_names || [];
-    const rows = results.result_data.map((row) =>
+    const rows = filteredData.map((row) =>
       headers.map((header) => {
         const value = row[header];
         // Escape quotes and wrap in quotes if contains comma
@@ -139,113 +179,117 @@ const KPIResultsViewDialog = ({ open, onClose, kpi }) => {
           <Alert severity="info">No results available</Alert>
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {/* Metadata Section */}
-            <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                Execution Metadata
-              </Typography>
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+            {/* Metadata Section - Conditionally rendered based on showMetadata prop */}
+            {showMetadata && (
+              <>
                 <Box>
-                  <Typography variant="body2" color="textSecondary">
-                    Status
+                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                    Execution Metadata
                   </Typography>
-                  <Chip
-                    label={results.execution_status || 'unknown'}
-                    color={results.execution_status === 'success' ? 'success' : 'error'}
-                    size="small"
-                    sx={{ mt: 0.5 }}
-                  />
+                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                    <Box>
+                      <Typography variant="body2" color="textSecondary">
+                        Status
+                      </Typography>
+                      <Chip
+                        label={results.execution_status || 'unknown'}
+                        color={results.execution_status === 'success' ? 'success' : 'error'}
+                        size="small"
+                        sx={{ mt: 0.5 }}
+                      />
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" color="textSecondary">
+                        Record Count
+                      </Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 'bold', mt: 0.5 }}>
+                        {results.record_count}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" color="textSecondary">
+                        Execution Time
+                      </Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 'bold', mt: 0.5 }}>
+                        {results.execution_time_ms ? `${results.execution_time_ms.toFixed(2)}ms` : 'N/A'}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" color="textSecondary">
+                        Confidence Score
+                      </Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 'bold', mt: 0.5 }}>
+                        {results.confidence_score ? `${(results.confidence_score * 100).toFixed(1)}%` : 'N/A'}
+                      </Typography>
+                    </Box>
+                    {results.source_table && (
+                      <Box>
+                        <Typography variant="body2" color="textSecondary">
+                          Source Table
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 'bold', mt: 0.5 }}>
+                          {results.source_table}
+                        </Typography>
+                      </Box>
+                    )}
+                    {results.target_table && (
+                      <Box>
+                        <Typography variant="body2" color="textSecondary">
+                          Target Table
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 'bold', mt: 0.5 }}>
+                          {results.target_table}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
                 </Box>
-                <Box>
-                  <Typography variant="body2" color="textSecondary">
-                    Record Count
-                  </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 'bold', mt: 0.5 }}>
-                    {results.record_count}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="textSecondary">
-                    Execution Time
-                  </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 'bold', mt: 0.5 }}>
-                    {results.execution_time_ms ? `${results.execution_time_ms.toFixed(2)}ms` : 'N/A'}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="textSecondary">
-                    Confidence Score
-                  </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 'bold', mt: 0.5 }}>
-                    {results.confidence_score ? `${(results.confidence_score * 100).toFixed(1)}%` : 'N/A'}
-                  </Typography>
-                </Box>
-                {results.source_table && (
+
+                <Divider />
+
+                {/* SQL Query Section */}
+                {results.sql_query && (
                   <Box>
-                    <Typography variant="body2" color="textSecondary">
-                      Source Table
-                    </Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 'bold', mt: 0.5 }}>
-                      {results.source_table}
-                    </Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                        Generated SQL Query
+                      </Typography>
+                      <Button
+                        size="small"
+                        startIcon={<ContentCopyIcon />}
+                        onClick={handleCopySQL}
+                      >
+                        {copiedSQL ? 'Copied!' : 'Copy'}
+                      </Button>
+                    </Box>
+                    <Paper
+                      sx={{
+                        p: 2,
+                        backgroundColor: '#f5f5f5',
+                        fontFamily: 'monospace',
+                        fontSize: '0.85rem',
+                        overflow: 'auto',
+                        maxHeight: '200px',
+                      }}
+                    >
+                      <Typography
+                        component="pre"
+                        sx={{
+                          m: 0,
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-word',
+                          fontFamily: 'monospace',
+                        }}
+                      >
+                        {results.sql_query}
+                      </Typography>
+                    </Paper>
                   </Box>
                 )}
-                {results.target_table && (
-                  <Box>
-                    <Typography variant="body2" color="textSecondary">
-                      Target Table
-                    </Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 'bold', mt: 0.5 }}>
-                      {results.target_table}
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
-            </Box>
 
-            <Divider />
-
-            {/* SQL Query Section */}
-            {results.sql_query && (
-              <Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                    Generated SQL Query
-                  </Typography>
-                  <Button
-                    size="small"
-                    startIcon={<ContentCopyIcon />}
-                    onClick={handleCopySQL}
-                  >
-                    {copiedSQL ? 'Copied!' : 'Copy'}
-                  </Button>
-                </Box>
-                <Paper
-                  sx={{
-                    p: 2,
-                    backgroundColor: '#f5f5f5',
-                    fontFamily: 'monospace',
-                    fontSize: '0.85rem',
-                    overflow: 'auto',
-                    maxHeight: '200px',
-                  }}
-                >
-                  <Typography
-                    component="pre"
-                    sx={{
-                      m: 0,
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-word',
-                      fontFamily: 'monospace',
-                    }}
-                  >
-                    {results.sql_query}
-                  </Typography>
-                </Paper>
-              </Box>
+                <Divider />
+              </>
             )}
-
-            <Divider />
 
             {/* Results Table Section */}
             <Box>
@@ -254,18 +298,18 @@ const KPIResultsViewDialog = ({ open, onClose, kpi }) => {
               </Typography>
               {results.result_data && results.result_data.length > 0 ? (
                 <>
-                  <TableContainer component={Paper}>
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                          {results.column_names?.map((col) => (
+                <TableContainer component={Paper}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                        {results.column_names?.map((col) => (
                             <TableCell key={col} sx={{ fontWeight: 'bold' }}>
-                              {col}
-                            </TableCell>
-                          ))}
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
+                            {col}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
                         {results.result_data
                           .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                           .map((row, idx) => (
@@ -277,35 +321,23 @@ const KPIResultsViewDialog = ({ open, onClose, kpi }) => {
                               ))}
                             </TableRow>
                           ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                  <TablePagination
-                    rowsPerPageOptions={[5, 10, 25, 50]}
-                    component="div"
-                    count={results.result_data.length}
-                    rowsPerPage={rowsPerPage}
-                    page={page}
-                    onPageChange={handleChangePage}
-                    onRowsPerPageChange={handleChangeRowsPerPage}
-                  />
-                </>
-              ) : (
-                <Alert severity="info">No data returned from query</Alert>
-              )}
-            </Box>
-
-            {results.error_message && (
-              <>
-                <Divider />
-                <Alert severity="error">
-                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                    Error
-                  </Typography>
-                  {results.error_message}
-                </Alert>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+                <TablePagination
+                  rowsPerPageOptions={[5, 10, 25, 50]}
+                  component="div"
+                  count={filteredData.length}
+                  rowsPerPage={rowsPerPage}
+                  page={page}
+                  onPageChange={handleChangePage}
+                  onRowsPerPageChange={handleChangeRowsPerPage}
+                />
               </>
+            ) : (
+              <Alert severity="info">No data returned from query</Alert>
             )}
+          </Box>
           </Box>
         )}
       </DialogContent>
@@ -314,9 +346,9 @@ const KPIResultsViewDialog = ({ open, onClose, kpi }) => {
         <Button
           startIcon={<DownloadIcon />}
           onClick={handleDownloadCSV}
-          disabled={!results?.result_data || results.result_data.length === 0}
+          disabled={!filteredData || filteredData.length === 0}
         >
-          Download CSV
+          Download CSV {hasActiveFilters ? '(Filtered)' : ''}
         </Button>
         <Button onClick={onClose} variant="contained">
           Close

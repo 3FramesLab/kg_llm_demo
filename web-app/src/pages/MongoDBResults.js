@@ -170,9 +170,9 @@ export default function MongoDBResults() {
             <CardContent>
               <Box display="flex" alignItems="center" mb={1}>
                 <Assessment color="primary" sx={{ mr: 1 }} />
-                <Typography variant="h6">Total Executions</Typography>
+                <Typography variant="h6" fontWeight="700" fontSize="0.95rem">Total Executions</Typography>
               </Box>
-              <Typography variant="h4" color="primary">
+              <Typography variant="h6" fontWeight="600" fontSize="0.9rem" color="primary">
                 {statistics.total_executions || 0}
               </Typography>
             </CardContent>
@@ -183,12 +183,12 @@ export default function MongoDBResults() {
             <CardContent>
               <Box display="flex" alignItems="center" mb={1}>
                 <CheckCircle color="success" sx={{ mr: 1 }} />
-                <Typography variant="h6">Total Matched</Typography>
+                <Typography variant="h6" fontWeight="700" fontSize="0.95rem">Total Matched</Typography>
               </Box>
-              <Typography variant="h4" color="success.main">
+              <Typography variant="h6" fontWeight="600" fontSize="0.9rem" color="success.main">
                 {statistics.total_matched || 0}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" fontSize="0.65rem" color="text.secondary">
                 Avg: {(statistics.avg_matched || 0).toFixed(2)}
               </Typography>
             </CardContent>
@@ -199,12 +199,12 @@ export default function MongoDBResults() {
             <CardContent>
               <Box display="flex" alignItems="center" mb={1}>
                 <Cancel color="warning" sx={{ mr: 1 }} />
-                <Typography variant="h6">Unmatched Source</Typography>
+                <Typography variant="h6" fontWeight="700" fontSize="0.95rem">Unmatched Source</Typography>
               </Box>
-              <Typography variant="h4" color="warning.main">
+              <Typography variant="h6" fontWeight="600" fontSize="0.9rem" color="warning.main">
                 {statistics.total_unmatched_source || 0}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" fontSize="0.65rem" color="text.secondary">
                 Avg: {(statistics.avg_unmatched_source || 0).toFixed(2)}
               </Typography>
             </CardContent>
@@ -215,12 +215,12 @@ export default function MongoDBResults() {
             <CardContent>
               <Box display="flex" alignItems="center" mb={1}>
                 <Cancel color="error" sx={{ mr: 1 }} />
-                <Typography variant="h6">Unmatched Target</Typography>
+                <Typography variant="h6" fontWeight="700" fontSize="0.95rem">Unmatched Target</Typography>
               </Box>
-              <Typography variant="h4" color="error.main">
+              <Typography variant="h6" fontWeight="600" fontSize="0.9rem" color="error.main">
                 {statistics.total_unmatched_target || 0}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" fontSize="0.65rem" color="text.secondary">
                 Avg: {(statistics.avg_unmatched_target || 0).toFixed(2)}
               </Typography>
             </CardContent>
@@ -240,14 +240,14 @@ export default function MongoDBResults() {
             <Grid item xs={12} md={6}>
               <Box display="flex" alignItems="center" mb={1}>
                 <Storage color="primary" sx={{ mr: 1 }} />
-                <Typography variant="h6" component="div">
+                <Typography variant="h6" fontWeight="700" fontSize="0.95rem" component="div">
                   {result.ruleset_id}
                 </Typography>
               </Box>
-              <Typography variant="caption" color="text.secondary" display="block">
+              <Typography variant="caption" fontSize="0.65rem" color="text.secondary" display="block">
                 Document ID: {result._id}
               </Typography>
-              <Typography variant="caption" color="text.secondary" display="block">
+              <Typography variant="caption" fontSize="0.65rem" color="text.secondary" display="block">
                 {formatTimestamp(result.execution_timestamp)}
               </Typography>
             </Grid>
@@ -257,6 +257,7 @@ export default function MongoDBResults() {
                   label={`Matched: ${result.matched_count || 0}`}
                   color="success"
                   size="small"
+                  sx={{ fontSize: '0.7rem' }}
                 />
                 <Chip
                   label={`Source: ${result.unmatched_source_count || 0}`}
@@ -353,8 +354,8 @@ export default function MongoDBResults() {
       >
         <DialogTitle>
           <Box display="flex" alignItems="center" justifyContent="space-between">
-            <Typography variant="h6">Reconciliation Result Details</Typography>
-            <Chip label={selectedResult.ruleset_id} color="primary" />
+            <Typography variant="h6" fontWeight="700" fontSize="0.95rem">Reconciliation Result Details</Typography>
+            <Chip label={selectedResult.ruleset_id} color="primary" size="small" sx={{ fontSize: '0.7rem' }} />
           </Box>
         </DialogTitle>
         <DialogContent dividers>
@@ -447,12 +448,12 @@ export default function MongoDBResults() {
                           <TableCell>{record.rule_name}</TableCell>
                           <TableCell>{(record.match_confidence * 100).toFixed(0)}%</TableCell>
                           <TableCell>
-                            <pre style={{ fontSize: '10px', margin: 0 }}>
+                            <pre style={{ fontSize: '0.65rem', margin: 0 }}>
                               {JSON.stringify(record.source_record, null, 2)}
                             </pre>
                           </TableCell>
                           <TableCell>
-                            <pre style={{ fontSize: '10px', margin: 0 }}>
+                            <pre style={{ fontSize: '0.65rem', margin: 0 }}>
                               {JSON.stringify(record.target_record, null, 2)}
                             </pre>
                           </TableCell>
@@ -484,7 +485,7 @@ export default function MongoDBResults() {
                         <TableRow key={idx}>
                           <TableCell>{idx + 1}</TableCell>
                           <TableCell>
-                            <pre style={{ fontSize: '10px', margin: 0 }}>
+                            <pre style={{ fontSize: '0.65rem', margin: 0 }}>
                               {JSON.stringify(record, null, 2)}
                             </pre>
                           </TableCell>
@@ -516,7 +517,7 @@ export default function MongoDBResults() {
                         <TableRow key={idx}>
                           <TableCell>{idx + 1}</TableCell>
                           <TableCell>
-                            <pre style={{ fontSize: '10px', margin: 0 }}>
+                            <pre style={{ fontSize: '0.65rem', margin: 0 }}>
                               {JSON.stringify(record, null, 2)}
                             </pre>
                           </TableCell>
@@ -534,7 +535,7 @@ export default function MongoDBResults() {
           {/* Raw JSON Tab */}
           {tabValue === 4 && (
             <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.100', maxHeight: 500, overflow: 'auto' }}>
-              <pre style={{ margin: 0, fontSize: '12px' }}>
+              <pre style={{ margin: 0, fontSize: '0.75rem' }}>
                 {JSON.stringify(selectedResult, null, 2)}
               </pre>
             </Paper>
@@ -550,10 +551,10 @@ export default function MongoDBResults() {
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
       <Box mb={3}>
-        <Typography variant="h4" gutterBottom>
+        <Typography variant="h5" fontWeight="700" sx={{ mb: 0.25, lineHeight: 1.2, fontSize: '1.15rem' }} gutterBottom>
           MongoDB Reconciliation Results
         </Typography>
-        <Typography variant="body1" color="text.secondary">
+        <Typography variant="body2" fontSize="0.8rem" color="text.secondary">
           View and manage reconciliation execution results stored in MongoDB
         </Typography>
       </Box>

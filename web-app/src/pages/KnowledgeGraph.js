@@ -58,7 +58,6 @@ import {
   listSchemas,
   getKGEntities,
   getKGRelationships,
-  getKGMetadata,
   exportKG,
   deleteKG,
   checkLLMStatus,
@@ -100,7 +99,6 @@ export default function KnowledgeGraph() {
   const [selectedKG, setSelectedKG] = useState(null);
   const [kgEntities, setKgEntities] = useState([]);
   const [kgRelationships, setKgRelationships] = useState([]);
-  const [kgTableAliases, setKgTableAliases] = useState({});
 
   // Search and filter state for entities and relationships
   const [entitySearchTerm, setEntitySearchTerm] = useState('');
@@ -228,16 +226,14 @@ export default function KnowledgeGraph() {
   const handleLoadKG = async (kgName) => {
     setLoading(true);
     try {
-      const [entitiesRes, relationshipsRes, metadataRes] = await Promise.all([
+      const [entitiesRes, relationshipsRes] = await Promise.all([
         getKGEntities(kgName),
         getKGRelationships(kgName),
-        getKGMetadata(kgName).catch(() => ({ data: { metadata: {}, table_aliases: {} } })),
       ]);
 
       setSelectedKG(kgName);
       setKgEntities(entitiesRes.data.entities || []);
       setKgRelationships(relationshipsRes.data.relationships || []);
-      setKgTableAliases(metadataRes.data?.table_aliases || {});
       setTabValue(1);
     } catch (err) {
       const errorMsg = err.response?.data?.detail || err.message || 'Failed to load KG';
@@ -338,15 +334,6 @@ export default function KnowledgeGraph() {
               <Typography variant="caption" sx={{ opacity: 0.9, fontSize: '0.65rem' }}>Available Schemas</Typography>
             </Box>
           </Box>
-          {llmStatus.enabled && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <AutoAwesome sx={{ fontSize: 16 }} />
-              <Box>
-                <Typography variant="h6" fontWeight="600" sx={{ lineHeight: 1.2, fontSize: '0.9rem' }}>AI Enhanced</Typography>
-                <Typography variant="caption" sx={{ opacity: 0.9, fontSize: '0.65rem' }}>{llmStatus.model}</Typography>
-              </Box>
-            </Box>
-          )}
         </Box>
       </Box>
 
@@ -1254,7 +1241,7 @@ export default function KnowledgeGraph() {
                         Graph Visualization
                       </Typography>
                     </Box>
-                    <KnowledgeGraphEditor entities={kgEntities} relationships={kgRelationships} tableAliases={kgTableAliases} />
+                    <KnowledgeGraphEditor entities={kgEntities} relationships={kgRelationships} />
                   </Paper>
 
                   {/* Enhanced Entities and Relationships Accordions */}
@@ -1707,9 +1694,65 @@ export default function KnowledgeGraph() {
                   </Grid>
                 </>
               ) : (
-                <Alert severity="info">
-                  Select a knowledge graph from the "Manage KGs" tab to view its details.
-                </Alert>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 4,
+                    borderRadius: 2,
+                    border: '2px dashed',
+                    borderColor: 'divider',
+                    textAlign: 'center',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minHeight: 400,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: 'inline-flex',
+                      p: 2,
+                      borderRadius: '50%',
+                      bgcolor: 'action.hover',
+                      mb: 2,
+                    }}
+                  >
+                    <AccountTree sx={{ fontSize: 48, color: 'text.secondary' }} />
+                  </Box>
+                  <Typography variant="h6" fontWeight="700" gutterBottom sx={{ mb: 1 }}>
+                    No Knowledge Graph Selected
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: 400 }}>
+                    Select a knowledge graph from the "Manage KGs" tab to view its details, or create a new one using the "Generate KG" tab.
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <Button
+                      variant="outlined"
+                      startIcon={<Add sx={{ fontSize: 18 }} />}
+                      onClick={() => setTabValue(0)}
+                      sx={{
+                        borderRadius: 1,
+                        textTransform: 'none',
+                        fontWeight: 600,
+                      }}
+                    >
+                      Generate KG
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<Visibility sx={{ fontSize: 18 }} />}
+                      onClick={() => setTabValue(2)}
+                      sx={{
+                        borderRadius: 1,
+                        textTransform: 'none',
+                        fontWeight: 600,
+                      }}
+                    >
+                      Manage KGs
+                    </Button>
+                  </Box>
+                </Paper>
               )}
             </Grid>
           </Grid>
