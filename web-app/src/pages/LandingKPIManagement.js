@@ -16,6 +16,7 @@ import {
   useTheme,
   useMediaQuery,
   Divider,
+  IconButton,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -24,6 +25,7 @@ import {
   History as HistoryIcon,
   TrendingUp as TrendingUpIcon,
   Description as DescriptionIcon,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import KPIList from '../components/KPIList';
 import KPIForm from '../components/KPIForm';
@@ -87,6 +89,12 @@ const LandingKPIManagement = () => {
     setActiveTab(newValue);
   };
 
+  const handleRefresh = () => {
+    setRefreshTrigger((prev) => prev + 1);
+    setSuccessMessage('Data refreshed successfully!');
+    setTimeout(() => setSuccessMessage(''), 2000);
+  };
+
   return (
     <Container maxWidth="xl" sx={{ py: 1.5 }}>
       {/* Enhanced Header with Gradient Background */}
@@ -98,34 +106,35 @@ const LandingKPIManagement = () => {
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           color: 'white',
           boxShadow: '0 8px 32px rgba(102, 126, 234, 0.25)',
-          position: 'relative',
-          overflow: 'hidden',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            width: '200px',
-            height: '200px',
-            background: 'rgba(255, 255, 255, 0.1)',
-            borderRadius: '50%',
-            transform: 'translate(50%, -50%)',
-          },
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.75, position: 'relative', zIndex: 1 }}>
-          <AssessmentIcon sx={{ fontSize: { xs: 24, sm: 28 }, mr: 2 }} />
-          <Typography
-            variant="h5"
-            fontWeight="700"
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.75 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <AssessmentIcon sx={{ fontSize: { xs: 24, sm: 28 }, mr: 2 }} />
+            <Typography
+              variant="h5"
+              fontWeight="700"
+              sx={{
+                mb: 0.25,
+                lineHeight: 1.2,
+                fontSize: '1.15rem'
+              }}
+            >
+              NL KPI Management
+            </Typography>
+          </Box>
+          <IconButton
+            onClick={handleRefresh}
             sx={{
-              mb: 0.25,
-              lineHeight: 1.2,
-              fontSize: '1.15rem'
+              color: 'white',
+              '&:hover': {
+                bgcolor: 'rgba(255, 255, 255, 0.1)',
+              },
             }}
+            aria-label="refresh"
           >
-            NL KPI Management
-          </Typography>
+            <RefreshIcon />
+          </IconButton>
         </Box>
         <Typography
           variant="body2"
@@ -134,8 +143,6 @@ const LandingKPIManagement = () => {
             opacity: 0.95,
             fontWeight: 400,
             maxWidth: '800px',
-            position: 'relative',
-            zIndex: 1,
           }}
         >
           Create, manage, and execute Key Performance Indicators using natural language definitions

@@ -360,7 +360,7 @@ export default function Overview() {
 
             {/* Enhanced Statistics Cards */}
             <Grid container spacing={2}>
-              <Grid item xs={12} md={4}>
+              <Grid item xs={12} md={6}>
                 <Card
                   elevation={0}
                   sx={{
@@ -378,7 +378,7 @@ export default function Overview() {
                     {loading ? (
                       <Box>
                         <Skeleton variant="circular" width={56} height={56} sx={{ mb: 1.5 }} />
-                        <Skeleton variant="text" width="60%" height={40} />
+                        <Skeleton variant="text" width="50%" height={40} />
                         <Skeleton variant="text" width="80%" height={20} />
                       </Box>
                     ) : (
@@ -415,7 +415,7 @@ export default function Overview() {
                 </Card>
               </Grid>
 
-              <Grid item xs={12} md={4}>
+              <Grid item xs={12} md={6}>
                 <Card
                   elevation={0}
                   sx={{
@@ -469,8 +469,6 @@ export default function Overview() {
                   </CardContent>
                 </Card>
               </Grid>
-
-
             </Grid>
           </Box>
     </Container>

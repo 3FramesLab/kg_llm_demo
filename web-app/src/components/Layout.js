@@ -33,7 +33,7 @@ const menuItems = [
   { text: 'Knowledge Graph Builder', icon: <GraphIcon />, path: '/knowledge-graph' },
   // { text: 'Natural Language', icon: <NLIcon />, path: '/natural-language' },
   // { text: 'KPI Management', icon: <KPIIcon />, path: '/landing-kpi' },
-  { text: 'KPI Management', icon: <KPIIcon />, path: '/landing-kpi' },
+  { text: 'NL KPI Management', icon: <KPIIcon />, path: '/landing-kpi' },
   // { text: 'KPI Dashboard', icon: <BarChartIcon />, path: '/kpi-dashboard' },
   { text: 'Dashboard', icon: <ShowChartIcon />, path: '/dashboard-trends' },
 ];
