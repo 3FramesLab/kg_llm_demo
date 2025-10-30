@@ -494,6 +494,113 @@ Return ONLY valid JSON with this structure (no other text):
             logger.error(f"Error during table alias extraction: {e}")
             return {"table_name": table_name, "aliases": [], "error": str(e)}
 
+    def suggest_related_tables(self, source_table: str, source_columns: List[str], available_tables: Dict[str, List[str]]) -> Dict[str, Any]:
+        """
+        Suggest which tables might be related to a source table based on schema analysis.
+
+        Args:
+            source_table: The source table name
+            source_columns: List of column names in the source table
+            available_tables: Dictionary mapping table names to their column lists
+
+        Returns:
+            Dictionary with suggested relationships including target tables and likely columns
+        """
+        if not self.enabled:
+            logger.warning("LLM service disabled, cannot suggest related tables")
+            return {"source_table": source_table, "suggestions": [], "error": "LLM service disabled"}
+
+        try:
+            # Prepare the prompt with available tables
+            source_cols_str = ", ".join(source_columns[:15])
+            if len(source_columns) > 15:
+                source_cols_str += f", ... ({len(source_columns) - 15} more)"
+
+            # Format available tables
+            tables_info = []
+            for table_name, columns in available_tables.items():
+                if table_name != source_table:  # Exclude the source table itself
+                    cols_preview = ", ".join(columns[:10])
+                    if len(columns) > 10:
+                        cols_preview += f", ... ({len(columns) - 10} more)"
+                    tables_info.append(f"- {table_name}: [{cols_preview}]")
+
+            tables_str = "\n".join(tables_info[:20])  # Limit to 20 tables
+            if len(tables_info) > 20:
+                tables_str += f"\n... and {len(tables_info) - 20} more tables"
+
+            prompt = f"""Analyze the source table and suggest which of the available tables are likely to have relationships with it.
+
+Source Table: {source_table}
+Source Columns: [{source_cols_str}]
+
+Available Tables:
+{tables_str}
+
+Based on the column names, suggest up to 5 tables that are most likely related to the source table. For each suggestion, identify:
+1. The target table name
+2. The most likely source column for the relationship
+3. The most likely target column for the relationship
+4. The relationship type (e.g., "MATCHES", "REFERENCES", "LINKS_TO")
+5. Confidence score (0.0 to 1.0)
+
+Return ONLY valid JSON with this structure (no other text):
+{{
+    "source_table": "{source_table}",
+    "suggestions": [
+        {{
+            "target_table": "table_name",
+            "source_column": "column_name",
+            "target_column": "column_name",
+            "relationship_type": "MATCHES",
+            "confidence": 0.95,
+            "reasoning": "Brief explanation"
+        }}
+    ]
+}}
+
+Focus on columns that look like foreign keys, IDs, or matching fields (e.g., Material, SKU, Product_ID, etc.)."""
+
+            logger.info(f"Suggesting related tables for: {source_table}")
+
+            response = self.create_chat_completion(
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a database relationship expert. Analyze table schemas and suggest likely relationships based on column names and patterns. Always return valid JSON."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                max_tokens=1000
+            )
+
+            result_text = response.choices[0].message.content
+            logger.info(f"📝 LLM Raw Response for table suggestions:\n{result_text}")
+
+            # Extract JSON from response
+            import re
+            json_match = re.search(r'\{.*\}', result_text, re.DOTALL)
+            if not json_match:
+                logger.warning(f"❌ No JSON found in LLM response")
+                return {"source_table": source_table, "suggestions": [], "error": "No JSON in response"}
+
+            result = json.loads(json_match.group())
+            logger.info(f"✅ Successfully suggested {len(result.get('suggestions', []))} related tables for {source_table}")
+            return result
+
+        except APIError as e:
+            logger.error(f"OpenAI API error during relationship suggestion: {e}")
+            return {"source_table": source_table, "suggestions": [], "error": str(e)}
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse LLM response as JSON: {e}")
+            return {"source_table": source_table, "suggestions": [], "error": "Invalid JSON response"}
+        except Exception as e:
+            logger.error(f"Error during relationship suggestion: {e}")
+            return {"source_table": source_table, "suggestions": [], "error": str(e)}
+
 
 # Global LLM service instance
 _llm_service: Optional[LLMService] = None

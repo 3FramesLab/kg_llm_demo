@@ -29,7 +29,7 @@ import {
   Code,
   Assessment,
 } from '@mui/icons-material';
-import { checkHealth, checkLLMStatus, listSchemas, listKGs, listRulesets } from '../services/api';
+import { checkHealth, checkLLMStatus, listSchemas, listKGs } from '../services/api';
 
 export default function Dashboard() {
   const [health, setHealth] = useState(null);
@@ -37,7 +37,6 @@ export default function Dashboard() {
   const [stats, setStats] = useState({
     schemas: 0,
     knowledgeGraphs: 0,
-    rulesets: 0,
   });
   const [tabValue, setTabValue] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -49,12 +48,11 @@ export default function Dashboard() {
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      const [healthRes, llmRes, schemasRes, kgsRes, rulesetsRes] = await Promise.all([
+      const [healthRes, llmRes, schemasRes, kgsRes] = await Promise.all([
         checkHealth(),
         checkLLMStatus(),
         listSchemas(),
         listKGs(),
-        listRulesets(),
       ]);
 
       setHealth(healthRes.data);
@@ -62,7 +60,6 @@ export default function Dashboard() {
       setStats({
         schemas: schemasRes.data.count || 0,
         knowledgeGraphs: kgsRes.data.graphs?.length || 0,
-        rulesets: rulesetsRes.data.rulesets?.length || 0,
       });
     } catch (error) {
       console.error('Error loading dashboard:', error);

@@ -9,10 +9,6 @@ import {
   Box,
   Alert,
   CircularProgress,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
 } from '@mui/material';
 import { createKPI, updateKPI } from '../services/api';
 
@@ -27,7 +23,7 @@ const KPIForm = ({ open, kpi, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const groups = ['Data Quality', 'Reconciliation', 'Performance', 'Compliance', 'Other'];
+
 
   // Initialize form with KPI data if editing
   useEffect(() => {
@@ -127,24 +123,16 @@ const KPIForm = ({ open, kpi, onClose, onSuccess }) => {
           />
 
           {/* Group */}
-          <FormControl fullWidth disabled={loading}>
-            <InputLabel>Group (Optional)</InputLabel>
-            <Select
-              name="group_name"
-              value={formData.group_name}
-              onChange={handleChange}
-              label="Group (Optional)"
-            >
-              <MenuItem value="">
-                <em>None</em>
-              </MenuItem>
-              {groups.map((group) => (
-                <MenuItem key={group} value={group}>
-                  {group}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <TextField
+            label="Group (Optional)"
+            name="group_name"
+            value={formData.group_name}
+            onChange={handleChange}
+            fullWidth
+            placeholder="e.g., Data Quality, Reconciliation"
+            disabled={loading}
+            helperText="Enter any group name to organize your KPIs"
+          />
 
           {/* Description */}
           <TextField

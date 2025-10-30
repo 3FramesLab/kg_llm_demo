@@ -30,6 +30,7 @@ export const deleteKG = (kgName) => api.delete(`/kg/${kgName}`);
 // LLM Features
 export const extractEntities = (schemaName) => api.post(`/llm/extract/${schemaName}`);
 export const analyzeSchema = (schemaName) => api.post(`/llm/analyze/${schemaName}`);
+export const suggestRelationships = (data) => api.post('/llm/suggest-relationships', data);
 
 // Reconciliation - Rules
 export const generateRules = (data) => api.post('/reconciliation/generate', data);

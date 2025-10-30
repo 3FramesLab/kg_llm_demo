@@ -19,11 +19,8 @@ import {
   Dashboard as DashboardIcon,
   Description as SchemaIcon,
   AccountTree as GraphIcon,
-  CompareArrows as ReconcileIcon,
   Language as NLIcon,
-  PlayArrow as ExecuteIcon,
   TrendingUp as KPIIcon,
-  Assessment as ResultsIcon,
   BarChart as BarChartIcon,
   ShowChart as ShowChartIcon,
 } from '@mui/icons-material';
@@ -33,9 +30,9 @@ const drawerWidth = 240;
 const menuItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
   { text: 'Schemas', icon: <SchemaIcon />, path: '/schemas' },
-  { text: 'Knowledge Graph', icon: <GraphIcon />, path: '/knowledge-graph' },
-  { text: 'Reconciliation', icon: <ReconcileIcon />, path: '/reconciliation' },
+  { text: 'Knowledge Graph Builder', icon: <GraphIcon />, path: '/knowledge-graph' },
   { text: 'Natural Language', icon: <NLIcon />, path: '/natural-language' },
+  { text: 'KPI Management', icon: <KPIIcon />, path: '/landing-kpi' },
   { text: 'KPI Management', icon: <KPIIcon />, path: '/landing-kpi' },
   { text: 'KPI Dashboard', icon: <BarChartIcon />, path: '/kpi-dashboard' },
   { text: 'Dashboard Trends', icon: <ShowChartIcon />, path: '/dashboard-trends' },
@@ -97,7 +94,7 @@ export default function Layout({ children }) {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div">
-            Knowledge Graph Builder & Data Quality Reconciliation
+            Knowledge Graph Builder & KPI
           </Typography>
         </Toolbar>
       </AppBar>

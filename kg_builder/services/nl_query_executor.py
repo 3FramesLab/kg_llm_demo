@@ -5,11 +5,14 @@ Executes NL-generated queries and returns results with statistics.
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 from dataclasses import dataclass, asdict
 
 from kg_builder.services.nl_query_parser import QueryIntent
 from kg_builder.services.nl_sql_generator import NLSQLGenerator
+
+if TYPE_CHECKING:
+    from kg_builder.models import KnowledgeGraph
 
 logger = logging.getLogger(__name__)
 
@@ -42,15 +45,17 @@ class QueryResult:
 class NLQueryExecutor:
     """Execute NL-generated queries and return results."""
 
-    def __init__(self, db_type: str = "mysql"):
+    def __init__(self, db_type: str = "mysql", kg: Optional["KnowledgeGraph"] = None):
         """
         Initialize executor.
 
         Args:
             db_type: Database type (mysql, postgresql, sqlserver, oracle)
+            kg: Optional Knowledge Graph for join column resolution
         """
         self.db_type = db_type.lower()
-        self.generator = NLSQLGenerator(db_type)
+        self.kg = kg
+        self.generator = NLSQLGenerator(db_type, kg=kg)  # Pass KG to generator
 
     def execute(
         self,
@@ -299,7 +304,7 @@ class NLQueryExecutor:
         }
 
 
-def get_nl_query_executor(db_type: str = "mysql") -> NLQueryExecutor:
+def get_nl_query_executor(db_type: str = "mysql", kg: Optional["KnowledgeGraph"] = None) -> NLQueryExecutor:
     """Get or create NL query executor instance."""
-    return NLQueryExecutor(db_type)
+    return NLQueryExecutor(db_type, kg=kg)
 

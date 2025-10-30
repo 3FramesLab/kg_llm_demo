@@ -11,7 +11,7 @@ import re
 from dataclasses import dataclass, asdict
 from typing import Optional, List, Dict, Any, Tuple
 
-from kg_builder.models import KnowledgeGraph
+from kg_builder.models import KnowledgeGraph, AdditionalColumn, JoinPath
 from kg_builder.services.nl_query_classifier import (
     NLQueryClassifier, DefinitionType, get_nl_query_classifier
 )
@@ -19,6 +19,26 @@ from kg_builder.services.llm_service import get_llm_service
 from kg_builder.services.table_name_mapper import get_table_name_mapper
 
 logger = logging.getLogger(__name__)
+
+
+class ColumnInclusionError(Exception):
+    """Error during column inclusion processing."""
+    pass
+
+
+class JoinPathNotFoundError(ColumnInclusionError):
+    """Error when no join path exists between tables."""
+    pass
+
+
+class ColumnNotFoundError(ColumnInclusionError):
+    """Error when requested column doesn't exist in table."""
+    pass
+
+
+class TableNotFoundError(ColumnInclusionError):
+    """Error when requested table doesn't exist."""
+    pass
 
 
 @dataclass
@@ -33,6 +53,7 @@ class QueryIntent:
     join_columns: Optional[List[Tuple[str, str]]] = None  # [(source_col, target_col), ...]
     confidence: float = 0.75
     reasoning: str = ""
+    additional_columns: List[AdditionalColumn] = None  # NEW: Columns from related tables
 
     def __post_init__(self):
         """Initialize default values."""
@@ -40,10 +61,19 @@ class QueryIntent:
             self.filters = []
         if self.join_columns is None:
             self.join_columns = []
+        if self.additional_columns is None:
+            self.additional_columns = []
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
-        return asdict(self)
+        data = asdict(self)
+        # Convert AdditionalColumn objects to dicts for serialization
+        if self.additional_columns:
+            data['additional_columns'] = [
+                col.dict() if hasattr(col, 'dict') else asdict(col)
+                for col in self.additional_columns
+            ]
+        return data
 
 
 class NLQueryParser:
@@ -117,7 +147,18 @@ class NLQueryParser:
                         )
                         intent.confidence = 0.3  # Very low confidence
 
-        logger.info(f"Parsed intent: query_type={intent.query_type}, source={intent.source_table}, target={intent.target_table}, join_cols={intent.join_columns}, filters={intent.filters}")
+        # Step 4: NEW - Extract and resolve additional columns from related tables
+        if use_llm and self.llm_service.is_enabled() and intent.source_table:
+            col_requests = self._extract_additional_columns(definition)
+            if col_requests:
+                valid_cols, errors = self._validate_and_resolve_columns(col_requests, intent.source_table)
+                if errors:
+                    logger.warning(f"Column validation errors: {errors}")
+                if valid_cols:
+                    intent.additional_columns = valid_cols
+                    logger.info(f"✓ Resolved {len(intent.additional_columns)} additional columns")
+
+        logger.info(f"Parsed intent: query_type={intent.query_type}, source={intent.source_table}, target={intent.target_table}, join_cols={intent.join_columns}, filters={intent.filters}, additional_cols={len(intent.additional_columns)}")
         return intent
 
     def _parse_with_llm(
@@ -547,6 +588,430 @@ Extract and return ONLY valid JSON with this structure (no other text):
     "confidence": 0.85,
     "reasoning": "Why this parsing makes sense"
 }}"""
+
+
+    def _extract_additional_columns(self, definition: str) -> List[Dict[str, str]]:
+        """
+        Extract 'include column from table' clauses from definition using LLM.
+
+        Supports patterns like:
+        - "include X from Y"
+        - "add X column from Y"
+        - "also show X from Y"
+        - "with X from Y"
+        - "plus X from Y"
+        """
+        if not self.llm_service.is_enabled():
+            return []
+
+        try:
+            prompt = self._build_additional_columns_prompt(definition)
+            logger.debug(f"Additional Columns Extraction Prompt:\n{prompt}")
+
+            response = self.llm_service.create_chat_completion(
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert data analyst. Extract column inclusion requests from natural language queries. Always return valid JSON."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                max_tokens=300
+            )
+
+            result_text = response.choices[0].message.content
+            logger.debug(f"Additional Columns LLM Response:\n{result_text}")
+
+            # Parse JSON response
+            json_match = re.search(r'\[.*\]', result_text, re.DOTALL)
+            if json_match:
+                columns = json.loads(json_match.group())
+                logger.info(f"✓ Extracted {len(columns)} additional column requests")
+                return columns
+
+            return []
+
+        except Exception as e:
+            logger.warning(f"Failed to extract additional columns: {e}")
+            return []
+
+    def _validate_and_resolve_columns(
+        self,
+        columns: List[Dict[str, str]],
+        source_table: str
+    ) -> Tuple[List[AdditionalColumn], List[str]]:
+        """
+        Validate and resolve all additional columns.
+
+        Returns:
+            Tuple of (valid_columns, error_messages)
+        """
+        valid_columns = []
+        errors = []
+
+        for col_req in columns:
+            try:
+                col_name = col_req.get("column_name", "").strip()
+                table_name = col_req.get("source_table", "").strip()
+
+                # Validation 1: Check column name
+                if not col_name:
+                    errors.append("❌ Column name is empty in request")
+                    continue
+
+                # Validation 2: Check table name
+                if not table_name:
+                    errors.append(f"❌ Table name is empty for column '{col_name}'")
+                    continue
+
+                # Validation 3: Resolve table name using mapper
+                resolved_table = self.table_mapper.resolve_table_name(table_name)
+                if not resolved_table:
+                    available_tables = self._get_available_tables()
+                    suggestions = self._find_similar_tables(table_name, available_tables)
+                    suggestion_str = f" Did you mean: {', '.join(suggestions)}?" if suggestions else ""
+                    errors.append(
+                        f"❌ Table '{table_name}' not found in schema.{suggestion_str}"
+                    )
+                    continue
+
+                # Validation 4: Check if column exists in table
+                if not self._column_exists_in_table(resolved_table, col_name):
+                    available_cols = self._get_available_columns(resolved_table)
+                    errors.append(
+                        f"❌ Column '{col_name}' not found in table '{resolved_table}'. "
+                        f"Available columns: {', '.join(available_cols[:5])}"
+                        + (f" ... and {len(available_cols) - 5} more" if len(available_cols) > 5 else "")
+                    )
+                    continue
+
+                # Validation 5: Find join path from source to target table
+                path = self._find_join_path_to_table(source_table, resolved_table)
+                if not path:
+                    errors.append(
+                        f"❌ No relationship path found between '{source_table}' "
+                        f"and '{resolved_table}' for column '{col_name}'. "
+                        f"Please ensure the Knowledge Graph has relationships between these tables."
+                    )
+                    continue
+
+                # All validations passed - create AdditionalColumn object
+                col = AdditionalColumn(
+                    column_name=col_name,
+                    source_table=resolved_table,
+                    confidence=path.confidence,
+                    join_path=path.path
+                )
+                valid_columns.append(col)
+                logger.info(f"✓ Validated column '{col_name}' from '{resolved_table}'")
+
+            except Exception as e:
+                errors.append(f"❌ Error processing column request {col_req}: {str(e)}")
+                logger.exception(f"Exception during column validation: {e}")
+
+        return valid_columns, errors
+
+    def _column_exists_in_table(self, table_name: str, column_name: str) -> bool:
+        """Check if column exists in table schema."""
+        if not self.schemas_info:
+            return True  # Can't validate without schemas_info
+
+        for schema_name, schema in self.schemas_info.items():
+            if hasattr(schema, 'tables'):
+                for tbl_name, table in schema.tables.items():
+                    if tbl_name.lower() == table_name.lower():
+                        if hasattr(table, 'columns'):
+                            col_names = [col.name.lower() for col in table.columns]
+                            return column_name.lower() in col_names
+
+        return False
+
+    def _get_available_columns(self, table_name: str) -> List[str]:
+        """Get list of available columns in a table."""
+        if not self.schemas_info:
+            return []
+
+        for schema_name, schema in self.schemas_info.items():
+            if hasattr(schema, 'tables'):
+                for tbl_name, table in schema.tables.items():
+                    if tbl_name.lower() == table_name.lower():
+                        if hasattr(table, 'columns'):
+                            return [col.name for col in table.columns]
+
+        return []
+
+    def _get_available_tables(self) -> List[str]:
+        """Get list of all available tables in schemas."""
+        tables = []
+        if not self.schemas_info:
+            return tables
+
+        for schema_name, schema in self.schemas_info.items():
+            if hasattr(schema, 'tables'):
+                for tbl_name in schema.tables.keys():
+                    tables.append(tbl_name)
+
+        return tables
+
+    def _find_similar_tables(self, table_name: str, available_tables: List[str], max_suggestions: int = 3) -> List[str]:
+        """Find similar table names using simple string matching."""
+        table_lower = table_name.lower()
+        similar = []
+
+        for tbl in available_tables:
+            tbl_lower = tbl.lower()
+            # Check if table name contains the search term or vice versa
+            if table_lower in tbl_lower or tbl_lower in table_lower:
+                similar.append(tbl)
+
+        return similar[:max_suggestions]
+
+    def _find_join_path_to_table(
+        self,
+        source: str,
+        target: str
+    ) -> Optional[JoinPath]:
+        """
+        Find optimal join path between source and target tables using BFS.
+
+        Returns:
+            JoinPath with highest composite score, or None if no path found
+        """
+        if not self.kg:
+            logger.warning("No KG available for path finding")
+            return None
+
+        logger.debug(f"BFS: Starting path finding from {source} to {target}")
+        logger.debug(f"BFS: KG has {len(self.kg.nodes)} nodes and {len(self.kg.relationships)} relationships")
+
+        if source.lower() == target.lower():
+            # Same table, no join needed
+            return JoinPath(
+                source_table=source,
+                target_table=target,
+                path=[source],
+                confidence=1.0,
+                length=0
+            )
+
+        from collections import deque
+
+        # BFS to find all paths
+        queue = deque([(source, [source], 1.0)])  # (current_table, path, confidence)
+        all_paths = []
+        visited_at_depth = {}
+
+        while queue:
+            current, path, conf = queue.popleft()
+            logger.debug(f"BFS: Processing current={current}, path={path}")
+
+            if current.lower() == target.lower():
+                all_paths.append((path, conf))
+                logger.debug(f"BFS: Found target! path={path}, conf={conf}")
+                continue
+
+            # Limit search depth to avoid infinite loops
+            if len(path) > 5:
+                logger.debug(f"BFS: Depth limit reached for path={path}")
+                continue
+
+            # Find relationships from current table
+            for rel in self.kg.relationships:
+                source_id = rel.source_id.lower() if rel.source_id else ""
+                target_id = rel.target_id.lower() if rel.target_id else ""
+
+                next_table = None
+                rel_conf = rel.properties.get("confidence", 0.75) if rel.properties else 0.75
+
+                # Handle both formats: "table_tablename" and "tablename"
+                current_lower = current.lower()
+
+                # Check if source matches current table (with or without "table_" prefix)
+                if source_id == f"table_{current_lower}" or source_id == current_lower:
+                    next_table = target_id.replace("table_", "")
+                    logger.debug(f"BFS: Source match! {source_id} == {current_lower}, next_table={next_table}")
+                    # Preserve original case from KG
+                    for node in self.kg.nodes:
+                        if node.id.lower() == f"table_{next_table.lower()}" or node.id.lower() == next_table.lower():
+                            next_table = node.label
+                            logger.debug(f"BFS: Found node label: {next_table}")
+                            break
+                # Check if target matches current table (with or without "table_" prefix)
+                elif target_id == f"table_{current_lower}" or target_id == current_lower:
+                    next_table = source_id.replace("table_", "")
+                    logger.debug(f"BFS: Target match! {target_id} == {current_lower}, next_table={next_table}")
+                    # Preserve original case from KG
+                    for node in self.kg.nodes:
+                        if node.id.lower() == f"table_{next_table.lower()}" or node.id.lower() == next_table.lower():
+                            next_table = node.label
+                            logger.debug(f"BFS: Found node label: {next_table}")
+                            break
+
+                if next_table and next_table.lower() not in [t.lower() for t in path]:
+                    new_path = path + [next_table]
+                    new_conf = conf * rel_conf  # Multiply confidences
+                    queue.append((next_table, new_path, new_conf))
+                    logger.debug(f"BFS: Added {current} → {next_table} (conf={rel_conf})")
+
+        if not all_paths:
+            logger.warning(f"No join path found in KG between {source} and {target}")
+
+            # Fallback: Try to infer join based on common column names
+            inferred_path = self._infer_join_from_column_names(source, target)
+            if inferred_path:
+                logger.info(f"✓ Inferred join path from column names: {source} ←→ {target}")
+                return inferred_path
+
+            logger.warning(f"❌ No join path found between {source} and {target}")
+            return None
+
+        # Score and select best path
+        best_path = max(
+            all_paths,
+            key=lambda p: (p[1] * 0.7) + ((1 / len(p[0])) * 0.3)
+        )
+
+        path_tables, confidence = best_path
+
+        logger.info(f"✓ Found join path: {' → '.join(path_tables)}")
+        logger.info(f"  Confidence: {confidence:.2f}, Length: {len(path_tables)-1}")
+
+        return JoinPath(
+            source_table=source,
+            target_table=target,
+            path=path_tables,
+            confidence=confidence,
+            length=len(path_tables) - 1
+        )
+
+    def _infer_join_from_column_names(
+        self,
+        source: str,
+        target: str
+    ) -> Optional[JoinPath]:
+        """
+        Infer direct join between tables based on common column names.
+
+        When no explicit relationship exists in KG, try to find common columns
+        that could be used for joining (e.g., "Material" column in both tables).
+
+        Args:
+            source: Source table name
+            target: Target table name
+
+        Returns:
+            JoinPath with inferred connection, or None if no common columns found
+        """
+        if not self.schemas_info:
+            logger.debug("No schemas_info available for column name matching")
+            return None
+
+        logger.info(f"🔍 Attempting to infer join between {source} and {target} from column names")
+
+        # Get columns for both tables
+        source_cols = []
+        target_cols = []
+
+        for schema_name, schema_data in self.schemas_info.items():
+            columns_dict = schema_data.get("columns", {})
+
+            # Find source table columns
+            for table_name, cols in columns_dict.items():
+                if table_name.lower() == source.lower():
+                    source_cols = cols
+                if table_name.lower() == target.lower():
+                    target_cols = cols
+
+        if not source_cols or not target_cols:
+            logger.debug(f"Could not find columns for {source} or {target}")
+            return None
+
+        logger.debug(f"Source columns: {source_cols[:10]}...")
+        logger.debug(f"Target columns: {target_cols[:10]}...")
+
+        # Find common columns (case-insensitive)
+        common_columns = []
+        for s_col in source_cols:
+            for t_col in target_cols:
+                if s_col.lower() == t_col.lower():
+                    common_columns.append((s_col, t_col))
+                    logger.debug(f"Found common column: {s_col} ←→ {t_col}")
+
+        if not common_columns:
+            logger.debug("No common columns found")
+            return None
+
+        # Prioritize columns (prefer ID-like columns, avoid generic names)
+        def column_priority(col_pair):
+            col_name = col_pair[0].lower()
+
+            # High priority: ID-like columns
+            if any(keyword in col_name for keyword in ["material", "product", "sku", "item", "code"]):
+                return 3
+            if col_name.endswith("_id") or col_name.endswith("_uid"):
+                return 2
+            # Medium priority: business columns
+            if any(keyword in col_name for keyword in ["number", "ref", "key"]):
+                return 1
+            # Low priority: generic columns
+            return 0
+
+        # Sort by priority
+        common_columns.sort(key=column_priority, reverse=True)
+        best_match = common_columns[0]
+
+        source_col, target_col = best_match
+        confidence = 0.65  # Lower than explicit KG relationships but acceptable
+
+        logger.info(f"✓ Inferred join column: {source}.{source_col} ←→ {target}.{target_col}")
+        logger.info(f"  Confidence: {confidence:.2f} (inferred from column names)")
+
+        # Create a synthetic join path
+        return JoinPath(
+            source_table=source,
+            target_table=target,
+            path=[source, target],  # Direct join
+            confidence=confidence,
+            length=1
+        )
+
+    def _build_additional_columns_prompt(self, definition: str) -> str:
+        """Build LLM prompt to extract 'include' clauses."""
+        return f"""Extract all "include column from table" clauses from this query definition.
+
+QUERY: "{definition}"
+
+INSTRUCTIONS:
+1. Look for patterns like:
+   - "include X from Y"
+   - "add X column from Y"
+   - "also show X from Y"
+   - "with X from Y"
+   - "plus X from Y"
+
+2. For each match, extract:
+   - column_name: The column being requested (e.g., "planner", "category")
+   - source_table: The table it comes from (business term or actual name, e.g., "HANA Master", "Product Master")
+
+3. Return JSON array:
+[
+  {{
+    "column_name": "planner",
+    "source_table": "HANA Master"
+  }},
+  {{
+    "column_name": "category",
+    "source_table": "Product Master"
+  }}
+]
+
+4. If no "include" clauses found, return empty array: []
+
+RESPONSE:
+Return ONLY valid JSON, no other text."""
 
 
 def get_nl_query_parser(

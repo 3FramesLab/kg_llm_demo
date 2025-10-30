@@ -61,6 +61,7 @@ import {
   exportKG,
   deleteKG,
   checkLLMStatus,
+  suggestRelationships,
 } from '../services/api';
 import KnowledgeGraphEditor from '../components/KnowledgeGraphEditor';
 
@@ -110,6 +111,10 @@ export default function KnowledgeGraph() {
 
   // LLM status
   const [llmStatus, setLlmStatus] = useState({ enabled: false, model: null });
+
+  // LLM relationship suggestions
+  const [suggestingRelationships, setSuggestingRelationships] = useState(false);
+  const [suggestionSourceTable, setSuggestionSourceTable] = useState('');
 
   useEffect(() => {
     loadInitialData();
@@ -277,6 +282,58 @@ export default function KnowledgeGraph() {
       const errorMsg = err.response?.data?.detail || err.message || 'Failed to delete KG';
       setError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
       console.error('Delete KG Error:', err);
+    }
+  };
+
+  const handleSuggestRelationships = async () => {
+    if (!suggestionSourceTable.trim()) {
+      setError('Please enter a source table name');
+      return;
+    }
+
+    if (formData.schema_names.length === 0) {
+      setError('Please select at least one schema');
+      return;
+    }
+
+    setSuggestingRelationships(true);
+    setError(null);
+
+    try {
+      const response = await suggestRelationships({
+        source_table: suggestionSourceTable.trim(),
+        schema_names: formData.schema_names,
+      });
+
+      if (response.data.success && response.data.suggestions && response.data.suggestions.length > 0) {
+        // Format suggestions as relationship pairs
+        const suggestions = response.data.suggestions.map(sug => ({
+          source_table: suggestionSourceTable.trim(),
+          source_column: sug.source_column,
+          target_table: sug.target_table,
+          target_column: sug.target_column,
+          relationship_type: sug.relationship_type || 'MATCHES',
+          confidence: sug.confidence || 0.9,
+          bidirectional: true,
+          // Add reasoning as a comment
+          _comment: sug.reasoning
+        }));
+
+        // Update the relationship pairs input with suggestions
+        const currentPairs = relationshipPairsInput.trim() ? JSON.parse(relationshipPairsInput) : [];
+        const updatedPairs = [...currentPairs, ...suggestions];
+        setRelationshipPairsInput(JSON.stringify(updatedPairs, null, 2));
+
+        setSuccess(`Added ${suggestions.length} relationship suggestions from LLM!`);
+      } else {
+        setError('No relationship suggestions found. Try a different table or check if schemas are loaded.');
+      }
+    } catch (err) {
+      const errorMsg = err.response?.data?.detail || err.message || 'Failed to get suggestions';
+      setError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
+      console.error('Suggest Relationships Error:', err);
+    } finally {
+      setSuggestingRelationships(false);
     }
   };
 
@@ -800,6 +857,46 @@ export default function KnowledgeGraph() {
                           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                             Define explicit relationships with source→target column precision.
                           </Typography>
+
+                          {/* LLM Relationship Suggestions */}
+                          {llmStatus.enabled && (
+                            <Box sx={{ mb: 2, p: 2, bgcolor: 'background.default', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                <AutoAwesome sx={{ fontSize: 18, color: 'primary.main' }} />
+                                <Typography variant="subtitle2" fontWeight={600}>
+                                  LLM-Powered Relationship Suggestions
+                                </Typography>
+                              </Box>
+                              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                Let AI suggest relationships for a table based on column name analysis.
+                              </Typography>
+                              <Box sx={{ display: 'flex', gap: 1 }}>
+                                <TextField
+                                  size="small"
+                                  label="Source Table Name"
+                                  placeholder="e.g., brz_lnd_RBP_GPU"
+                                  value={suggestionSourceTable}
+                                  onChange={(e) => setSuggestionSourceTable(e.target.value)}
+                                  disabled={suggestingRelationships}
+                                  sx={{ flex: 1 }}
+                                />
+                                <Button
+                                  variant="contained"
+                                  startIcon={suggestingRelationships ? <CircularProgress size={16} /> : <AutoAwesome />}
+                                  onClick={handleSuggestRelationships}
+                                  disabled={suggestingRelationships || !suggestionSourceTable.trim() || formData.schema_names.length === 0}
+                                >
+                                  {suggestingRelationships ? 'Suggesting...' : 'Suggest'}
+                                </Button>
+                              </Box>
+                              {formData.schema_names.length === 0 && (
+                                <Typography variant="caption" color="warning.main" sx={{ mt: 1, display: 'block' }}>
+                                  ⚠️ Please select schemas above before using suggestions
+                                </Typography>
+                              )}
+                            </Box>
+                          )}
+
                           <TextField
                             fullWidth
                             multiline

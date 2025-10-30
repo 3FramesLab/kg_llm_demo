@@ -247,39 +247,34 @@ async def generate_knowledge_graph(request: KGGenerationRequest):
                 logger.error(f"Failed to process explicit relationship pairs: {e}")
                 # Continue with KG generation even if pairs fail
 
-        # Final step: Filter ALL relationships in KG to remove excluded fields
-        # This ensures that relationships from LLM inference, pattern matching, etc. are also filtered
+        # Mark excluded fields in relationships (but keep relationships for connectivity)
+        # The query executor will prefer non-excluded fields when choosing join columns
         if request.excluded_fields:
             excluded_fields_set = set(request.excluded_fields)
-            logger.info(f"Applying final filter to remove relationships with excluded fields: {len(excluded_fields_set)} fields")
+            logger.info(f"Marking relationships with excluded fields: {len(excluded_fields_set)} fields")
 
             from kg_builder.services.schema_parser import is_excluded_field
 
-            original_count = len(kg.relationships)
-            filtered_relationships = []
-
+            marked_count = 0
             for rel in kg.relationships:
-                # Check if relationship has column properties
-                if rel.properties:
-                    source_col = rel.properties.get("source_column")
-                    target_col = rel.properties.get("target_column")
+                # Check if relationship uses excluded fields
+                source_col = rel.source_column or (rel.properties.get("source_column") if rel.properties else None)
+                target_col = rel.target_column or (rel.properties.get("target_column") if rel.properties else None)
 
-                    if source_col and target_col:
-                        # Check if either column is excluded
-                        if is_excluded_field(source_col, excluded_fields_set) or is_excluded_field(target_col, excluded_fields_set):
-                            logger.debug(f"⛔ Removing relationship from KG (excluded field): {rel.source_id} ({source_col}) → {rel.target_id} ({target_col})")
-                            continue  # Skip this relationship
+                if source_col and target_col:
+                    # Mark as excluded but DON'T remove - keep for table connectivity
+                    if is_excluded_field(source_col, excluded_fields_set) or is_excluded_field(target_col, excluded_fields_set):
+                        if not rel.properties:
+                            rel.properties = {}
+                        rel.properties["is_excluded"] = True
+                        rel.properties["priority"] = -1  # Lower priority for join selection
+                        marked_count += 1
+                        logger.debug(f"⚠️ Marked as low-priority: {rel.source_id} ({source_col}) → {rel.target_id} ({target_col})")
 
-                # Keep this relationship
-                filtered_relationships.append(rel)
-
-            kg.relationships = filtered_relationships
-            removed_count = original_count - len(filtered_relationships)
-
-            if removed_count > 0:
-                logger.info(f"✓ Filtered KG relationships: {original_count} → {len(filtered_relationships)} (removed {removed_count} with excluded fields)")
+            if marked_count > 0:
+                logger.info(f"✓ Marked {marked_count} relationships as low-priority (using excluded fields)")
             else:
-                logger.info(f"✓ No relationships removed by exclusion filter")
+                logger.info(f"✓ No relationships use excluded fields")
 
         backends_used = []
 
@@ -612,6 +607,94 @@ async def llm_status():
         "temperature": llm_service.temperature,
         "max_tokens": llm_service.max_tokens
     }
+
+
+@router.post("/llm/suggest-relationships", tags=["LLM"])
+async def llm_suggest_relationships(request: dict):
+    """
+    Use LLM to suggest which tables are likely related to a source table.
+
+    Request body:
+    {
+        "source_table": "brz_lnd_RBP_GPU",
+        "schema_names": ["schema1", "schema2"]
+    }
+
+    Returns:
+    {
+        "success": true,
+        "source_table": "brz_lnd_RBP_GPU",
+        "suggestions": [
+            {
+                "target_table": "brz_lnd_OPS_EXCEL_GPU",
+                "source_column": "Material",
+                "target_column": "PLANNING_SKU",
+                "relationship_type": "MATCHES",
+                "confidence": 0.95,
+                "reasoning": "Both columns appear to represent product/material identifiers"
+            }
+        ]
+    }
+    """
+    try:
+        llm_service = get_llm_service()
+
+        if not llm_service.is_enabled():
+            raise HTTPException(
+                status_code=503,
+                detail="LLM service is not enabled. Please set OPENAI_API_KEY environment variable."
+            )
+
+        source_table = request.get("source_table")
+        schema_names = request.get("schema_names", [])
+
+        if not source_table:
+            raise HTTPException(status_code=400, detail="source_table is required")
+
+        if not schema_names:
+            raise HTTPException(status_code=400, detail="schema_names is required")
+
+        # Load schemas and collect all tables with their columns
+        available_tables = {}
+        source_columns = []
+
+        for schema_name in schema_names:
+            try:
+                schema = SchemaParser.load_schema(schema_name)
+                for table_name, table in schema.tables.items():
+                    column_names = [col.name for col in table.columns]
+                    available_tables[table_name] = column_names
+
+                    # If this is the source table, save its columns
+                    if table_name == source_table:
+                        source_columns = column_names
+
+            except Exception as e:
+                logger.warning(f"Failed to load schema {schema_name}: {e}")
+
+        if not source_columns:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Source table '{source_table}' not found in any of the provided schemas"
+            )
+
+        # Get LLM suggestions
+        result = llm_service.suggest_related_tables(
+            source_table=source_table,
+            source_columns=source_columns,
+            available_tables=available_tables
+        )
+
+        return {
+            "success": True,
+            **result
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error suggesting relationships: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # Reconciliation Rule endpoints
@@ -2455,6 +2538,12 @@ async def execute_nl_queries(request: NLQueryExecutionRequest):
 
             logger.info(f"✓ KG loaded: {len(kg.nodes)} nodes, {len(kg.relationships)} relationships, {len(kg.table_aliases)} table aliases")
 
+            # Debug: Log first few relationships
+            if kg.relationships:
+                logger.debug(f"First relationship: {kg.relationships[0].source_id} → {kg.relationships[0].target_id}")
+                logger.debug(f"  Columns: {kg.relationships[0].source_column} → {kg.relationships[0].target_column}")
+                logger.debug(f"  Properties: {kg.relationships[0].properties}")
+
         except Exception as e:
             logger.error(f"Failed to load KG: {e}")
             return NLQueryExecutionResponse(
@@ -2491,7 +2580,7 @@ async def execute_nl_queries(request: NLQueryExecutionRequest):
                 logger.error(f"Failed to parse definition '{definition}': {e}")
 
         # Step 4: Execute queries
-        executor = get_nl_query_executor(request.db_type)
+        executor = get_nl_query_executor(request.db_type, kg=kg)  # Pass KG for join condition resolution
 
         # Get database connection from source database
         logger.info(f"Getting source database connection for query execution (db_type: {request.db_type})")
@@ -2506,8 +2595,8 @@ async def execute_nl_queries(request: NLQueryExecutionRequest):
                 # Return results with SQL but no execution
                 logger.warning("No database connection available - returning SQL only")
                 for intent in intents:
-                    from kg_builder.services.nl_sql_generator import get_nl_sql_generator
-                    generator = get_nl_sql_generator(request.db_type)
+                    from kg_builder.services.nl_sql_generator import NLSQLGenerator
+                    generator = NLSQLGenerator(request.db_type, kg=kg)  # Pass KG for join condition resolution
                     try:
                         sql = generator.generate(intent)
                         from kg_builder.services.nl_query_executor import QueryResult
