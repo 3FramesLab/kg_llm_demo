@@ -59,7 +59,7 @@ const DashboardTrend = () => {
 
   const fetchDashboardData = async () => {
     setLoading(true);
-    const response = await fetch(`${API_BASE_URL}/v1/landing-kpi/dashboard`);
+    const response = await fetch(`${API_BASE_URL}/landing-kpi/dashboard`);
     const data = await response.json();
     setDashboardData(data);
     setLoading(false);

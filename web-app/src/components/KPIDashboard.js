@@ -39,7 +39,7 @@ const KPIDashboard = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`${API_BASE_URL}/v1/landing-kpi/dashboard`);
+      const response = await fetch(`${API_BASE_URL}/landing-kpi/dashboard`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch dashboard data: ${response.statusText}`);
