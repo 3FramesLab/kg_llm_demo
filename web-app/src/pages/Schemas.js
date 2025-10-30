@@ -12,6 +12,8 @@ import {
   CircularProgress,
   Alert,
   Fade,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import { Refresh, Description, Storage, Info, CheckCircle } from '@mui/icons-material';
 import { listSchemas } from '../services/api';
@@ -51,54 +53,33 @@ export default function Schemas() {
           boxShadow: '0 4px 20px rgba(102, 126, 234, 0.3)',
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-          <Storage sx={{ fontSize: 28 }} />
-          <Box>
-            <Typography variant="h5" fontWeight="700" sx={{ mb: 0.25, lineHeight: 1.2, fontSize: '1.15rem' }}>
-              Database Schemas
-            </Typography>
-            <Typography variant="body2" fontSize="0.8rem" sx={{ opacity: 0.95, fontWeight: 400 }}>
-              Available database schemas for knowledge graph generation
-            </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Storage sx={{ fontSize: 28 }} />
+            <Box>
+              <Typography variant="h5" fontWeight="700" sx={{ lineHeight: 1.2, fontSize: '1.15rem' }}>
+                Database Schemas ({schemas.length})
+              </Typography>
+            </Box>
           </Box>
+          <Tooltip title="Refresh Schemas">
+            <IconButton
+              onClick={loadSchemas}
+              disabled={loading}
+              sx={{
+                color: 'white',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                },
+                '&:disabled': {
+                  color: 'rgba(255, 255, 255, 0.5)',
+                },
+              }}
+            >
+              <Refresh />
+            </IconButton>
+          </Tooltip>
         </Box>
-
-        {/* Stats in Header */}
-        {!loading && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1.5 }}>
-            <CheckCircle sx={{ fontSize: 18 }} />
-            <Typography variant="body2" fontSize="0.8rem" sx={{ opacity: 0.95, fontWeight: 600 }}>
-              {schemas.length} {schemas.length === 1 ? 'Schema' : 'Schemas'} Available
-            </Typography>
-          </Box>
-        )}
-      </Box>
-
-      {/* Action Button */}
-      <Box sx={{ mb: 3 }}>
-        <Button
-          variant="contained"
-          size="medium"
-          startIcon={<Refresh />}
-          onClick={loadSchemas}
-          disabled={loading}
-          sx={{
-            py: 1,
-            px: 2.5,
-            borderRadius: 1.5,
-            fontSize: '0.85rem',
-            fontWeight: 600,
-            textTransform: 'none',
-            boxShadow: '0 2px 8px rgba(102, 126, 234, 0.25)',
-            '&:hover': {
-              boxShadow: '0 4px 12px rgba(102, 126, 234, 0.35)',
-              transform: 'translateY(-1px)',
-            },
-            transition: 'all 0.3s ease',
-          }}
-        >
-          Refresh Schemas
-        </Button>
       </Box>
 
       {/* Loading State */}
