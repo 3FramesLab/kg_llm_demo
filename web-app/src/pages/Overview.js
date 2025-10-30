@@ -9,36 +9,26 @@ import {
   CardContent,
   Chip,
   Alert,
-  Tabs,
-  Tab,
   Skeleton,
-  Fade,
 } from '@mui/material';
 import {
   CheckCircle,
   Error,
   Storage,
   AccountTree,
-  CompareArrows,
   Dashboard as DashboardIcon,
-  MenuBook,
   TrendingUp,
   Speed,
-  Info,
-  PlayArrow,
-  Code,
-  Assessment,
 } from '@mui/icons-material';
 import { checkHealth, checkLLMStatus, listSchemas, listKGs } from '../services/api';
 
-export default function Dashboard() {
+export default function Overview() {
   const [health, setHealth] = useState(null);
   const [llmStatus, setLlmStatus] = useState(null);
   const [stats, setStats] = useState({
     schemas: 0,
     knowledgeGraphs: 0,
   });
-  const [tabValue, setTabValue] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -85,10 +75,10 @@ export default function Dashboard() {
           <DashboardIcon sx={{ fontSize: 28 }} />
           <Box>
             <Typography variant="h5" fontWeight="700" sx={{ mb: 0.25, lineHeight: 1.2, fontSize: '1.15rem' }}>
-              Dashboard
+              Overview
             </Typography>
             <Typography variant="body2" fontSize="0.8rem" sx={{ opacity: 0.95, fontWeight: 400 }}>
-              Overview of Data Quality System Status and Statistics
+              Overview of Data Quality System Status and Statistics.
             </Typography>
           </Box>
         </Box>
@@ -118,74 +108,14 @@ export default function Dashboard() {
                 </Typography>
               </Box>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <CompareArrows sx={{ fontSize: 18 }} />
-              <Box>
-                <Typography variant="h6" fontWeight="600" sx={{ lineHeight: 1.2, fontSize: '0.9rem' }}>
-                  {stats.rulesets}
-                </Typography>
-                <Typography variant="caption" sx={{ opacity: 0.9, fontSize: '0.65rem' }}>
-                  Rulesets
-                </Typography>
-              </Box>
-            </Box>
           </Box>
         )}
       </Box>
 
-      {/* Enhanced Tab Navigation */}
-      <Paper
-        elevation={0}
-        sx={{
-          mb: 2,
-          borderRadius: 2,
-          border: '1px solid',
-          borderColor: 'divider',
-        }}
-      >
-        <Tabs
-          value={tabValue}
-          onChange={(e, newValue) => setTabValue(newValue)}
-          sx={{
-            minHeight: 42,
-            '& .MuiTab-root': {
-              textTransform: 'none',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              minHeight: 42,
-              py: 0.75,
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                backgroundColor: 'action.hover',
-              },
-            },
-            '& .Mui-selected': {
-              color: '#667eea',
-            },
-            '& .MuiTabs-indicator': {
-              height: 3,
-              borderRadius: '3px 3px 0 0',
-              background: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)',
-            },
-          }}
-        >
-          <Tab
-            icon={<DashboardIcon />}
-            iconPosition="start"
-            label="System Status"
-          />
-          <Tab
-            icon={<MenuBook />}
-            iconPosition="start"
-            label="Quick Start Guide"
-          />
-        </Tabs>
-      </Paper>
 
-      {/* System Status Tab */}
-      {tabValue === 0 && (
-        <Fade in={tabValue === 0} timeout={500}>
-          <Box>
+
+      {/* System Status */}
+      <Box>
             {/* System Health & LLM Status */}
             <Grid container spacing={2} sx={{ mb: 2 }}>
               <Grid item xs={12} md={6}>
@@ -250,7 +180,8 @@ export default function Dashboard() {
                           Status: <span style={{ color: health.status === 'healthy' ? '#047857' : '#dc2626' }}>{health.status}</span>
                         </Typography>
                       </Box>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                      {/* Status chips hidden as requested */}
+                      {/* <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
                         <Chip
                           label={`FalkorDB: ${health.falkordb_connected ? 'Connected' : 'Disconnected'}`}
                           size="medium"
@@ -284,7 +215,7 @@ export default function Dashboard() {
                             border: `1px solid ${health.llm_enabled ? '#d1fae5' : '#fed7aa'}`,
                           }}
                         />
-                      </Box>
+                      </Box> */}
                     </Box>
                   ) : null}
                 </Paper>
@@ -369,7 +300,8 @@ export default function Dashboard() {
                           LLM features are disabled
                         </Alert>
                       )}
-                      {llmStatus.enabled && (
+                      {/* Model and Features section hidden as requested */}
+                      {/* {llmStatus.enabled && (
                         <Box>
                           <Typography variant="body2" fontSize="0.8rem" sx={{ mb: 1, fontWeight: 600 }}>
                             <strong>Model:</strong> {llmStatus.model}
@@ -419,7 +351,7 @@ export default function Dashboard() {
                             )}
                           </Box>
                         </Box>
-                      )}
+                      )} */}
                     </Box>
                   ) : null}
                 </Paper>
@@ -538,312 +470,9 @@ export default function Dashboard() {
                 </Card>
               </Grid>
 
-              <Grid item xs={12} md={4}>
-                <Card
-                  elevation={0}
-                  sx={{
-                    borderRadius: 2,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: '0 8px 24px rgba(255, 152, 0, 0.25)',
-                    },
-                  }}
-                >
-                  <CardContent sx={{ p: 2 }}>
-                    {loading ? (
-                      <Box>
-                        <Skeleton variant="circular" width={56} height={56} sx={{ mb: 1.5 }} />
-                        <Skeleton variant="text" width="60%" height={40} />
-                        <Skeleton variant="text" width="80%" height={20} />
-                      </Box>
-                    ) : (
-                      <>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                          <Box
-                            sx={{
-                              p: 1.5,
-                              borderRadius: 2,
-                              background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              mr: 2,
-                            }}
-                          >
-                            <CompareArrows sx={{ color: 'white', fontSize: 28 }} />
-                          </Box>
-                          <Box>
-                            <Typography variant="h6" fontWeight="700" fontSize="1.5rem" sx={{ color: '#fa709a' }}>
-                              {stats.rulesets}
-                            </Typography>
-                            <Typography variant="body2" fontSize="0.8rem" color="text.secondary" fontWeight="600">
-                              Rulesets
-                            </Typography>
-                          </Box>
-                        </Box>
-                        <Typography variant="body2" fontSize="0.8rem" color="text.secondary">
-                          Generated reconciliation rulesets
-                        </Typography>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-              </Grid>
+
             </Grid>
           </Box>
-        </Fade>
-      )}
-
-      {/* Quick Start Guide Tab */}
-      {tabValue === 1 && (
-        <Fade in={tabValue === 1} timeout={500}>
-          <Box>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2.5,
-                borderRadius: 2,
-                border: '1px solid',
-                borderColor: 'divider',
-                background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.03) 0%, rgba(118, 75, 162, 0.03) 100%)',
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-                <Box
-                  sx={{
-                    p: 1,
-                    borderRadius: 1.5,
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Info sx={{ color: 'white', fontSize: 24 }} />
-                </Box>
-                <Typography variant="h6" fontWeight="700" fontSize="0.95rem">
-                  Quick Start Guide
-                </Typography>
-              </Box>
-
-              <Grid container spacing={1.5}>
-                {/* Step 1: Schemas */}
-                <Grid item xs={12}>
-                  <Card
-                    elevation={0}
-                    sx={{
-                      p: 2,
-                      borderRadius: 2,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        boxShadow: '0 4px 16px rgba(102, 126, 234, 0.15)',
-                        transform: 'translateX(4px)',
-                      },
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                      <Box
-                        sx={{
-                          p: 1.5,
-                          borderRadius: 1.5,
-                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          minWidth: 48,
-                        }}
-                      >
-                        <Storage sx={{ color: 'white', fontSize: 22 }} />
-                      </Box>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="h6" fontWeight="700" fontSize="0.95rem" gutterBottom>
-                          1. Schemas
-                        </Typography>
-                        <Typography variant="body2" fontSize="0.8rem" color="text.secondary">
-                          View and manage available database schemas. Connect to your data sources and explore their structure.
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Card>
-                </Grid>
-
-                {/* Step 2: Knowledge Graph */}
-                <Grid item xs={12}>
-                  <Card
-                    elevation={0}
-                    sx={{
-                      p: 2,
-                      borderRadius: 2,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        boxShadow: '0 4px 16px rgba(67, 233, 123, 0.15)',
-                        transform: 'translateX(4px)',
-                      },
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                      <Box
-                        sx={{
-                          p: 1.5,
-                          borderRadius: 1.5,
-                          background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          minWidth: 48,
-                        }}
-                      >
-                        <AccountTree sx={{ color: 'white', fontSize: 22 }} />
-                      </Box>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="h6" fontWeight="700" fontSize="0.95rem" gutterBottom>
-                          2. Knowledge Graph
-                        </Typography>
-                        <Typography variant="body2" fontSize="0.8rem" color="text.secondary">
-                          Generate knowledge graphs from schemas. Visualize relationships and understand data connections.
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Card>
-                </Grid>
-
-                {/* Step 3: Natural Language */}
-                <Grid item xs={12}>
-                  <Card
-                    elevation={0}
-                    sx={{
-                      p: 2,
-                      borderRadius: 2,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        boxShadow: '0 4px 16px rgba(255, 152, 0, 0.15)',
-                        transform: 'translateX(4px)',
-                      },
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                      <Box
-                        sx={{
-                          p: 1.5,
-                          borderRadius: 1.5,
-                          background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          minWidth: 48,
-                        }}
-                      >
-                        <Code sx={{ color: 'white', fontSize: 22 }} />
-                      </Box>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="h6" fontWeight="700" fontSize="0.95rem" gutterBottom>
-                          3. Natural Language
-                        </Typography>
-                        <Typography variant="body2" fontSize="0.8rem" color="text.secondary">
-                          Add custom relationships using plain English. Let AI understand and create connections naturally.
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Card>
-                </Grid>
-
-                {/* Step 4: Reconciliation */}
-                <Grid item xs={12}>
-                  <Card
-                    elevation={0}
-                    sx={{
-                      p: 2,
-                      borderRadius: 2,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        boxShadow: '0 4px 16px rgba(156, 39, 176, 0.15)',
-                        transform: 'translateX(4px)',
-                      },
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                      <Box
-                        sx={{
-                          p: 1.5,
-                          borderRadius: 1.5,
-                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          minWidth: 48,
-                        }}
-                      >
-                        <CompareArrows sx={{ color: 'white', fontSize: 22 }} />
-                      </Box>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="h6" fontWeight="700" fontSize="0.95rem" gutterBottom>
-                          4. Reconciliation
-                        </Typography>
-                        <Typography variant="body2" fontSize="0.8rem" color="text.secondary">
-                          Generate intelligent rules for data matching. Create reconciliation rulesets for data quality checks.
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Card>
-                </Grid>
-
-                {/* Step 5: Execution */}
-                <Grid item xs={12}>
-                  <Card
-                    elevation={0}
-                    sx={{
-                      p: 2,
-                      borderRadius: 2,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        boxShadow: '0 4px 16px rgba(33, 150, 243, 0.15)',
-                        transform: 'translateX(4px)',
-                      },
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                      <Box
-                        sx={{
-                          p: 1.5,
-                          borderRadius: 1.5,
-                          background: 'linear-gradient(135deg, #2196f3 0%, #21cbf3 100%)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          minWidth: 48,
-                        }}
-                      >
-                        <PlayArrow sx={{ color: 'white', fontSize: 22 }} />
-                      </Box>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="h6" fontWeight="700" fontSize="0.95rem" gutterBottom>
-                          5. Execution
-                        </Typography>
-                        <Typography variant="body2" fontSize="0.8rem" color="text.secondary">
-                          Execute reconciliation rules and view results. Monitor data quality and track reconciliation outcomes.
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Card>
-                </Grid>
-              </Grid>
-            </Paper>
-          </Box>
-        </Fade>
-      )}
     </Container>
   );
 }

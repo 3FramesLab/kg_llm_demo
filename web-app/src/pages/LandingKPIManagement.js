@@ -88,7 +88,7 @@ const LandingKPIManagement = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 1.5  }}>
+    <Container maxWidth="xl" sx={{ py: 1.5 }}>
       {/* Enhanced Header with Gradient Background */}
       <Box
         sx={{
@@ -124,7 +124,7 @@ const LandingKPIManagement = () => {
               fontSize: '1.15rem'
             }}
           >
-            Landing KPI Management
+            NL KPI Management
           </Typography>
         </Box>
         <Typography

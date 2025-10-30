@@ -28,14 +28,14 @@ import {
 const drawerWidth = 240;
 
 const menuItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
+  { text: 'Overview', icon: <DashboardIcon />, path: '/' },
   { text: 'Schemas', icon: <SchemaIcon />, path: '/schemas' },
   { text: 'Knowledge Graph Builder', icon: <GraphIcon />, path: '/knowledge-graph' },
   // { text: 'Natural Language', icon: <NLIcon />, path: '/natural-language' },
   // { text: 'KPI Management', icon: <KPIIcon />, path: '/landing-kpi' },
-  { text: 'KPI Management', icon: <KPIIcon />, path: '/landing-kpi' },
-  { text: 'KPI Dashboard', icon: <BarChartIcon />, path: '/kpi-dashboard' },
-  { text: 'Dashboard Trends', icon: <ShowChartIcon />, path: '/dashboard-trends' },
+  { text: 'NL KPI Management', icon: <KPIIcon />, path: '/landing-kpi' },
+  // { text: 'KPI Dashboard', icon: <BarChartIcon />, path: '/kpi-dashboard' },
+  { text: 'Dashboard', icon: <ShowChartIcon />, path: '/dashboard-trends' },
 ];
 
 export default function Layout({ children }) {
