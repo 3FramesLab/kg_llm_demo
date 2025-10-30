@@ -135,10 +135,7 @@ class NaturalLanguageRelationshipParser:
             prompt = self._build_nl_parsing_prompt(text, schemas_info)
             logger.debug(f"NL Parsing Prompt:\n{prompt}")
 
-            response = self.llm_service.client.chat.completions.create(
-                model=self.llm_service.model,
-                max_tokens=self.llm_service.max_tokens,
-                temperature=self.llm_service.temperature,
+            response = self.llm_service.create_chat_completion(
                 messages=[
                     {
                         "role": "system",
@@ -148,7 +145,8 @@ class NaturalLanguageRelationshipParser:
                         "role": "user",
                         "content": prompt
                     }
-                ]
+                ],
+                max_tokens=self.llm_service.max_tokens
             )
 
             result_text = response.choices[0].message.content
@@ -284,10 +282,7 @@ class NaturalLanguageRelationshipParser:
         try:
             prompt = self._build_business_rules_prompt(text, schemas_info)
 
-            response = self.llm_service.client.chat.completions.create(
-                model=self.llm_service.model,
-                max_tokens=self.llm_service.max_tokens,
-                temperature=self.llm_service.temperature,
+            response = self.llm_service.create_chat_completion(
                 messages=[
                     {
                         "role": "system",
@@ -297,7 +292,8 @@ class NaturalLanguageRelationshipParser:
                         "role": "user",
                         "content": prompt
                     }
-                ]
+                ],
+                max_tokens=self.llm_service.max_tokens
             )
 
             result_text = response.choices[0].message.content

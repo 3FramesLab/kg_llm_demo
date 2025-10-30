@@ -45,17 +45,19 @@ class QueryResult:
 class NLQueryExecutor:
     """Execute NL-generated queries and return results."""
 
-    def __init__(self, db_type: str = "mysql", kg: Optional["KnowledgeGraph"] = None):
+    def __init__(self, db_type: str = "mysql", kg: Optional["KnowledgeGraph"] = None, use_llm: bool = True):
         """
         Initialize executor.
 
         Args:
             db_type: Database type (mysql, postgresql, sqlserver, oracle)
             kg: Optional Knowledge Graph for join column resolution
+            use_llm: Whether to use LLM for SQL generation (default: True for LLM-only)
         """
         self.db_type = db_type.lower()
         self.kg = kg
-        self.generator = NLSQLGenerator(db_type, kg=kg)  # Pass KG to generator
+        self.use_llm = use_llm
+        self.generator = NLSQLGenerator(db_type, kg=kg, use_llm=use_llm)  # Pass use_llm to generator
 
     def execute(
         self,
@@ -304,7 +306,14 @@ class NLQueryExecutor:
         }
 
 
-def get_nl_query_executor(db_type: str = "mysql", kg: Optional["KnowledgeGraph"] = None) -> NLQueryExecutor:
-    """Get or create NL query executor instance."""
-    return NLQueryExecutor(db_type, kg=kg)
+def get_nl_query_executor(db_type: str = "mysql", kg: Optional["KnowledgeGraph"] = None, use_llm: bool = True) -> NLQueryExecutor:
+    """
+    Get or create NL query executor instance.
+
+    Args:
+        db_type: Database type (mysql, postgresql, sqlserver, oracle)
+        kg: Optional Knowledge Graph for join column resolution
+        use_llm: Whether to use LLM for SQL generation (default: True for LLM-only)
+    """
+    return NLQueryExecutor(db_type, kg=kg, use_llm=use_llm)
 

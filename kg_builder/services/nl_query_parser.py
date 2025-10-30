@@ -679,7 +679,8 @@ Extract and return ONLY valid JSON with this structure (no other text):
                     continue
 
                 # Validation 4: Check if column exists in table
-                if not self._column_exists_in_table(resolved_table, col_name):
+                matched_col_name = self._find_matching_column_name(resolved_table, col_name)
+                if not matched_col_name:
                     available_cols = self._get_available_columns(resolved_table)
                     errors.append(
                         f"❌ Column '{col_name}' not found in table '{resolved_table}'. "
@@ -699,14 +700,15 @@ Extract and return ONLY valid JSON with this structure (no other text):
                     continue
 
                 # All validations passed - create AdditionalColumn object
+                # Use the actual matched column name from the schema
                 col = AdditionalColumn(
-                    column_name=col_name,
+                    column_name=matched_col_name,
                     source_table=resolved_table,
                     confidence=path.confidence,
                     join_path=path.path
                 )
                 valid_columns.append(col)
-                logger.info(f"✓ Validated column '{col_name}' from '{resolved_table}'")
+                logger.info(f"✓ Validated column '{col_name}' -> '{matched_col_name}' from '{resolved_table}'")
 
             except Exception as e:
                 errors.append(f"❌ Error processing column request {col_req}: {str(e)}")
@@ -715,7 +717,7 @@ Extract and return ONLY valid JSON with this structure (no other text):
         return valid_columns, errors
 
     def _column_exists_in_table(self, table_name: str, column_name: str) -> bool:
-        """Check if column exists in table schema."""
+        """Check if column exists in table schema with fuzzy matching."""
         if not self.schemas_info:
             return True  # Can't validate without schemas_info
 
@@ -724,10 +726,97 @@ Extract and return ONLY valid JSON with this structure (no other text):
                 for tbl_name, table in schema.tables.items():
                     if tbl_name.lower() == table_name.lower():
                         if hasattr(table, 'columns'):
-                            col_names = [col.name.lower() for col in table.columns]
-                            return column_name.lower() in col_names
+                            col_names = [col.name for col in table.columns]
+                            return self._fuzzy_match_column_name(column_name, col_names)
 
         return False
+
+    def _fuzzy_match_column_name(self, requested_col: str, available_cols: List[str]) -> bool:
+        """
+        Fuzzy match column name against available columns.
+
+        Handles common naming pattern differences:
+        - Case insensitive matching
+        - Space to underscore conversion
+        - Underscore to space conversion
+        - Removal of common prefixes/suffixes
+        """
+        requested_lower = requested_col.lower().strip()
+
+        for available_col in available_cols:
+            available_lower = available_col.lower().strip()
+
+            # Exact match (case insensitive)
+            if requested_lower == available_lower:
+                return True
+
+            # Space to underscore conversion
+            if requested_lower.replace(' ', '_') == available_lower:
+                return True
+
+            # Underscore to space conversion
+            if requested_lower.replace('_', ' ') == available_lower:
+                return True
+
+            # Both directions for robustness
+            if requested_lower == available_lower.replace('_', ' '):
+                return True
+
+            if requested_lower == available_lower.replace(' ', '_'):
+                return True
+
+        return False
+
+    def _find_matching_column_name(self, table_name: str, column_name: str) -> Optional[str]:
+        """
+        Find the actual column name that matches the requested column name.
+
+        Returns the actual column name from the schema if found, None otherwise.
+        """
+        if not self.schemas_info:
+            return column_name  # Can't validate without schemas_info, return as-is
+
+        for schema_name, schema in self.schemas_info.items():
+            if hasattr(schema, 'tables'):
+                for tbl_name, table in schema.tables.items():
+                    if tbl_name.lower() == table_name.lower():
+                        if hasattr(table, 'columns'):
+                            col_names = [col.name for col in table.columns]
+                            return self._get_fuzzy_matched_column_name(column_name, col_names)
+
+        return None
+
+    def _get_fuzzy_matched_column_name(self, requested_col: str, available_cols: List[str]) -> Optional[str]:
+        """
+        Get the actual column name that fuzzy matches the requested column name.
+
+        Returns the actual column name from the schema if found, None otherwise.
+        """
+        requested_lower = requested_col.lower().strip()
+
+        for available_col in available_cols:
+            available_lower = available_col.lower().strip()
+
+            # Exact match (case insensitive)
+            if requested_lower == available_lower:
+                return available_col
+
+            # Space to underscore conversion
+            if requested_lower.replace(' ', '_') == available_lower:
+                return available_col
+
+            # Underscore to space conversion
+            if requested_lower.replace('_', ' ') == available_lower:
+                return available_col
+
+            # Both directions for robustness
+            if requested_lower == available_lower.replace('_', ' '):
+                return available_col
+
+            if requested_lower == available_lower.replace(' ', '_'):
+                return available_col
+
+        return None
 
     def _get_available_columns(self, table_name: str) -> List[str]:
         """Get list of available columns in a table."""
@@ -993,22 +1082,27 @@ INSTRUCTIONS:
    - "plus X from Y"
 
 2. For each match, extract:
-   - column_name: The column being requested (e.g., "planner", "category")
+   - column_name: The column being requested (e.g., "planner", "category", "ops planner")
    - source_table: The table it comes from (business term or actual name, e.g., "HANA Master", "Product Master")
 
-3. Return JSON array:
+3. IMPORTANT: Extract column names as they appear in natural language. The system will handle:
+   - Case differences (e.g., "planner" vs "PLANNER")
+   - Space/underscore differences (e.g., "ops planner" vs "OPS_PLANNER")
+   - Common naming variations
+
+4. Return JSON array:
 [
   {{
     "column_name": "planner",
     "source_table": "HANA Master"
   }},
   {{
-    "column_name": "category",
-    "source_table": "Product Master"
+    "column_name": "ops planner",
+    "source_table": "HANA Master"
   }}
 ]
 
-4. If no "include" clauses found, return empty array: []
+5. If no "include" clauses found, return empty array: []
 
 RESPONSE:
 Return ONLY valid JSON, no other text."""

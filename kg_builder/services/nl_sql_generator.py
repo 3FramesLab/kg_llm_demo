@@ -25,20 +25,33 @@ logger = logging.getLogger(__name__)
 class NLSQLGenerator:
     """Generate SQL from NL query intents."""
 
-    def __init__(self, db_type: str = "mysql", kg: Optional["KnowledgeGraph"] = None):
+    def __init__(self, db_type: str = "mysql", kg: Optional["KnowledgeGraph"] = None, use_llm: bool = False):
         """
         Initialize generator.
 
         Args:
             db_type: Database type (mysql, postgresql, sqlserver, oracle)
             kg: Optional Knowledge Graph for join column resolution
+            use_llm: Whether to use LLM for SQL generation (with Python fallback)
         """
         self.db_type = db_type.lower()
         self.kg = kg  # Store KG reference for join condition resolution
+        self.use_llm = use_llm
+        self.llm_generator = None
+
+        # Initialize LLM generator if requested
+        if use_llm:
+            try:
+                from kg_builder.services.llm_sql_generator import LLMSQLGenerator
+                self.llm_generator = LLMSQLGenerator(db_type, kg)
+                logger.info("✓ LLM SQL Generator initialized")
+            except Exception as e:
+                logger.warning(f"Failed to initialize LLM generator: {e}")
+                self.use_llm = False
 
     def generate(self, intent: QueryIntent) -> str:
         """
-        Generate SQL from query intent.
+        Generate SQL from query intent with optional LLM fallback.
 
         Args:
             intent: QueryIntent object
@@ -48,11 +61,38 @@ class NLSQLGenerator:
         """
         logger.info(f"🔧 Generating SQL for: {intent.definition}")
         logger.info(f"   Query Type: {intent.query_type}, Operation: {intent.operation}")
+        logger.info(f"   Using: {'LLM' if self.use_llm else 'Python'} generator")
         if intent.filters:
             logger.info(f"   Filters: {intent.filters}")
         if intent.additional_columns:
             logger.info(f"   Additional Columns: {len(intent.additional_columns)}")
 
+        # Try LLM generation first if enabled
+        if self.use_llm and self.llm_generator:
+            try:
+                sql = self.llm_generator.generate(intent)
+                logger.info(f"✅ SQL Generated Successfully (via LLM)")
+                return sql
+            except Exception as e:
+                logger.warning(f"⚠️ LLM generation failed, falling back to Python: {e}")
+                logger.info(f"   Fallback reason: {str(e)[:100]}")
+                # Fall through to Python generation
+
+        # Python-based generation (original implementation)
+        sql = self._generate_python(intent)
+        logger.info(f"✅ SQL Generated Successfully (via Python)")
+        return sql
+
+    def _generate_python(self, intent: QueryIntent) -> str:
+        """
+        Generate SQL using Python-based templates (original implementation).
+
+        Args:
+            intent: QueryIntent object
+
+        Returns:
+            str: Generated SQL query
+        """
         if intent.query_type == "comparison_query":
             sql = self._generate_comparison_query(intent)
         elif intent.query_type == "filter_query":
@@ -64,11 +104,10 @@ class NLSQLGenerator:
         else:
             raise ValueError(f"Unsupported query type: {intent.query_type}")
 
-        # NEW: Add additional columns if present
+        # Add additional columns if present
         if intent.additional_columns:
             sql = self._add_additional_columns_to_sql(sql, intent)
 
-        logger.info(f"✅ SQL Generated Successfully")
         return sql
 
     def _generate_comparison_query(self, intent: QueryIntent) -> str:
@@ -486,7 +525,17 @@ INNER JOIN {target} t ON s.{source_col} = t.{target_col}
             return f"`{identifier}`"
 
 
-def get_nl_sql_generator(db_type: str = "mysql", kg: Optional["KnowledgeGraph"] = None) -> NLSQLGenerator:
-    """Get or create NL SQL generator instance."""
-    return NLSQLGenerator(db_type, kg=kg)
+def get_nl_sql_generator(db_type: str = "mysql", kg: Optional["KnowledgeGraph"] = None, use_llm: bool = False) -> NLSQLGenerator:
+    """
+    Get or create NL SQL generator instance.
+
+    Args:
+        db_type: Database type (mysql, postgresql, sqlserver, oracle)
+        kg: Optional Knowledge Graph for join column resolution
+        use_llm: Whether to use LLM for SQL generation (with Python fallback)
+
+    Returns:
+        NLSQLGenerator instance
+    """
+    return NLSQLGenerator(db_type, kg=kg, use_llm=use_llm)
 

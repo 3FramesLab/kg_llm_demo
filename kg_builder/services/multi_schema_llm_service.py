@@ -60,11 +60,11 @@ class MultiSchemaLLMService:
 
             logger.debug(f"Inference Prompt:\n{prompt}")
 
-            response = self.client.chat.completions.create(
-                model=self.model,
-                max_tokens=self.max_tokens,
-                temperature=self.temperature,
-                messages=[
+            # Filter temperature parameter for GPT-5 compatibility
+            api_params = {
+                "model": self.model,
+                "max_tokens": self.max_tokens,
+                "messages": [
                     {
                         "role": "system",
                         "content": "You are an expert database analyst. Analyze database schemas and infer relationships between tables across different schemas based on semantic meaning and naming conventions."
@@ -74,7 +74,13 @@ class MultiSchemaLLMService:
                         "content": prompt
                     }
                 ]
-            )
+            }
+
+            # Only add temperature if not a GPT-5 model (GPT-5 only supports default temperature=1)
+            if not self.model.startswith('gpt-5'):
+                api_params["temperature"] = self.temperature
+
+            response = self.client.chat.completions.create(**api_params)
 
             result_text = response.choices[0].message.content
             logger.debug(f"LLM Inference Response:\n{result_text}")
@@ -115,11 +121,11 @@ class MultiSchemaLLMService:
 
             logger.debug(f"Enhancement Prompt:\n{prompt}")
 
-            response = self.client.chat.completions.create(
-                model=self.model,
-                max_tokens=self.max_tokens,
-                temperature=self.temperature,
-                messages=[
+            # Filter temperature parameter for GPT-5 compatibility
+            api_params = {
+                "model": self.model,
+                "max_tokens": self.max_tokens,
+                "messages": [
                     {
                         "role": "system",
                         "content": "You are an expert database analyst. Generate clear, concise business descriptions for database relationships."
@@ -129,7 +135,13 @@ class MultiSchemaLLMService:
                         "content": prompt
                     }
                 ]
-            )
+            }
+
+            # Only add temperature if not a GPT-5 model (GPT-5 only supports default temperature=1)
+            if not self.model.startswith('gpt-5'):
+                api_params["temperature"] = self.temperature
+
+            response = self.client.chat.completions.create(**api_params)
 
             result_text = response.choices[0].message.content
             logger.debug(f"LLM Enhancement Response:\n{result_text}")
@@ -167,11 +179,11 @@ class MultiSchemaLLMService:
 
             logger.debug(f"Scoring Prompt:\n{prompt}")
 
-            response = self.client.chat.completions.create(
-                model=self.model,
-                max_tokens=self.max_tokens,
-                temperature=self.temperature,
-                messages=[
+            # Filter temperature parameter for GPT-5 compatibility
+            api_params = {
+                "model": self.model,
+                "max_tokens": self.max_tokens,
+                "messages": [
                     {
                         "role": "system",
                         "content": "You are an expert database analyst. Assess the confidence and validity of database relationships."
@@ -181,7 +193,13 @@ class MultiSchemaLLMService:
                         "content": prompt
                     }
                 ]
-            )
+            }
+
+            # Only add temperature if not a GPT-5 model (GPT-5 only supports default temperature=1)
+            if not self.model.startswith('gpt-5'):
+                api_params["temperature"] = self.temperature
+
+            response = self.client.chat.completions.create(**api_params)
 
             result_text = response.choices[0].message.content
             logger.debug(f"LLM Scoring Response:\n{result_text}")

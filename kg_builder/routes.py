@@ -2579,8 +2579,8 @@ async def execute_nl_queries(request: NLQueryExecutionRequest):
             except Exception as e:
                 logger.error(f"Failed to parse definition '{definition}': {e}")
 
-        # Step 4: Execute queries
-        executor = get_nl_query_executor(request.db_type, kg=kg)  # Pass KG for join condition resolution
+        # Step 4: Execute queries (Force LLM-only SQL generation)
+        executor = get_nl_query_executor(request.db_type, kg=kg, use_llm=True)  # Pass KG and force LLM for SQL generation
 
         # Get database connection from source database
         logger.info(f"Getting source database connection for query execution (db_type: {request.db_type})")
@@ -2596,7 +2596,7 @@ async def execute_nl_queries(request: NLQueryExecutionRequest):
                 logger.warning("No database connection available - returning SQL only")
                 for intent in intents:
                     from kg_builder.services.nl_sql_generator import NLSQLGenerator
-                    generator = NLSQLGenerator(request.db_type, kg=kg)  # Pass KG for join condition resolution
+                    generator = NLSQLGenerator(request.db_type, kg=kg, use_llm=True)  # Force LLM for SQL generation
                     try:
                         sql = generator.generate(intent)
                         from kg_builder.services.nl_query_executor import QueryResult

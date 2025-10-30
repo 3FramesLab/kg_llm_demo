@@ -55,6 +55,16 @@ class LLMService:
         if max_tokens is None:
             max_tokens = self.max_tokens
 
+        # Filter out parameters that might not be supported by GPT-5 models
+        filtered_kwargs = {}
+        for key, value in kwargs.items():
+            # Skip temperature for all GPT-5 models - they only support default temperature (1)
+            if key == 'temperature' and self.model.startswith('gpt-5'):
+                logger.debug(f"Skipping temperature parameter for {self.model} (GPT-5 only supports default temperature=1)")
+                continue
+            else:
+                filtered_kwargs[key] = value
+
         # Auto-detect which parameter to use on first call
         if self._use_max_completion_tokens is None:
             try:
@@ -63,7 +73,7 @@ class LLMService:
                     model=self.model,
                     max_completion_tokens=max_tokens,
                     messages=messages,
-                    **kwargs
+                    **filtered_kwargs
                 )
                 self._use_max_completion_tokens = True
                 logger.debug("Using max_completion_tokens parameter for OpenAI API")
@@ -82,14 +92,14 @@ class LLMService:
                 model=self.model,
                 max_completion_tokens=max_tokens,
                 messages=messages,
-                **kwargs
+                **filtered_kwargs
             )
         else:
             return self.client.chat.completions.create(
                 model=self.model,
                 max_tokens=max_tokens,
                 messages=messages,
-                **kwargs
+                **filtered_kwargs
             )
     
     def extract_entities(self, schema: Dict[str, Any]) -> Dict[str, Any]:
@@ -168,8 +178,7 @@ Return ONLY valid JSON, no additional text.
 
             logger.debug(f"Entity Extraction Prompt:\\n{prompt}")
 
-            response = self.client.chat.completions.create(
-                model=self.model,
+            response = self.create_chat_completion(
                 messages=[
                     {
                         "role": "system",
@@ -180,8 +189,8 @@ Return ONLY valid JSON, no additional text.
                         "content": prompt
                     }
                 ],
-                temperature=self.temperature,
-                max_tokens=self.max_tokens
+                max_tokens=self.max_tokens,
+                temperature=self.temperature
             )
             
             result_text = response.choices[0].message.content
@@ -302,8 +311,7 @@ Return ONLY valid JSON, no additional text.
 
             logger.debug(f"Relationship Extraction Prompt:\\n{prompt}")
 
-            response = self.client.chat.completions.create(
-                model=self.model,
+            response = self.create_chat_completion(
                 messages=[
                     {
                         "role": "system",
@@ -314,8 +322,8 @@ Return ONLY valid JSON, no additional text.
                         "content": prompt
                     }
                 ],
-                temperature=self.temperature,
-                max_tokens=self.max_tokens
+                max_tokens=self.max_tokens,
+                temperature=self.temperature
             )
             
             result_text = response.choices[0].message.content
@@ -379,8 +387,7 @@ Return as JSON with this structure:
 
             logger.debug(f"Schema Analysis Prompt:\n{prompt}")
 
-            response = self.client.chat.completions.create(
-                model=self.model,
+            response = self.create_chat_completion(
                 messages=[
                     {
                         "role": "system",
@@ -391,8 +398,8 @@ Return as JSON with this structure:
                         "content": prompt
                     }
                 ],
-                temperature=self.temperature,
-                max_tokens=self.max_tokens
+                max_tokens=self.max_tokens,
+                temperature=self.temperature
             )
             
             result_text = response.choices[0].message.content

@@ -15,6 +15,7 @@ import {
   InputLabel,
 } from '@mui/material';
 import { executeKPI, listKGs, listSchemas } from '../services/api';
+import KPIExecutionStatusModal from './KPIExecutionStatusModal';
 
 const KPIExecutionDialog = ({ open, kpi, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -31,6 +32,10 @@ const KPIExecutionDialog = ({ open, kpi, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [executing, setExecuting] = useState(false);
   const [error, setError] = useState(null);
+
+  // Status modal state
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [executionId, setExecutionId] = useState(null);
 
   useEffect(() => {
     if (open) {
@@ -109,9 +114,15 @@ const KPIExecutionDialog = ({ open, kpi, onClose, onSuccess }) => {
     setError(null);
 
     try {
-      await executeKPI(kpi.id, formData);
-      onSuccess();
+      const response = await executeKPI(kpi.id, formData);
+
+      // Get execution ID from response
+      const execId = response.data.execution_id;
+      setExecutionId(execId);
+
+      // Close this dialog and show status modal
       onClose();
+      setStatusModalOpen(true);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to execute KPI');
       console.error('Error executing KPI:', err);
@@ -120,7 +131,20 @@ const KPIExecutionDialog = ({ open, kpi, onClose, onSuccess }) => {
     }
   };
 
+  const handleExecutionComplete = (execution) => {
+    setStatusModalOpen(false);
+    setExecutionId(null);
+    onSuccess(); // Refresh the KPI list
+  };
+
+  const handleExecutionError = (errorMessage) => {
+    setStatusModalOpen(false);
+    setExecutionId(null);
+    setError(errorMessage);
+  };
+
   return (
+    <>
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>Execute KPI - {kpi?.name}</DialogTitle>
       <DialogContent sx={{ pt: 2 }}>
@@ -224,6 +248,16 @@ const KPIExecutionDialog = ({ open, kpi, onClose, onSuccess }) => {
         </Button>
       </DialogActions>
     </Dialog>
+
+    {/* Status Modal - Shows real-time execution progress */}
+    <KPIExecutionStatusModal
+      open={statusModalOpen}
+      executionId={executionId}
+      kpiName={kpi?.name}
+      onComplete={handleExecutionComplete}
+      onError={handleExecutionError}
+    />
+  </>
   );
 };
 

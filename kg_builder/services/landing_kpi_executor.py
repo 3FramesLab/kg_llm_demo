@@ -185,8 +185,8 @@ class LandingKPIExecutor:
             if not connection:
                 raise ValueError("Could not establish database connection")
 
-            # Step 5: Execute the query
-            executor = get_nl_query_executor(db_type, kg=kg)  # Pass KG for join condition resolution
+            # Step 5: Execute the query (Force LLM-only SQL generation)
+            executor = get_nl_query_executor(db_type, kg=kg, use_llm=True)  # Pass KG and force LLM for SQL generation
             query_result = executor.execute(
                 intent,
                 connection,
