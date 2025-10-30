@@ -22,6 +22,7 @@ import {
   Language as NLIcon,
   TrendingUp as KPIIcon,
   BarChart as BarChartIcon,
+  ShowChart as ShowChartIcon,
 } from '@mui/icons-material';
 
 const drawerWidth = 240;
@@ -32,7 +33,9 @@ const menuItems = [
   { text: 'Knowledge Graph Builder', icon: <GraphIcon />, path: '/knowledge-graph' },
   { text: 'Natural Language', icon: <NLIcon />, path: '/natural-language' },
   { text: 'KPI Management', icon: <KPIIcon />, path: '/landing-kpi' },
+  { text: 'KPI Management', icon: <KPIIcon />, path: '/landing-kpi' },
   { text: 'KPI Dashboard', icon: <BarChartIcon />, path: '/kpi-dashboard' },
+  { text: 'Dashboard Trends', icon: <ShowChartIcon />, path: '/dashboard-trends' },
 ];
 
 export default function Layout({ children }) {
@@ -48,7 +51,7 @@ export default function Layout({ children }) {
     <div>
       <Toolbar>
         <Typography variant="h6" noWrap component="div">
-          DQ
+          DQ-Reconciliation
         </Typography>
       </Toolbar>
       <Divider />
