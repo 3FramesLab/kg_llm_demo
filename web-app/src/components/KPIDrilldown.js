@@ -17,7 +17,11 @@ import {
   Box,
   Pagination,
   Typography,
+  Chip,
+  Divider,
+  IconButton,
 } from '@mui/material';
+import { ContentCopy as ContentCopyIcon } from '@mui/icons-material';
 import { getKPIDrilldownData } from '../services/api';
 
 const KPIDrilldown = ({ open, execution, onClose }) => {
@@ -25,6 +29,7 @@ const KPIDrilldown = ({ open, execution, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
+  const [copiedSQL, setCopiedSQL] = useState(false);
   const pageSize = 50;
 
   useEffect(() => {
@@ -55,6 +60,14 @@ const KPIDrilldown = ({ open, execution, onClose }) => {
     fetchDrilldownData(value);
   };
 
+  const handleCopySQL = () => {
+    if (execution?.generated_sql) {
+      navigator.clipboard.writeText(execution.generated_sql);
+      setCopiedSQL(true);
+      setTimeout(() => setCopiedSQL(false), 2000);
+    }
+  };
+
   const getColumnNames = () => {
     if (!data?.data || data.data.length === 0) {
       return [];
@@ -65,7 +78,7 @@ const KPIDrilldown = ({ open, execution, onClose }) => {
   const columns = getColumnNames();
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="xl" fullWidth>
       <DialogTitle>
         Drill-down Results - Execution #{execution?.id}
       </DialogTitle>
@@ -82,19 +95,123 @@ const KPIDrilldown = ({ open, execution, onClose }) => {
           </Box>
         ) : data ? (
           <Box>
-            {/* Summary */}
-            <Box sx={{ mb: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
-              <Typography variant="body2">
-                <strong>Total Records:</strong> {data.total}
+            {/* Execution Metadata Section */}
+            <Box sx={{ mb: 3, p: 2.5, backgroundColor: '#ffffff', borderRadius: 2, border: '1px solid #e0e0e0' }}>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2, fontSize: '0.95rem' }}>
+                Execution Metadata
               </Typography>
-              <Typography variant="body2">
-                <strong>Page:</strong> {data.page} of {data.total_pages}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Records per Page:</strong> {data.page_size}
-              </Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3, mb: 2 }}>
+                <Box>
+                  <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.75rem', display: 'block', mb: 0.5 }}>
+                    Status
+                  </Typography>
+                  <Chip
+                    label={execution?.execution_status || 'unknown'}
+                    color={execution?.execution_status === 'success' ? 'success' : 'error'}
+                    size="small"
+                    sx={{ fontWeight: 'bold' }}
+                  />
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.75rem', display: 'block', mb: 0.5 }}>
+                    Record Count
+                  </Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>
+                    {execution?.number_of_records || data.total || 0}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.75rem', display: 'block', mb: 0.5 }}>
+                    Execution Time
+                  </Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>
+                    {execution?.execution_time_ms ? `${execution.execution_time_ms.toFixed(2)}ms` : 'N/A'}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.75rem', display: 'block', mb: 0.5 }}>
+                    Confidence Score
+                  </Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>
+                    {execution?.confidence_score ? `${(execution.confidence_score * 100).toFixed(1)}%` : 'N/A'}
+                  </Typography>
+                </Box>
+                {execution?.source_table && (
+                  <Box>
+                    <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.75rem', display: 'block', mb: 0.5 }}>
+                      Source Table
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>
+                      {execution.source_table}
+                    </Typography>
+                  </Box>
+                )}
+                {execution?.target_table && (
+                  <Box>
+                    <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.75rem', display: 'block', mb: 0.5 }}>
+                      Target Table
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>
+                      {execution.target_table}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+
+              {/* SQL Query Section */}
+              {execution?.generated_sql && (
+                <>
+                  <Divider sx={{ my: 2 }} />
+                  <Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>
+                        Generated SQL Query
+                      </Typography>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<ContentCopyIcon />}
+                        onClick={handleCopySQL}
+                        sx={{ textTransform: 'none', fontSize: '0.8rem' }}
+                      >
+                        {copiedSQL ? 'Copied!' : 'Copy'}
+                      </Button>
+                    </Box>
+                    <Paper
+                      sx={{
+                        p: 2,
+                        backgroundColor: '#f5f5f5',
+                        fontFamily: 'monospace',
+                        fontSize: '0.8rem',
+                        overflow: 'auto',
+                        maxHeight: '200px',
+                        border: '1px solid #e0e0e0',
+                      }}
+                    >
+                      <Typography
+                        component="pre"
+                        sx={{
+                          m: 0,
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-word',
+                          fontFamily: 'monospace',
+                          fontSize: '0.8rem',
+                        }}
+                      >
+                        {execution.generated_sql}
+                      </Typography>
+                    </Paper>
+                  </Box>
+                </>
+              )}
             </Box>
 
+            {/* Pagination Info */}
+            <Box sx={{ mb: 2, p: 1.5, backgroundColor: '#f9f9f9', borderRadius: 1 }}>
+              <Typography variant="body2" sx={{ fontSize: '0.85rem' }}>
+                <strong>Total Records:</strong> {data.total} | <strong>Page:</strong> {data.page} of {data.total_pages} | <strong>Records per Page:</strong> {data.page_size}
+              </Typography>
+            </Box>
             {/* Data Table */}
             <TableContainer component={Paper} sx={{ maxHeight: '500px', overflow: 'auto' }}>
               <Table stickyHeader size="small">

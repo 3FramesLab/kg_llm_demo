@@ -95,9 +95,9 @@ const LandingKPIManagement = () => {
           mb: 2.5,
           p: { xs: 2, sm: 2.5, md: 3 },
           borderRadius: 3,
-          background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           color: 'white',
-          boxShadow: '0 8px 32px rgba(25, 118, 210, 0.25)',
+          boxShadow: '0 8px 32px rgba(102, 126, 234, 0.25)',
           position: 'relative',
           overflow: 'hidden',
           '&::before': {
