@@ -272,11 +272,8 @@ const DashboardTrend = () => {
             </Typography>
           </Box>
 
-          {/* Right Side - Refresh Button */}
-          <Button
-            variant="contained"
-            size="medium"
-            startIcon={<RefreshIcon sx={{ fontSize: 18 }} />}
+          {/* Right Side - Refresh Icon */}
+          <IconButton
             onClick={handleRefresh}
             sx={{
               background: 'rgba(255, 255, 255, 0.2)',
@@ -286,22 +283,17 @@ const DashboardTrend = () => {
                 background: 'rgba(255, 255, 255, 0.3)',
                 border: '1px solid rgba(255, 255, 255, 0.4)',
                 transform: 'translateY(-1px)',
-                boxShadow: 'none'
+                boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)'
               },
-              px: 2.5,
-              py: 1.25,
+              width: '48px',
+              height: '48px',
               borderRadius: 2,
-              textTransform: 'none',
-              fontSize: '0.875rem',
-              fontWeight: 600,
               boxShadow: 'none',
               transition: 'all 0.2s ease-in-out',
-              height: '70px',
-              minWidth: '120px'
             }}
           >
-            Refresh
-          </Button>
+            <RefreshIcon sx={{ fontSize: 24 }} />
+          </IconButton>
         </Box>
       </Paper>
 

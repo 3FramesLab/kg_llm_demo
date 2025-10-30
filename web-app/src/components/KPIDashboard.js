@@ -11,6 +11,7 @@ import {
   Paper,
   Skeleton,
   Grid,
+  IconButton,
 } from '@mui/material';
 import {
   CheckCircle as CheckCircleIcon,
@@ -336,112 +337,98 @@ const KPIDashboard = () => {
           </Box>
 
           {/* Right Side - Stats Boxes */}
-          <Box sx={{ display: 'flex', gap: 2.5, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
             <Box
               sx={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 2,
+                gap: 1.25,
                 bgcolor: 'rgba(255, 255, 255, 0.2)',
-                px: 3,
-                py: 1.75,
-                borderRadius: 2.5,
+                px: 2,
+                py: 1.25,
+                borderRadius: 2,
                 border: '1px solid rgba(255, 255, 255, 0.3)',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                transition: 'all 0.3s ease-in-out',
+                transition: 'all 0.2s ease-in-out',
                 '&:hover': {
                   bgcolor: 'rgba(255, 255, 255, 0.25)',
-                  transform: 'translateY(-2px)',
                   borderColor: 'rgba(255, 255, 255, 0.4)',
-                  boxShadow: '0 6px 16px rgba(0, 0, 0, 0.15)'
                 }
               }}
             >
               <Box
                 sx={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 2.5,
+                  width: 36,
+                  height: 36,
+                  borderRadius: 1.5,
                   background: 'rgba(255, 255, 255, 0.3)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
                 }}
               >
-                <AssessmentIcon sx={{ fontSize: 28, color: 'white' }} />
+                <AssessmentIcon sx={{ fontSize: 20, color: 'white' }} />
               </Box>
               <Box>
-                <Typography variant="h4" fontWeight="700" sx={{ lineHeight: 1.2, fontSize: '1.75rem', color: 'white' }}>{totalKPIs}</Typography>
-                <Typography variant="body2" sx={{ fontSize: '0.875rem', fontWeight: 500, color: 'rgba(255, 255, 255, 0.9)' }}>Active KPI{totalKPIs !== 1 ? 's' : ''}</Typography>
+                <Typography variant="h6" fontWeight="700" sx={{ lineHeight: 1.2, fontSize: '1.25rem', color: 'white' }}>{totalKPIs}</Typography>
+                <Typography variant="body2" sx={{ fontSize: '0.75rem', fontWeight: 500, color: 'rgba(255, 255, 255, 0.9)' }}>KPI{totalKPIs !== 1 ? 's' : ''}</Typography>
               </Box>
             </Box>
             <Box
               sx={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 2,
+                gap: 1.25,
                 bgcolor: 'rgba(255, 255, 255, 0.2)',
-                px: 3,
-                py: 1.75,
-                borderRadius: 2.5,
+                px: 2,
+                py: 1.25,
+                borderRadius: 2,
                 border: '1px solid rgba(255, 255, 255, 0.3)',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                transition: 'all 0.3s ease-in-out',
+                transition: 'all 0.2s ease-in-out',
                 '&:hover': {
                   bgcolor: 'rgba(255, 255, 255, 0.25)',
-                  transform: 'translateY(-2px)',
                   borderColor: 'rgba(255, 255, 255, 0.4)',
-                  boxShadow: '0 6px 16px rgba(0, 0, 0, 0.15)'
                 }
               }}
             >
               <Box
                 sx={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 2.5,
+                  width: 36,
+                  height: 36,
+                  borderRadius: 1.5,
                   background: 'rgba(255, 255, 255, 0.3)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
                 }}
               >
-                <DashboardIcon sx={{ fontSize: 28, color: 'white' }} />
+                <DashboardIcon sx={{ fontSize: 20, color: 'white' }} />
               </Box>
               <Box>
-                <Typography variant="h4" fontWeight="700" sx={{ lineHeight: 1.2, fontSize: '1.75rem', color: 'white' }}>{groups.length}</Typography>
-                <Typography variant="body2" sx={{ fontSize: '0.875rem', fontWeight: 500, color: 'rgba(255, 255, 255, 0.9)' }}>Category{groups.length !== 1 ? 'ies' : 'y'}</Typography>
+                <Typography variant="h6" fontWeight="700" sx={{ lineHeight: 1.2, fontSize: '1.25rem', color: 'white' }}>{groups.length}</Typography>
+                <Typography variant="body2" sx={{ fontSize: '0.75rem', fontWeight: 500, color: 'rgba(255, 255, 255, 0.9)' }}>Group{groups.length !== 1 ? 's' : ''}</Typography>
               </Box>
             </Box>
-            <Button
-              variant="contained"
-              size="large"
-              startIcon={<RefreshIcon sx={{ fontSize: 20 }} />}
+            <IconButton
               onClick={handleRefresh}
               sx={{
                 background: 'rgba(255, 255, 255, 0.2)',
                 color: 'white',
                 border: '1px solid rgba(255, 255, 255, 0.3)',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
                 '&:hover': {
                   background: 'rgba(255, 255, 255, 0.3)',
                   border: '1px solid rgba(255, 255, 255, 0.4)',
-                  transform: 'translateY(-2px)',
-                  boxShadow: '0 6px 16px rgba(0, 0, 0, 0.15)'
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)'
                 },
-                px: 3,
-                py: 1.75,
-                borderRadius: 2.5,
-                textTransform: 'none',
-                fontSize: '0.9375rem',
-                fontWeight: 600,
-                transition: 'all 0.3s ease-in-out',
-                height: '84px',
-                minWidth: '140px'
+                width: '48px',
+                height: '48px',
+                borderRadius: 2,
+                boxShadow: 'none',
+                transition: 'all 0.2s ease-in-out',
               }}
             >
-              Refresh
-            </Button>
+              <RefreshIcon sx={{ fontSize: 24 }} />
+            </IconButton>
           </Box>
         </Box>
       </Paper>
