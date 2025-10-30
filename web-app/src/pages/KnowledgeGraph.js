@@ -14,7 +14,6 @@ import {
   Card,
   CardContent,
   Chip,
-  Divider,
   Tabs,
   Tab,
   Accordion,
@@ -28,6 +27,7 @@ import {
   Tooltip,
   IconButton,
   Badge,
+  Backdrop,
 } from '@mui/material';
 import {
   Add,
@@ -84,13 +84,7 @@ export default function KnowledgeGraph() {
     field_preferences: null,
   });
 
-  // Input mode: 'field_preferences' (v1) or 'relationship_pairs' (v2)
-  const [inputMode, setInputMode] = useState('field_preferences');
-
-  // Field preferences input (JSON string - v1)
-  const [fieldPreferencesInput, setFieldPreferencesInput] = useState('');
-
-  // Relationship pairs input (JSON string - v2)
+  // Relationship pairs input (JSON string)
   const [relationshipPairsInput, setRelationshipPairsInput] = useState('');
 
   // Excluded fields input (JSON array - list of field names to exclude)
@@ -153,34 +147,8 @@ export default function KnowledgeGraph() {
         payload.schema_name = formData.schema_name;
       }
 
-      // V1: Add field_preferences if in v1 mode
-      if (inputMode === 'field_preferences' && fieldPreferencesInput.trim()) {
-        try {
-          let parsed = JSON.parse(fieldPreferencesInput);
-
-          // Handle both formats:
-          // 1. Direct array: [{ table_name: "...", ... }]
-          // 2. Wrapped object: { field_preferences: [{ table_name: "...", ... }] }
-          if (parsed.field_preferences && Array.isArray(parsed.field_preferences)) {
-            payload.field_preferences = parsed.field_preferences;
-          } else if (Array.isArray(parsed)) {
-            payload.field_preferences = parsed;
-          } else {
-            setError('Field preferences must be a JSON array or object with field_preferences array');
-            setLoading(false);
-            return;
-          }
-
-          console.log('✅ Field preferences parsed:', payload.field_preferences);
-        } catch (err) {
-          setError('Invalid JSON in field preferences: ' + err.message);
-          setLoading(false);
-          return;
-        }
-      }
-
-      // V2: Add relationship_pairs if in v2 mode
-      if (inputMode === 'relationship_pairs' && relationshipPairsInput.trim()) {
+      // V2: Add relationship_pairs
+      if (relationshipPairsInput.trim()) {
         try {
           payload.relationship_pairs = JSON.parse(relationshipPairsInput);
           console.log('✅ Relationship pairs parsed:', payload.relationship_pairs);
@@ -510,6 +478,7 @@ export default function KnowledgeGraph() {
             id="tabpanel-0"
             aria-labelledby="tab-0"
           >
+            {/* Left Side - Main Form */}
             <Grid item xs={12} lg={6}>
               <Paper
                 elevation={0}
@@ -750,253 +719,6 @@ export default function KnowledgeGraph() {
                   </Paper>
                 </Box>
 
-                {formData.use_llm_enhancement && llmStatus.enabled && (
-                  <Accordion
-                    sx={{
-                      mt: 1.5,
-                      borderRadius: 1,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      '&:before': {
-                        display: 'none',
-                      },
-                      boxShadow: 'none',
-                    }}
-                  >
-                    <AccordionSummary
-                      expandIcon={<ExpandMore />}
-                      sx={{
-                        minHeight: 38,
-                        '&.Mui-expanded': {
-                          minHeight: 38,
-                        },
-                        '& .MuiAccordionSummary-content': {
-                          my: 0.75,
-                        },
-                        '&:hover': {
-                          bgcolor: 'action.hover',
-                        },
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Info sx={{ fontSize: 16, color: 'primary.main' }} />
-                        <Typography fontWeight={600} fontSize="0.8rem">Advanced Options (Optional)</Typography>
-                      </Box>
-                    </AccordionSummary>
-                    <AccordionDetails sx={{ pt: 0, pb: 1.25 }}>
-                      {/* Mode Selector */}
-                      <Typography variant="subtitle2" sx={{ mb: 0.75, fontSize: '0.8rem' }}>
-                        Relationship Input Mode
-                      </Typography>
-                      <RadioGroup
-                        value={inputMode}
-                        onChange={(e) => setInputMode(e.target.value)}
-                        sx={{ mb: 1.5 }}
-                      >
-                        <FormControlLabel
-                          value="field_preferences"
-                          control={<Radio />}
-                          label="V1: Field Preferences (Table hints - deprecated)"
-                        />
-                        <FormControlLabel
-                          value="relationship_pairs"
-                          control={<Radio />}
-                          label="V2: Relationship Pairs (Explicit source→target) - Recommended"
-                        />
-                      </RadioGroup>
-
-                      {/* V1: Field Preferences */}
-                      {inputMode === 'field_preferences' && (
-                        <Box>
-                          <Alert severity="warning" sx={{ mb: 2 }}>
-                            <strong>V1 Mode (Deprecated):</strong> Table-centric hints. Consider using V2 for clarity.
-                          </Alert>
-                          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                            Guide LLM inference with specific field hints. Provide JSON array with table-specific preferences.
-                          </Typography>
-                          <Typography variant="caption" color="info.main" sx={{ mb: 2, display: 'block' }}>
-                            💡 Tip: Paste either a JSON array directly or an object with "field_preferences" key. Both formats are supported.
-                          </Typography>
-                          <TextField
-                            fullWidth
-                            multiline
-                            rows={8}
-                            label="Field Preferences (JSON)"
-                            placeholder={JSON.stringify([
-                              {
-                                table_name: "hana_material_master",
-                                field_hints: {
-                                  MATERIAL: "PLANNING_SKU"
-                                },
-                                priority_fields: ["MATERIAL", "MATERIAL_DESC"],
-                                exclude_fields: ["INTERNAL_NOTES", "TEMP_FIELD"]
-                              },
-                              {
-                                table_name: "brz_lnd_OPS_EXCEL_GPU",
-                                field_hints: {
-                                  PLANNING_SKU: "MATERIAL",
-                                  GPU_MODEL: "PRODUCT_TYPE"
-                                },
-                                priority_fields: ["PLANNING_SKU", "GPU_MODEL"],
-                                exclude_fields: ["STAGING_FLAG"]
-                              }
-                            ], null, 2)}
-                            value={fieldPreferencesInput}
-                            onChange={(e) => setFieldPreferencesInput(e.target.value)}
-                            helperText="Provide field hints to guide LLM relationship inference. Leave empty to let LLM infer automatically."
-                          />
-                        </Box>
-                      )}
-
-                      {/* V2: Relationship Pairs */}
-                      {inputMode === 'relationship_pairs' && (
-                        <Box>
-                          <Alert severity="success" sx={{ mb: 2 }}>
-                            <strong>V2 Mode (Recommended):</strong> Explicit source→target pairs stored in KG. No ambiguity!
-                          </Alert>
-                          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                            Define explicit relationships with source→target column precision.
-                          </Typography>
-
-                          {/* LLM Relationship Suggestions */}
-                          {llmStatus.enabled && (
-                            <Box sx={{ mb: 2, p: 2, bgcolor: 'background.default', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                <AutoAwesome sx={{ fontSize: 18, color: 'primary.main' }} />
-                                <Typography variant="subtitle2" fontWeight={600}>
-                                  LLM-Powered Relationship Suggestions
-                                </Typography>
-                              </Box>
-                              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                Let AI suggest relationships for a table based on column name analysis.
-                              </Typography>
-                              <Box sx={{ display: 'flex', gap: 1 }}>
-                                <TextField
-                                  size="small"
-                                  label="Source Table Name"
-                                  placeholder="e.g., brz_lnd_RBP_GPU"
-                                  value={suggestionSourceTable}
-                                  onChange={(e) => setSuggestionSourceTable(e.target.value)}
-                                  disabled={suggestingRelationships}
-                                  sx={{ flex: 1 }}
-                                />
-                                <Button
-                                  variant="contained"
-                                  startIcon={suggestingRelationships ? <CircularProgress size={16} /> : <AutoAwesome />}
-                                  onClick={handleSuggestRelationships}
-                                  disabled={suggestingRelationships || !suggestionSourceTable.trim() || formData.schema_names.length === 0}
-                                >
-                                  {suggestingRelationships ? 'Suggesting...' : 'Suggest'}
-                                </Button>
-                              </Box>
-                              {formData.schema_names.length === 0 && (
-                                <Typography variant="caption" color="warning.main" sx={{ mt: 1, display: 'block' }}>
-                                  ⚠️ Please select schemas above before using suggestions
-                                </Typography>
-                              )}
-                            </Box>
-                          )}
-
-                          <TextField
-                            fullWidth
-                            multiline
-                            rows={12}
-                            label="Relationship Pairs (JSON)"
-                            placeholder={JSON.stringify([
-                              {
-                                source_table: "hana_material_master",
-                                source_column: "MATERIAL",
-                                target_table: "brz_lnd_OPS_EXCEL_GPU",
-                                target_column: "PLANNING_SKU",
-                                relationship_type: "MATCHES",
-                                confidence: 0.98,
-                                bidirectional: true
-                              },
-                              {
-                                source_table: "brz_lnd_OPS_EXCEL_GPU",
-                                source_column: "PLANNING_SKU",
-                                target_table: "brz_lnd_RBP_GPU",
-                                target_column: "Material",
-                                relationship_type: "MATCHES"
-                              }
-                            ], null, 2)}
-                            value={relationshipPairsInput}
-                            onChange={(e) => setRelationshipPairsInput(e.target.value)}
-                            helperText="Explicit pairs are added to the Knowledge Graph with clear source→target direction."
-                          />
-                        </Box>
-                      )}
-                    </AccordionDetails>
-                  </Accordion>
-                )}
-
-                {/* Excluded Fields Configuration */}
-                <Accordion
-                  sx={{
-                    mt: 1.5,
-                    borderRadius: 1.5,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    '&:before': {
-                      display: 'none',
-                    },
-                    boxShadow: 'none',
-                  }}
-                >
-                  <AccordionSummary
-                    expandIcon={<ExpandMore />}
-                    sx={{
-                      minHeight: 44,
-                      '&.Mui-expanded': {
-                        minHeight: 44,
-                      },
-                      '& .MuiAccordionSummary-content': {
-                        my: 1,
-                      },
-                      '&:hover': {
-                        bgcolor: 'action.hover',
-                      },
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                      <Warning sx={{ fontSize: 18, color: 'warning.main' }} />
-                      <Typography variant="body1" fontWeight={600} fontSize="0.9rem">
-                        Excluded Fields (Optional)
-                      </Typography>
-                    </Box>
-                  </AccordionSummary>
-                  <AccordionDetails sx={{ pt: 0, pb: 1.5 }}>
-                    <Alert severity="info" sx={{ mb: 2 }}>
-                      <strong>Field Exclusion:</strong> Specify fields to exclude from automatic relationship detection.
-                      This prevents certain columns (like "Product_Line", "Business_Unit", etc.) from being used in KG relationships.
-                    </Alert>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                      Provide a JSON array of field names (case-sensitive) to exclude from relationship creation.
-                    </Typography>
-                    <TextField
-                      fullWidth
-                      multiline
-                      rows={8}
-                      label="Excluded Fields (JSON Array)"
-                      placeholder={JSON.stringify([
-                        "Product_Line",
-                        "product_line",
-                        "PRODUCT_LINE",
-                        "Business_Unit",
-                        "business_unit",
-                        "BUSINESS_UNIT",
-                        "Product Type",
-                        "[Product Type]",
-                        "Business Unit",
-                        "[Business Unit]"
-                      ], null, 2)}
-                      value={excludedFieldsInput}
-                      onChange={(e) => setExcludedFieldsInput(e.target.value)}
-                      helperText="Fields in this list will not be used for automatic relationship detection. Leave empty to use system defaults."
-                    />
-                  </AccordionDetails>
-                </Accordion>
-
                 <Box sx={{ mt: 2 }}>
                   <Button
                     variant="contained"
@@ -1036,176 +758,210 @@ export default function KnowledgeGraph() {
               </Paper>
             </Grid>
 
+            {/* Right Side - Advanced Options and Excluded Fields */}
             <Grid item xs={12} lg={6}>
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 2,
-                  borderRadius: 1.5,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  height: '100%',
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    boxShadow: '0 3px 12px rgba(0,0,0,0.08)',
-                  },
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                  <Box
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                {/* Advanced Options - Relationship Pairs */}
+                {formData.use_llm_enhancement && llmStatus.enabled && (
+                  <Accordion
                     sx={{
-                      p: 0.75,
-                      borderRadius: 1,
-                      bgcolor: 'success.light',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Info sx={{ color: 'success.dark', fontSize: 20 }} />
-                  </Box>
-                  <Typography variant="h6" fontWeight="700" fontSize="0.95rem">
-                    Request Preview
-                  </Typography>
-                </Box>
-                <Box
-                  component="pre"
-                  sx={{
-                    p: 1.5,
-                    bgcolor: '#1e1e1e',
-                    color: '#d4d4d4',
-                    borderRadius: 1,
-                    overflow: 'auto',
-                    fontSize: '0.75rem',
-                    fontFamily: '"Fira Code", "Courier New", monospace',
-                    maxHeight: 320,
-                    boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.3)',
-                    '&::-webkit-scrollbar': {
-                      width: '5px',
-                      height: '5px',
-                    },
-                    '&::-webkit-scrollbar-track': {
-                      background: '#2d2d2d',
-                      borderRadius: '10px',
-                    },
-                    '&::-webkit-scrollbar-thumb': {
-                      background: '#555',
-                      borderRadius: '10px',
-                      '&:hover': {
-                        background: '#777',
-                      },
-                    },
-                  }}
-                >
-                  {JSON.stringify(
-                    {
-                      kg_name: formData.kg_name || 'example_kg',
-                      schema_names: formData.schema_names.length > 0
-                        ? formData.schema_names
-                        : ['orderMgmt-catalog', 'qinspect-designcode'],
-                      use_llm_enhancement: formData.use_llm_enhancement,
-                      backends: formData.backends,
-                      // Show field_preferences or relationship_pairs based on mode
-                      ...(inputMode === 'field_preferences'
-                        ? (fieldPreferencesInput.trim()
-                          ? { field_preferences: (() => { try { return JSON.parse(fieldPreferencesInput); } catch { return undefined; } })() }
-                          : {
-                            field_preferences: [
-                              {
-                                table_name: 'catalog',
-                                field_hints: { code: 'code', style_code: 'code', is_active: 'deleted' },
-                                priority_fields: [],
-                                exclude_fields: []
-                              }
-                            ]
-                          }
-                        )
-                        : (relationshipPairsInput.trim()
-                          ? { relationship_pairs: (() => { try { return JSON.parse(relationshipPairsInput); } catch { return undefined; } })() }
-                          : {
-                            relationship_pairs: [
-                              {
-                                source_table: 'hana_material_master',
-                                source_column: 'MATERIAL',
-                                target_table: 'brz_lnd_OPS_EXCEL_GPU',
-                                target_column: 'PLANNING_SKU',
-                                relationship_type: 'MATCHES',
-                                confidence: 0.98,
-                                bidirectional: true
-                              }
-                            ]
-                          }
-                        )
-                      )
-                    },
-                    null,
-                    2
-                  )}
-                </Box>
-
-                <Divider sx={{ my: 2 }} />
-
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-                  <Box
-                    sx={{
-                      p: 1,
                       borderRadius: 1.5,
-                      bgcolor: 'info.light',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      '&:before': {
+                        display: 'none',
+                      },
+                      boxShadow: 'none',
                     }}
                   >
-                    <CheckCircle sx={{ color: 'info.dark', fontSize: 22 }} />
-                  </Box>
-                  <Typography variant="h6" fontWeight="700">
-                    Response Preview
-                  </Typography>
-                </Box>
-                <Box
-                  component="pre"
+                    <AccordionSummary
+                      expandIcon={<ExpandMore />}
+                      sx={{
+                        minHeight: 48,
+                        '&.Mui-expanded': {
+                          minHeight: 48,
+                        },
+                        '& .MuiAccordionSummary-content': {
+                          my: 1,
+                        },
+                        '&:hover': {
+                          bgcolor: 'action.hover',
+                        },
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box
+                          sx={{
+                            p: 0.75,
+                            borderRadius: 1,
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          <Info sx={{ color: 'white', fontSize: 20 }} />
+                        </Box>
+                        <Typography variant="h6" fontWeight="700" fontSize="0.95rem">
+                          Advanced Options (Optional)
+                        </Typography>
+                      </Box>
+                    </AccordionSummary>
+                    <AccordionDetails sx={{ pt: 0, pb: 2 }}>
+                      <Alert severity="info" sx={{ mb: 2 }}>
+                        <strong>Relationship Pairs:</strong> Define explicit source→target pairs stored in KG with no ambiguity.
+                      </Alert>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                        Define explicit relationships with source→target column precision.
+                      </Typography>
+
+                      {/* LLM Relationship Suggestions */}
+                      {llmStatus.enabled && (
+                        <Box sx={{ mb: 2, p: 2, bgcolor: 'background.default', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                            <AutoAwesome sx={{ fontSize: 18, color: 'primary.main' }} />
+                            <Typography variant="subtitle2" fontWeight={600}>
+                              LLM-Powered Relationship Suggestions
+                            </Typography>
+                          </Box>
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                            Let AI suggest relationships for a table based on column name analysis.
+                          </Typography>
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            <TextField
+                              size="small"
+                              label="Source Table Name"
+                              placeholder="e.g., brz_lnd_RBP_GPU"
+                              value={suggestionSourceTable}
+                              onChange={(e) => setSuggestionSourceTable(e.target.value)}
+                              disabled={suggestingRelationships}
+                              sx={{ flex: 1 }}
+                            />
+                            <Button
+                              variant="contained"
+                              startIcon={suggestingRelationships ? <CircularProgress size={16} /> : <AutoAwesome />}
+                              onClick={handleSuggestRelationships}
+                              disabled={suggestingRelationships || !suggestionSourceTable.trim() || formData.schema_names.length === 0}
+                            >
+                              {suggestingRelationships ? 'Suggesting...' : 'Suggest'}
+                            </Button>
+                          </Box>
+                          {formData.schema_names.length === 0 && (
+                            <Typography variant="caption" color="warning.main" sx={{ mt: 1, display: 'block' }}>
+                              ⚠️ Please select schemas above before using suggestions
+                            </Typography>
+                          )}
+                        </Box>
+                      )}
+
+                      <TextField
+                        fullWidth
+                        multiline
+                        rows={12}
+                        label="Relationship Pairs (JSON)"
+                        placeholder={JSON.stringify([
+                          {
+                            source_table: "hana_material_master",
+                            source_column: "MATERIAL",
+                            target_table: "brz_lnd_OPS_EXCEL_GPU",
+                            target_column: "PLANNING_SKU",
+                            relationship_type: "MATCHES",
+                            confidence: 0.98,
+                            bidirectional: true
+                          },
+                          {
+                            source_table: "brz_lnd_OPS_EXCEL_GPU",
+                            source_column: "PLANNING_SKU",
+                            target_table: "brz_lnd_RBP_GPU",
+                            target_column: "Material",
+                            relationship_type: "MATCHES"
+                          }
+                        ], null, 2)}
+                        value={relationshipPairsInput}
+                        onChange={(e) => setRelationshipPairsInput(e.target.value)}
+                        helperText="Explicit pairs are added to the Knowledge Graph with clear source→target direction."
+                      />
+                    </AccordionDetails>
+                  </Accordion>
+                )}
+
+                {/* Excluded Fields Configuration */}
+                <Accordion
                   sx={{
-                    p: 2,
-                    bgcolor: '#1e1e1e',
-                    color: '#d4d4d4',
                     borderRadius: 1.5,
-                    overflow: 'auto',
-                    fontSize: '0.8rem',
-                    fontFamily: '"Fira Code", "Courier New", monospace',
-                    maxHeight: 350,
-                    boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.3)',
-                    '&::-webkit-scrollbar': {
-                      width: '6px',
-                      height: '6px',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    '&:before': {
+                      display: 'none',
                     },
-                    '&::-webkit-scrollbar-track': {
-                      background: '#2d2d2d',
-                      borderRadius: '10px',
-                    },
-                    '&::-webkit-scrollbar-thumb': {
-                      background: '#555',
-                      borderRadius: '10px',
-                      '&:hover': {
-                        background: '#777',
-                      },
-                    },
+                    boxShadow: 'none',
                   }}
                 >
-                  {JSON.stringify(
-                    {
-                      kg_name: 'example_kg',
-                      status: 'created',
-                      node_count: 58,
-                      relationship_count: 47,
-                      llm_enhanced: true,
-                      schemas_processed: 2,
-                      backends: ['falkordb', 'graphiti'],
-                    },
-                    null,
-                    2
-                  )}
-                </Box>
-              </Paper>
+                  <AccordionSummary
+                    expandIcon={<ExpandMore />}
+                    sx={{
+                      minHeight: 48,
+                      '&.Mui-expanded': {
+                        minHeight: 48,
+                      },
+                      '& .MuiAccordionSummary-content': {
+                        my: 1,
+                      },
+                      '&:hover': {
+                        bgcolor: 'action.hover',
+                      },
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box
+                        sx={{
+                          p: 0.75,
+                          borderRadius: 1,
+                          background: 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Warning sx={{ color: 'white', fontSize: 20 }} />
+                      </Box>
+                      <Typography variant="h6" fontWeight="700" fontSize="0.95rem">
+                        Excluded Fields (Optional)
+                      </Typography>
+                    </Box>
+                  </AccordionSummary>
+                  <AccordionDetails sx={{ pt: 0, pb: 2 }}>
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                      <strong>Field Exclusion:</strong> Specify fields to exclude from automatic relationship detection.
+                      This prevents certain columns (like "Product_Line", "Business_Unit", etc.) from being used in KG relationships.
+                    </Alert>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                      Provide a JSON array of field names (case-sensitive) to exclude from relationship creation.
+                    </Typography>
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={8}
+                      label="Excluded Fields (JSON Array)"
+                      placeholder={JSON.stringify([
+                        "Product_Line",
+                        "product_line",
+                        "PRODUCT_LINE",
+                        "Business_Unit",
+                        "business_unit",
+                        "BUSINESS_UNIT",
+                        "Product Type",
+                        "[Product Type]",
+                        "Business Unit",
+                        "[Business Unit]"
+                      ], null, 2)}
+                      value={excludedFieldsInput}
+                      onChange={(e) => setExcludedFieldsInput(e.target.value)}
+                      helperText="Fields in this list will not be used for automatic relationship detection. Leave empty to use system defaults."
+                    />
+                  </AccordionDetails>
+                </Accordion>
+              </Box>
             </Grid>
           </Grid>
         </Fade>
@@ -2082,6 +1838,42 @@ export default function KnowledgeGraph() {
           </Grid>
         </Fade>
       )}
+
+      {/* Overlay Loader */}
+      <Backdrop
+        sx={{
+          color: '#fff',
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          backdropFilter: 'blur(4px)',
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        }}
+        open={loading}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 2,
+          }}
+        >
+          <CircularProgress
+            size={60}
+            thickness={4}
+            sx={{
+              color: '#667eea',
+            }}
+          />
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography variant="h6" fontWeight="600" sx={{ mb: 0.5 }}>
+              Generating Knowledge Graph...
+            </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.9 }}>
+              This may take a few moments
+            </Typography>
+          </Box>
+        </Box>
+      </Backdrop>
     </Container>
   );
 }

@@ -178,8 +178,8 @@ export default function KnowledgeGraphEditor({
             position: 'relative',
             border: '2px solid',
             borderColor: 'divider',
-            bgcolor: '#fafafa',
-            boxShadow: 'inset 0 1px 6px rgba(0,0,0,0.05)',
+            bgcolor: '#ffffff',
+            boxShadow: 'none',
           }}
         >
           {graphData.nodes.length > 0 ? (
@@ -295,14 +295,14 @@ export default function KnowledgeGraphEditor({
                 linkLabel={(link) => link.type}
                 onNodeClick={handleNodeClick}
                 onNodeHover={handleNodeHover}
-                onLinkClick={handleLinkClick}
+               // onLinkClick={handleLinkClick}
                 cooldownTicks={100}
                 onEngineStop={() => fgRef.current?.zoomToFit(400)}
                 width={typeof window !== 'undefined' ? window.innerWidth * 0.55 : 600}
                 height={500}
                 nodeCanvasObject={(node, ctx) => {
                   const label = node.name;
-                  const fontSize = 1;
+                  const fontSize = 1.5;
                   const nodeRadius = node.val || 8; // Fallback to 8 if val is undefined
 
                   ctx.font = `${fontSize}px Arial`;
@@ -334,14 +334,21 @@ export default function KnowledgeGraphEditor({
                     }
                   }
 
-                  // Draw main node circle
-                  ctx.fillStyle = node.color;
+                  // Draw main node circle with white background and colored border
+                  ctx.fillStyle = '#ffffff';
                   ctx.beginPath();
                   ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI);
                   ctx.fill();
 
-                  // Draw text background
-                  ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                  // Draw colored border
+                  ctx.strokeStyle = node.color;
+                  ctx.lineWidth = 1.5;
+                  ctx.beginPath();
+                  ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI);
+                  ctx.stroke();
+
+                  // Draw text background (transparent)
+                  ctx.fillStyle = 'rgba(255, 255, 255, 0)';
                   ctx.fillRect(
                     node.x - bckgDimensions[0] / 2,
                     node.y - bckgDimensions[1] / 2,
@@ -465,7 +472,8 @@ export default function KnowledgeGraphEditor({
                       }}
                     />
                   </Box>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, mt: 2 }}>
+                  {/* Edit and Delete buttons hidden */}
+                  {/* <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, mt: 2 }}>
                     <Button
                       variant="outlined"
                       startIcon={<Edit sx={{ fontSize: 16 }} />}
@@ -510,7 +518,7 @@ export default function KnowledgeGraphEditor({
                     >
                       Delete Entity
                     </Button>
-                  </Box>
+                  </Box> */}
                 </Box>
               </Box>
             </Zoom>
