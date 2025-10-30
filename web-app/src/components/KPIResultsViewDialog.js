@@ -222,6 +222,25 @@ const KPIResultsViewDialog = ({ open, onClose, kpi, showMetadata = true }) => {
                         {results.confidence_score ? `${(results.confidence_score * 100).toFixed(1)}%` : 'N/A'}
                       </Typography>
                     </Box>
+                    {results.kg_name && (
+                      <Box>
+                        <Typography variant="body2" color="textSecondary">
+                          Knowledge Graph
+                        </Typography>
+                        <Chip
+                          label={results.kg_name}
+                          size="small"
+                          variant="outlined"
+                          sx={{
+                            mt: 0.5,
+                            backgroundColor: '#e3f2fd',
+                            color: '#1976d2',
+                            fontFamily: 'monospace',
+                            fontSize: '0.75rem'
+                          }}
+                        />
+                      </Box>
+                    )}
                     {results.source_table && (
                       <Box>
                         <Typography variant="body2" color="textSecondary">

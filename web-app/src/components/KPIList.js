@@ -8,7 +8,6 @@ import {
   TableRow,
   Paper,
   Button,
-  TextField,
   Box,
   CircularProgress,
   Alert,
@@ -32,8 +31,7 @@ const KPIList = ({ onEdit, onExecute, onViewHistory, refreshTrigger }) => {
   const [kpis, setKpis] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [groupFilter, setGroupFilter] = useState('');
+
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [selectedKPI, setSelectedKPI] = useState(null);
 
@@ -49,12 +47,6 @@ const KPIList = ({ onEdit, onExecute, onViewHistory, refreshTrigger }) => {
       const params = {
         is_active: true,
       };
-      if (groupFilter) {
-        params.group_name = groupFilter;
-      }
-      if (searchTerm) {
-        params.search = searchTerm;
-      }
 
       const response = await listKPIs(params);
       setKpis(response.data.kpis || []);
@@ -82,17 +74,7 @@ const KPIList = ({ onEdit, onExecute, onViewHistory, refreshTrigger }) => {
     }
   };
 
-  const handleSearch = (e) => {
-    setSearchTerm(e.target.value);
-  };
 
-  const handleGroupFilterChange = (e) => {
-    setGroupFilter(e.target.value);
-  };
-
-  const handleApplyFilters = () => {
-    fetchKPIs();
-  };
 
 
 
@@ -106,30 +88,7 @@ const KPIList = ({ onEdit, onExecute, onViewHistory, refreshTrigger }) => {
 
   return (
     <Box>
-      {/* Filters */}
-      <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-        <TextField
-          label="Search KPIs"
-          variant="outlined"
-          size="small"
-          value={searchTerm}
-          onChange={handleSearch}
-          placeholder="Search by name or description"
-          sx={{ flex: 1, minWidth: '200px' }}
-        />
-        <TextField
-          label="Group"
-          variant="outlined"
-          size="small"
-          value={groupFilter}
-          onChange={handleGroupFilterChange}
-          placeholder="Enter group name"
-          sx={{ flex: 1, minWidth: '200px' }}
-        />
-        <Button variant="contained" onClick={handleApplyFilters}>
-          Apply Filters
-        </Button>
-      </Box>
+
 
       {/* Error Alert */}
       {error && (
@@ -146,15 +105,14 @@ const KPIList = ({ onEdit, onExecute, onViewHistory, refreshTrigger }) => {
               <TableCell sx={{ fontWeight: 'bold' }}>Name</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>Alias</TableCell>
               <TableCell sx={{ fontWeight: 'bold', minWidth: '150px' }}>Group</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Description</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>NL Definition</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', width: '40%' }}>NL Definition</TableCell>
               <TableCell sx={{ fontWeight: 'bold', textAlign: 'center', minWidth: '200px' }}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {kpis.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
                   No KPIs found. Create one to get started!
                 </TableCell>
               </TableRow>
@@ -172,10 +130,7 @@ const KPIList = ({ onEdit, onExecute, onViewHistory, refreshTrigger }) => {
                   <TableCell>
                     {kpi.group_name || <span style={{ color: '#999' }}>-</span>}
                   </TableCell>
-                  <TableCell sx={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {kpi.description || '-'}
-                  </TableCell>
-                  <TableCell sx={{ maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <TableCell sx={{ maxWidth: '400px', overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-word' }}>
                     {kpi.nl_definition}
                   </TableCell>
                   <TableCell align="center">

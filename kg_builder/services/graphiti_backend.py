@@ -226,7 +226,7 @@ class GraphitiBackend:
         return []
     
     def list_graphs(self) -> List[dict]:
-        """List all graphs with their metadata."""
+        """List all graphs with their metadata, sorted by created_at (latest first)."""
         try:
             graphs = []
             for d in self.storage_path.iterdir():
@@ -254,6 +254,20 @@ class GraphitiBackend:
                             'backends': ['graphiti'],
                             'created_at': None
                         })
+
+            # Sort by created_at timestamp (latest first)
+            # Handle None values by putting them at the end
+            def sort_key(graph):
+                created_at = graph.get('created_at')
+                if created_at is None:
+                    return datetime.min  # Put None values at the end
+                try:
+                    # Parse ISO format timestamp
+                    return datetime.fromisoformat(created_at)
+                except (ValueError, TypeError):
+                    return datetime.min  # Put invalid timestamps at the end
+
+            graphs.sort(key=sort_key, reverse=True)
             return graphs
         except Exception as e:
             logger.error(f"Error listing graphs: {e}")

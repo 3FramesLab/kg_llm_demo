@@ -23,7 +23,7 @@ const KPIExecutionDialog = ({ open, kpi, onClose, onSuccess }) => {
     schemas: [],
     definitions: [],
     use_llm: true,
-    min_confidence: 0.7,
+    min_confidence: 0.8, // Hardcoded value
     limit: 1000,
     db_type: 'sqlserver',
   });
@@ -48,7 +48,7 @@ const KPIExecutionDialog = ({ open, kpi, onClose, onSuccess }) => {
         schemas: [],
         definitions: initialDefinitions,
         use_llm: true,
-        min_confidence: 0.7,
+        min_confidence: 0.8, // Hardcoded value
         limit: 1000,
         db_type: 'sqlserver',
       });
@@ -207,18 +207,7 @@ const KPIExecutionDialog = ({ open, kpi, onClose, onSuccess }) => {
             helperText="Definition from KPI"
           />
 
-          {/* Min Confidence */}
-          <TextField
-            label="Min Confidence"
-            name="min_confidence"
-            type="number"
-            value={formData.min_confidence}
-            onChange={handleChange}
-            fullWidth
-            disabled={executing}
-            inputProps={{ min: 0, max: 1, step: 0.1 }}
-            helperText="Minimum confidence threshold (0.0 - 1.0)"
-          />
+
 
           {/* Limit Records */}
           <TextField

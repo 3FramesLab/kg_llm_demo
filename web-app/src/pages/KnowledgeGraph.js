@@ -678,44 +678,7 @@ export default function KnowledgeGraph() {
                         </Typography>
                       </Alert>
                     )}
-                    {llmStatus.enabled && formData.schema_names.length === 1 && (
-                      <Alert
-                        severity="success"
-                        sx={{
-                          mt: 1,
-                          borderRadius: 0.75,
-                          py: 0.25,
-                          bgcolor: 'rgba(46, 125, 50, 0.08)',
-                        }}
-                        icon={<AutoAwesome sx={{ fontSize: 18 }} />}
-                      >
-                        <Typography variant="body2" fontWeight={500} fontSize="0.8rem">
-                          AI enabled: {llmStatus.model}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" fontSize="0.65rem">
-                          Intelligent entity and relationship extraction
-                        </Typography>
-                      </Alert>
-                    )}
-                    {llmStatus.enabled && formData.schema_names.length > 1 && (
-                      <Alert
-                        severity="success"
-                        sx={{
-                          mt: 1,
-                          borderRadius: 0.75,
-                          py: 0.25,
-                          bgcolor: 'rgba(46, 125, 50, 0.08)',
-                        }}
-                        icon={<AutoAwesome sx={{ fontSize: 18 }} />}
-                      >
-                        <Typography variant="body2" fontWeight={500} fontSize="0.8rem">
-                          AI enabled: {llmStatus.model}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" fontSize="0.65rem">
-                          Cross-schema relationship inference
-                        </Typography>
-                      </Alert>
-                    )}
+
                   </Paper>
                 </Box>
 
@@ -1744,13 +1707,14 @@ export default function KnowledgeGraph() {
                             {kg.name}
                           </Typography>
                           <Typography variant="caption" color="text.secondary" fontSize="0.65rem">
-                            {new Date(kg.created_at).toLocaleDateString('en-US', {
+                            {kg.created_at ? new Date(kg.created_at).toLocaleString('en-US', {
                               year: 'numeric',
                               month: 'short',
                               day: 'numeric',
                               hour: '2-digit',
-                              minute: '2-digit'
-                            })}
+                              minute: '2-digit',
+                              timeZoneName: 'short'
+                            }) : 'Unknown date'}
                           </Typography>
                         </Box>
                       </Box>

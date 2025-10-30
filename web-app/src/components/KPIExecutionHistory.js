@@ -89,6 +89,7 @@ const KPIExecutionHistory = ({ open, kpi, onClose, onViewDrilldown }) => {
               <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
                 <TableRow>
                   <TableCell sx={{ fontWeight: 'bold' }}>Execution ID</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>KG Name</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>Records</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>Time</TableCell>
@@ -100,7 +101,7 @@ const KPIExecutionHistory = ({ open, kpi, onClose, onViewDrilldown }) => {
               <TableBody>
                 {executions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                    <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
                       No executions found
                     </TableCell>
                   </TableRow>
@@ -108,6 +109,19 @@ const KPIExecutionHistory = ({ open, kpi, onClose, onViewDrilldown }) => {
                   executions.map((execution) => (
                     <TableRow key={execution.id} hover>
                       <TableCell>#{execution.id}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={execution.kg_name || 'N/A'}
+                          size="small"
+                          variant="outlined"
+                          sx={{
+                            backgroundColor: '#e3f2fd',
+                            color: '#1976d2',
+                            fontFamily: 'monospace',
+                            fontSize: '0.75rem'
+                          }}
+                        />
+                      </TableCell>
                       <TableCell>
                         <Chip
                           label={execution.execution_status}
