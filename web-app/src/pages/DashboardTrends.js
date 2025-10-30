@@ -36,6 +36,23 @@ const DashboardTrend = () => {
   const [selectedKPIForChart, setSelectedKPIForChart] = useState(null);
   const [detailedTrendData, setDetailedTrendData] = useState([]);
 
+  // Custom label component to display count on each data point
+  const renderCustomLabel = (props) => {
+    const { x, y, value } = props;
+    return (
+      <text
+        x={x}
+        y={y - 10}
+        fill="#111827"
+        textAnchor="middle"
+        fontSize="0.75rem"
+        fontWeight="600"
+      >
+        {value.toLocaleString()}
+      </text>
+    );
+  };
+
   useEffect(() => {
     fetchDashboardData();
   }, []);
@@ -73,9 +90,7 @@ const DashboardTrend = () => {
         const chartData = executions.map((exec) => ({
           date: new Date(exec.execution_timestamp).toLocaleDateString('en-US', {
             month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+            day: 'numeric'
           }),
           records: exec.number_of_records,
           fullDate: exec.execution_timestamp
@@ -577,9 +592,8 @@ const DashboardTrend = () => {
                     dataKey="date"
                     stroke="#6b7280"
                     style={{ fontSize: '0.75rem' }}
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
+                    angle={0}
+                    textAnchor="middle"
                   />
                   <YAxis
                     stroke="#6b7280"
@@ -616,6 +630,7 @@ const DashboardTrend = () => {
                     dot={{ fill: '#6366f1', r: 5 }}
                     activeDot={{ r: 7 }}
                     name="Records"
+                    label={renderCustomLabel}
                   />
                 </LineChart>
               </ResponsiveContainer>
