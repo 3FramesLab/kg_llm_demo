@@ -45,9 +45,10 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Create app user (non-root for security)
-RUN useradd -m -u 1000 appuser && \
+# OpenShift runs containers with arbitrary UIDs that are part of the root group (GID 0)
+RUN useradd -m -u 1001 -g 0 appuser && \
     mkdir -p /app /app/data /app/schemas /app/jdbc_drivers && \
-    chown -R appuser:appuser /app
+    chown -R appuser:0 /app
 
 # Set working directory
 WORKDIR /app
@@ -57,17 +58,21 @@ COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/pytho
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy application code
-COPY --chown=appuser:appuser . .
+COPY --chown=appuser:0 . .
 
 # Create necessary directories with proper permissions
+# Set group ownership to root (0) and make directories group-writable for OpenShift
 RUN mkdir -p \
     /app/data/reconciliation_rules \
     /app/data/graphiti_storage \
     /app/logs \
-    && chown -R appuser:appuser /app
+    && chown -R appuser:0 /app \
+    && chmod -R g=u /app \
+    && chmod -R g+w /app/data /app/logs
 
 # Switch to non-root user
-USER appuser
+# OpenShift will run as a random UID but will be part of root group (GID 0)
+USER 1001
 
 # Expose port
 EXPOSE 8000
