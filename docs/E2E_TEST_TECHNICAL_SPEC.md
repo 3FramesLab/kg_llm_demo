@@ -90,11 +90,10 @@ from kg_builder.config import (
 
 **Implementation**:
 ```python
-1. Check if single or multiple schemas
-2. If single: use SchemaParser.build_knowledge_graph()
-3. If multiple: use SchemaParser.build_merged_knowledge_graph()
-4. Extract nodes and relationships
-5. Return KG metadata
+1. Always use SchemaParser.build_merged_knowledge_graph() (UNIFIED APPROACH)
+2. Single schema is just a special case of multiple schemas (count = 1)
+3. Extract nodes and relationships
+4. Return KG metadata
 ```
 
 **Data Structures**:

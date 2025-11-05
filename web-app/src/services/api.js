@@ -71,4 +71,21 @@ export const getKPIExecutions = (kpiId, params) => api.get(`/landing-kpi/kpis/${
 export const getKPIExecutionResult = (executionId) => api.get(`/landing-kpi/executions/${executionId}`);
 export const getKPIDrilldownData = (executionId, params) => api.get(`/landing-kpi/executions/${executionId}/drilldown`, { params });
 
+// Column Hints Management
+export const getAllHints = () => api.get('/hints/');
+export const getHintsStatistics = () => api.get('/hints/statistics');
+export const getTableHints = (tableName) => api.get(`/hints/table/${tableName}`);
+export const getColumnHints = (tableName, columnName) => api.get(`/hints/column/${tableName}/${columnName}`);
+export const updateTableHints = (data) => api.post('/hints/table', data);
+export const updateColumnHints = (data) => api.post('/hints/column', data);
+export const updateColumnHintField = (tableName, columnName, fieldName, data) =>
+  api.patch(`/hints/column/${tableName}/${columnName}/${fieldName}`, data);
+export const deleteHints = (data) => api.delete('/hints/hints', { data });
+export const searchHints = (data) => api.post('/hints/search', data);
+export const createHintsVersion = (data) => api.post('/hints/version', data);
+export const generateColumnHints = (data) => api.post('/hints/generate', data);
+export const bulkGenerateHints = (data) => api.post('/hints/generate/bulk', data);
+export const exportHints = (outputPath) => api.get('/hints/export', { params: { output_path: outputPath } });
+export const importHints = (data) => api.post('/hints/import', data);
+
 export default api;

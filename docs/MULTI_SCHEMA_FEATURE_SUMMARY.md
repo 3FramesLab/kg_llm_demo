@@ -115,8 +115,8 @@ response = requests.post(f"{BASE_URL}/kg/generate", json={
 
 #### 3. **kg_builder/routes.py**
 - Updated `/kg/generate` endpoint:
-  - Detects single vs multiple schemas
-  - Routes to appropriate builder method
+  - UNIFIED APPROACH: Always uses build_merged_knowledge_graph()
+  - Single schema is just a special case of multiple schemas (count = 1)
   - Enhanced error handling
   - Updated response with schemas_processed
 

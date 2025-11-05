@@ -90,10 +90,9 @@ def create_knowledge_graph(schema_names: List[str], kg_name: str) -> Dict[str, A
     try:
         logger.info(f"Creating KG '{kg_name}' from schemas: {schema_names}")
         
-        if len(schema_names) > 1:
-            kg = SchemaParser.build_merged_knowledge_graph(schema_names, kg_name, use_llm=False)
-        else:
-            kg = SchemaParser.build_knowledge_graph(schema_names[0], kg_name)
+        # UNIFIED APPROACH: Always use build_merged_knowledge_graph()
+        # Single schema is just a special case of multiple schemas (count = 1)
+        kg = SchemaParser.build_merged_knowledge_graph(schema_names, kg_name, use_llm=False)
         
         logger.info(f"[OK] KG created: {kg.name}")
         logger.info(f"  - Nodes: {len(kg.nodes)}")

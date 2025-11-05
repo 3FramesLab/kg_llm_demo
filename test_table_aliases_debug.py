@@ -36,12 +36,11 @@ def test_single_schema_aliases():
         print(f"   ✓ Loaded schema with {len(schema.tables)} tables")
         print(f"   Tables: {list(schema.tables.keys())}")
 
-        # Build knowledge graph with LLM enabled
+        # Build knowledge graph with LLM enabled - UNIFIED APPROACH
         print(f"\n2. Building knowledge graph with LLM enabled")
-        kg = SchemaParser.build_knowledge_graph(
-            schema_name=schema_name,
+        kg = SchemaParser.build_merged_knowledge_graph(
+            schema_names=[schema_name],
             kg_name=kg_name,
-            schema=schema,
             use_llm=True,
             field_preferences=None
         )

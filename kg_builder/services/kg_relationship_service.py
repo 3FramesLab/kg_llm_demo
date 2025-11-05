@@ -11,6 +11,62 @@ from kg_builder.models import RelationshipPair, KnowledgeGraph, GraphRelationshi
 
 logger = logging.getLogger(__name__)
 
+# Import the relationship normalizer
+try:
+    from kg_builder.table_name_normalizer import CombinedNormalizer
+
+    # Initialize the normalizer with remove_prefix strategy
+    relationship_normalizer = CombinedNormalizer(table_strategy='remove_prefix')
+    logger.info("✅ Relationship normalizer initialized in kg_relationship_service")
+except ImportError as e:
+    logger.warning(f"⚠️ Could not import relationship normalizer in kg_relationship_service: {e}")
+    relationship_normalizer = None
+
+
+def normalize_explicit_relationship(relationship: GraphRelationship) -> GraphRelationship:
+    """
+    Normalize an explicit GraphRelationship using the global normalizer.
+
+    Args:
+        relationship: Original GraphRelationship
+
+    Returns:
+        Normalized GraphRelationship
+    """
+    if relationship_normalizer is None:
+        logger.warning("Relationship normalizer not available, returning original relationship")
+        return relationship
+
+    try:
+        # Convert GraphRelationship to dict for normalization
+        rel_dict = {
+            'source_id': relationship.source_id,
+            'target_id': relationship.target_id,
+            'relationship_type': relationship.relationship_type,
+            'source_column': relationship.source_column,
+            'target_column': relationship.target_column,
+            'properties': relationship.properties
+        }
+
+        # Normalize the relationship
+        normalized_dict = relationship_normalizer.normalize_relationship(rel_dict)
+
+        # Convert back to GraphRelationship
+        normalized_relationship = GraphRelationship(
+            source_id=normalized_dict['source_id'],
+            target_id=normalized_dict['target_id'],
+            relationship_type=normalized_dict['relationship_type'],
+            source_column=normalized_dict.get('source_column'),
+            target_column=normalized_dict.get('target_column'),
+            properties=normalized_dict.get('properties', {})
+        )
+
+        return normalized_relationship
+
+    except Exception as e:
+        logger.error(f"Error normalizing explicit relationship: {e}")
+        return relationship
+
 
 def add_explicit_relationships_to_kg(
     kg: KnowledgeGraph,
@@ -172,7 +228,8 @@ def _create_graph_relationship(
         "forward": forward
     })
 
-    return GraphRelationship(
+    # Create the explicit relationship
+    relationship = GraphRelationship(
         source_id=source_id,
         target_id=target_id,
         relationship_type=relationship_type,
@@ -187,6 +244,10 @@ def _create_graph_relationship(
             **metadata
         }
     )
+
+    # Apply normalization to the explicit relationship
+    normalized_relationship = normalize_explicit_relationship(relationship)
+    return normalized_relationship
 
 
 def _get_reverse_relationship_type(rel_type: KGRelationshipType) -> KGRelationshipType:

@@ -1,0 +1,10 @@
+{
+  "versions": [
+    {
+      "version_name": "v1.0_initial",
+      "created_at": "2025-11-04T16:42:21.977187",
+      "created_by": "initialization_script",
+      "comment": "Initial hints generated from schema. LLM: False, Overwrite: False"
+    }
+  ]
+}

@@ -40,6 +40,7 @@ class LLMSQLGenerator:
         logger.info(f"✓ LLM SQL Generator initialized for {self.db_type}")
 
     def generate(self, intent: QueryIntent) -> str:
+        logger.info("🚀 SQL GENERATION STARTED - THIS SHOULD ALWAYS APPEAR")
         """
         Generate SQL from query intent using LLM.
 
@@ -60,6 +61,9 @@ class LLMSQLGenerator:
 
             # Build the LLM prompt
             prompt = self._build_sql_generation_prompt(intent, schema_context)
+
+            # Log the full prompt for debugging
+            logger.debug(f"🔍 LLM SQL Generation Prompt:\n{prompt}")
 
             # Call LLM
             response = self.llm_service.create_chat_completion(
@@ -166,16 +170,38 @@ Query: "Show products in A not in B, also show vendor from C"
                     "description": node.properties.get("description", "")
                 }
 
-        # Extract relationships from KG
-        for rel in self.kg.relationships:
-            if rel.source_column and rel.target_column:
-                context["relationships"].append({
-                    "source_table": rel.source_id,
-                    "target_table": rel.target_id,
-                    "source_column": rel.source_column,
-                    "target_column": rel.target_column,
-                    "relationship_type": rel.relationship_type
-                })
+        # Use specific join columns from intent if available (for reconciliation rules)
+        if intent.join_columns and intent.source_table and intent.target_table:
+            # Use the specific join columns from the rule
+            source_col, target_col = intent.join_columns[0]  # Use first join column pair
+            context["relationships"].append({
+                "source_table": intent.source_table,
+                "target_table": intent.target_table,
+                "source_column": source_col,
+                "target_column": target_col,
+                "relationship_type": "RULE_SPECIFIED"
+            })
+            logger.debug(f"🎯 Using rule-specific join: {intent.source_table}.{source_col} → {intent.target_table}.{target_col}")
+        else:
+            # Fallback to KG relationships
+            logger.info(f"Loading {len(self.kg.relationships)} relationships from KG")
+
+            for rel in self.kg.relationships:
+                if rel.source_column and rel.target_column:
+                    # Clean table names (remove table_ prefix)
+                    source_table = rel.source_id.replace("table_", "")
+                    target_table = rel.target_id.replace("table_", "")
+
+                    context["relationships"].append({
+                        "source_table": source_table,
+                        "target_table": target_table,
+                        "source_column": rel.source_column,
+                        "target_column": rel.target_column,
+                        "relationship_type": rel.relationship_type,
+                        "confidence": rel.properties.get("llm_confidence", rel.properties.get("confidence", 0.75))
+                    })
+
+            logger.info(f"Loaded {len(context['relationships'])} relationships with join columns")
 
         # Extract table aliases from KG
         if self.kg.table_aliases:
@@ -205,20 +231,47 @@ Query: "Show products in A not in B, also show vendor from C"
 
         tables_str = "\n".join(tables_info) if tables_info else "  (No tables available)"
 
-        # Format relationships
+        # Format relationships - prioritize relationships involving query tables
         relationships_info = []
-        for rel in schema_context["relationships"][:15]:  # Limit to 15 relationships
+        query_tables = {intent.source_table, intent.target_table}
+        query_tables.discard(None)  # Remove None values
+
+        # First, add relationships involving the query tables
+        relevant_rels = []
+        other_rels = []
+
+        for rel in schema_context["relationships"]:
+            if (rel['source_table'] in query_tables or rel['target_table'] in query_tables):
+                relevant_rels.append(rel)
+            else:
+                other_rels.append(rel)
+
+        # Sort by confidence if available
+        relevant_rels.sort(key=lambda r: r.get('confidence', 0.75), reverse=True)
+        other_rels.sort(key=lambda r: r.get('confidence', 0.75), reverse=True)
+
+        # Take up to 20 relationships (10 relevant + 10 others)
+        selected_rels = relevant_rels[:10] + other_rels[:10]
+
+        for rel in selected_rels:
+            confidence_str = f" (conf: {rel.get('confidence', 0.75):.2f})" if 'confidence' in rel else ""
             relationships_info.append(
                 f"  • {rel['source_table']}.{rel['source_column']} ↔ "
-                f"{rel['target_table']}.{rel['target_column']} ({rel['relationship_type']})"
+                f"{rel['target_table']}.{rel['target_column']} ({rel['relationship_type']}){confidence_str}"
             )
 
         relationships_str = "\n".join(relationships_info) if relationships_info else "  (No relationships available)"
 
-        # Format table aliases
+        if relevant_rels:
+            logger.info(f"Found {len(relevant_rels)} relationships involving query tables: {query_tables}")
+
+        # Format table aliases (KG format: {table_name: [alias1, alias2]})
         aliases_info = []
-        for business_name, actual_table in schema_context["table_aliases"].items():
-            aliases_info.append(f"  • \"{business_name}\" → {actual_table}")
+        table_aliases = schema_context.get("table_aliases", {})
+        if table_aliases:
+            for actual_table, alias_list in table_aliases.items():
+                for alias in alias_list:
+                    aliases_info.append(f"  • \"{alias}\" → {actual_table}")
 
         aliases_str = "\n".join(aliases_info) if aliases_info else "  (No aliases available)"
 
@@ -290,6 +343,24 @@ Table Relationships (for JOINs):
 Table Aliases (Business Names → Actual Tables):
 {aliases_str}
 
+=== TABLE ROLE GUIDANCE ===
+
+MAIN TABLES (use as FROM clause - primary data sources):
+  • brz_lnd_IBP_Product_Master: Product master data (aliases: IBP, Product Master)
+  • brz_lnd_RBP_GPU: Revenue planning data (aliases: RBP, RBP GPU, GPU)
+  • brz_lnd_OPS_EXCEL_GPU: Operations data (aliases: OPS, OPS Excel, Excel GPU)
+  • brz_lnd_SKU_LIFNR_Excel: SKU supplier data (aliases: SKU, LIFNR, Supplier)
+
+ENRICHMENT TABLES (use as LEFT JOIN only - lookup/reference data):
+  • hana_material_master: Material master lookup (aliases: HANA, Material Master)
+    ⚠️  CRITICAL: NEVER use as main table in FROM clause!
+
+IMPORTANT RULES:
+- hana_material_master should ONLY be used in LEFT JOIN clauses for enrichment
+- NEVER use hana_material_master as the main table in FROM clause
+- When joining hana_material_master, use: LEFT JOIN hana_material_master h ON main_table.MATERIAL_COLUMN = h.MATERIAL
+- If query mentions "HANA" or "Material Master", always use it as LEFT JOIN, not FROM
+
 === DATABASE RULES ===
 
 Database Type: {self.db_type.upper()}
@@ -301,6 +372,14 @@ Identifier Quoting: {quoting_rule}
    - If the query mentions business names (e.g., "RBP GPU", "OPS Excel"), use the Table Aliases section to resolve them to actual table names.
    - Business names are case-insensitive and may contain spaces.
    - Example: "RBP GPU" → brz_lnd_RBP_GPU
+
+1.5. **Relationship Selection - CRITICAL**:
+   - ONLY use relationships from the "Table Relationships" section above
+   - NEVER assume or hardcode join relationships
+   - Look for relationships that involve BOTH tables in your query
+   - Use the EXACT column names shown in the relationships
+   - If multiple relationships exist between the same tables, use the one with the highest confidence
+   - Example: If relationships show "hana_material_master.MATERIAL ↔ brz_lnd_IBP_Product_Master.PRDID", use exactly that
 
 2. **JOIN Logic (Base Query)**:
    - For query_type = "comparison_query":
@@ -320,6 +399,21 @@ Identifier Quoting: {quoting_rule}
    • "products in RBP in active OPS" → INNER JOIN + WHERE status = 'Active'
    • "products in RBP which are inactive OPS" → INNER JOIN + WHERE status = 'Inactive'
    • "products in RBP matching inactive OPS" → INNER JOIN + WHERE status = 'Inactive'
+
+   **CRITICAL JOIN RULES:**
+   - NEVER join on Product_Type columns (these are for filtering, not joining)
+   - ALWAYS use the exact relationships from the "Table Relationships" section above
+   - DO NOT assume or guess join columns - only use what's specified in relationships
+   - WRONG: s.[Product_Type] = t.[PRODTYPE] (different business concepts)
+   - RIGHT: Use only the relationships listed in the "Table Relationships" section
+
+
+
+   **CRITICAL COLUMN MAPPING:**
+   - brz_lnd_IBP_Product_Master uses: PRODTYPE (not "Product Type")
+   - hana_material_master uses: [Product Type] (with brackets and spaces)
+   - WRONG: s.[Product Type] (doesn't exist in IBP table)
+   - RIGHT: s.[PRODTYPE] (correct IBP column) or t.[Product Type] (correct HANA column)
 
 3. **Additional Columns - STEP-BY-STEP**:
    IF additional columns are specified, follow these steps CAREFULLY:
@@ -355,9 +449,15 @@ Identifier Quoting: {quoting_rule}
    • Example:
      SELECT DISTINCT s.*, h.planner AS planner
 
+   **CRITICAL: Additional Columns are NOT Filters!**
+   • "show ops planner from hana master" = include OPS_PLANNER column from hana_material_master table
+   • DO NOT add WHERE conditions like "h.OPS_PLANNER = 'hana master'"
+   • "from table" means "get column from table", NOT "filter by table name"
+   • Only add LEFT JOIN and SELECT column, NO WHERE clause for the table name
+
    **COMPLETE EXAMPLE for Additional Columns:**
    ```
-   Input: "Show products in RBP GPU not in OPS Excel, also show planner from hana master"
+   Input: "Show products in RBP GPU not in OPS Excel, also show ops planner from hana master"
 
    Base Query (without additional column):
    SELECT DISTINCT s.*
@@ -386,20 +486,46 @@ Identifier Quoting: {quoting_rule}
    - Handle NULL checks appropriately
    - Example: "where status is active" → WHERE s.status = 'active'
 
+   **CRITICAL - Additional Column WHERE Clause Rules**:
+   - DO NOT add WHERE conditions for additional column table names
+   - "show ops planner from hana master" = include column, NOT filter by 'hana master'
+   - **WRONG**: WHERE h.OPS_PLANNER = 'hana master'
+   - **RIGHT**: Only WHERE conditions from actual data filters or comparison logic
+   - Table names in "from table" clauses are for JOIN purposes, not filtering
+
+   **CRITICAL - NULL Check Logic**:
+   - If using LEFT JOIN with "WHERE target IS NULL" (for NOT_IN queries)
+   - DO NOT add additional WHERE conditions on the target table columns
+   - **WRONG**: WHERE t.MATERIAL IS NULL AND t.[Product Type] = 'NBU' (t.[Product Type] will be NULL!)
+   - **RIGHT**: Move target table filters to the main table or use INNER JOIN instead
+
+   **CRITICAL - NULL vs Empty String**:
+   - Use IS NULL for actual NULL values, not = ''
+   - **WRONG**: WHERE column = '' (checks for empty string)
+   - **RIGHT**: WHERE column IS NULL (checks for NULL value)
+   - **WRONG**: WHERE column = 'NULL' (checks for string 'NULL')
+   - **RIGHT**: WHERE column IS NULL (checks for actual NULL)
+
 5. **Query Structure Rules**:
    - Use DISTINCT for comparison queries (to avoid duplicates from JOINs)
    - Apply WHERE clauses after all JOIN clauses
    - Use correct identifier quoting for {self.db_type.upper()}
-   - Table aliases: s (source), t (target), h/v/p/m (additional tables)
+   - Table aliases: s (source), t (target), h (hana_material_master), v/p/m (other additional tables)
    - JOIN order: Main JOIN first, then additional column JOINs
 
 6. **Multi-Table JOINs**:
    - If query needs 3+ tables, add them sequentially
    - Always use relationship columns from the "Table Relationships" section
+   - CRITICAL: Follow table role guidance - use MAIN TABLES in FROM clause, ENRICHMENT TABLES in LEFT JOIN
    - Example for 3 tables:
-     FROM table1 s
-     JOIN table2 t ON s.col1 = t.col2
-     LEFT JOIN table3 h ON s.col3 = h.col4
+     FROM brz_lnd_IBP_Product_Master s
+     JOIN brz_lnd_RBP_GPU t ON [use relationship from "Table Relationships" section]
+     LEFT JOIN hana_material_master h ON [use relationship from "Table Relationships" section]
+
+7. **Table Selection Priority**:
+   - ALWAYS prefer MAIN TABLES (brz_lnd_*) as the primary table in FROM clause
+   - NEVER use hana_material_master as the main table
+   - When filtering on hana_material_master columns, still use a MAIN TABLE in FROM and LEFT JOIN hana_material_master
 
 Generate ONLY the SQL query, no explanations, no markdown formatting."""
 

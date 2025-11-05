@@ -34,7 +34,7 @@ MAX_SCHEMA_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 SUPPORTED_SCHEMA_FORMATS = [".json"]
 
 # Logging settings
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+LOG_LEVEL = os.getenv("LOG_LEVEL", "DEBUG")  # Temporarily force DEBUG
 
 # API settings
 CORS_ORIGINS = ["*"]

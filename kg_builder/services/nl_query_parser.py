@@ -357,6 +357,44 @@ class NLQueryParser:
                 intent.target_table = resolved
                 intent.confidence = min(0.95, intent.confidence + 0.05)
 
+        # Apply table priority logic - ensure main tables are prioritized
+        intent = self._apply_table_priority_logic(intent)
+
+        return intent
+
+    def _apply_table_priority_logic(self, intent: QueryIntent) -> QueryIntent:
+        """
+        Apply table priority logic to ensure proper main table selection.
+
+        Args:
+            intent: Query intent with resolved table names
+
+        Returns:
+            Query intent with corrected table priorities
+        """
+        # Define table priorities (higher = more preferred as main table)
+        table_priorities = {
+            'brz_lnd_IBP_Product_Master': 10,
+            'brz_lnd_RBP_GPU': 9,
+            'brz_lnd_OPS_EXCEL_GPU': 8,
+            'brz_lnd_SKU_LIFNR_Excel': 7,
+            'hana_material_master': 1  # Low priority - should be enrichment only
+        }
+
+        # If hana_material_master is the source table, try to swap with target
+        if (intent.source_table == 'hana_material_master' and
+            intent.target_table and
+            table_priorities.get(intent.target_table, 0) > table_priorities.get(intent.source_table, 0)):
+
+            logger.info(f"🔄 Swapping tables for better priority: {intent.source_table} ↔ {intent.target_table}")
+            intent.source_table, intent.target_table = intent.target_table, intent.source_table
+
+            # Also swap join columns if they exist
+            if intent.join_columns:
+                swapped_joins = [(target_col, source_col) for source_col, target_col in intent.join_columns]
+                intent.join_columns = swapped_joins
+                logger.info(f"🔄 Swapped join columns: {intent.join_columns}")
+
         return intent
 
     def _find_join_columns_from_kg(self, source: str, target: str) -> Optional[List[Tuple[str, str]]]:

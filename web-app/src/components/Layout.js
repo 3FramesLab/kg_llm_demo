@@ -23,6 +23,7 @@ import {
   Speed as KPIIcon,
   BarChart as BarChartIcon,
   ShowChart as ShowChartIcon,
+  Label as LabelIcon,
 } from '@mui/icons-material';
 
 const drawerWidth = 240;
@@ -31,10 +32,9 @@ const menuItems = [
   { text: 'Overview', icon: <DashboardIcon />, path: '/' },
   { text: 'Schemas', icon: <SchemaIcon />, path: '/schemas' },
   { text: 'Knowledge Graph Builder', icon: <GraphIcon />, path: '/knowledge-graph' },
-  // { text: 'Natural Language', icon: <NLIcon />, path: '/natural-language' },
-  // { text: 'KPI Management', icon: <KPIIcon />, path: '/landing-kpi' },
+  { text: 'Column Hints', icon: <LabelIcon />, path: '/hints-management' },
+  { text: 'Natural Language', icon: <NLIcon />, path: '/natural-language' },
   { text: 'NL KPI Management', icon: <KPIIcon />, path: '/landing-kpi' },
-  // { text: 'KPI Dashboard', icon: <BarChartIcon />, path: '/kpi-dashboard' },
   { text: 'Dashboard', icon: <ShowChartIcon />, path: '/dashboard-trends' },
 ];
 
