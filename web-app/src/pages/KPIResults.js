@@ -170,7 +170,7 @@ const KPIResults = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 1.5  }}>
+    <Container sx={{ p: 0 }}>
       {/* Header Section */}
       <Paper
         elevation={0}
@@ -178,7 +178,7 @@ const KPIResults = () => {
           mb: 4,
           p: 4,
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          borderRadius: 3,
+          borderRadius: 2,
           color: 'white'
         }}
       >

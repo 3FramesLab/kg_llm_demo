@@ -96,13 +96,13 @@ const LandingKPIManagement = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 1.5 }}>
+    <Container sx={{ p: 0 }}>
       {/* Enhanced Header with Gradient Background */}
       <Box
         sx={{
           mb: 2.5,
           p: { xs: 2, sm: 2.5, md: 3 },
-          borderRadius: 3,
+          borderRadius: 2,
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           color: 'white',
           boxShadow: '0 8px 32px rgba(102, 126, 234, 0.25)',

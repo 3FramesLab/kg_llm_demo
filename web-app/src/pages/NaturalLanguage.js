@@ -267,7 +267,7 @@ export default function NaturalLanguage() {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 1.5 }}>
+    <Container sx={{ p: 0 }}>
       {/* Enhanced Gradient Header */}
       <Box
         sx={{

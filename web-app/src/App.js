@@ -37,6 +37,21 @@ const theme = createTheme({
       fontWeight: 500,
     },
   },
+  components: {
+    MuiContainer: {
+      styleOverrides: {
+        root: {
+          // Remove max-width constraint for all breakpoints
+          maxWidth: 'none !important',
+          // Set padding to 16px for screens >= 600px
+          '@media (min-width: 600px)': {
+            paddingLeft: '14px',
+            paddingRight: '14px',
+          },
+        },
+      },
+    },
+  },
 });
 
 function App() {

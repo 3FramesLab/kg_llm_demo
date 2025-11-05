@@ -59,25 +59,25 @@ export default function Overview() {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 1.5  }}>
+    <Container sx={{ p: 0 }}>
       {/* Enhanced Gradient Header with Stats */}
       <Box
         sx={{
-          mb: 2,
-          p: 1.5,
+          mb: 1,
+          p: 1,
           borderRadius: 2,
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           color: 'white',
-          boxShadow: '0 4px 20px rgba(102, 126, 234, 0.3)',
+          boxShadow: '0 2px 8px rgba(102, 126, 234, 0.2)',
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-          <DashboardIcon sx={{ fontSize: 28 }} />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+          <DashboardIcon sx={{ fontSize: 22 }} />
           <Box>
-            <Typography variant="h5" fontWeight="700" sx={{ mb: 0.25, lineHeight: 1.2, fontSize: '1.15rem' }}>
+            <Typography variant="h6" fontWeight="700" sx={{ mb: 0, lineHeight: 1.2, fontSize: '1rem' }}>
               Overview
             </Typography>
-            <Typography variant="body2" fontSize="0.8rem" sx={{ opacity: 0.95, fontWeight: 400 }}>
+            <Typography variant="body2" fontSize="0.75rem" sx={{ opacity: 0.95, fontWeight: 400 }}>
               Overview of Data Quality System Status and Statistics.
             </Typography>
           </Box>
@@ -85,25 +85,25 @@ export default function Overview() {
 
         {/* Stats Row in Header */}
         {!loading && (
-          <Box sx={{ display: 'flex', gap: 3, mt: 1.5, flexWrap: 'wrap' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Storage sx={{ fontSize: 18 }} />
+          <Box sx={{ display: 'flex', gap: 2, mt: 1, flexWrap: 'wrap' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+              <Storage sx={{ fontSize: 16 }} />
               <Box>
-                <Typography variant="h6" fontWeight="600" sx={{ lineHeight: 1.2, fontSize: '0.9rem' }}>
+                <Typography variant="h6" fontWeight="600" sx={{ lineHeight: 1.2, fontSize: '0.875rem' }}>
                   {stats.schemas}
                 </Typography>
-                <Typography variant="caption" sx={{ opacity: 0.9, fontSize: '0.65rem' }}>
+                <Typography variant="caption" sx={{ opacity: 0.9, fontSize: '0.625rem' }}>
                   Schemas
                 </Typography>
               </Box>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <AccountTree sx={{ fontSize: 18 }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+              <AccountTree sx={{ fontSize: 16 }} />
               <Box>
-                <Typography variant="h6" fontWeight="600" sx={{ lineHeight: 1.2, fontSize: '0.9rem' }}>
+                <Typography variant="h6" fontWeight="600" sx={{ lineHeight: 1.2, fontSize: '0.875rem' }}>
                   {stats.knowledgeGraphs}
                 </Typography>
-                <Typography variant="caption" sx={{ opacity: 0.9, fontSize: '0.65rem' }}>
+                <Typography variant="caption" sx={{ opacity: 0.9, fontSize: '0.625rem' }}>
                   Knowledge Graphs
                 </Typography>
               </Box>
@@ -112,59 +112,57 @@ export default function Overview() {
         )}
       </Box>
 
-
-
       {/* System Status */}
       <Box>
             {/* System Health & LLM Status */}
-            <Grid container spacing={2} sx={{ mb: 2 }}>
+            <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
               <Grid item xs={12} md={6}>
                 <Paper
                   elevation={0}
                   sx={{
-                    p: 2,
-                    borderRadius: 2,
+                    p: 1.25,
+                    borderRadius: 1,
                     border: '1px solid',
                     borderColor: 'divider',
                     height: '100%',
-                    transition: 'all 0.3s ease',
+                    transition: 'all 0.2s ease',
                     '&:hover': {
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                      transform: 'translateY(-2px)',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                      transform: 'translateY(-1px)',
                     },
                   }}
                 >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                     <Box
                       sx={{
-                        p: 1,
-                        borderRadius: 1.5,
+                        p: 0.75,
+                        borderRadius: 1,
                         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
                     >
-                      <Speed sx={{ color: 'white', fontSize: 22 }} />
+                      <Speed sx={{ color: 'white', fontSize: 18 }} />
                     </Box>
-                    <Typography variant="h6" fontWeight="700" fontSize="0.95rem">
+                    <Typography variant="h6" fontWeight="700" fontSize="0.875rem">
                       System Health
                     </Typography>
                   </Box>
 
                   {loading ? (
                     <Box>
-                      <Skeleton variant="text" width="60%" height={40} sx={{ mb: 1.5 }} />
-                      <Skeleton variant="rectangular" width="100%" height={60} sx={{ borderRadius: 1 }} />
+                      <Skeleton variant="text" width="60%" height={32} sx={{ mb: 1 }} />
+                      <Skeleton variant="rectangular" width="100%" height={50} sx={{ borderRadius: 1 }} />
                     </Box>
                   ) : health ? (
                     <Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                         {health.status === 'healthy' ? (
                           <CheckCircle
                             sx={{
-                              mr: 1.5,
-                              fontSize: 24,
+                              mr: 1,
+                              fontSize: 20,
                               color: '#10b981',
                               animation: 'pulse 2s ease-in-out infinite',
                               '@keyframes pulse': {
@@ -174,9 +172,9 @@ export default function Overview() {
                             }}
                           />
                         ) : (
-                          <Error sx={{ mr: 1.5, fontSize: 24, color: '#f87171' }} />
+                          <Error sx={{ mr: 1, fontSize: 20, color: '#f87171' }} />
                         )}
-                        <Typography variant="h6" fontWeight="600" fontSize="0.9rem">
+                        <Typography variant="body1" fontWeight="600" fontSize="0.875rem">
                           Status: <span style={{ color: health.status === 'healthy' ? '#047857' : '#dc2626' }}>{health.status}</span>
                         </Typography>
                       </Box>
@@ -225,52 +223,54 @@ export default function Overview() {
                 <Paper
                   elevation={0}
                   sx={{
-                    p: 2,
-                    borderRadius: 2,
+                    p: 1.25,
+                    borderRadius: 1,
                     border: '1px solid',
                     borderColor: 'divider',
                     height: '100%',
-                    transition: 'all 0.3s ease',
+                    transition: 'all 0.2s ease',
                     '&:hover': {
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                      transform: 'translateY(-2px)',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                      transform: 'translateY(-1px)',
                     },
                   }}
                 >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                     <Box
                       sx={{
-                        p: 1,
-                        borderRadius: 1.5,
+                        p: 0.75,
+                        borderRadius: 1,
                         background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
                     >
-                      <TrendingUp sx={{ color: 'white', fontSize: 22 }} />
+                      <TrendingUp sx={{ color: 'white', fontSize: 18 }} />
                     </Box>
-                    <Typography variant="h6" fontWeight="700" fontSize="0.95rem">
+                    <Typography variant="h6" fontWeight="700" fontSize="0.875rem">
                       LLM Status
                     </Typography>
                   </Box>
 
                   {loading ? (
                     <Box>
-                      <Skeleton variant="rectangular" width="100%" height={60} sx={{ borderRadius: 1, mb: 1.5 }} />
-                      <Skeleton variant="text" width="80%" height={30} />
-                      <Skeleton variant="text" width="60%" height={30} />
+                      <Skeleton variant="rectangular" width="100%" height={50} sx={{ borderRadius: 1, mb: 1 }} />
+                      <Skeleton variant="text" width="80%" height={24} />
+                      <Skeleton variant="text" width="60%" height={24} />
                     </Box>
                   ) : llmStatus ? (
                     <Box>
                       {llmStatus.enabled ? (
                         <Alert
                           severity="success"
-                          icon={<CheckCircle sx={{ fontSize: 20, color: '#10b981' }} />}
+                          icon={<CheckCircle sx={{ fontSize: 18, color: '#10b981' }} />}
                           sx={{
-                            mb: 1.5,
-                            borderRadius: 1.5,
+                            mb: 1,
+                            py: 0.5,
+                            borderRadius: 1,
                             fontWeight: 600,
+                            fontSize: '0.8125rem',
                             bgcolor: '#f0fdf9',
                             color: '#047857',
                             border: '1px solid #d1fae5',
@@ -359,54 +359,54 @@ export default function Overview() {
             </Grid>
 
             {/* Enhanced Statistics Cards */}
-            <Grid container spacing={2}>
+            <Grid container spacing={1.5}>
               <Grid item xs={12} md={6}>
                 <Card
                   elevation={0}
                   sx={{
-                    borderRadius: 2,
+                    borderRadius: 1,
                     border: '1px solid',
                     borderColor: 'divider',
-                    transition: 'all 0.3s ease',
+                    transition: 'all 0.2s ease',
                     '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: '0 8px 24px rgba(102, 126, 234, 0.25)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(102, 126, 234, 0.15)',
                     },
                   }}
                 >
-                  <CardContent sx={{ p: 2 }}>
+                  <CardContent sx={{ p: 1.25 }}>
                     {loading ? (
                       <Box>
-                        <Skeleton variant="circular" width={56} height={56} sx={{ mb: 1.5 }} />
+                        <Skeleton variant="circular" width={44} height={44} sx={{ mb: 1 }} />
                         <Skeleton variant="text" width="50%" height={40} />
                         <Skeleton variant="text" width="80%" height={20} />
                       </Box>
                     ) : (
                       <>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                           <Box
                             sx={{
-                              p: 1.5,
-                              borderRadius: 2,
+                              p: 1,
+                              borderRadius: 1,
                               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              mr: 2,
+                              mr: 1.5,
                             }}
                           >
-                            <Storage sx={{ color: 'white', fontSize: 28 }} />
+                            <Storage sx={{ color: 'white', fontSize: 22 }} />
                           </Box>
                           <Box>
-                            <Typography variant="h6" fontWeight="700" fontSize="1.5rem" sx={{ color: '#667eea' }}>
+                            <Typography variant="h6" fontWeight="700" fontSize="1.25rem" sx={{ color: '#667eea' }}>
                               {stats.schemas}
                             </Typography>
-                            <Typography variant="body2" fontSize="0.8rem" color="text.secondary" fontWeight="600">
+                            <Typography variant="body2" fontSize="0.75rem" color="text.secondary" fontWeight="600">
                               Schemas
                             </Typography>
                           </Box>
                         </Box>
-                        <Typography variant="body2" fontSize="0.8rem" color="text.secondary">
+                        <Typography variant="body2" fontSize="0.75rem" color="text.secondary">
                           Available database schemas for analysis
                         </Typography>
                       </>
@@ -419,49 +419,49 @@ export default function Overview() {
                 <Card
                   elevation={0}
                   sx={{
-                    borderRadius: 2,
+                    borderRadius: 1,
                     border: '1px solid',
                     borderColor: 'divider',
-                    transition: 'all 0.3s ease',
+                    transition: 'all 0.2s ease',
                     '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: '0 8px 24px rgba(67, 233, 123, 0.25)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(67, 233, 123, 0.15)',
                     },
                   }}
                 >
-                  <CardContent sx={{ p: 2 }}>
+                  <CardContent sx={{ p: 1.25 }}>
                     {loading ? (
                       <Box>
-                        <Skeleton variant="circular" width={56} height={56} sx={{ mb: 1.5 }} />
-                        <Skeleton variant="text" width="60%" height={40} />
-                        <Skeleton variant="text" width="80%" height={20} />
+                        <Skeleton variant="circular" width={44} height={44} sx={{ mb: 1 }} />
+                        <Skeleton variant="text" width="60%" height={32} />
+                        <Skeleton variant="text" width="80%" height={18} />
                       </Box>
                     ) : (
                       <>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                           <Box
                             sx={{
-                              p: 1.5,
-                              borderRadius: 2,
+                              p: 1,
+                              borderRadius: 1,
                               background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              mr: 2,
+                              mr: 1.5,
                             }}
                           >
-                            <AccountTree sx={{ color: 'white', fontSize: 28 }} />
+                            <AccountTree sx={{ color: 'white', fontSize: 22 }} />
                           </Box>
                           <Box>
-                            <Typography variant="h6" fontWeight="700" fontSize="1.5rem" sx={{ color: '#43e97b' }}>
+                            <Typography variant="h6" fontWeight="700" fontSize="1.25rem" sx={{ color: '#43e97b' }}>
                               {stats.knowledgeGraphs}
                             </Typography>
-                            <Typography variant="body2" fontSize="0.8rem" color="text.secondary" fontWeight="600">
+                            <Typography variant="body2" fontSize="0.75rem" color="text.secondary" fontWeight="600">
                               Knowledge Graphs
                             </Typography>
                           </Box>
                         </Box>
-                        <Typography variant="body2" fontSize="0.8rem" color="text.secondary">
+                        <Typography variant="body2" fontSize="0.75rem" color="text.secondary">
                           Generated knowledge graphs from schemas
                         </Typography>
                       </>

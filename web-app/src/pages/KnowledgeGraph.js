@@ -319,13 +319,13 @@ export default function KnowledgeGraph() {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 1.5 }}>
+    <Container sx={{ p: 0 }}>
       {/* Enhanced Header with Gradient */}
       <Box
         sx={{
           mb: 1.5,
           p: 1.5,
-          borderRadius: 1.5,
+          borderRadius: 2,
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           color: 'white',
           boxShadow: '0 3px 15px rgba(102, 126, 234, 0.25)',
