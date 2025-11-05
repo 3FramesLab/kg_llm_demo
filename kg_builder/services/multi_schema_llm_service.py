@@ -17,16 +17,17 @@ logger = logging.getLogger(__name__)
 class MultiSchemaLLMService:
     """Service for LLM-based multi-schema relationship analysis."""
     
-    def __init__(self):
+    def __init__(self, use_enhanced_prompts: bool = True):
         """Initialize the LLM service."""
         self.enabled = bool(OPENAI_API_KEY)
         self.model = OPENAI_MODEL
         self.temperature = OPENAI_TEMPERATURE
         self.max_tokens = OPENAI_MAX_TOKENS
-        
+        self.use_enhanced_prompts = use_enhanced_prompts
+
         if self.enabled:
             self.client = OpenAI(api_key=OPENAI_API_KEY)
-            logger.info(f"MultiSchemaLLMService initialized with model: {self.model}")
+            logger.info(f"MultiSchemaLLMService initialized with model: {self.model}, enhanced_prompts: {use_enhanced_prompts}")
         else:
             logger.warning("MultiSchemaLLMService disabled: OPENAI_API_KEY not set")
     
@@ -342,9 +343,9 @@ class MultiSchemaLLMService:
 
         schema_context = "within a single database schema (intra-schema)" if is_single_schema else "across different database schemas (cross-schema)"
 
-        return f"""You are a data architect discovering hidden relationships between database schemas.
+        return f"""You are a data architect discovering comprehensive relationships between database schemas.
 
-CONTEXT: Analyzing schemas {schema_context}. Find semantic relationships missed by pattern matching.
+CONTEXT: Analyzing schemas {schema_context}. Find ALL types of relationships beyond simple pattern matching.
 
 SCHEMAS:
 {schemas_str}
@@ -355,18 +356,66 @@ DETECTED RELATIONSHIPS:
 
 TASK: Infer additional {"intra-schema" if is_single_schema else "cross-schema"} relationships (confidence >= 0.7).
 
-RELATIONSHIP TYPES:
-- SEMANTIC_REFERENCE: Different names, same meaning (e.g., customer_id ↔ client_uid)
-- BUSINESS_LOGIC: Business rule relationships (e.g., order.product_code ↔ catalog.code)
-- HIERARCHICAL: Parent-child (e.g., category_uid ↔ sub_cat_uid)
-- TEMPORAL: Time-based (e.g., created_time ↔ order_date)
-- LOOKUP: Master data (e.g., status_code ↔ status_master.code)
+=== ENHANCED RELATIONSHIP TYPES ===
 
-MATCHING CRITERIA:
-- Semantic name similarity (uuid ↔ uid, code ↔ design_code)
-- Compatible data types (VARCHAR ↔ VARCHAR, BIGINT ↔ INTEGER OK)
-- Common FK patterns (_id, _uid, _code, _key)
-- Audit fields (created_by, modified_by, created_time, modified_time)
+**SEMANTIC_REFERENCE**: Different names, same meaning
+- Examples: customer_id ↔ client_uid, product_code ↔ item_code
+- Look for: Similar business concepts with different naming conventions
+
+**BUSINESS_LOGIC**: Business rule relationships
+- Examples: order.product_code ↔ catalog.code, invoice.customer ↔ customer.name
+- Look for: Operational dependencies, business process flows
+
+**HIERARCHICAL**: Parent-child relationships
+- Examples: category_uid ↔ sub_cat_uid, manager_id ↔ employee_id
+- Look for: Organizational structures, taxonomies, nested data
+
+**TEMPORAL**: Time-based relationships
+- Examples: created_time ↔ order_date, modified_date ↔ last_updated
+- Look for: Audit trails, event sequences, lifecycle tracking
+
+**LOOKUP**: Master data relationships
+- Examples: status_code ↔ status_master.code, country_code ↔ countries.iso_code
+- Look for: Reference data, code tables, standardized values
+
+**REFERENCES**: Implicit foreign key relationships
+- Examples: material_number ↔ materials.number, product_id ↔ products.id
+- Look for: ID-like fields without explicit FK constraints
+
+**CONTAINS**: Composition relationships
+- Examples: order ↔ order_items, document ↔ document_sections
+- Look for: Parent tables that logically contain child records
+
+**BELONGS_TO**: Ownership relationships
+- Examples: employee ↔ department, product ↔ category
+- Look for: Child entities that belong to parent entities
+
+=== ENHANCED MATCHING CRITERIA ===
+
+**1. Semantic Analysis:**
+- Business domain similarity (Material, Product, Item = same concept)
+- Functional equivalence (ID, UID, Key, Code = identifiers)
+- Contextual meaning (Customer, Client, Account = same entity)
+
+**2. Structural Patterns:**
+- Naming conventions: _id, _uid, _key, _code, _number, _ref
+- Data type compatibility: NVARCHAR ↔ VARCHAR, BIGINT ↔ INTEGER
+- Length compatibility: Similar or compatible field lengths
+
+**3. Business Logic Indicators:**
+- Master-detail relationships (master tables ↔ transaction tables)
+- Reference data patterns (code tables ↔ operational tables)
+- Audit trail patterns (created_by, modified_by, timestamps)
+
+**4. Domain-Specific Patterns:**
+- Material/Product hierarchies (Material ↔ Product ↔ SKU ↔ Item)
+- Organizational structures (Company ↔ Division ↔ Department)
+- Geographic relationships (Country ↔ Region ↔ City)
+
+**5. Cross-Schema Integration:**
+- ETL source-target relationships (staging ↔ warehouse ↔ mart)
+- System integration points (ERP ↔ CRM ↔ Analytics)
+- Data lineage patterns (raw ↔ processed ↔ aggregated)
 
 RULES:
 ✓ Only use columns that EXIST in schemas above
@@ -375,6 +424,54 @@ RULES:
 ✓ PRIORITIZE user priority fields, EXCLUDE excluded fields
 ✓ Use user field hints as strong suggestions (0.9+ confidence)
 ✓ Provide clear reasoning
+
+=== BUSINESS CONTEXT ANALYSIS ===
+Consider these business scenarios when detecting relationships:
+
+**Manufacturing/Supply Chain Context:**
+- Material Master tables contain product specifications
+- BOM (Bill of Materials) references materials and components
+- Production orders consume materials and produce finished goods
+- Quality control tracks material batches and test results
+- Vendor tables supply materials to manufacturing processes
+
+**Sales/Customer Context:**
+- Customer master data drives sales transactions
+- Orders contain multiple line items referencing products
+- Pricing tables link products to customer-specific prices
+- Shipments fulfill orders and update inventory
+- Invoices are generated from completed orders
+
+**Financial Context:**
+- Cost centers track departmental expenses
+- GL accounts categorize all financial transactions
+- Budgets are allocated across cost centers and time periods
+- Actuals are compared against budgets for variance analysis
+
+**Organizational Context:**
+- Company → Division → Department → Cost Center hierarchy
+- Employee assignments to departments and cost centers
+- Plant/Location assignments for materials and operations
+- Business unit segmentation for reporting and analysis
+
+**ENHANCED DETECTION PRIORITY:**
+1. **Explicit Relationships**: Foreign key constraints (highest confidence)
+2. **Structural Relationships**: Naming patterns (_id, _uid, _key, _code)
+3. **Business Logic Relationships**: Domain-specific connections
+4. **Semantic Relationships**: Similar meaning, different names
+5. **Hierarchical Relationships**: Parent-child, category structures
+6. **Temporal Relationships**: Time-based connections and audit trails
+
+**BIDIRECTIONAL GUIDELINES:**
+- **REFERENCES**: bidirectional = false (directional dependency)
+- **MATCHES**: bidirectional = true (symmetric equivalence)
+- **FOREIGN_KEY**: bidirectional = false (explicit constraint direction)
+- **CONTAINS/HAS**: bidirectional = false (hierarchical)
+- **BELONGS_TO**: bidirectional = false (hierarchical)
+- **SEMANTIC_REFERENCE**: bidirectional = true (same concept)
+- **HIERARCHICAL**: bidirectional = false (parent-child)
+- **TEMPORAL**: bidirectional = false (time flows one way)
+- **LOOKUP**: bidirectional = false (lookup direction)
 
 OUTPUT (JSON ONLY):
 {{{{

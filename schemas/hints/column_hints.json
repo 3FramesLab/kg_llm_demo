@@ -1,0 +1,5220 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "last_updated": "2025-11-04T23:20:40.835672",
+    "updated_by": "web-user",
+    "schema_name": "",
+    "total_tables": 8,
+    "total_columns": 197,
+    "auto_generated": false,
+    "manual_edits": 0
+  },
+  "tables": {
+    "hana_material_master": {
+      "table_hints": {
+        "business_name": "Hana Material Master",
+        "aliases": [
+          "hana material master"
+        ],
+        "description": "Data table: hana_material_master",
+        "category": "unknown",
+        "user_notes": "Auto-generated, needs review",
+        "last_edited_by": "initialization_script",
+        "last_edited_at": "2025-11-04T16:42:16.544855"
+      },
+      "columns": {
+        "MATERIAL": {
+          "business_name": "Material",
+          "aliases": [
+            "item",
+            "product",
+            "sku",
+            "part"
+          ],
+          "description": "Column MATERIAL in hana_material_master",
+          "semantic_type": "identifier",
+          "data_type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "material number",
+            "material id",
+            "what material",
+            "which material",
+            "material"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "high",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:16.561308"
+        },
+        "MATERIAL_GROUP": {
+          "business_name": "Material Group",
+          "aliases": [
+            "product",
+            "sku",
+            "material group",
+            "part",
+            "item"
+          ],
+          "description": "Column MATERIAL_GROUP in hana_material_master",
+          "semantic_type": "identifier",
+          "data_type": "NVARCHAR(9) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "material number",
+            "material id",
+            "material group",
+            "what material",
+            "which material"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "high",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:16.578908"
+        },
+        "MATERIAL_TYPE": {
+          "business_name": "Material Type",
+          "aliases": [
+            "product",
+            "sku",
+            "material type",
+            "part",
+            "item"
+          ],
+          "description": "Column MATERIAL_TYPE in hana_material_master",
+          "semantic_type": "identifier",
+          "data_type": "NVARCHAR(4) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "material number",
+            "material id",
+            "material type",
+            "what material",
+            "which material"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "high",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:16.595536"
+        },
+        "PLANT": {
+          "business_name": "Plant",
+          "aliases": [],
+          "description": "Column PLANT in hana_material_master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(4) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what plant",
+            "plant",
+            "which plant"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:16.612501"
+        },
+        "Product Type": {
+          "business_name": "Product Type",
+          "aliases": [
+            "category",
+            "classification"
+          ],
+          "description": "Column Product Type in hana_material_master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(5) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "product type",
+            "which product",
+            "what product"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:16.627234"
+        },
+        "Business Unit": {
+          "business_name": "Business Unit",
+          "aliases": [],
+          "description": "Column Business Unit in hana_material_master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(5) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which business",
+            "business unit",
+            "what business"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:16.643303"
+        },
+        "Product Line": {
+          "business_name": "Product Line",
+          "aliases": [],
+          "description": "Column Product Line in hana_material_master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(5) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which product",
+            "what product",
+            "product line"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:16.659401"
+        },
+        "OPS_MKTG_NM": {
+          "business_name": "Ops Mktg Nm",
+          "aliases": [
+            "ops mktg nm"
+          ],
+          "description": "Column OPS_MKTG_NM in hana_material_master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(250) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which ops",
+            "ops mktg nm",
+            "what ops"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:16.677297"
+        },
+        "OPS_STATUS": {
+          "business_name": "Ops Status",
+          "aliases": [
+            "condition",
+            "state",
+            "ops status"
+          ],
+          "description": "Column OPS_STATUS in hana_material_master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(50) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what ops",
+            "ops status",
+            "which ops"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:16.696901"
+        },
+        "OPS_PLCCODE": {
+          "business_name": "Ops Plccode",
+          "aliases": [
+            "ops plccode",
+            "id",
+            "identifier"
+          ],
+          "description": "Column OPS_PLCCODE in hana_material_master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(60) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which ops",
+            "ops plccode",
+            "what ops"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:16.715543"
+        },
+        "PRODGRP_CP": {
+          "business_name": "Prodgrp Cp",
+          "aliases": [
+            "prodgrp cp"
+          ],
+          "description": "Column PRODGRP_CP in hana_material_master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(60) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what prodgrp",
+            "which prodgrp",
+            "prodgrp cp"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:16.735818"
+        },
+        "IBP_FINANCE_MKT_NAME": {
+          "business_name": "Ibp Finance Mkt Name",
+          "aliases": [
+            "title",
+            "label",
+            "ibp finance mkt name"
+          ],
+          "description": "Column IBP_FINANCE_MKT_NAME in hana_material_master",
+          "semantic_type": "description",
+          "data_type": "NVARCHAR(60) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what ibp",
+            "which ibp",
+            "ibp finance mkt name"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:16.755449"
+        },
+        "OPS_PLANNER": {
+          "business_name": "Ops Planner",
+          "aliases": [
+            "ops planner"
+          ],
+          "description": "Column OPS_PLANNER in hana_material_master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(250) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "ops planner",
+            "what ops",
+            "which ops"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:16.771542"
+        },
+        "OPS_PLANNER_LAT": {
+          "business_name": "Ops Planner Lat",
+          "aliases": [
+            "ops planner lat"
+          ],
+          "description": "Column OPS_PLANNER_LAT in hana_material_master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(250) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what ops",
+            "ops planner lat",
+            "which ops"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:16.783877"
+        },
+        "OPS_PLANNER_LAT_TEXT": {
+          "business_name": "Ops Planner Lat Text",
+          "aliases": [
+            "ops planner lat text"
+          ],
+          "description": "Column OPS_PLANNER_LAT_TEXT in hana_material_master",
+          "semantic_type": "description",
+          "data_type": "NVARCHAR(20) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what ops",
+            "ops planner lat text",
+            "which ops"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:16.805553"
+        },
+        "MAKE_BUY": {
+          "business_name": "Make Buy",
+          "aliases": [
+            "make buy"
+          ],
+          "description": "Column MAKE_BUY in hana_material_master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(1) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "make buy",
+            "which make",
+            "what make"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:16.831707"
+        },
+        "NBS_ITEM_GRP": {
+          "business_name": "Nbs Item Grp",
+          "aliases": [
+            "nbs item grp"
+          ],
+          "description": "Column NBS_ITEM_GRP in hana_material_master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(250) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what nbs",
+            "nbs item grp",
+            "which nbs"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:16.848079"
+        },
+        "AN_PLC_CD": {
+          "business_name": "An Plc Cd",
+          "aliases": [
+            "an plc cd"
+          ],
+          "description": "Column AN_PLC_CD in hana_material_master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(60) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which an",
+            "an plc cd",
+            "what an"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:16.868227"
+        }
+      }
+    },
+    "brz_lnd_RBP_GPU": {
+      "table_hints": {
+        "business_name": "Brz Lnd Rbp Gpu",
+        "aliases": [
+          "RBP_GPU",
+          "brz lnd RBP GPU"
+        ],
+        "description": "Data table: brz_lnd_RBP_GPU",
+        "category": "unknown",
+        "user_notes": "Auto-generated, needs review",
+        "last_edited_by": "initialization_script",
+        "last_edited_at": "2025-11-04T16:42:16.892875"
+      },
+      "columns": {
+        "Product_Line": {
+          "business_name": "Product Line",
+          "aliases": [
+            "product line"
+          ],
+          "description": "Column Product_Line in brz_lnd_RBP_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(14) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which product",
+            "what product",
+            "product line"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:16.910482"
+        },
+        "Product_Line_Dec": {
+          "business_name": "Product Line Dec",
+          "aliases": [
+            "product line dec"
+          ],
+          "description": "Column Product_Line_Dec in brz_lnd_RBP_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(20) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which product",
+            "what product",
+            "product line dec"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:16.923835"
+        },
+        "Product_Family": {
+          "business_name": "Product Family",
+          "aliases": [
+            "product family"
+          ],
+          "description": "Column Product_Family in brz_lnd_RBP_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(14) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which product",
+            "product family",
+            "what product"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:16.946058"
+        },
+        "Business_Unit": {
+          "business_name": "Business Unit",
+          "aliases": [
+            "business unit"
+          ],
+          "description": "Column Business_Unit in brz_lnd_RBP_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(13) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which business",
+            "business unit",
+            "what business"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:16.966779"
+        },
+        "Material": {
+          "business_name": "Material",
+          "aliases": [
+            "item",
+            "product",
+            "sku",
+            "part"
+          ],
+          "description": "Column Material in brz_lnd_RBP_GPU",
+          "semantic_type": "identifier",
+          "data_type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "material number",
+            "material id",
+            "what material",
+            "which material",
+            "material"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "high",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:16.981073"
+        },
+        "Fiscal_Year_Period": {
+          "business_name": "Fiscal Year Period",
+          "aliases": [
+            "fiscal year period"
+          ],
+          "description": "Column Fiscal_Year_Period in brz_lnd_RBP_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(71) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what fiscal",
+            "fiscal year period",
+            "which fiscal"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.001730"
+        },
+        "Overall_Result": {
+          "business_name": "Overall Result",
+          "aliases": [
+            "overall result"
+          ],
+          "description": "Column Overall_Result in brz_lnd_RBP_GPU",
+          "semantic_type": "dimension",
+          "data_type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what overall",
+            "overall result",
+            "which overall"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.022854"
+        }
+      }
+    },
+    "brz_lnd_SKU_LIFNR_Excel": {
+      "table_hints": {
+        "business_name": "Brz Lnd Sku Lifnr Excel",
+        "aliases": [
+          "brz lnd SKU LIFNR Excel",
+          "SKU_LIFNR_Excel"
+        ],
+        "description": "Data table: brz_lnd_SKU_LIFNR_Excel",
+        "category": "unknown",
+        "user_notes": "Auto-generated, needs review",
+        "last_edited_by": "initialization_script",
+        "last_edited_at": "2025-11-04T16:42:17.043928"
+      },
+      "columns": {
+        "ETL_BatchID": {
+          "business_name": "Etl Batchid",
+          "aliases": [
+            "etl batchid"
+          ],
+          "description": "Column ETL_BatchID in brz_lnd_SKU_LIFNR_Excel",
+          "semantic_type": "dimension",
+          "data_type": "INTEGER",
+          "role": "attribute",
+          "common_terms": [
+            "what etl",
+            "etl batchid",
+            "which etl"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.064568"
+        },
+        "brz_RowId": {
+          "business_name": "Brz Rowid",
+          "aliases": [
+            "brz rowid"
+          ],
+          "description": "Column brz_RowId in brz_lnd_SKU_LIFNR_Excel",
+          "semantic_type": "dimension",
+          "data_type": "INTEGER",
+          "role": "attribute",
+          "common_terms": [
+            "which brz",
+            "brz rowid",
+            "what brz"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.083881"
+        },
+        "Material": {
+          "business_name": "Material",
+          "aliases": [
+            "item",
+            "product",
+            "sku",
+            "part"
+          ],
+          "description": "Column Material in brz_lnd_SKU_LIFNR_Excel",
+          "semantic_type": "identifier",
+          "data_type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "material number",
+            "material id",
+            "what material",
+            "which material",
+            "material"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "high",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.099511"
+        },
+        "Supplier": {
+          "business_name": "Supplier",
+          "aliases": [],
+          "description": "Column Supplier in brz_lnd_SKU_LIFNR_Excel",
+          "semantic_type": "dimension",
+          "data_type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "supplier",
+            "what supplier",
+            "which supplier"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.135646"
+        },
+        "Production_Version": {
+          "business_name": "Production Version",
+          "aliases": [
+            "production version"
+          ],
+          "description": "Column Production_Version in brz_lnd_SKU_LIFNR_Excel",
+          "semantic_type": "dimension",
+          "data_type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which production",
+            "production version",
+            "what production"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.153976"
+        },
+        "Reference_BOM": {
+          "business_name": "Reference Bom",
+          "aliases": [
+            "reference bom"
+          ],
+          "description": "Column Reference_BOM in brz_lnd_SKU_LIFNR_Excel",
+          "semantic_type": "dimension",
+          "data_type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what reference",
+            "reference bom",
+            "which reference"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.171625"
+        },
+        "Planning_BOM": {
+          "business_name": "Planning Bom",
+          "aliases": [
+            "planning bom"
+          ],
+          "description": "Column Planning_BOM in brz_lnd_SKU_LIFNR_Excel",
+          "semantic_type": "dimension",
+          "data_type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which planning",
+            "what planning",
+            "planning bom"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.196595"
+        },
+        "Prod_stor_location": {
+          "business_name": "Prod Stor Location",
+          "aliases": [
+            "prod stor location"
+          ],
+          "description": "Column Prod_stor_location in brz_lnd_SKU_LIFNR_Excel",
+          "semantic_type": "dimension",
+          "data_type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which prod",
+            "prod stor location",
+            "what prod"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.211711"
+        },
+        "Receiving_stor_loc_for_material": {
+          "business_name": "Receiving Stor Loc For Material",
+          "aliases": [
+            "product",
+            "receiving stor loc for material",
+            "sku",
+            "part",
+            "item"
+          ],
+          "description": "Column Receiving_stor_loc_for_material in brz_lnd_SKU_LIFNR_Excel",
+          "semantic_type": "identifier",
+          "data_type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "receiving id",
+            "receiving stor loc for material",
+            "what receiving",
+            "receiving number",
+            "which receiving"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "high",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.230442"
+        },
+        "Lead_time": {
+          "business_name": "Lead Time",
+          "aliases": [
+            "lead time"
+          ],
+          "description": "Column Lead_time in brz_lnd_SKU_LIFNR_Excel",
+          "semantic_type": "date",
+          "data_type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "lead time",
+            "which lead",
+            "what lead"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.262228"
+        },
+        "Additional_location": {
+          "business_name": "Additional Location",
+          "aliases": [
+            "additional location"
+          ],
+          "description": "Column Additional_location in brz_lnd_SKU_LIFNR_Excel",
+          "semantic_type": "dimension",
+          "data_type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "additional location",
+            "which additional",
+            "what additional"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.278456"
+        },
+        "Storage_Location": {
+          "business_name": "Storage Location",
+          "aliases": [
+            "storage location"
+          ],
+          "description": "Column Storage_Location in brz_lnd_SKU_LIFNR_Excel",
+          "semantic_type": "dimension",
+          "data_type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what storage",
+            "which storage",
+            "storage location"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.302784"
+        },
+        "MRP_Area": {
+          "business_name": "Mrp Area",
+          "aliases": [
+            "mrp area"
+          ],
+          "description": "Column MRP_Area in brz_lnd_SKU_LIFNR_Excel",
+          "semantic_type": "dimension",
+          "data_type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what mrp",
+            "which mrp",
+            "mrp area"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.329149"
+        },
+        "Product_Type": {
+          "business_name": "Product Type",
+          "aliases": [
+            "product type",
+            "classification",
+            "category"
+          ],
+          "description": "Column Product_Type in brz_lnd_SKU_LIFNR_Excel",
+          "semantic_type": "dimension",
+          "data_type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "product type",
+            "which product",
+            "what product"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.342229"
+        },
+        "Tlane_Priority": {
+          "business_name": "Tlane Priority",
+          "aliases": [
+            "tlane priority"
+          ],
+          "description": "Column Tlane_Priority in brz_lnd_SKU_LIFNR_Excel",
+          "semantic_type": "dimension",
+          "data_type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "tlane priority",
+            "which tlane",
+            "what tlane"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.360656"
+        },
+        "Transform_Flag": {
+          "business_name": "Transform Flag",
+          "aliases": [
+            "transform flag"
+          ],
+          "description": "Column Transform_Flag in brz_lnd_SKU_LIFNR_Excel",
+          "semantic_type": "flag",
+          "data_type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what transform",
+            "status",
+            "which transform",
+            "transform flag",
+            "is deleted"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.385607"
+        },
+        "Created_By": {
+          "business_name": "Created By",
+          "aliases": [
+            "created by"
+          ],
+          "description": "Column Created_By in brz_lnd_SKU_LIFNR_Excel",
+          "semantic_type": "date",
+          "data_type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which created",
+            "what created",
+            "created by"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.403448"
+        },
+        "Created_On": {
+          "business_name": "Created On",
+          "aliases": [
+            "created on"
+          ],
+          "description": "Column Created_On in brz_lnd_SKU_LIFNR_Excel",
+          "semantic_type": "date",
+          "data_type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "created on",
+            "which created",
+            "what created"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.423730"
+        },
+        "Created_Time": {
+          "business_name": "Created Time",
+          "aliases": [
+            "created time"
+          ],
+          "description": "Column Created_Time in brz_lnd_SKU_LIFNR_Excel",
+          "semantic_type": "date",
+          "data_type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "created time",
+            "which created",
+            "what created"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.447765"
+        },
+        "Changed_By": {
+          "business_name": "Changed By",
+          "aliases": [
+            "changed by"
+          ],
+          "description": "Column Changed_By in brz_lnd_SKU_LIFNR_Excel",
+          "semantic_type": "dimension",
+          "data_type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which changed",
+            "what changed",
+            "changed by"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.467581"
+        },
+        "Changed_Date": {
+          "business_name": "Changed Date",
+          "aliases": [
+            "changed date"
+          ],
+          "description": "Column Changed_Date in brz_lnd_SKU_LIFNR_Excel",
+          "semantic_type": "date",
+          "data_type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which changed",
+            "changed date",
+            "what changed"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.500498"
+        },
+        "Changed_Time": {
+          "business_name": "Changed Time",
+          "aliases": [
+            "changed time"
+          ],
+          "description": "Column Changed_Time in brz_lnd_SKU_LIFNR_Excel",
+          "semantic_type": "date",
+          "data_type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which changed",
+            "changed time",
+            "what changed"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.517597"
+        },
+        "Purchasing_group": {
+          "business_name": "Purchasing Group",
+          "aliases": [
+            "purchasing group"
+          ],
+          "description": "Column Purchasing_group in brz_lnd_SKU_LIFNR_Excel",
+          "semantic_type": "dimension",
+          "data_type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what purchasing",
+            "purchasing group",
+            "which purchasing"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.533429"
+        },
+        "Automated": {
+          "business_name": "Automated",
+          "aliases": [],
+          "description": "Column Automated in brz_lnd_SKU_LIFNR_Excel",
+          "semantic_type": "dimension",
+          "data_type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what automated",
+            "which automated",
+            "automated"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.557658"
+        },
+        "brz_LoadTime": {
+          "business_name": "Brz Loadtime",
+          "aliases": [
+            "brz loadtime"
+          ],
+          "description": "Column brz_LoadTime in brz_lnd_SKU_LIFNR_Excel",
+          "semantic_type": "dimension",
+          "data_type": "DATETIME",
+          "role": "attribute",
+          "common_terms": [
+            "which brz",
+            "what brz",
+            "brz loadtime"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.582030"
+        }
+      }
+    },
+    "brz_lnd_OPS_EXCEL_GPU": {
+      "table_hints": {
+        "business_name": "Brz Lnd Ops Excel Gpu",
+        "aliases": [
+          "brz lnd OPS EXCEL GPU",
+          "OPS_EXCEL_GPU"
+        ],
+        "description": "Data table: brz_lnd_OPS_EXCEL_GPU",
+        "category": "unknown",
+        "user_notes": "Auto-generated, needs review",
+        "last_edited_by": "initialization_script",
+        "last_edited_at": "2025-11-04T16:42:17.602432"
+      },
+      "columns": {
+        "PLANNING_SKU": {
+          "business_name": "Planning Sku",
+          "aliases": [
+            "planning sku"
+          ],
+          "description": "Column PLANNING_SKU in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(19) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "planning sku",
+            "which planning",
+            "what planning"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.631294"
+        },
+        "Product_Line": {
+          "business_name": "Product Line",
+          "aliases": [
+            "product line"
+          ],
+          "description": "Column Product_Line in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which product",
+            "what product",
+            "product line"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.654218"
+        },
+        "Business_Unit": {
+          "business_name": "Business Unit",
+          "aliases": [
+            "business unit"
+          ],
+          "description": "Column Business_Unit in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(13) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which business",
+            "business unit",
+            "what business"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.670901"
+        },
+        "Marketing_Code": {
+          "business_name": "Marketing Code",
+          "aliases": [
+            "marketing code",
+            "id",
+            "identifier"
+          ],
+          "description": "Column Marketing_Code in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "identifier",
+          "data_type": "NVARCHAR(65) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "marketing number",
+            "marketing code",
+            "marketing id",
+            "what marketing",
+            "which marketing"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "high",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.696162"
+        },
+        "Planner": {
+          "business_name": "Planner",
+          "aliases": [],
+          "description": "Column Planner in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what planner",
+            "which planner",
+            "planner"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.728211"
+        },
+        "Customer": {
+          "business_name": "Customer",
+          "aliases": [],
+          "description": "Column Customer in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(8) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which customer",
+            "what customer",
+            "customer"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.748370"
+        },
+        "Active_Inactive": {
+          "business_name": "Active Inactive",
+          "aliases": [
+            "active inactive"
+          ],
+          "description": "Column Active_Inactive in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "flag",
+          "data_type": "NVARCHAR(16) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "status",
+            "what active",
+            "which active",
+            "is deleted",
+            "active inactive"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.788179"
+        },
+        "Level_2_mapping_6": {
+          "business_name": "Level 2 Mapping 6",
+          "aliases": [
+            "level 2 mapping 6"
+          ],
+          "description": "Column Level_2_mapping_6 in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(33) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what level",
+            "level 2 mapping 6",
+            "which level"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.810429"
+        },
+        "Level_2_usage": {
+          "business_name": "Level 2 Usage",
+          "aliases": [
+            "level 2 usage"
+          ],
+          "description": "Column Level_2_usage in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(14) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what level",
+            "which level",
+            "level 2 usage"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.843571"
+        },
+        "CHIP_Family": {
+          "business_name": "Chip Family",
+          "aliases": [
+            "chip family"
+          ],
+          "description": "Column CHIP_Family in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(14) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "chip family",
+            "which chip",
+            "what chip"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.867336"
+        },
+        "GPU_1": {
+          "business_name": "Gpu 1",
+          "aliases": [
+            "gpu 1"
+          ],
+          "description": "Column GPU_1 in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(30) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "gpu 1",
+            "which gpu",
+            "what gpu"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.914371"
+        },
+        "GPU_usage": {
+          "business_name": "Gpu Usage",
+          "aliases": [
+            "gpu usage"
+          ],
+          "description": "Column GPU_usage in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(10) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "gpu usage",
+            "which gpu",
+            "what gpu"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.941855"
+        },
+        "GPU_2": {
+          "business_name": "Gpu 2",
+          "aliases": [
+            "gpu 2"
+          ],
+          "description": "Column GPU_2 in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(5) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which gpu",
+            "what gpu",
+            "gpu 2"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.964047"
+        },
+        "GPU_3": {
+          "business_name": "Gpu 3",
+          "aliases": [
+            "gpu 3"
+          ],
+          "description": "Column GPU_3 in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(5) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "gpu 3",
+            "which gpu",
+            "what gpu"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:17.986446"
+        },
+        "GPU_4": {
+          "business_name": "Gpu 4",
+          "aliases": [
+            "gpu 4"
+          ],
+          "description": "Column GPU_4 in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(5) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which gpu",
+            "gpu 4",
+            "what gpu"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.025630"
+        },
+        "Primary_Memory_1": {
+          "business_name": "Primary Memory 1",
+          "aliases": [
+            "primary memory 1"
+          ],
+          "description": "Column Primary_Memory_1 in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(25) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "primary memory 1",
+            "what primary",
+            "which primary"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.045536"
+        },
+        "Primary_Memory_1_usage": {
+          "business_name": "Primary Memory 1 Usage",
+          "aliases": [
+            "primary memory 1 usage"
+          ],
+          "description": "Column Primary_Memory_1_usage in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(22) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what primary",
+            "which primary",
+            "primary memory 1 usage"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.080795"
+        },
+        "PLC_Code": {
+          "business_name": "Plc Code",
+          "aliases": [
+            "plc code",
+            "id",
+            "identifier"
+          ],
+          "description": "Column PLC_Code in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "identifier",
+          "data_type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "plc id",
+            "which plc",
+            "what plc",
+            "plc number",
+            "plc code"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "high",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.100771"
+        },
+        "Primary_Memory_2_usage": {
+          "business_name": "Primary Memory 2 Usage",
+          "aliases": [
+            "primary memory 2 usage"
+          ],
+          "description": "Column Primary_Memory_2_usage in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(22) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which primary",
+            "what primary",
+            "primary memory 2 usage"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.135945"
+        },
+        "Alt_Memory_2": {
+          "business_name": "Alt Memory 2",
+          "aliases": [
+            "alt memory 2"
+          ],
+          "description": "Column Alt_Memory_2 in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what alt",
+            "alt memory 2",
+            "which alt"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.156041"
+        },
+        "Alt_Memory_3": {
+          "business_name": "Alt Memory 3",
+          "aliases": [
+            "alt memory 3"
+          ],
+          "description": "Column Alt_Memory_3 in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what alt",
+            "which alt",
+            "alt memory 3"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.191852"
+        },
+        "Alt_Memory_4": {
+          "business_name": "Alt Memory 4",
+          "aliases": [
+            "alt memory 4"
+          ],
+          "description": "Column Alt_Memory_4 in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what alt",
+            "which alt",
+            "alt memory 4"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.215749"
+        },
+        "Alt_Memory_usage": {
+          "business_name": "Alt Memory Usage",
+          "aliases": [
+            "alt memory usage"
+          ],
+          "description": "Column Alt_Memory_usage in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(16) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what alt",
+            "which alt",
+            "alt memory usage"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.254901"
+        },
+        "PCB": {
+          "business_name": "Pcb",
+          "aliases": [],
+          "description": "Column PCB in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(3) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what pcb",
+            "pcb",
+            "which pcb"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.273875"
+        },
+        "Yes_or_No": {
+          "business_name": "Yes Or No",
+          "aliases": [
+            "yes or no"
+          ],
+          "description": "Column Yes_or_No in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(14) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what yes",
+            "which yes",
+            "yes or no"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.311178"
+        },
+        "Level_2_mapping_6_6": {
+          "business_name": "Level 2 Mapping 6 6",
+          "aliases": [
+            "level 2 mapping 6 6"
+          ],
+          "description": "Column Level_2_mapping_6_6 in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(20) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what level",
+            "which level",
+            "level 2 mapping 6 6"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.333944"
+        },
+        "GPU_1_1": {
+          "business_name": "Gpu 1 1",
+          "aliases": [
+            "gpu 1 1"
+          ],
+          "description": "Column GPU_1_1 in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(13) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "gpu 1 1",
+            "which gpu",
+            "what gpu"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.352626"
+        },
+        "Primary_Memory_1_1": {
+          "business_name": "Primary Memory 1 1",
+          "aliases": [
+            "primary memory 1 1"
+          ],
+          "description": "Column Primary_Memory_1_1 in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(16) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "primary memory 1 1",
+            "which primary",
+            "what primary"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.374642"
+        },
+        "Check": {
+          "business_name": "Check",
+          "aliases": [],
+          "description": "Column Check in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(5) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which check",
+            "what check",
+            "check"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.394886"
+        },
+        "Marketing_Name_Ops": {
+          "business_name": "Marketing Name Ops",
+          "aliases": [
+            "title",
+            "label",
+            "marketing name ops"
+          ],
+          "description": "Column Marketing_Name_Ops in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "description",
+          "data_type": "NVARCHAR(65) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what marketing",
+            "which marketing",
+            "marketing name ops"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.432170"
+        },
+        "L1_Mapping": {
+          "business_name": "L1 Mapping",
+          "aliases": [
+            "l1 mapping"
+          ],
+          "description": "Column L1_Mapping in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(19) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what l1",
+            "which l1",
+            "l1 mapping"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.444987"
+        },
+        "L1_LT": {
+          "business_name": "L1 Lt",
+          "aliases": [
+            "l1 lt"
+          ],
+          "description": "Column L1_LT in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(5) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what l1",
+            "which l1",
+            "l1 lt"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.489659"
+        },
+        "L1_Offset": {
+          "business_name": "L1 Offset",
+          "aliases": [
+            "l1 offset"
+          ],
+          "description": "Column L1_Offset in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(9) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what l1",
+            "which l1",
+            "l1 offset"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.510553"
+        },
+        "L2_Mapping": {
+          "business_name": "L2 Mapping",
+          "aliases": [
+            "l2 mapping"
+          ],
+          "description": "Column L2_Mapping in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what l2",
+            "l2 mapping",
+            "which l2"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.539503"
+        },
+        "L2_LT": {
+          "business_name": "L2 Lt",
+          "aliases": [
+            "l2 lt"
+          ],
+          "description": "Column L2_LT in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(5) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "l2 lt",
+            "what l2",
+            "which l2"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.560645"
+        },
+        "L2_Offset": {
+          "business_name": "L2 Offset",
+          "aliases": [
+            "l2 offset"
+          ],
+          "description": "Column L2_Offset in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(9) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what l2",
+            "which l2",
+            "l2 offset"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.595906"
+        },
+        "L3_Mapping": {
+          "business_name": "L3 Mapping",
+          "aliases": [
+            "l3 mapping"
+          ],
+          "description": "Column L3_Mapping in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which l3",
+            "l3 mapping",
+            "what l3"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.620930"
+        },
+        "L3_LT": {
+          "business_name": "L3 Lt",
+          "aliases": [
+            "l3 lt"
+          ],
+          "description": "Column L3_LT in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(5) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which l3",
+            "what l3",
+            "l3 lt"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.661235"
+        },
+        "L3_Offset": {
+          "business_name": "L3 Offset",
+          "aliases": [
+            "l3 offset"
+          ],
+          "description": "Column L3_Offset in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(9) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which l3",
+            "l3 offset",
+            "what l3"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.683686"
+        },
+        "L3_Real_Level_2_or_3": {
+          "business_name": "L3 Real Level 2 Or 3",
+          "aliases": [
+            "l3 real level 2 or 3"
+          ],
+          "description": "Column L3_Real_Level_2_or_3 in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(24) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which l3",
+            "l3 real level 2 or 3",
+            "what l3"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.720873"
+        },
+        "Do_Not_Use": {
+          "business_name": "Do Not Use",
+          "aliases": [
+            "do not use"
+          ],
+          "description": "Column Do_Not_Use in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(10) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what do",
+            "do not use",
+            "which do"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.746545"
+        },
+        "TW_6": {
+          "business_name": "Tw 6",
+          "aliases": [
+            "tw 6"
+          ],
+          "description": "Column TW_6 in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(9) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what tw",
+            "which tw",
+            "tw 6"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.782226"
+        },
+        "Forecast_Name": {
+          "business_name": "Forecast Name",
+          "aliases": [
+            "title",
+            "label",
+            "forecast name"
+          ],
+          "description": "Column Forecast_Name in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "description",
+          "data_type": "NVARCHAR(60) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what forecast",
+            "which forecast",
+            "forecast name"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.805647"
+        },
+        "BU": {
+          "business_name": "Bu",
+          "aliases": [],
+          "description": "Column BU in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(15) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what bu",
+            "bu",
+            "which bu"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.842358"
+        },
+        "Top_Level": {
+          "business_name": "Top Level",
+          "aliases": [
+            "top level"
+          ],
+          "description": "Column Top_Level in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(44) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what top",
+            "top level",
+            "which top"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.865565"
+        },
+        "AT": {
+          "business_name": "At",
+          "aliases": [],
+          "description": "Column AT in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(3) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which at",
+            "what at",
+            "at"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.905575"
+        },
+        "NEXTVAL": {
+          "business_name": "Nextval",
+          "aliases": [],
+          "description": "Column NEXTVAL in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "BIGINT",
+          "role": "attribute",
+          "common_terms": [
+            "which nextval",
+            "what nextval",
+            "nextval"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.927860"
+        },
+        "CURRVAL": {
+          "business_name": "Currval",
+          "aliases": [],
+          "description": "Column CURRVAL in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "BIGINT",
+          "role": "attribute",
+          "common_terms": [
+            "currval",
+            "which currval",
+            "what currval"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.964857"
+        },
+        "brz_LoadTime": {
+          "business_name": "Brz Loadtime",
+          "aliases": [
+            "brz loadtime"
+          ],
+          "description": "Column brz_LoadTime in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "DATETIME",
+          "role": "attribute",
+          "common_terms": [
+            "which brz",
+            "what brz",
+            "brz loadtime"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:18.987161"
+        },
+        "ETL_BatchID": {
+          "business_name": "Etl Batchid",
+          "aliases": [
+            "etl batchid"
+          ],
+          "description": "Column ETL_BatchID in brz_lnd_OPS_EXCEL_GPU",
+          "semantic_type": "dimension",
+          "data_type": "BIGINT",
+          "role": "attribute",
+          "common_terms": [
+            "what etl",
+            "etl batchid",
+            "which etl"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.027329"
+        }
+      }
+    },
+    "brz_lnd_IBP_Product_Master": {
+      "table_hints": {
+        "business_name": "Brz Lnd Ibp Product Master",
+        "aliases": [
+          "brz lnd IBP Product Master",
+          "IBP_Product_Master"
+        ],
+        "description": "Data table: brz_lnd_IBP_Product_Master",
+        "category": "unknown",
+        "user_notes": "Auto-generated, needs review",
+        "last_edited_by": "initialization_script",
+        "last_edited_at": "2025-11-04T16:42:19.047308"
+      },
+      "columns": {
+        "field1": {
+          "business_name": "Field1",
+          "aliases": [],
+          "description": "Column field1 in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(5) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "field1",
+            "what field1",
+            "which field1"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.085691"
+        },
+        "SCNID": {
+          "business_name": "Scnid",
+          "aliases": [],
+          "description": "Column SCNID in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what scnid",
+            "which scnid",
+            "scnid"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.108145"
+        },
+        "PRDID": {
+          "business_name": "Prdid",
+          "aliases": [],
+          "description": "Column PRDID in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(31) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "prdid",
+            "what prdid",
+            "which prdid"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.144343"
+        },
+        "UOMID": {
+          "business_name": "Uomid",
+          "aliases": [],
+          "description": "Column UOMID in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(9) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what uomid",
+            "which uomid",
+            "uomid"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.165711"
+        },
+        "ZBASEMATERIAL": {
+          "business_name": "Zbasematerial",
+          "aliases": [
+            "item",
+            "product",
+            "sku",
+            "part"
+          ],
+          "description": "Column ZBASEMATERIAL in brz_lnd_IBP_Product_Master",
+          "semantic_type": "identifier",
+          "data_type": "NVARCHAR(34) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zbasematerial",
+            "zbasematerial id",
+            "which zbasematerial",
+            "zbasematerial number",
+            "what zbasematerial"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "high",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.198180"
+        },
+        "ZBOM1TXT": {
+          "business_name": "Zbom1Txt",
+          "aliases": [],
+          "description": "Column ZBOM1TXT in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(40) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zbom1txt",
+            "which zbom1txt",
+            "what zbom1txt"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.215965"
+        },
+        "ZBOM1": {
+          "business_name": "Zbom1",
+          "aliases": [],
+          "description": "Column ZBOM1 in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which zbom1",
+            "what zbom1",
+            "zbom1"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.253035"
+        },
+        "ZBOM1QTYPER": {
+          "business_name": "Zbom1Qtyper",
+          "aliases": [
+            "category",
+            "classification"
+          ],
+          "description": "Column ZBOM1QTYPER in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which zbom1qtyper",
+            "zbom1qtyper",
+            "what zbom1qtyper"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.265690"
+        },
+        "ZBOM2": {
+          "business_name": "Zbom2",
+          "aliases": [],
+          "description": "Column ZBOM2 in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what zbom2",
+            "zbom2",
+            "which zbom2"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.310955"
+        },
+        "ZBOM2QTYPER": {
+          "business_name": "Zbom2Qtyper",
+          "aliases": [
+            "category",
+            "classification"
+          ],
+          "description": "Column ZBOM2QTYPER in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what zbom2qtyper",
+            "which zbom2qtyper",
+            "zbom2qtyper"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.333782"
+        },
+        "ZBOM3": {
+          "business_name": "Zbom3",
+          "aliases": [],
+          "description": "Column ZBOM3 in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(9) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zbom3",
+            "what zbom3",
+            "which zbom3"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.371591"
+        },
+        "ZBOM3QTYPER": {
+          "business_name": "Zbom3Qtyper",
+          "aliases": [
+            "category",
+            "classification"
+          ],
+          "description": "Column ZBOM3QTYPER in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zbom3qtyper",
+            "what zbom3qtyper",
+            "which zbom3qtyper"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.394012"
+        },
+        "ZBOM4": {
+          "business_name": "Zbom4",
+          "aliases": [],
+          "description": "Column ZBOM4 in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which zbom4",
+            "what zbom4",
+            "zbom4"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.430760"
+        },
+        "ZBOM4QTYPER": {
+          "business_name": "Zbom4Qtyper",
+          "aliases": [
+            "category",
+            "classification"
+          ],
+          "description": "Column ZBOM4QTYPER in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zbom4qtyper",
+            "which zbom4qtyper",
+            "what zbom4qtyper"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.450651"
+        },
+        "ZBUILDPACKOUT": {
+          "business_name": "Zbuildpackout",
+          "aliases": [],
+          "description": "Column ZBUILDPACKOUT in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(16) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which zbuildpackout",
+            "zbuildpackout",
+            "what zbuildpackout"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.489741"
+        },
+        "ZBUSUNIT": {
+          "business_name": "Zbusunit",
+          "aliases": [],
+          "description": "Column ZBUSUNIT in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(13) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which zbusunit",
+            "what zbusunit",
+            "zbusunit"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.511343"
+        },
+        "ZPRDFAMILY": {
+          "business_name": "Zprdfamily",
+          "aliases": [],
+          "description": "Column ZPRDFAMILY in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(19) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zprdfamily",
+            "which zprdfamily",
+            "what zprdfamily"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.548681"
+        },
+        "ZMATGRP": {
+          "business_name": "Zmatgrp",
+          "aliases": [],
+          "description": "Column ZMATGRP in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zmatgrp",
+            "what zmatgrp",
+            "which zmatgrp"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.571997"
+        },
+        "ZCODERELEVANT": {
+          "business_name": "Zcoderelevant",
+          "aliases": [
+            "id",
+            "identifier"
+          ],
+          "description": "Column ZCODERELEVANT in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(13) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which zcoderelevant",
+            "what zcoderelevant",
+            "zcoderelevant"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.607774"
+        },
+        "ZCONSTRAINTHORIZON": {
+          "business_name": "Zconstrainthorizon",
+          "aliases": [],
+          "description": "Column ZCONSTRAINTHORIZON in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zconstrainthorizon",
+            "which zconstrainthorizon",
+            "what zconstrainthorizon"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.627730"
+        },
+        "ZCOOLINGTYPE": {
+          "business_name": "Zcoolingtype",
+          "aliases": [
+            "category",
+            "classification"
+          ],
+          "description": "Column ZCOOLINGTYPE in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zcoolingtype",
+            "which zcoolingtype",
+            "what zcoolingtype"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.666417"
+        },
+        "ZCRITICALPRODUCT": {
+          "business_name": "Zcriticalproduct",
+          "aliases": [],
+          "description": "Column ZCRITICALPRODUCT in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(16) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zcriticalproduct",
+            "which zcriticalproduct",
+            "what zcriticalproduct"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.687425"
+        },
+        "ZXPLANTSTATUS": {
+          "business_name": "Zxplantstatus",
+          "aliases": [
+            "condition",
+            "state"
+          ],
+          "description": "Column ZXPLANTSTATUS in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(27) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zxplantstatus",
+            "what zxplantstatus",
+            "which zxplantstatus"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.725655"
+        },
+        "ZDEMANDGROUP": {
+          "business_name": "Zdemandgroup",
+          "aliases": [],
+          "description": "Column ZDEMANDGROUP in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(25) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which zdemandgroup",
+            "what zdemandgroup",
+            "zdemandgroup"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.751246"
+        },
+        "ZDEVICECAT": {
+          "business_name": "Zdevicecat",
+          "aliases": [],
+          "description": "Column ZDEVICECAT in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(15) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zdevicecat",
+            "which zdevicecat",
+            "what zdevicecat"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.782656"
+        },
+        "ZDIEBIN": {
+          "business_name": "Zdiebin",
+          "aliases": [],
+          "description": "Column ZDIEBIN in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(7) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zdiebin",
+            "what zdiebin",
+            "which zdiebin"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.796472"
+        },
+        "ZDIERBPINDICATOR": {
+          "business_name": "Zdierbpindicator",
+          "aliases": [],
+          "description": "Column ZDIERBPINDICATOR in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(17) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what zdierbpindicator",
+            "which zdierbpindicator",
+            "zdierbpindicator"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.823773"
+        },
+        "ZDIEREVLVL": {
+          "business_name": "Zdierevlvl",
+          "aliases": [],
+          "description": "Column ZDIEREVLVL in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zdierevlvl",
+            "what zdierevlvl",
+            "which zdierevlvl"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.843797"
+        },
+        "ZDIRECTPOST": {
+          "business_name": "Zdirectpost",
+          "aliases": [],
+          "description": "Column ZDIRECTPOST in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(19) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which zdirectpost",
+            "zdirectpost",
+            "what zdirectpost"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.858241"
+        },
+        "ZDRIVERSKU": {
+          "business_name": "Zdriversku",
+          "aliases": [],
+          "description": "Column ZDRIVERSKU in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(10) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zdriversku",
+            "what zdriversku",
+            "which zdriversku"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.898581"
+        },
+        "ZDTKDESC": {
+          "business_name": "Zdtkdesc",
+          "aliases": [],
+          "description": "Column ZDTKDESC in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which zdtkdesc",
+            "zdtkdesc",
+            "what zdtkdesc"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.917306"
+        },
+        "ZFAB": {
+          "business_name": "Zfab",
+          "aliases": [],
+          "description": "Column ZFAB in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(4) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what zfab",
+            "which zfab",
+            "zfab"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.952644"
+        },
+        "ZFABTECH": {
+          "business_name": "Zfabtech",
+          "aliases": [],
+          "description": "Column ZFABTECH in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(14) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what zfabtech",
+            "zfabtech",
+            "which zfabtech"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:19.972765"
+        },
+        "ZGPU1": {
+          "business_name": "Zgpu1",
+          "aliases": [],
+          "description": "Column ZGPU1 in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which zgpu1",
+            "zgpu1",
+            "what zgpu1"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.011050"
+        },
+        "ZGPU1QTYPER": {
+          "business_name": "Zgpu1Qtyper",
+          "aliases": [
+            "category",
+            "classification"
+          ],
+          "description": "Column ZGPU1QTYPER in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(13) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zgpu1qtyper",
+            "what zgpu1qtyper",
+            "which zgpu1qtyper"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.032715"
+        },
+        "ZGPU2": {
+          "business_name": "Zgpu2",
+          "aliases": [],
+          "description": "Column ZGPU2 in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what zgpu2",
+            "zgpu2",
+            "which zgpu2"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.072657"
+        },
+        "ZGPU2QTYPER": {
+          "business_name": "Zgpu2Qtyper",
+          "aliases": [
+            "category",
+            "classification"
+          ],
+          "description": "Column ZGPU2QTYPER in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(13) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what zgpu2qtyper",
+            "which zgpu2qtyper",
+            "zgpu2qtyper"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.096624"
+        },
+        "ZMAKEBUY": {
+          "business_name": "Zmakebuy",
+          "aliases": [],
+          "description": "Column ZMAKEBUY in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(20) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zmakebuy",
+            "which zmakebuy",
+            "what zmakebuy"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.136206"
+        },
+        "ZMATTYPE": {
+          "business_name": "Zmattype",
+          "aliases": [
+            "category",
+            "classification"
+          ],
+          "description": "Column ZMATTYPE in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(26) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which zmattype",
+            "what zmattype",
+            "zmattype"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.157891"
+        },
+        "ZITEMGRP": {
+          "business_name": "Zitemgrp",
+          "aliases": [],
+          "description": "Column ZITEMGRP in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(40) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which zitemgrp",
+            "what zitemgrp",
+            "zitemgrp"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.190617"
+        },
+        "ZMARKTNAME": {
+          "business_name": "Zmarktname",
+          "aliases": [
+            "title",
+            "label"
+          ],
+          "description": "Column ZMARKTNAME in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(40) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what zmarktname",
+            "which zmarktname",
+            "zmarktname"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.212518"
+        },
+        "ZITMPRIORITYTIER": {
+          "business_name": "Zitmprioritytier",
+          "aliases": [],
+          "description": "Column ZITMPRIORITYTIER in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zitmprioritytier",
+            "which zitmprioritytier",
+            "what zitmprioritytier"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.248323"
+        },
+        "ZITEMTECH": {
+          "business_name": "Zitemtech",
+          "aliases": [],
+          "description": "Column ZITEMTECH in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(22) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what zitemtech",
+            "which zitemtech",
+            "zitemtech"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.268705"
+        },
+        "ZJFFMKTNAME": {
+          "business_name": "Zjffmktname",
+          "aliases": [
+            "title",
+            "label"
+          ],
+          "description": "Column ZJFFMKTNAME in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(38) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which zjffmktname",
+            "zjffmktname",
+            "what zjffmktname"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.299468"
+        },
+        "ZRBPITGP": {
+          "business_name": "Zrbpitgp",
+          "aliases": [],
+          "description": "Column ZRBPITGP in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(38) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what zrbpitgp",
+            "which zrbpitgp",
+            "zrbpitgp"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.317196"
+        },
+        "ZKITPRODUCT": {
+          "business_name": "Zkitproduct",
+          "aliases": [],
+          "description": "Column ZKITPRODUCT in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(11) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which zkitproduct",
+            "zkitproduct",
+            "what zkitproduct"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.340852"
+        },
+        "ZLIFECYCLESTATE": {
+          "business_name": "Zlifecyclestate",
+          "aliases": [],
+          "description": "Column ZLIFECYCLESTATE in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(15) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zlifecyclestate",
+            "which zlifecyclestate",
+            "what zlifecyclestate"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.362354"
+        },
+        "PRODGROUP": {
+          "business_name": "Prodgroup",
+          "aliases": [],
+          "description": "Column PRODGROUP in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(14) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which prodgroup",
+            "what prodgroup",
+            "prodgroup"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.382237"
+        },
+        "PRODTYPE": {
+          "business_name": "Prodtype",
+          "aliases": [
+            "category",
+            "classification"
+          ],
+          "description": "Column PRODTYPE in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(13) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which prodtype",
+            "what prodtype",
+            "prodtype"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.417637"
+        },
+        "ZPRIMARYMEMORY1": {
+          "business_name": "Zprimarymemory1",
+          "aliases": [],
+          "description": "Column ZPRIMARYMEMORY1 in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(15) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which zprimarymemory1",
+            "zprimarymemory1",
+            "what zprimarymemory1"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.439385"
+        },
+        "ZMEMORY1QTYPER": {
+          "business_name": "Zmemory1Qtyper",
+          "aliases": [
+            "category",
+            "classification"
+          ],
+          "description": "Column ZMEMORY1QTYPER in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(16) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zmemory1qtyper",
+            "which zmemory1qtyper",
+            "what zmemory1qtyper"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.475550"
+        },
+        "ZMEMORY2": {
+          "business_name": "Zmemory2",
+          "aliases": [],
+          "description": "Column ZMEMORY2 in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zmemory2",
+            "which zmemory2",
+            "what zmemory2"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.494586"
+        },
+        "ZMEMORY2QTYPER": {
+          "business_name": "Zmemory2Qtyper",
+          "aliases": [
+            "category",
+            "classification"
+          ],
+          "description": "Column ZMEMORY2QTYPER in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(16) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what zmemory2qtyper",
+            "zmemory2qtyper",
+            "which zmemory2qtyper"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.512839"
+        },
+        "ZMOQ2": {
+          "business_name": "Zmoq2",
+          "aliases": [],
+          "description": "Column ZMOQ2 in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(15) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zmoq2",
+            "which zmoq2",
+            "what zmoq2"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.532591"
+        },
+        "ZMOQ1": {
+          "business_name": "Zmoq1",
+          "aliases": [],
+          "description": "Column ZMOQ1 in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(5) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what zmoq1",
+            "zmoq1",
+            "which zmoq1"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.556777"
+        },
+        "ZRBPNOTES3": {
+          "business_name": "Zrbpnotes3",
+          "aliases": [],
+          "description": "Column ZRBPNOTES3 in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(34) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what zrbpnotes3",
+            "which zrbpnotes3",
+            "zrbpnotes3"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.594700"
+        },
+        "ZOLDMAT": {
+          "business_name": "Zoldmat",
+          "aliases": [],
+          "description": "Column ZOLDMAT in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zoldmat",
+            "which zoldmat",
+            "what zoldmat"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.618930"
+        },
+        "ZACTIVEINACTIVE": {
+          "business_name": "Zactiveinactive",
+          "aliases": [],
+          "description": "Column ZACTIVEINACTIVE in brz_lnd_IBP_Product_Master",
+          "semantic_type": "flag",
+          "data_type": "NVARCHAR(19) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "status",
+            "zactiveinactive",
+            "is deleted",
+            "is active",
+            "which zactiveinactive"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.657748"
+        },
+        "ZOPSPCB": {
+          "business_name": "Zopspcb",
+          "aliases": [],
+          "description": "Column ZOPSPCB in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(7) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zopspcb",
+            "which zopspcb",
+            "what zopspcb"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.681567"
+        },
+        "ZPLANNER": {
+          "business_name": "Zplanner",
+          "aliases": [],
+          "description": "Column ZPLANNER in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(21) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zplanner",
+            "which zplanner",
+            "what zplanner"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.716638"
+        },
+        "ZPLCCODE": {
+          "business_name": "Zplccode",
+          "aliases": [
+            "id",
+            "identifier"
+          ],
+          "description": "Column ZPLCCODE in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(21) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zplccode",
+            "what zplccode",
+            "which zplccode"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.740531"
+        },
+        "PRODDESC": {
+          "business_name": "Proddesc",
+          "aliases": [],
+          "description": "Column PRODDESC in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(40) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what proddesc",
+            "which proddesc",
+            "proddesc"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.782204"
+        },
+        "ZPRODUCTFLAG1": {
+          "business_name": "Zproductflag1",
+          "aliases": [],
+          "description": "Column ZPRODUCTFLAG1 in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(13) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which zproductflag1",
+            "what zproductflag1",
+            "zproductflag1"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.806355"
+        },
+        "ZPRDGROUP": {
+          "business_name": "Zprdgroup",
+          "aliases": [],
+          "description": "Column ZPRDGROUP in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(13) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zprdgroup",
+            "what zprdgroup",
+            "which zprdgroup"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.842615"
+        },
+        "PRODUCTHIERARCHY": {
+          "business_name": "Producthierarchy",
+          "aliases": [],
+          "description": "Column PRODUCTHIERARCHY in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "producthierarchy",
+            "what producthierarchy",
+            "which producthierarchy"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.863792"
+        },
+        "ZPRDUCTLINE": {
+          "business_name": "Zprductline",
+          "aliases": [],
+          "description": "Column ZPRDUCTLINE in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what zprductline",
+            "zprductline",
+            "which zprductline"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.907907"
+        },
+        "ZPRDLNEDESC": {
+          "business_name": "Zprdlnedesc",
+          "aliases": [],
+          "description": "Column ZPRDLNEDESC in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(24) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zprdlnedesc",
+            "which zprdlnedesc",
+            "what zprdlnedesc"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.931190"
+        },
+        "PRODUCTDEL": {
+          "business_name": "Productdel",
+          "aliases": [],
+          "description": "Column PRODUCTDEL in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(27) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "productdel",
+            "which productdel",
+            "what productdel"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.970577"
+        },
+        "ZRBPNOTES1": {
+          "business_name": "Zrbpnotes1",
+          "aliases": [],
+          "description": "Column ZRBPNOTES1 in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(15) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zrbpnotes1",
+            "which zrbpnotes1",
+            "what zrbpnotes1"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:20.999243"
+        },
+        "ZPROFITCENTER": {
+          "business_name": "Zprofitcenter",
+          "aliases": [],
+          "description": "Column ZPROFITCENTER in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(13) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zprofitcenter",
+            "what zprofitcenter",
+            "which zprofitcenter"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:21.042708"
+        },
+        "ZPROGCODE": {
+          "business_name": "Zprogcode",
+          "aliases": [
+            "id",
+            "identifier"
+          ],
+          "description": "Column ZPROGCODE in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(20) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "zprogcode",
+            "which zprogcode",
+            "what zprogcode"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:21.066724"
+        },
+        "ZRBPPLANNER": {
+          "business_name": "Zrbpplanner",
+          "aliases": [],
+          "description": "Column ZRBPPLANNER in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(19) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what zrbpplanner",
+            "which zrbpplanner",
+            "zrbpplanner"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:21.107722"
+        },
+        "ZMARKETCODE": {
+          "business_name": "Zmarketcode",
+          "aliases": [
+            "market code",
+            "Market-Code",
+            "market code"
+          ],
+          "description": "Column ZMARKETCODE in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(43) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which zmarketcode",
+            "zmarketcode",
+            "what zmarketcode"
+          ],
+          "examples": [],
+          "allowed_values": null,
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "default_filter": null,
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": true,
+          "last_edited_by": "web-user",
+          "last_edited_at": "2025-11-04T23:19:52.650123"
+        },
+        "ZRBPNOTES2": {
+          "business_name": "Zrbpnotes2",
+          "aliases": [],
+          "description": "Column ZRBPNOTES2 in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(26) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what zrbpnotes2",
+            "which zrbpnotes2",
+            "zrbpnotes2"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:21.167523"
+        },
+        "SHELFLIFEACTIVE": {
+          "business_name": "Shelflifeactive",
+          "aliases": [],
+          "description": "Column SHELFLIFEACTIVE in brz_lnd_IBP_Product_Master",
+          "semantic_type": "flag",
+          "data_type": "NVARCHAR(26) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "shelflifeactive",
+            "status",
+            "which shelflifeactive",
+            "is deleted",
+            "what shelflifeactive"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:21.191124"
+        },
+        "ZSNPPLNR": {
+          "business_name": "Zsnpplnr",
+          "aliases": [],
+          "description": "Column ZSNPPLNR in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(11) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what zsnpplnr",
+            "which zsnpplnr",
+            "zsnpplnr"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:21.231178"
+        },
+        "ZSORTPRIORITYINT": {
+          "business_name": "Zsortpriorityint",
+          "aliases": [],
+          "description": "Column ZSORTPRIORITYINT in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(21) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which zsortpriorityint",
+            "zsortpriorityint",
+            "what zsortpriorityint"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:21.253065"
+        },
+        "ZSUBFMLY": {
+          "business_name": "Zsubfmly",
+          "aliases": [],
+          "description": "Column ZSUBFMLY in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(17) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what zsubfmly",
+            "which zsubfmly",
+            "zsubfmly"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:21.289548"
+        },
+        "ZSYSTEMDIRECTBUILD": {
+          "business_name": "Zsystemdirectbuild",
+          "aliases": [],
+          "description": "Column ZSYSTEMDIRECTBUILD in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(20) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which zsystemdirectbuild",
+            "what zsystemdirectbuild",
+            "zsystemdirectbuild"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:21.310067"
+        },
+        "ZTKLEADTIME": {
+          "business_name": "Ztkleadtime",
+          "aliases": [],
+          "description": "Column ZTKLEADTIME in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which ztkleadtime",
+            "ztkleadtime",
+            "what ztkleadtime"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:21.347675"
+        },
+        "ZTKMANUFACTURER": {
+          "business_name": "Ztkmanufacturer",
+          "aliases": [],
+          "description": "Column ZTKMANUFACTURER in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(30) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which ztkmanufacturer",
+            "what ztkmanufacturer",
+            "ztkmanufacturer"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:21.370745"
+        },
+        "ZTKMANUFACTPARTNUM": {
+          "business_name": "Ztkmanufactpartnum",
+          "aliases": [],
+          "description": "Column ZTKMANUFACTPARTNUM in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(30) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which ztkmanufactpartnum",
+            "what ztkmanufactpartnum",
+            "ztkmanufactpartnum"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:21.411126"
+        },
+        "ZTKUNITCOST": {
+          "business_name": "Ztkunitcost",
+          "aliases": [],
+          "description": "Column ZTKUNITCOST in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "ztkunitcost",
+            "which ztkunitcost",
+            "what ztkunitcost"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:21.433572"
+        },
+        "ZTOPLVLNAME": {
+          "business_name": "Ztoplvlname",
+          "aliases": [
+            "top level",
+            "top-level",
+            "level top"
+          ],
+          "description": "Column ZTOPLVLNAME in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(41) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "ztoplvlname",
+            "what ztoplvlname",
+            "which ztoplvlname"
+          ],
+          "examples": [],
+          "allowed_values": null,
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "default_filter": null,
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": true,
+          "last_edited_by": "web-user",
+          "last_edited_at": "2025-11-04T23:20:40.833377"
+        },
+        "ZVIRTUALKIT": {
+          "business_name": "Zvirtualkit",
+          "aliases": [],
+          "description": "Column ZVIRTUALKIT in brz_lnd_IBP_Product_Master",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(40) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what zvirtualkit",
+            "which zvirtualkit",
+            "zvirtualkit"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:21.495901"
+        },
+        "LASTMODIFIEDBY": {
+          "business_name": "Lastmodifiedby",
+          "aliases": [],
+          "description": "Column LASTMODIFIEDBY in brz_lnd_IBP_Product_Master",
+          "semantic_type": "date",
+          "data_type": "NVARCHAR(14) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "which lastmodifiedby",
+            "lastmodifiedby",
+            "what lastmodifiedby"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:21.532027"
+        },
+        "LASTMODIFIEDDATE": {
+          "business_name": "Lastmodifieddate",
+          "aliases": [],
+          "description": "Column LASTMODIFIEDDATE in brz_lnd_IBP_Product_Master",
+          "semantic_type": "date",
+          "data_type": "NVARCHAR(16) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "lastmodifieddate",
+            "what lastmodifieddate",
+            "which lastmodifieddate"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:21.553966"
+        },
+        "CREATEDBY": {
+          "business_name": "Createdby",
+          "aliases": [],
+          "description": "Column CREATEDBY in brz_lnd_IBP_Product_Master",
+          "semantic_type": "date",
+          "data_type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what createdby",
+            "createdby",
+            "which createdby"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:21.592074"
+        },
+        "CREATEDDATE": {
+          "business_name": "Createddate",
+          "aliases": [],
+          "description": "Column CREATEDDATE in brz_lnd_IBP_Product_Master",
+          "semantic_type": "date",
+          "data_type": "NVARCHAR(14) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "createddate",
+            "what createddate",
+            "which createddate"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:21.616265"
+        }
+      }
+    },
+    "brz_lnd_SAR_Excel_GPU": {
+      "table_hints": {
+        "business_name": "Brz Lnd Sar Excel Gpu",
+        "aliases": [
+          "SAR_Excel_GPU",
+          "brz lnd SAR Excel GPU"
+        ],
+        "description": "Data table: brz_lnd_SAR_Excel_GPU",
+        "category": "unknown",
+        "user_notes": "Auto-generated, needs review",
+        "last_edited_by": "initialization_script",
+        "last_edited_at": "2025-11-04T16:42:21.653142"
+      },
+      "columns": {
+        "Fiscal_Year_Period": {
+          "business_name": "Fiscal Year Period",
+          "aliases": [
+            "fiscal year period"
+          ],
+          "description": "Column Fiscal_Year_Period in brz_lnd_SAR_Excel_GPU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(27) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what fiscal",
+            "fiscal year period",
+            "which fiscal"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:21.678905"
+        },
+        "Overall_Result": {
+          "business_name": "Overall Result",
+          "aliases": [
+            "overall result"
+          ],
+          "description": "Column Overall_Result in brz_lnd_SAR_Excel_GPU",
+          "semantic_type": "dimension",
+          "data_type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what overall",
+            "overall result",
+            "which overall"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:21.722099"
+        },
+        "Material": {
+          "business_name": "Material",
+          "aliases": [
+            "item",
+            "product",
+            "sku",
+            "part"
+          ],
+          "description": "Column Material in brz_lnd_SAR_Excel_GPU",
+          "semantic_type": "identifier",
+          "data_type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "material number",
+            "material id",
+            "what material",
+            "which material",
+            "material"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "high",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:21.742289"
+        }
+      }
+    },
+    "brz_lnd_GPU_SKU_IN_SKULIFNR": {
+      "table_hints": {
+        "business_name": "Brz Lnd Gpu Sku In Skulifnr",
+        "aliases": [
+          "GPU_SKU_IN_SKULIFNR",
+          "brz lnd GPU SKU IN SKULIFNR"
+        ],
+        "description": "Data table: brz_lnd_GPU_SKU_IN_SKULIFNR",
+        "category": "unknown",
+        "user_notes": "Auto-generated, needs review",
+        "last_edited_by": "initialization_script",
+        "last_edited_at": "2025-11-04T16:42:21.768602"
+      },
+      "columns": {
+        "PLANNING_SKU": {
+          "business_name": "Planning Sku",
+          "aliases": [
+            "planning sku"
+          ],
+          "description": "Column PLANNING_SKU in brz_lnd_GPU_SKU_IN_SKULIFNR",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(19) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "planning sku",
+            "which planning",
+            "what planning"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:21.794261"
+        },
+        "Prd_Type": {
+          "business_name": "Prd Type",
+          "aliases": [
+            "category",
+            "classification",
+            "prd type"
+          ],
+          "description": "Column Prd_Type in brz_lnd_GPU_SKU_IN_SKULIFNR",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(100) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what prd",
+            "which prd",
+            "prd type"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:21.824804"
+        }
+      }
+    },
+    "brz_lnd_SAR_Excel_NBU": {
+      "table_hints": {
+        "business_name": "Brz Lnd Sar Excel Nbu",
+        "aliases": [
+          "brz lnd SAR Excel NBU",
+          "SAR_Excel_NBU"
+        ],
+        "description": "Data table: brz_lnd_SAR_Excel_NBU",
+        "category": "unknown",
+        "user_notes": "Auto-generated, needs review",
+        "last_edited_by": "initialization_script",
+        "last_edited_at": "2025-11-04T16:42:21.847096"
+      },
+      "columns": {
+        "Fiscal_Year_Period": {
+          "business_name": "Fiscal Year Period",
+          "aliases": [
+            "fiscal year period"
+          ],
+          "description": "Column Fiscal_Year_Period in brz_lnd_SAR_Excel_NBU",
+          "semantic_type": "dimension",
+          "data_type": "NVARCHAR(27) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what fiscal",
+            "fiscal year period",
+            "which fiscal"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:21.882359"
+        },
+        "Overall_Result": {
+          "business_name": "Overall Result",
+          "aliases": [
+            "overall result"
+          ],
+          "description": "Column Overall_Result in brz_lnd_SAR_Excel_NBU",
+          "semantic_type": "dimension",
+          "data_type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "what overall",
+            "overall result",
+            "which overall"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "medium",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:21.907286"
+        },
+        "Material": {
+          "business_name": "Material",
+          "aliases": [
+            "item",
+            "product",
+            "sku",
+            "part"
+          ],
+          "description": "Column Material in brz_lnd_SAR_Excel_NBU",
+          "semantic_type": "identifier",
+          "data_type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "role": "attribute",
+          "common_terms": [
+            "material number",
+            "material id",
+            "what material",
+            "which material",
+            "material"
+          ],
+          "examples": [],
+          "searchable": true,
+          "filterable": true,
+          "aggregatable": false,
+          "priority": "high",
+          "business_rules": [],
+          "user_notes": "",
+          "auto_generated": true,
+          "manual_verified": false,
+          "last_edited_by": "initialization_script",
+          "last_edited_at": "2025-11-04T16:42:21.946966"
+        }
+      }
+    }
+  },
+  "global_hints": {
+    "common_patterns": {
+      "_uid": "Unique identifier",
+      "_id": "Record ID",
+      "_code": "Classification code",
+      "_date": "Date field",
+      "_time": "Timestamp field"
+    },
+    "semantic_type_definitions": {
+      "identifier": "Unique keys, IDs, codes",
+      "measure": "Numeric values for analysis",
+      "dimension": "Categorical attributes",
+      "date": "Temporal fields",
+      "flag": "Boolean/status indicators",
+      "description": "Text descriptions"
+    }
+  }
+}

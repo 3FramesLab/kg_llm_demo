@@ -181,25 +181,15 @@ async def generate_knowledge_graph(request: KGGenerationRequest):
         # Determine which schemas to process
         schema_names = request.schema_names or [request.schema_name]
 
-        # Build knowledge graph
-        if len(schema_names) == 1:
-            # Single schema - use original method with optional LLM enhancement
-            schema = SchemaParser.load_schema(schema_names[0])
-            kg = SchemaParser.build_knowledge_graph(
-                schema_names[0],
-                request.kg_name,
-                schema,
-                use_llm=request.use_llm_enhancement,
-                field_preferences=request.field_preferences
-            )
-        else:
-            # Multiple schemas - use merged method with cross-schema relationships
-            kg = SchemaParser.build_merged_knowledge_graph(
-                schema_names,
-                request.kg_name,
-                use_llm=request.use_llm_enhancement,
-                field_preferences=request.field_preferences
-            )
+        # Build knowledge graph - UNIFIED APPROACH
+        # Always use build_merged_knowledge_graph() regardless of schema count
+        # Single schema is just a special case of multiple schemas (count = 1)
+        kg = SchemaParser.build_merged_knowledge_graph(
+            schema_names,
+            request.kg_name,
+            use_llm=request.use_llm_enhancement,
+            field_preferences=request.field_preferences
+        )
 
         # Add explicit relationship pairs if provided (v2)
         explicit_pairs_added = 0

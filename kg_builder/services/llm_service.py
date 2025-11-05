@@ -236,35 +236,47 @@ Identify all relationships between tables, including explicit foreign keys and i
 === SCHEMA ===
 {schema_str}
 
-=== RELATIONSHIP TYPES ===
+=== ENHANCED RELATIONSHIP TYPES ===
 
 **REFERENCES**: Foreign key relationship (explicit or implicit)
 - Example: orders.customer_id references customers.id
 - Pattern: Column with _id, _uid, _key suffix
+- Enhanced: Look for business identifiers without FK suffixes (material_number, product_code)
 
 **HAS**: Ownership/containment (one-to-many)
 - Example: Customer HAS Orders
 - Pattern: Parent entity contains child entities
+- Enhanced: Look for logical ownership (Material Master HAS Product Variants)
 
 **BELONGS_TO**: Inverse of HAS (many-to-one)
 - Example: Order BELONGS_TO Customer
 - Pattern: Child entity belongs to parent
+- Enhanced: Look for categorical membership (Product BELONGS_TO Category)
 
 **CONTAINS**: Composition relationship
 - Example: Order CONTAINS Order_Items
 - Pattern: Strong ownership, child can't exist without parent
+- Enhanced: Look for data aggregation patterns (Summary CONTAINS Details)
 
 **ASSOCIATES_WITH**: Many-to-many relationship
 - Example: Products ASSOCIATES_WITH Categories (via junction table)
 - Pattern: Junction/bridge table with two foreign keys
+- Enhanced: Look for cross-reference patterns without explicit junction tables
 
 **INHERITS_FROM**: Hierarchical relationship
 - Example: Sub_Category INHERITS_FROM Category
 - Pattern: Self-referencing or parent-child hierarchy
+- Enhanced: Look for taxonomic relationships (Product Type → Product Family)
 
 **TRACKS**: Audit/history relationship
 - Example: Audit_Log TRACKS Entity_Changes
 - Pattern: Temporal tracking, timestamps
+- Enhanced: Look for lifecycle tracking (Status changes, version history)
+
+**SEMANTIC_REFERENCE**: Same business concept, different names
+- Example: Material ↔ Product ↔ Item ↔ SKU (all represent products)
+- Pattern: Similar business meaning with naming variations
+- Enhanced: Look for domain-specific synonyms and business terminology
 
 === CARDINALITY NOTATION ===
 - **1:1** (One-to-One): Each record in A relates to exactly one record in B
@@ -272,13 +284,39 @@ Identify all relationships between tables, including explicit foreign keys and i
 - **N:1** (Many-to-One): Multiple records in A relate to one record in B
 - **N:N** (Many-to-Many): Multiple records in A relate to multiple records in B (requires junction table)
 
-=== DETECTION GUIDELINES ===
+=== ENHANCED DETECTION GUIDELINES ===
+
+**1. Structural Analysis:**
 - Look for explicit foreign key constraints
-- Identify columns with naming patterns: _id, _uid, _key, _code
+- Identify columns with naming patterns: _id, _uid, _key, _code, _number, _ref
 - Match column names to table names (e.g., customer_id references customers table)
 - Consider data types (foreign keys usually match primary key types)
 - Identify junction tables (tables with multiple foreign keys, composite primary keys)
 - Note self-referencing relationships (parent_id in same table)
+
+**2. Business Domain Analysis:**
+- Analyze table names for business relationships (Material_Master → Product_Details)
+- Look for master-detail patterns (Master tables contain reference data)
+- Identify transactional vs reference data patterns
+- Consider business process flows (Order → Shipment → Invoice)
+
+**3. Semantic Pattern Recognition:**
+- Match business concepts across different naming conventions
+- Identify synonyms in business context (Material = Product = Item = SKU)
+- Look for hierarchical business structures (Category → Subcategory → Product)
+- Recognize audit and tracking patterns (created_by, modified_date, status)
+
+**4. Data Type and Structure Compatibility:**
+- Compatible data types: NVARCHAR ↔ VARCHAR, BIGINT ↔ INTEGER
+- Similar field lengths suggest related concepts
+- Matching precision/scale for numeric fields
+- Date/timestamp fields for temporal relationships
+
+**5. Cross-Schema Integration Patterns:**
+- ETL patterns: source → staging → warehouse → mart
+- System integration: ERP → CRM → Analytics
+- Data lineage: raw → processed → aggregated → reported
+- Master data management: local → global → standardized
 
 === OUTPUT FORMAT (JSON) ===
 {{{{

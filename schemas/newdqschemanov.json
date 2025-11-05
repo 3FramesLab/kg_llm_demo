@@ -1,0 +1,1454 @@
+{
+  "database": "mssql+pyodbc://mithun:mithun123@DESKTOP-41O1AL9\\LOCALHOST:1433/NewDQ?driver=ODBC+Driver+17+for+SQL+Server&TrustServerCertificate=yes",
+  "tables": {
+    "hana_material_master": {
+      "table_name": "hana_material_master",
+      "columns": [
+        {
+          "name": "MATERIAL",
+          "type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "MATERIAL_GROUP",
+          "type": "NVARCHAR(9) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "MATERIAL_TYPE",
+          "type": "NVARCHAR(4) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "PLANT",
+          "type": "NVARCHAR(4) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Product Type",
+          "type": "NVARCHAR(5) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Business Unit",
+          "type": "NVARCHAR(5) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Product Line",
+          "type": "NVARCHAR(5) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "OPS_MKTG_NM",
+          "type": "NVARCHAR(250) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "OPS_STATUS",
+          "type": "NVARCHAR(50) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "OPS_PLCCODE",
+          "type": "NVARCHAR(60) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "PRODGRP_CP",
+          "type": "NVARCHAR(60) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "IBP_FINANCE_MKT_NAME",
+          "type": "NVARCHAR(60) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "OPS_PLANNER",
+          "type": "NVARCHAR(250) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "OPS_PLANNER_LAT",
+          "type": "NVARCHAR(250) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "OPS_PLANNER_LAT_TEXT",
+          "type": "NVARCHAR(20) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "MAKE_BUY",
+          "type": "NVARCHAR(1) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "NBS_ITEM_GRP",
+          "type": "NVARCHAR(250) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "AN_PLC_CD",
+          "type": "NVARCHAR(60) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "primary_keys": [],
+      "foreign_keys": [],
+      "indexes": []
+    },
+    "brz_lnd_RBP_GPU": {
+      "table_name": "brz_lnd_RBP_GPU",
+      "columns": [
+        {
+          "name": "Product_Line",
+          "type": "NVARCHAR(14) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Product_Line_Dec",
+          "type": "NVARCHAR(20) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Product_Family",
+          "type": "NVARCHAR(14) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Business_Unit",
+          "type": "NVARCHAR(13) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Material",
+          "type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Fiscal_Year_Period",
+          "type": "NVARCHAR(71) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Overall_Result",
+          "type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "primary_keys": [],
+      "foreign_keys": [],
+      "indexes": []
+    },
+    "brz_lnd_SKU_LIFNR_Excel": {
+      "table_name": "brz_lnd_SKU_LIFNR_Excel",
+      "columns": [
+        {
+          "name": "ETL_BatchID",
+          "type": "INTEGER",
+          "nullable": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "brz_RowId",
+          "type": "INTEGER",
+          "nullable": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Material",
+          "type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Supplier",
+          "type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Production_Version",
+          "type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Reference_BOM",
+          "type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Planning_BOM",
+          "type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Prod_stor_location",
+          "type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Receiving_stor_loc_for_material",
+          "type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Lead_time",
+          "type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Additional_location",
+          "type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Storage_Location",
+          "type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "MRP_Area",
+          "type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Product_Type",
+          "type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Tlane_Priority",
+          "type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Transform_Flag",
+          "type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Created_By",
+          "type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Created_On",
+          "type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Created_Time",
+          "type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Changed_By",
+          "type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Changed_Date",
+          "type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Changed_Time",
+          "type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Purchasing_group",
+          "type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Automated",
+          "type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "brz_LoadTime",
+          "type": "DATETIME",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "primary_keys": [],
+      "foreign_keys": [],
+      "indexes": []
+    },
+    "brz_lnd_OPS_EXCEL_GPU": {
+      "table_name": "brz_lnd_OPS_EXCEL_GPU",
+      "columns": [
+        {
+          "name": "PLANNING_SKU",
+          "type": "NVARCHAR(19) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Product_Line",
+          "type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Business_Unit",
+          "type": "NVARCHAR(13) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Marketing_Code",
+          "type": "NVARCHAR(65) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Planner",
+          "type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Customer",
+          "type": "NVARCHAR(8) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Active_Inactive",
+          "type": "NVARCHAR(16) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Level_2_mapping_6",
+          "type": "NVARCHAR(33) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Level_2_usage",
+          "type": "NVARCHAR(14) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "CHIP_Family",
+          "type": "NVARCHAR(14) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "GPU_1",
+          "type": "NVARCHAR(30) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "GPU_usage",
+          "type": "NVARCHAR(10) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "GPU_2",
+          "type": "NVARCHAR(5) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "GPU_3",
+          "type": "NVARCHAR(5) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "GPU_4",
+          "type": "NVARCHAR(5) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Primary_Memory_1",
+          "type": "NVARCHAR(25) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Primary_Memory_1_usage",
+          "type": "NVARCHAR(22) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "PLC_Code",
+          "type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Primary_Memory_2_usage",
+          "type": "NVARCHAR(22) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Alt_Memory_2",
+          "type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Alt_Memory_3",
+          "type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Alt_Memory_4",
+          "type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Alt_Memory_usage",
+          "type": "NVARCHAR(16) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "PCB",
+          "type": "NVARCHAR(3) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Yes_or_No",
+          "type": "NVARCHAR(14) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Level_2_mapping_6_6",
+          "type": "NVARCHAR(20) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "GPU_1_1",
+          "type": "NVARCHAR(13) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Primary_Memory_1_1",
+          "type": "NVARCHAR(16) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Check",
+          "type": "NVARCHAR(5) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Marketing_Name_Ops",
+          "type": "NVARCHAR(65) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "L1_Mapping",
+          "type": "NVARCHAR(19) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "L1_LT",
+          "type": "NVARCHAR(5) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "L1_Offset",
+          "type": "NVARCHAR(9) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "L2_Mapping",
+          "type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "L2_LT",
+          "type": "NVARCHAR(5) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "L2_Offset",
+          "type": "NVARCHAR(9) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "L3_Mapping",
+          "type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "L3_LT",
+          "type": "NVARCHAR(5) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "L3_Offset",
+          "type": "NVARCHAR(9) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "L3_Real_Level_2_or_3",
+          "type": "NVARCHAR(24) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Do_Not_Use",
+          "type": "NVARCHAR(10) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "TW_6",
+          "type": "NVARCHAR(9) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Forecast_Name",
+          "type": "NVARCHAR(60) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "BU",
+          "type": "NVARCHAR(15) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Top_Level",
+          "type": "NVARCHAR(44) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "AT",
+          "type": "NVARCHAR(3) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "NEXTVAL",
+          "type": "BIGINT",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "CURRVAL",
+          "type": "BIGINT",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "brz_LoadTime",
+          "type": "DATETIME",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ETL_BatchID",
+          "type": "BIGINT",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "primary_keys": [],
+      "foreign_keys": [],
+      "indexes": []
+    },
+    "brz_lnd_IBP_Product_Master": {
+      "table_name": "brz_lnd_IBP_Product_Master",
+      "columns": [
+        {
+          "name": "field1",
+          "type": "NVARCHAR(5) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "SCNID",
+          "type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "PRDID",
+          "type": "NVARCHAR(31) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "UOMID",
+          "type": "NVARCHAR(9) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZBASEMATERIAL",
+          "type": "NVARCHAR(34) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZBOM1TXT",
+          "type": "NVARCHAR(40) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZBOM1",
+          "type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZBOM1QTYPER",
+          "type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZBOM2",
+          "type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZBOM2QTYPER",
+          "type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZBOM3",
+          "type": "NVARCHAR(9) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZBOM3QTYPER",
+          "type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZBOM4",
+          "type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZBOM4QTYPER",
+          "type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZBUILDPACKOUT",
+          "type": "NVARCHAR(16) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZBUSUNIT",
+          "type": "NVARCHAR(13) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZPRDFAMILY",
+          "type": "NVARCHAR(19) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZMATGRP",
+          "type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZCODERELEVANT",
+          "type": "NVARCHAR(13) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZCONSTRAINTHORIZON",
+          "type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZCOOLINGTYPE",
+          "type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZCRITICALPRODUCT",
+          "type": "NVARCHAR(16) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZXPLANTSTATUS",
+          "type": "NVARCHAR(27) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZDEMANDGROUP",
+          "type": "NVARCHAR(25) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZDEVICECAT",
+          "type": "NVARCHAR(15) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZDIEBIN",
+          "type": "NVARCHAR(7) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZDIERBPINDICATOR",
+          "type": "NVARCHAR(17) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZDIEREVLVL",
+          "type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZDIRECTPOST",
+          "type": "NVARCHAR(19) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZDRIVERSKU",
+          "type": "NVARCHAR(10) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZDTKDESC",
+          "type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZFAB",
+          "type": "NVARCHAR(4) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZFABTECH",
+          "type": "NVARCHAR(14) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZGPU1",
+          "type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZGPU1QTYPER",
+          "type": "NVARCHAR(13) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZGPU2",
+          "type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZGPU2QTYPER",
+          "type": "NVARCHAR(13) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZMAKEBUY",
+          "type": "NVARCHAR(20) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZMATTYPE",
+          "type": "NVARCHAR(26) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZITEMGRP",
+          "type": "NVARCHAR(40) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZMARKTNAME",
+          "type": "NVARCHAR(40) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZITMPRIORITYTIER",
+          "type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZITEMTECH",
+          "type": "NVARCHAR(22) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZJFFMKTNAME",
+          "type": "NVARCHAR(38) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZRBPITGP",
+          "type": "NVARCHAR(38) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZKITPRODUCT",
+          "type": "NVARCHAR(11) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZLIFECYCLESTATE",
+          "type": "NVARCHAR(15) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "PRODGROUP",
+          "type": "NVARCHAR(14) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "PRODTYPE",
+          "type": "NVARCHAR(13) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZPRIMARYMEMORY1",
+          "type": "NVARCHAR(15) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZMEMORY1QTYPER",
+          "type": "NVARCHAR(16) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZMEMORY2",
+          "type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZMEMORY2QTYPER",
+          "type": "NVARCHAR(16) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZMOQ2",
+          "type": "NVARCHAR(15) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZMOQ1",
+          "type": "NVARCHAR(5) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZRBPNOTES3",
+          "type": "NVARCHAR(34) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZOLDMAT",
+          "type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZACTIVEINACTIVE",
+          "type": "NVARCHAR(19) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZOPSPCB",
+          "type": "NVARCHAR(7) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZPLANNER",
+          "type": "NVARCHAR(21) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZPLCCODE",
+          "type": "NVARCHAR(21) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "PRODDESC",
+          "type": "NVARCHAR(40) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZPRODUCTFLAG1",
+          "type": "NVARCHAR(13) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZPRDGROUP",
+          "type": "NVARCHAR(13) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "PRODUCTHIERARCHY",
+          "type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZPRDUCTLINE",
+          "type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZPRDLNEDESC",
+          "type": "NVARCHAR(24) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "PRODUCTDEL",
+          "type": "NVARCHAR(27) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZRBPNOTES1",
+          "type": "NVARCHAR(15) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZPROFITCENTER",
+          "type": "NVARCHAR(13) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZPROGCODE",
+          "type": "NVARCHAR(20) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZRBPPLANNER",
+          "type": "NVARCHAR(19) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZMARKETCODE",
+          "type": "NVARCHAR(43) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZRBPNOTES2",
+          "type": "NVARCHAR(26) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "SHELFLIFEACTIVE",
+          "type": "NVARCHAR(26) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZSNPPLNR",
+          "type": "NVARCHAR(11) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZSORTPRIORITYINT",
+          "type": "NVARCHAR(21) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZSUBFMLY",
+          "type": "NVARCHAR(17) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZSYSTEMDIRECTBUILD",
+          "type": "NVARCHAR(20) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZTKLEADTIME",
+          "type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZTKMANUFACTURER",
+          "type": "NVARCHAR(30) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZTKMANUFACTPARTNUM",
+          "type": "NVARCHAR(30) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZTKUNITCOST",
+          "type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZTOPLVLNAME",
+          "type": "NVARCHAR(41) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "ZVIRTUALKIT",
+          "type": "NVARCHAR(40) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "LASTMODIFIEDBY",
+          "type": "NVARCHAR(14) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "LASTMODIFIEDDATE",
+          "type": "NVARCHAR(16) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "CREATEDBY",
+          "type": "NVARCHAR(12) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "CREATEDDATE",
+          "type": "NVARCHAR(14) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "primary_keys": [],
+      "foreign_keys": [],
+      "indexes": []
+    },
+    "brz_lnd_SAR_Excel_GPU": {
+      "table_name": "brz_lnd_SAR_Excel_GPU",
+      "columns": [
+        {
+          "name": "Fiscal_Year_Period",
+          "type": "NVARCHAR(27) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Overall_Result",
+          "type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Material",
+          "type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "primary_keys": [],
+      "foreign_keys": [],
+      "indexes": []
+    },
+    "brz_lnd_GPU_SKU_IN_SKULIFNR": {
+      "table_name": "brz_lnd_GPU_SKU_IN_SKULIFNR",
+      "columns": [
+        {
+          "name": "PLANNING_SKU",
+          "type": "NVARCHAR(19) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Prd_Type",
+          "type": "NVARCHAR(100) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "primary_keys": [],
+      "foreign_keys": [],
+      "indexes": []
+    },
+    "brz_lnd_SAR_Excel_NBU": {
+      "table_name": "brz_lnd_SAR_Excel_NBU",
+      "columns": [
+        {
+          "name": "Fiscal_Year_Period",
+          "type": "NVARCHAR(27) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Overall_Result",
+          "type": "VARCHAR(255) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "Material",
+          "type": "NVARCHAR(18) COLLATE \"SQL_Latin1_General_CP850_BIN2\"",
+          "nullable": true,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "primary_keys": [],
+      "foreign_keys": [],
+      "indexes": []
+    }
+  },
+  "total_tables": 8,
+  "metadata": {
+    "exported_at": "2025-11-04T04:17:19.573574",
+    "database_url": "mssql+pyodbc://mithun:mithun123@DESKTOP-41O1AL9\\LOCALHOST:1433/NewDQ?driver=ODBC+Driver+17+for+SQL+Server&TrustServerCertificate=yes",
+    "total_tables": 8
+  }
+}

@@ -15,6 +15,62 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
+# Import and initialize the relationship normalizer
+try:
+    from kg_builder.table_name_normalizer import CombinedNormalizer
+
+    # Initialize the normalizer with remove_prefix strategy
+    relationship_normalizer = CombinedNormalizer(table_strategy='remove_prefix')
+    logger.info("✅ Relationship normalizer initialized successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ Could not import relationship normalizer: {e}")
+    relationship_normalizer = None
+
+def normalize_relationship(relationship: GraphRelationship) -> GraphRelationship:
+    """
+    Normalize a GraphRelationship using the global normalizer.
+
+    Args:
+        relationship: Original GraphRelationship
+
+    Returns:
+        Normalized GraphRelationship
+    """
+    if relationship_normalizer is None:
+        logger.warning("Relationship normalizer not available, returning original relationship")
+        return relationship
+
+    try:
+        # Convert GraphRelationship to dict for normalization
+        rel_dict = {
+            'source_id': relationship.source_id,
+            'target_id': relationship.target_id,
+            'relationship_type': relationship.relationship_type,
+            'source_column': relationship.source_column,
+            'target_column': relationship.target_column,
+            'properties': relationship.properties
+        }
+
+        # Normalize the relationship
+        normalized_dict = relationship_normalizer.normalize_relationship(rel_dict)
+
+        # Convert back to GraphRelationship
+        normalized_relationship = GraphRelationship(
+            source_id=normalized_dict['source_id'],
+            target_id=normalized_dict['target_id'],
+            relationship_type=normalized_dict['relationship_type'],
+            source_column=normalized_dict.get('source_column'),
+            target_column=normalized_dict.get('target_column'),
+            properties=normalized_dict.get('properties', {})
+        )
+
+        return normalized_relationship
+
+    except Exception as e:
+        logger.error(f"Error normalizing relationship: {e}")
+        return relationship
+
+
 # Default fields to exclude from KG relationship creation (can be overridden by user)
 DEFAULT_EXCLUDED_FIELDS = {
     "Product_Line", "product_line", "PRODUCT_LINE", "Product Line",
@@ -168,7 +224,9 @@ class SchemaParser:
                         },
                         source_column=fk.get("columns", [None])[0]
                     )
-                    relationships.append(rel)
+                    # Apply normalization to the relationship
+                    normalized_rel = normalize_relationship(rel)
+                    relationships.append(normalized_rel)
 
             # Relationships from UID/ID columns (inferred)
             for column in table.columns:
@@ -232,61 +290,36 @@ class SchemaParser:
     ) -> KnowledgeGraph:
         """Build a complete knowledge graph from schema.
 
+        DEPRECATED: This method is deprecated. Use build_merged_knowledge_graph() instead.
+        Single schema is just a special case of multiple schemas (count = 1).
+        This method now redirects to build_merged_knowledge_graph() for consistency.
+
         Args:
             schema_name: Name of the schema
             kg_name: Name for the knowledge graph
-            schema: Parsed database schema
+            schema: Parsed database schema (IGNORED - will be loaded from schema_name)
             use_llm: Whether to use LLM for relationship enhancement
             field_preferences: User-specific field hints to guide LLM
 
         Returns:
             Knowledge graph with entities and relationships
         """
-        nodes = SchemaParser.extract_entities(schema)
-        relationships = SchemaParser.extract_relationships(schema, nodes)
-
-        # Enhance relationships with LLM if enabled
-        if use_llm:
-            # Prepare schema in dict format for LLM enhancement
-            schemas_dict = {schema_name: schema}
-            relationships = SchemaParser._enhance_relationships_with_llm(
-                relationships, schemas_dict, field_preferences=field_preferences
-            )
-
-        # Extract table aliases using LLM if enabled
-        table_aliases = {}
-        if use_llm:
-            logger.info(f"🔍 Attempting to extract table aliases (use_llm={use_llm})")
-            schemas_dict = {schema_name: schema}
-            table_aliases = SchemaParser._extract_table_aliases(schemas_dict)
-            logger.info(f"✅ Table aliases extraction complete: {len(table_aliases)} tables with aliases")
-            logger.info(f"📋 Table aliases extracted: {table_aliases}")
-        else:
-            logger.info(f"⚠️  LLM disabled (use_llm={use_llm}), skipping table aliases extraction")
-
-        # Store field_preferences in metadata for later use
-        metadata = {}
-        if field_preferences:
-            metadata['field_preferences'] = field_preferences
-
-        logger.info(f"🏗️  Creating KnowledgeGraph with:")
-        logger.info(f"   - Name: {kg_name}")
-        logger.info(f"   - Nodes: {len(nodes)}")
-        logger.info(f"   - Relationships: {len(relationships)}")
-        logger.info(f"   - Table aliases: {table_aliases}")
-        logger.info(f"   - Metadata: {metadata}")
-
-        kg = KnowledgeGraph(
-            name=kg_name,
-            nodes=nodes,
-            relationships=relationships,
-            schema_file=schema_name,
-            metadata=metadata,
-            table_aliases=table_aliases
+        import warnings
+        warnings.warn(
+            "build_knowledge_graph() is deprecated. Use build_merged_knowledge_graph() instead. "
+            "Single schema is just a special case of multiple schemas (count = 1).",
+            DeprecationWarning,
+            stacklevel=2
         )
 
-        logger.info(f"✅ Built KG '{kg_name}' with {len(nodes)} nodes and {len(relationships)} relationships")
-        return kg
+        # Redirect to the unified approach
+        return SchemaParser.build_merged_knowledge_graph(
+            schema_names=[schema_name],
+            kg_name=kg_name,
+            use_llm=use_llm,
+            field_preferences=field_preferences
+        )
+
 
     @staticmethod
     def build_merged_knowledge_graph(
@@ -644,7 +677,9 @@ class SchemaParser:
                         source_column=inferred.get('source_column'),
                         target_column=inferred.get('target_column')
                     )
-                    enhanced_relationships.append(inferred_rel)
+                    # Apply normalization to LLM-inferred relationships
+                    normalized_inferred_rel = normalize_relationship(inferred_rel)
+                    enhanced_relationships.append(normalized_inferred_rel)
 
             logger.info(
                 f"LLM enhancement complete: {len(enhanced_relationships)} relationships "
@@ -753,7 +788,9 @@ class SchemaParser:
                     "nl_defined": True
                 }
             )
-            new_relationships.append(graph_rel)
+            # Apply normalization to natural language relationships
+            normalized_graph_rel = normalize_relationship(graph_rel)
+            new_relationships.append(normalized_graph_rel)
 
         # Add new relationships to KG
         kg.relationships.extend(new_relationships)
