@@ -264,7 +264,7 @@ const KPIManagement = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 1.5  }}>
+    <Container sx={{ p: 0 }}>
       <Box sx={{ mb: 4 }}>
         <Typography variant="h5" fontWeight="700" sx={{ mb: 0.25, lineHeight: 1.2, fontSize: '1.15rem' }} gutterBottom>
           KPI Management

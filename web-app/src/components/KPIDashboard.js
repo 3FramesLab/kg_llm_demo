@@ -66,14 +66,14 @@ const KPIDashboard = () => {
 
   if (loading) {
     return (
-      <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Container maxWidth="xl" sx={{ p: 1 }}>
         {/* Header Skeleton */}
         <Paper
           elevation={0}
           sx={{
             mb: 4,
             p: 3.5,
-            borderRadius: 3,
+            borderRadius: 2,
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             color: 'white',
             boxShadow: '0 8px 32px rgba(102, 126, 234, 0.25)',
@@ -110,14 +110,14 @@ const KPIDashboard = () => {
 
   if (error) {
     return (
-      <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Container maxWidth="xl" sx={{ p: 1 }}>
         {/* Header */}
         <Paper
           elevation={0}
           sx={{
             mb: 4,
             p: 3.5,
-            borderRadius: 3,
+            borderRadius: 2,
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             color: 'white',
             boxShadow: '0 8px 32px rgba(102, 126, 234, 0.25)',
@@ -189,14 +189,14 @@ const KPIDashboard = () => {
 
   if (totalKPIs === 0) {
     return (
-      <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Container maxWidth="xl" sx={{ p: 1 }}>
         {/* Header */}
         <Paper
           elevation={0}
           sx={{
             mb: 4,
             p: 3.5,
-            borderRadius: 3,
+            borderRadius: 2,
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             color: 'white',
             boxShadow: '0 8px 32px rgba(102, 126, 234, 0.25)',
@@ -276,14 +276,14 @@ const KPIDashboard = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <Container maxWidth="xl" sx={{ p: 1 }}>
       {/* Header Section */}
       <Paper
         elevation={0}
         sx={{
           mb: 4,
           p: 3.5,
-          borderRadius: 3,
+          borderRadius: 2,
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           color: 'white',
           boxShadow: '0 8px 32px rgba(102, 126, 234, 0.25)',
