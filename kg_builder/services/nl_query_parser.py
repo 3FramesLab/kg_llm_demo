@@ -335,7 +335,7 @@ class NLQueryParser:
 
     def _resolve_table_names(self, intent: QueryIntent) -> QueryIntent:
         """
-        Resolve business terms to actual table names.
+        Resolve business terms to actual table names with domain validation.
 
         Args:
             intent: Query intent with potentially unresolved table names
@@ -357,10 +357,61 @@ class NLQueryParser:
                 intent.target_table = resolved
                 intent.confidence = min(0.95, intent.confidence + 0.05)
 
+        # Validate domain consistency between source and target tables
+        if intent.source_table and intent.target_table:
+            self._validate_table_domain_consistency(intent)
+
         # Apply table priority logic - ensure main tables are prioritized
         intent = self._apply_table_priority_logic(intent)
 
         return intent
+
+    def _validate_table_domain_consistency(self, intent: QueryIntent):
+        """
+        Validate that source and target tables belong to compatible domains.
+
+        Args:
+            intent: Query intent with resolved table names
+        """
+        if not intent.source_table or not intent.target_table:
+            return
+
+        # Define domain patterns
+        domain_patterns = {
+            'NBU': ['_NBU', '_nbu'],  # National Bank of Ukraine
+            'GPU': ['_GPU', '_gpu'],  # Graphics Processing Unit
+            'CPU': ['_CPU', '_cpu'],  # Central Processing Unit
+            'BANKING': ['_BANK', '_bank', '_FINANCE', '_finance'],
+            'HARDWARE': ['_HARDWARE', '_hardware', '_DEVICE', '_device']
+        }
+
+        # Get domains for both tables
+        source_domain = None
+        target_domain = None
+
+        for domain, patterns in domain_patterns.items():
+            if any(pattern in intent.source_table for pattern in patterns):
+                source_domain = domain
+            if any(pattern in intent.target_table for pattern in patterns):
+                target_domain = domain
+
+        # Check for domain conflicts
+        if source_domain and target_domain and source_domain != target_domain:
+            logger.error(f"❌ Domain mismatch detected!")
+            logger.error(f"   Source table '{intent.source_table}' is {source_domain} domain")
+            logger.error(f"   Target table '{intent.target_table}' is {target_domain} domain")
+            logger.error(f"   These domains should not be joined together")
+
+            # Significantly reduce confidence for domain mismatches
+            intent.confidence = 0.1
+
+            # Add warning to the intent
+            if not hasattr(intent, 'warnings'):
+                intent.warnings = []
+            intent.warnings.append(
+                f"Domain mismatch: {source_domain} table '{intent.source_table}' "
+                f"should not be joined with {target_domain} table '{intent.target_table}'"
+            )
 
     def _apply_table_priority_logic(self, intent: QueryIntent) -> QueryIntent:
         """

@@ -3,7 +3,7 @@ FastAPI routes for knowledge graph operations.
 """
 import logging
 import time
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Query
 from typing import List, Optional
 from pydantic import BaseModel
 
@@ -2980,5 +2980,553 @@ async def get_kpi_latest_results(kpi_id: int):
         raise
     except Exception as e:
         logger.error(f"Error getting latest results for KPI {kpi_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# =============================================================================
+# Enhanced KPI Analytics Routes (MS SQL Server)
+# =============================================================================
+
+def get_kpi_analytics_service():
+    """Get KPI Analytics service instance using JDBC (like the rest of the system)."""
+    from kg_builder.services.landing_kpi_service_jdbc import LandingKPIServiceJDBC
+    return LandingKPIServiceJDBC()
+
+
+@router.get("/landing-kpi-mssql/kpis", tags=["KPI Analytics"], response_model=dict)
+async def get_all_kpis_mssql(
+    include_inactive: Optional[bool] = Query(False, description="Include inactive KPIs")
+):
+    """Get all KPI definitions from MS SQL Server using JDBC."""
+    try:
+        service = get_kpi_analytics_service()
+        kpis = service.get_all_kpis(include_inactive=include_inactive)
+
+        return {
+            "success": True,
+            "data": kpis,
+            "count": len(kpis),
+            "storage_type": "mssql_jdbc"
+        }
+    except Exception as e:
+        logger.error(f"Error getting KPIs from MS SQL Server: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/landing-kpi-mssql/kpis", tags=["KPI Analytics"], response_model=dict)
+async def create_kpi_mssql(request: KPICreateRequest):
+    """Create a new KPI definition in MS SQL Server."""
+    try:
+        service = get_kpi_analytics_service()
+        kpi = service.create_kpi(request.dict())
+
+        return {
+            "success": True,
+            "data": kpi,
+            "storage_type": "mssql"
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error creating KPI in MS SQL Server: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/landing-kpi-mssql/kpis/{kpi_id}", tags=["KPI Analytics"], response_model=dict)
+async def get_kpi_mssql(kpi_id: int):
+    """Get a specific KPI by ID from MS SQL Server."""
+    try:
+        service = get_kpi_analytics_service()
+        kpi = service.get_kpi(kpi_id)
+
+        if not kpi:
+            raise HTTPException(status_code=404, detail=f"KPI with ID {kpi_id} not found")
+
+        return {
+            "success": True,
+            "data": kpi,
+            "storage_type": "mssql"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting KPI {kpi_id} from MS SQL Server: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/landing-kpi-mssql/kpis/{kpi_id}", tags=["KPI Analytics"], response_model=dict)
+async def update_kpi_mssql(kpi_id: int, request: KPIUpdateRequest):
+    """Update a KPI definition in MS SQL Server."""
+    try:
+        service = get_kpi_analytics_service()
+        kpi = service.update_kpi(kpi_id, request.dict(exclude_unset=True))
+
+        if not kpi:
+            raise HTTPException(status_code=404, detail=f"KPI with ID {kpi_id} not found")
+
+        return {
+            "success": True,
+            "data": kpi,
+            "storage_type": "mssql"
+        }
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error updating KPI {kpi_id} in MS SQL Server: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/landing-kpi-mssql/kpis/{kpi_id}", tags=["KPI Analytics"], response_model=dict)
+async def delete_kpi_mssql(kpi_id: int):
+    """Delete (deactivate) a KPI in MS SQL Server."""
+    try:
+        service = get_kpi_analytics_service()
+        success = service.delete_kpi(kpi_id)
+
+        if not success:
+            raise HTTPException(status_code=404, detail=f"KPI with ID {kpi_id} not found")
+
+        return {
+            "success": True,
+            "message": f"KPI {kpi_id} deleted successfully",
+            "storage_type": "mssql"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting KPI {kpi_id} in MS SQL Server: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/landing-kpi-mssql/kpis/{kpi_id}/execute", tags=["KPI Analytics"], response_model=dict)
+async def execute_kpi_mssql(kpi_id: int, request: KPIExecutionRequest):
+    """Execute a KPI and return results with enhanced SQL."""
+    try:
+        service = get_kpi_analytics_service()
+        result = service.execute_kpi(kpi_id, request.dict())
+
+        # Format response to match what frontend expects
+        return {
+            "success": result.get('success', True),
+            "execution_id": result.get('execution_id'),
+            "data": {
+                "execution_id": result.get('execution_id'),
+                "kpi_id": result.get('kpi_id'),
+                "kpi_name": result.get('kpi_name'),
+                "execution_status": result.get('execution_status'),
+                "number_of_records": result.get('record_count', 0),
+                "execution_time_ms": result.get('execution_time_ms'),
+                "generated_sql": result.get('generated_sql'),
+                "enhanced_sql": result.get('enhanced_sql'),
+                "enhancement_applied": result.get('enhancement_applied', False),
+                "material_master_added": result.get('material_master_added', False),
+                "ops_planner_added": result.get('ops_planner_added', False),
+                "confidence_score": result.get('confidence_score'),
+                "error_message": result.get('error_message'),
+                "data": result.get('data', [])
+            },
+            "storage_type": "mssql_jdbc"
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error executing KPI {kpi_id} in MS SQL Server: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/landing-kpi-mssql/health", tags=["KPI Analytics"], response_model=dict)
+async def health_check_mssql():
+    """Health check endpoint for KPI Analytics service."""
+    try:
+        service = get_kpi_analytics_service()
+        # Test database connection
+        kpis = service.get_all_kpis(limit=1)
+
+        return {
+            "success": True,
+            "status": "healthy",
+            "database": "mssql",
+            "service": "kpi_analytics",
+            "timestamp": time.time()
+        }
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return {
+            "success": False,
+            "status": "unhealthy",
+            "error": str(e),
+            "timestamp": time.time()
+        }
+
+
+@router.get("/landing-kpi-mssql/dashboard", tags=["KPI Analytics"], response_model=dict)
+async def get_dashboard_data_mssql():
+    """Get dashboard data with KPIs grouped by group name and their latest execution status."""
+    try:
+        service = get_kpi_analytics_service()
+        dashboard_data = service.get_dashboard_data()
+
+        return {
+            "success": True,
+            **dashboard_data,
+            "storage_type": "mssql"
+        }
+    except Exception as e:
+        logger.error(f"Error getting dashboard data: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/landing-kpi-mssql/kpis/{kpi_id}/latest-results", tags=["KPI Analytics"], response_model=dict)
+async def get_latest_results_mssql(kpi_id: int):
+    """Get the latest execution results for a specific KPI."""
+    try:
+        service = get_kpi_analytics_service()
+        results = service.get_latest_results(kpi_id)
+
+        if not results:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No execution results found for KPI {kpi_id}"
+            )
+
+        return {
+            "success": True,
+            "results": results,
+            "storage_type": "mssql_jdbc"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting latest results for KPI {kpi_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/landing-kpi-mssql/executions/{execution_id}", tags=["KPI Analytics"], response_model=dict)
+async def get_execution_result_mssql(execution_id: int):
+    """Get execution result by execution ID."""
+    try:
+        service = get_kpi_analytics_service()
+
+        # Get execution result from database
+        conn = service._get_connection()
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute("""
+                SELECT
+                    e.id, e.kpi_id, e.kg_name, e.select_schema, e.generated_sql,
+                    e.number_of_records, e.execution_status, e.execution_timestamp,
+                    e.execution_time_ms, e.confidence_score, e.error_message, e.result_data,
+                    k.name as kpi_name, k.group_name
+                FROM kpi_execution_results e
+                JOIN kpi_definitions k ON e.kpi_id = k.id
+                WHERE e.id = ?
+            """, (execution_id,))
+
+            row = cursor.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail=f"Execution {execution_id} not found")
+
+            # Parse result data if it exists
+            result_data = None
+            if row[11]:  # result_data column
+                try:
+                    import json
+                    result_data = json.loads(row[11])
+                except:
+                    result_data = None
+
+            execution_result = {
+                'execution_id': row[0],
+                'kpi_id': row[1],
+                'kpi_name': row[12],
+                'group_name': row[13],
+                'kg_name': row[2],
+                'select_schema': row[3],
+                'generated_sql': row[4],
+                'number_of_records': row[5],
+                'execution_status': row[6],
+                'execution_timestamp': str(row[7]) if row[7] else None,
+                'execution_time_ms': row[8],
+                'confidence_score': row[9],
+                'error_message': row[10],
+                'result_data': result_data
+            }
+
+            return {
+                "success": True,
+                "execution": execution_result,  # Frontend expects 'execution' not 'data'
+                "storage_type": "mssql_jdbc"
+            }
+
+        finally:
+            cursor.close()
+            conn.close()
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting execution result {execution_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/landing-kpi-mssql/kpis/{kpi_id}/executions", tags=["KPI Analytics"], response_model=dict)
+async def get_kpi_executions_mssql(kpi_id: int, status: Optional[str] = None):
+    """Get execution history for a KPI."""
+    try:
+        logger.info(f"Fetching execution history for KPI ID: {kpi_id}")
+        service = get_kpi_analytics_service()
+
+        # Get KPI to verify it exists
+        kpi = service.get_kpi(kpi_id)
+        if not kpi:
+            logger.warning(f"KPI ID {kpi_id} not found")
+            raise HTTPException(status_code=404, detail=f"KPI ID {kpi_id} not found")
+
+        logger.info(f"Found KPI: {kpi['name']}")
+
+        # Get execution history from database
+        conn = service._get_connection()
+        cursor = conn.cursor()
+
+        try:
+            # Build query with optional status filter
+            query = """
+                SELECT
+                    e.id, e.kpi_id, e.kg_name, e.select_schema, e.generated_sql,
+                    e.number_of_records, e.execution_status, e.execution_timestamp,
+                    e.execution_time_ms, e.confidence_score, e.error_message,
+                    k.name as kpi_name, k.group_name
+                FROM kpi_execution_results e
+                JOIN kpi_definitions k ON e.kpi_id = k.id
+                WHERE e.kpi_id = ?
+            """
+            params = [kpi_id]
+
+            if status:
+                query += " AND e.execution_status = ?"
+                params.append(status)
+
+            query += " ORDER BY e.execution_timestamp DESC"
+
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+
+            logger.info(f"Found {len(rows)} execution records for KPI {kpi_id}")
+
+            executions = []
+            for row in rows:
+                executions.append({
+                    'id': row[0],  # Frontend expects 'id' not 'execution_id'
+                    'execution_id': row[0],  # Keep both for compatibility
+                    'kpi_id': row[1],
+                    'kpi_name': row[11],
+                    'group_name': row[12],
+                    'kg_name': row[2],
+                    'select_schema': row[3],
+                    'generated_sql': row[4],
+                    'number_of_records': row[5],
+                    'execution_status': row[6],
+                    'execution_timestamp': str(row[7]) if row[7] else None,
+                    'execution_time_ms': row[8],
+                    'confidence_score': row[9],
+                    'error_message': row[10]
+                })
+
+            return {
+                "success": True,
+                "total": len(executions),
+                "executions": executions,
+                "storage_type": "mssql_jdbc"
+            }
+
+        finally:
+            cursor.close()
+            conn.close()
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting KPI executions for KPI {kpi_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/landing-kpi-mssql/debug/execution-count", tags=["KPI Analytics"], response_model=dict)
+async def debug_execution_count():
+    """Debug endpoint to check total execution records."""
+    try:
+        service = get_kpi_analytics_service()
+        conn = service._get_connection()
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute("SELECT COUNT(*) FROM kpi_execution_results")
+            total_count = cursor.fetchone()[0]
+
+            cursor.execute("""
+                SELECT kpi_id, COUNT(*) as count
+                FROM kpi_execution_results
+                GROUP BY kpi_id
+                ORDER BY kpi_id
+            """)
+            by_kpi = cursor.fetchall()
+
+            return {
+                "success": True,
+                "total_executions": total_count,
+                "by_kpi": [{"kpi_id": row[0], "count": row[1]} for row in by_kpi]
+            }
+        finally:
+            cursor.close()
+            conn.close()
+
+    except Exception as e:
+        logger.error(f"Error in debug execution count: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/landing-kpi-mssql/executions/{execution_id}/drilldown", tags=["KPI Analytics"], response_model=dict)
+async def get_execution_drilldown_mssql(
+    execution_id: int,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=1000)
+):
+    """Get paginated drilldown data for a specific execution."""
+    try:
+        logger.info(f"Fetching drilldown data for execution {execution_id}, page {page}, page_size {page_size}")
+        service = get_kpi_analytics_service()
+
+        # Get execution result from database
+        conn = service._get_connection()
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute("""
+                SELECT
+                    e.id, e.kpi_id, e.kg_name, e.select_schema, e.generated_sql,
+                    e.number_of_records, e.execution_status, e.execution_timestamp,
+                    e.execution_time_ms, e.confidence_score, e.error_message, e.result_data,
+                    k.name as kpi_name, k.group_name
+                FROM kpi_execution_results e
+                JOIN kpi_definitions k ON e.kpi_id = k.id
+                WHERE e.id = ?
+            """, (execution_id,))
+
+            row = cursor.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail=f"Execution {execution_id} not found")
+
+            # Parse result data if it exists
+            result_data = []
+            if row[11]:  # result_data column
+                try:
+                    import json
+                    result_data = json.loads(row[11])
+                except Exception as e:
+                    logger.warning(f"Failed to parse result_data for execution {execution_id}: {e}")
+                    result_data = []
+
+            # Calculate pagination
+            total_records = len(result_data)
+            start_idx = (page - 1) * page_size
+            end_idx = start_idx + page_size
+            paginated_data = result_data[start_idx:end_idx]
+            total_pages = (total_records + page_size - 1) // page_size
+
+            # Extract column names from first record if available
+            column_names = []
+            if paginated_data and len(paginated_data) > 0:
+                column_names = list(paginated_data[0].keys())
+
+            execution_info = {
+                'execution_id': row[0],
+                'kpi_id': row[1],
+                'kpi_name': row[12],
+                'group_name': row[13],
+                'kg_name': row[2],
+                'select_schema': row[3],
+                'generated_sql': row[4],
+                'number_of_records': row[5],
+                'execution_status': row[6],
+                'execution_timestamp': str(row[7]) if row[7] else None,
+                'execution_time_ms': row[8],
+                'confidence_score': row[9],
+                'error_message': row[10]
+            }
+
+            return {
+                "success": True,
+                "execution": execution_info,
+                "data": paginated_data,
+                "column_names": column_names,
+                "pagination": {
+                    "page": page,
+                    "page_size": page_size,
+                    "total_records": total_records,
+                    "total_pages": total_pages,
+                    "has_next": page < total_pages,
+                    "has_previous": page > 1
+                },
+                "storage_type": "mssql_jdbc"
+            }
+
+        finally:
+            cursor.close()
+            conn.close()
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting drilldown data for execution {execution_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# SQL Preview Request Model
+class SQLPreviewRequest(BaseModel):
+    nl_definition: str
+    kg_name: str = "default"
+    select_schema: str = "newdqschemanov"
+    use_llm: bool = True
+
+
+@router.post("/landing-kpi-mssql/sql-preview", tags=["KPI Analytics"], response_model=dict)
+async def preview_sql_mssql(request: SQLPreviewRequest):
+    """Preview SQL generation for a natural language definition."""
+    try:
+        # Import here to avoid circular imports
+        from kg_builder.services.nl_query_executor import NLQueryExecutor
+        from kg_builder.services.nl_query_parser import NLQueryParser
+
+        # Parse the natural language query
+        parser = NLQueryParser()
+        intent = parser.parse(request.nl_definition)
+
+        # Generate SQL without executing
+        executor = NLQueryExecutor(
+            kg_name=request.kg_name,
+            select_schema=request.select_schema,
+            use_llm=request.use_llm
+        )
+
+        # Generate SQL (this will include material master enhancement)
+        sql = executor.generator.generate(intent)
+
+        # Apply material master enhancement
+        from kg_builder.services.material_master_enhancer import material_master_enhancer
+        enhancement_result = material_master_enhancer.enhance_sql_with_material_master(sql)
+
+        return {
+            "success": True,
+            "generated_sql": enhancement_result['original_sql'],
+            "enhanced_sql": enhancement_result['enhanced_sql'],
+            "enhancement_applied": enhancement_result['enhancement_applied'],
+            "material_master_added": enhancement_result.get('material_master_added', False),
+            "ops_planner_added": enhancement_result.get('ops_planner_added', False),
+            "storage_type": "mssql"
+        }
+    except Exception as e:
+        logger.error(f"Error in SQL preview: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Landing KPI API</title>
+</head>
+<body>
+    <h1>Debug Landing KPI API</h1>
+    <button onclick="testOldAPI()">Test Old API</button>
+    <button onclick="testNewAPI()">Test New API</button>
+    <div id="results"></div>
+
+    <script>
+        async function testOldAPI() {
+            try {
+                const response = await fetch('http://localhost:8000/v1/landing-kpi/kpis');
+                const data = await response.json();
+                document.getElementById('results').innerHTML = 
+                    '<h3>Old API Response:</h3><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('results').innerHTML = 
+                    '<h3>Old API Error:</h3><pre>' + error.message + '</pre>';
+            }
+        }
+
+        async function testNewAPI() {
+            try {
+                const response = await fetch('http://localhost:8000/v1/landing-kpi-mssql/kpis');
+                const data = await response.json();
+                document.getElementById('results').innerHTML = 
+                    '<h3>New API Response:</h3><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('results').innerHTML = 
+                    '<h3>New API Error:</h3><pre>' + error.message + '</pre>';
+            }
+        }
+    </script>
+</body>
+</html>

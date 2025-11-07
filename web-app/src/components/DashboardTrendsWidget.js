@@ -44,7 +44,7 @@ import {
 import { VegaEmbed } from 'react-vega';
 
 // Service Dependencies
-import { API_BASE_URL, getKPIExecutions } from '../services/api';
+import { getDashboardData, getLatestResults, getKPIExecutions } from '../services/api';
 
 /**
  * Helper function to determine background color based on record count
@@ -240,8 +240,8 @@ const DashboardTrendsWidget = ({
     setLoading(true);
     setLoadingOwners(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/landing-kpi/dashboard`);
-      const data = await response.json();
+      const response = await getDashboardData();
+      const data = response.data;
       setDashboardData(data);
 
       // Extract unique owners from all KPIs in all groups
@@ -282,11 +282,7 @@ const DashboardTrendsWidget = ({
     try {
       setResultsLoading(true);
       setResultsError(null);
-      const response = await fetch(`${API_BASE_URL}/landing-kpi/${kpi.id}/latest-results`);
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch results: ${response.statusText}`);
-      }
+      const response = await getLatestResults(kpi.id);
 
       const data = await response.json();
       setResults(data.results);
@@ -391,7 +387,7 @@ const DashboardTrendsWidget = ({
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${selectedKPI.name}-results.csv`;
+    a.download = `${selectedKPI.alias_name || selectedKPI.name}-results.csv`;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
@@ -561,56 +557,12 @@ const DashboardTrendsWidget = ({
         p: 2,
       }}
     >
-      {/* Left Sidebar - 15% */}
-      <Box
-        sx={{
-          width: '15%',
-          minWidth: '180px',
-          display: { xs: 'none', lg: 'block' },
-        }}
-      >
-        <Paper
-          elevation={0}
-          sx={{
-            height: '100%',
-            borderRadius: 2,
-            border: '1px solid #e5e7eb',
-            p: 2,
-            bgcolor: 'white',
-          }}
-        >
-          <Typography
-            variant="subtitle2"
-            sx={{
-              color: '#9ca3af',
-              fontWeight: 600,
-              fontSize: '0.75rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              mb: 2,
-            }}
-          >
-            Reserved Space
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{
-              color: '#6b7280',
-              fontSize: '0.875rem',
-              fontStyle: 'italic',
-            }}
-          >
-            Available for future features
-          </Typography>
-        </Paper>
-      </Box>
-
-      {/* Center Area - 70% */}
+      {/* Main Content Area */}
       <Box
         sx={{
           flex: 1,
-          width: { xs: '100%', lg: '70%' },
           minWidth: 0,
+          marginRight: { xs: 0, lg: '200px' }, // Reserve space for right sidebar
         }}
       >
         <Container maxWidth={maxWidth} sx={{ p: 0, ...containerSx }}>
@@ -792,7 +744,7 @@ const DashboardTrendsWidget = ({
                           transition: 'color 0.15s ease',
                         }}
                       >
-                        {kpi.name}
+                        {kpi.alias_name || kpi.name}
                       </Typography>
                     </Box>
 
@@ -881,7 +833,7 @@ const DashboardTrendsWidget = ({
         >
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 700, color: '#111827' }}>
-              {selectedKPI?.name || 'KPI'} - Results
+              {selectedKPI?.alias_name || selectedKPI?.name || 'KPI'} - Results
             </Typography>
           </Box>
           <IconButton
@@ -1014,7 +966,7 @@ const DashboardTrendsWidget = ({
         >
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 700, color: '#111827', mb: 0.5 }}>
-              {selectedKPIForChart?.name || 'KPI'} - Trend Analysis
+              {selectedKPIForChart?.alias_name || selectedKPIForChart?.name || 'KPI'} - Trend Analysis
             </Typography>
             <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem' }}>
               Last 7 days execution history
@@ -1086,12 +1038,16 @@ const DashboardTrendsWidget = ({
     </Container>
       </Box>
 
-      {/* Right Sidebar - 15% */}
+      {/* Right Sidebar - Planner Filter */}
       <Box
         sx={{
-          width: '15%',
-          minWidth: '180px',
+          width: '200px',
+          minWidth: '200px',
           display: { xs: 'none', lg: 'block' },
+          position: 'fixed',
+          right: 16,
+          top: 16,
+          zIndex: 1000,
         }}
       >
         <Paper

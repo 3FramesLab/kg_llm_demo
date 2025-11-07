@@ -29,7 +29,7 @@ import {
   FilterAltOff as ClearFiltersIcon,
   ContentCopy as ContentCopyIcon,
 } from '@mui/icons-material';
-import { API_BASE_URL } from '../services/api';
+import { getLatestResults } from '../services/api';
 
 const KPIResultsViewDialog = ({ open, onClose, kpi, showMetadata = true }) => {
   const [results, setResults] = useState(null);
@@ -50,14 +50,8 @@ const KPIResultsViewDialog = ({ open, onClose, kpi, showMetadata = true }) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`${API_BASE_URL}/landing-kpi/${kpi.id}/latest-results`);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch results: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      setResults(data.results);
+      const response = await getLatestResults(kpi.id);
+      setResults(response.data.results);
       setPage(0);
     } catch (err) {
       console.error('Error fetching results:', err);

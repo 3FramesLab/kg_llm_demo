@@ -143,6 +143,11 @@ const KPIExecutionDialog = ({ open, kpi, onClose, onSuccess }) => {
     setError(errorMessage);
   };
 
+  const handleStatusModalClose = () => {
+    setStatusModalOpen(false);
+    setExecutionId(null);
+  };
+
   return (
     <>
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -245,6 +250,7 @@ const KPIExecutionDialog = ({ open, kpi, onClose, onSuccess }) => {
       kpiName={kpi?.name}
       onComplete={handleExecutionComplete}
       onError={handleExecutionError}
+      onClose={handleStatusModalClose}
     />
   </>
   );

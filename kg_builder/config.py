@@ -83,6 +83,15 @@ TARGET_DB_USERNAME = os.getenv("TARGET_DB_USERNAME", "")
 TARGET_DB_PASSWORD = os.getenv("TARGET_DB_PASSWORD", "")
 TARGET_DB_SERVICE_NAME = os.getenv("TARGET_DB_SERVICE_NAME", "")  # For Oracle
 
+# KPI Database Configuration
+KPI_DB_TYPE = os.getenv("KPI_DB_TYPE", "sqlserver")
+KPI_DB_HOST = os.getenv("KPI_DB_HOST", "localhost")
+KPI_DB_PORT = int(os.getenv("KPI_DB_PORT", "1433"))
+KPI_DB_DATABASE = os.getenv("KPI_DB_DATABASE", "KPI_Analytics")
+KPI_DB_USERNAME = os.getenv("KPI_DB_USERNAME", "")
+KPI_DB_PASSWORD = os.getenv("KPI_DB_PASSWORD", "")
+KPI_DB_SERVICE_NAME = os.getenv("KPI_DB_SERVICE_NAME", "")  # For Oracle
+
 # Execution settings
 USE_ENV_DB_CONFIGS = os.getenv("USE_ENV_DB_CONFIGS", "true").lower() == "true"
 

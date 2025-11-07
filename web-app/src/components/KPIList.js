@@ -49,7 +49,9 @@ const KPIList = ({ onEdit, onExecute, onViewHistory, refreshTrigger }) => {
       };
 
       const response = await listKPIs(params);
-      setKpis(response.data.kpis || []);
+      // Handle both old format (response.data.kpis) and new format (response.data)
+      const kpisData = response.data.kpis || response.data.data || response.data || [];
+      setKpis(Array.isArray(kpisData) ? kpisData : []);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to fetch KPIs');
       console.error('Error fetching KPIs:', err);

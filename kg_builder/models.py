@@ -915,8 +915,8 @@ class KPIUpdateRequest(BaseModel):
     enabled: Optional[bool] = Field(default=None, description="Updated enabled status")
 
 
-class KPIExecutionRequest(BaseModel):
-    """Request to execute a KPI."""
+class ReconciliationKPIExecutionRequest(BaseModel):
+    """Request to execute a reconciliation KPI."""
     ruleset_id: Optional[str] = Field(default=None, description="Override ruleset ID if needed")
 
 

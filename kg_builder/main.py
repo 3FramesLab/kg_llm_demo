@@ -63,6 +63,8 @@ app.add_middleware(
 app.include_router(router, prefix="/v1", tags=["Knowledge Graph"])
 app.include_router(hints_router, prefix="/v1", tags=["Column Hints"])
 
+# KPI Analytics routes are now included directly in routes.py
+
 # Root endpoint
 @app.get("/")
 async def root():

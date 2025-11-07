@@ -15,6 +15,7 @@ import LandingKPIManagement from './pages/LandingKPIManagement';
 import KPIDashboardPage from './pages/KPIDashboardPage';
 import DashboardTrends from './pages/DashboardTrends';
 import HintsManagement from './pages/HintsManagement';
+import KPIExecutionHistoryPage from './pages/KPIExecutionHistoryPage';
 
 const theme = createTheme({
   palette: {
@@ -71,6 +72,7 @@ function App() {
             <Route path="/kpi-management" element={<KPIManagement />} />
             <Route path="/kpi-results" element={<KPIResults />} />
             <Route path="/landing-kpi" element={<LandingKPIManagement />} />
+            <Route path="/landing-kpi/:kpiId/history" element={<KPIExecutionHistoryPage />} />
             <Route path="/kpi-dashboard" element={<KPIDashboardPage />} />
             <Route path="/dashboard-trends" element={<DashboardTrends />} />
             <Route path="/hints-management" element={<HintsManagement />} />

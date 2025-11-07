@@ -58,18 +58,28 @@ export const getMongoDBStatistics = (rulesetId) =>
   api.get('/reconciliation/statistics', { params: rulesetId ? { ruleset_id: rulesetId } : {} });
 export const deleteMongoDBResult = (documentId) => api.delete(`/reconciliation/results/${documentId}`);
 
-// Landing KPI CRUD Operations
-export const createKPI = (data) => api.post('/landing-kpi/kpis', data);
-export const listKPIs = (params) => api.get('/landing-kpi/kpis', { params });
-export const getKPI = (kpiId) => api.get(`/landing-kpi/kpis/${kpiId}`);
-export const updateKPI = (kpiId, data) => api.put(`/landing-kpi/kpis/${kpiId}`, data);
-export const deleteKPI = (kpiId) => api.delete(`/landing-kpi/kpis/${kpiId}`);
+// Landing KPI CRUD Operations (Enhanced Analytics API)
+export const createKPI = (data) => api.post('/landing-kpi-mssql/kpis', data);
+export const listKPIs = (params) => api.get('/landing-kpi-mssql/kpis', { params });
+export const getKPI = (kpiId) => api.get(`/landing-kpi-mssql/kpis/${kpiId}`);
+export const updateKPI = (kpiId, data) => api.put(`/landing-kpi-mssql/kpis/${kpiId}`, data);
+export const deleteKPI = (kpiId) => api.delete(`/landing-kpi-mssql/kpis/${kpiId}`);
 
-// Landing KPI Execution
-export const executeKPI = (kpiId, data) => api.post(`/landing-kpi/kpis/${kpiId}/execute`, data);
-export const getKPIExecutions = (kpiId, params) => api.get(`/landing-kpi/kpis/${kpiId}/executions`, { params });
-export const getKPIExecutionResult = (executionId) => api.get(`/landing-kpi/executions/${executionId}`);
-export const getKPIDrilldownData = (executionId, params) => api.get(`/landing-kpi/executions/${executionId}/drilldown`, { params });
+// Landing KPI Execution (Enhanced Analytics API)
+export const executeKPI = (kpiId, data) => api.post(`/landing-kpi-mssql/kpis/${kpiId}/execute`, data);
+export const getKPIExecutions = (kpiId, params) => api.get(`/landing-kpi-mssql/kpis/${kpiId}/executions`, { params });
+export const getKPIExecutionResult = (executionId) => api.get(`/landing-kpi-mssql/executions/${executionId}`);
+export const getKPIDrilldownData = (executionId, params) => api.get(`/landing-kpi-mssql/executions/${executionId}/drilldown`, { params });
+
+// Enhanced KPI Analytics Features
+export const previewSQL = (data) => api.post('/landing-kpi-mssql/sql-preview', data);
+export const checkKPIAnalyticsHealth = () => api.get('/landing-kpi-mssql/health');
+export const getKPIAnalytics = (params) => api.get('/landing-kpi-mssql/analytics', { params });
+export const getExecutionTrends = (params) => api.get('/landing-kpi-mssql/trends', { params });
+
+// KPI Dashboard (Enhanced Analytics API)
+export const getDashboardData = () => api.get('/landing-kpi-mssql/dashboard');
+export const getLatestResults = (kpiId) => api.get(`/landing-kpi-mssql/kpis/${kpiId}/latest-results`);
 
 // Column Hints Management
 export const getAllHints = () => api.get('/hints/');

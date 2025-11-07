@@ -3,6 +3,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogActions,
   Box,
   Typography,
   CircularProgress,
@@ -22,7 +23,7 @@ import {
 } from '@mui/icons-material';
 import { getKPIExecutionResult } from '../services/api';
 
-const KPIExecutionStatusModal = ({ open, executionId, kpiName, onComplete, onError }) => {
+const KPIExecutionStatusModal = ({ open, executionId, kpiName, onComplete, onError, onClose }) => {
   const [status, setStatus] = useState('pending'); // pending, running, success, failed
   const [execution, setExecution] = useState(null);
   const [progress, setProgress] = useState(0);
@@ -264,6 +265,21 @@ const KPIExecutionStatusModal = ({ open, executionId, kpiName, onComplete, onErr
           )}
         </Box>
       </DialogContent>
+
+      {/* Close button for error states */}
+      {status === 'failed' && (
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={onClose}
+            variant="contained"
+            color="primary"
+            fullWidth
+            sx={{ mt: 1 }}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      )}
     </Dialog>
   );
 };
