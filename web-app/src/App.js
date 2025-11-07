@@ -15,6 +15,7 @@ import LandingKPIManagement from './pages/LandingKPIManagement';
 import KPIDashboardPage from './pages/KPIDashboardPage';
 import DashboardTrends from './pages/DashboardTrends';
 import HintsManagement from './pages/HintsManagement';
+import Relationships from './pages/Relationships';
 
 const theme = createTheme({
   palette: {
@@ -65,6 +66,7 @@ function App() {
             <Route path="/" element={<Overview />} />
             <Route path="/schemas" element={<Schemas />} />
             <Route path="/knowledge-graph" element={<KnowledgeGraph />} />
+            <Route path="/relationships" element={<Relationships />} />
             <Route path="/reconciliation" element={<Reconciliation />} />
             <Route path="/natural-language" element={<NaturalLanguage />} />
             <Route path="/execution" element={<Execution />} />

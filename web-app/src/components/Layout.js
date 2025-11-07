@@ -24,6 +24,7 @@ import {
   BarChart as BarChartIcon,
   ShowChart as ShowChartIcon,
   Label as LabelIcon,
+  Link as LinkIcon,
 } from '@mui/icons-material';
 
 const drawerWidth = 240;
@@ -31,6 +32,7 @@ const drawerWidth = 240;
 const menuItems = [
   { text: 'Overview', icon: <DashboardIcon />, path: '/' },
   { text: 'Schemas', icon: <SchemaIcon />, path: '/schemas' },
+  { text: 'Relationships', icon: <LinkIcon />, path: '/relationships' },
   { text: 'Knowledge Graph Builder', icon: <GraphIcon />, path: '/knowledge-graph' },
   { text: 'Column Hints', icon: <LabelIcon />, path: '/hints-management' },
   { text: 'Natural Language', icon: <NLIcon />, path: '/natural-language' },

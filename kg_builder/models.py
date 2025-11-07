@@ -1119,3 +1119,57 @@ class DrilldownResponse(BaseModel):
     total_pages: int = Field(..., description="Total pages")
     data: List[Dict[str, Any]] = Field(default=[], description="Drill-down data")
 
+
+# ==================== Table Relationship Models ====================
+
+class ColumnMapping(BaseModel):
+    """Represents a mapping between source and target columns."""
+    source_column: str = Field(..., description="Source column name")
+    target_column: str = Field(..., description="Target column name")
+    description: Optional[str] = Field(None, description="Description of the column mapping")
+    bidirectional: bool = Field(False, description="Whether the relationship is bidirectional")
+
+
+class TableRelationship(BaseModel):
+    """Represents a relationship between two database tables."""
+    id: Optional[str] = Field(None, description="Unique identifier for the relationship")
+    name: str = Field(..., description="Name/description of the relationship")
+    source_table: str = Field(..., description="Source table name")
+    target_table: str = Field(..., description="Target table name")
+    column_mappings: List[ColumnMapping] = Field(..., description="List of column mappings")
+    relationship_type: str = Field(default="REFERENCES", description="Type of relationship")
+    created_at: Optional[str] = Field(None, description="Creation timestamp")
+    updated_at: Optional[str] = Field(None, description="Last update timestamp")
+
+
+class TableRelationshipCreateRequest(BaseModel):
+    """Request to create a new table relationship."""
+    name: str = Field(..., description="Name/description of the relationship")
+    source_table: str = Field(..., description="Source table name")
+    target_table: str = Field(..., description="Target table name")
+    column_mappings: List[ColumnMapping] = Field(..., description="List of column mappings")
+    relationship_type: str = Field(default="REFERENCES", description="Type of relationship")
+
+
+class TableRelationshipUpdateRequest(BaseModel):
+    """Request to update an existing table relationship."""
+    name: Optional[str] = Field(None, description="Name/description of the relationship")
+    source_table: Optional[str] = Field(None, description="Source table name")
+    target_table: Optional[str] = Field(None, description="Target table name")
+    column_mappings: Optional[List[ColumnMapping]] = Field(None, description="List of column mappings")
+    relationship_type: Optional[str] = Field(None, description="Type of relationship")
+
+
+class TableRelationshipResponse(BaseModel):
+    """Response for table relationship operations."""
+    success: bool = Field(..., description="Whether operation was successful")
+    relationship: Optional[TableRelationship] = Field(None, description="The relationship data")
+    message: Optional[str] = Field(None, description="Response message")
+
+
+class TableRelationshipListResponse(BaseModel):
+    """Response for listing table relationships."""
+    success: bool = Field(..., description="Whether operation was successful")
+    relationships: List[TableRelationship] = Field(default=[], description="List of relationships")
+    count: int = Field(..., description="Total number of relationships")
+

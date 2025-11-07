@@ -23,7 +23,9 @@ from kg_builder.models import (
     RelationshipPair, KGRelationshipType,
     NLQueryExecutionRequest, NLQueryExecutionResponse,
     KPIDefinition, KPIUpdateRequest as KPIUpdateRequestNew,
-    KPIExecutionResult, DrilldownRequest, DrilldownResponse
+    KPIExecutionResult, DrilldownRequest, DrilldownResponse,
+    TableRelationship, TableRelationshipCreateRequest, TableRelationshipUpdateRequest,
+    TableRelationshipResponse, TableRelationshipListResponse, ColumnMapping
 )
 from kg_builder.services.schema_parser import SchemaParser
 from kg_builder.services.falkordb_backend import get_falkordb_backend
@@ -2980,5 +2982,192 @@ async def get_kpi_latest_results(kpi_id: int):
         raise
     except Exception as e:
         logger.error(f"Error getting latest results for KPI {kpi_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== Table Relationships Management ====================
+
+# In-memory storage for table relationships (can be replaced with database later)
+_table_relationships = {}
+
+@router.post("/relationships", response_model=TableRelationshipResponse, tags=["Relationships"])
+async def create_table_relationship(request: TableRelationshipCreateRequest):
+    """
+    Create a new table relationship with column mappings.
+
+    This endpoint allows users to define relationships between database tables
+    by mapping columns from a source table to a target table.
+
+    Example request:
+    ```json
+    {
+        "name": "Product to Supplier Relationship",
+        "source_table": "products",
+        "target_table": "suppliers",
+        "column_mappings": [
+            {"source_column": "supplier_id", "target_column": "id"},
+            {"source_column": "supplier_name", "target_column": "name"}
+        ],
+        "relationship_type": "REFERENCES"
+    }
+    ```
+    """
+    try:
+        import uuid
+        from datetime import datetime
+
+        # Generate unique ID
+        relationship_id = str(uuid.uuid4())
+
+        # Create timestamp
+        timestamp = datetime.utcnow().isoformat()
+
+        # Create relationship object
+        relationship = TableRelationship(
+            id=relationship_id,
+            name=request.name,
+            source_table=request.source_table,
+            target_table=request.target_table,
+            column_mappings=request.column_mappings,
+            relationship_type=request.relationship_type,
+            created_at=timestamp,
+            updated_at=timestamp
+        )
+
+        # Store relationship
+        _table_relationships[relationship_id] = relationship
+
+        logger.info(f"Created table relationship: {relationship_id} - {request.name}")
+
+        return TableRelationshipResponse(
+            success=True,
+            relationship=relationship,
+            message=f"Relationship '{request.name}' created successfully"
+        )
+    except Exception as e:
+        logger.error(f"Error creating table relationship: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/relationships", response_model=TableRelationshipListResponse, tags=["Relationships"])
+async def list_table_relationships():
+    """
+    List all table relationships.
+
+    Returns all defined table relationships with their column mappings.
+    """
+    try:
+        relationships = list(_table_relationships.values())
+
+        return TableRelationshipListResponse(
+            success=True,
+            relationships=relationships,
+            count=len(relationships)
+        )
+    except Exception as e:
+        logger.error(f"Error listing table relationships: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/relationships/{relationship_id}", response_model=TableRelationshipResponse, tags=["Relationships"])
+async def get_table_relationship(relationship_id: str):
+    """
+    Get a specific table relationship by ID.
+
+    Args:
+        relationship_id: The unique identifier of the relationship
+    """
+    try:
+        if relationship_id not in _table_relationships:
+            raise HTTPException(status_code=404, detail=f"Relationship {relationship_id} not found")
+
+        relationship = _table_relationships[relationship_id]
+
+        return TableRelationshipResponse(
+            success=True,
+            relationship=relationship,
+            message="Relationship retrieved successfully"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting table relationship: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/relationships/{relationship_id}", response_model=TableRelationshipResponse, tags=["Relationships"])
+async def update_table_relationship(relationship_id: str, request: TableRelationshipUpdateRequest):
+    """
+    Update an existing table relationship.
+
+    Args:
+        relationship_id: The unique identifier of the relationship
+        request: Updated relationship data
+    """
+    try:
+        from datetime import datetime
+
+        if relationship_id not in _table_relationships:
+            raise HTTPException(status_code=404, detail=f"Relationship {relationship_id} not found")
+
+        relationship = _table_relationships[relationship_id]
+
+        # Update fields if provided
+        if request.name is not None:
+            relationship.name = request.name
+        if request.source_table is not None:
+            relationship.source_table = request.source_table
+        if request.target_table is not None:
+            relationship.target_table = request.target_table
+        if request.column_mappings is not None:
+            relationship.column_mappings = request.column_mappings
+        if request.relationship_type is not None:
+            relationship.relationship_type = request.relationship_type
+
+        # Update timestamp
+        relationship.updated_at = datetime.utcnow().isoformat()
+
+        # Store updated relationship
+        _table_relationships[relationship_id] = relationship
+
+        logger.info(f"Updated table relationship: {relationship_id}")
+
+        return TableRelationshipResponse(
+            success=True,
+            relationship=relationship,
+            message=f"Relationship updated successfully"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating table relationship: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/relationships/{relationship_id}", tags=["Relationships"])
+async def delete_table_relationship(relationship_id: str):
+    """
+    Delete a table relationship.
+
+    Args:
+        relationship_id: The unique identifier of the relationship
+    """
+    try:
+        if relationship_id not in _table_relationships:
+            raise HTTPException(status_code=404, detail=f"Relationship {relationship_id} not found")
+
+        relationship = _table_relationships[relationship_id]
+        del _table_relationships[relationship_id]
+
+        logger.info(f"Deleted table relationship: {relationship_id} - {relationship.name}")
+
+        return {
+            "success": True,
+            "message": f"Relationship '{relationship.name}' deleted successfully"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting table relationship: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 

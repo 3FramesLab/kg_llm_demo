@@ -88,4 +88,11 @@ export const bulkGenerateHints = (data) => api.post('/hints/generate/bulk', data
 export const exportHints = (outputPath) => api.get('/hints/export', { params: { output_path: outputPath } });
 export const importHints = (data) => api.post('/hints/import', data);
 
+// Table Relationships Management
+export const createRelationship = (data) => api.post('/relationships', data);
+export const listRelationships = () => api.get('/relationships');
+export const getRelationship = (relationshipId) => api.get(`/relationships/${relationshipId}`);
+export const updateRelationship = (relationshipId, data) => api.put(`/relationships/${relationshipId}`, data);
+export const deleteRelationship = (relationshipId) => api.delete(`/relationships/${relationshipId}`);
+
 export default api;
