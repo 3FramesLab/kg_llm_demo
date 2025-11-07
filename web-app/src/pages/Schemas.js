@@ -42,44 +42,39 @@ export default function Schemas() {
 
   return (
     <Container sx={{ p: 0 }}>
-      {/* Enhanced Gradient Header */}
-      <Box
-        sx={{
-          mb: 3,
-          p: 2,
-          borderRadius: 2,
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
-          boxShadow: '0 4px 20px rgba(102, 126, 234, 0.3)',
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Storage sx={{ fontSize: 28 }} />
-            <Box>
-              <Typography variant="h5" fontWeight="700" sx={{ lineHeight: 1.2, fontSize: '1.15rem' }}>
-                Database Schemas ({schemas.length})
-              </Typography>
-            </Box>
-          </Box>
-          <Tooltip title="Refresh Schemas">
-            <IconButton
-              onClick={loadSchemas}
-              disabled={loading}
+      {/* Refresh Button */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1.5 }}>
+        <Tooltip title="Refresh schemas">
+          <IconButton
+            onClick={loadSchemas}
+            disabled={loading}
+            sx={{
+              bgcolor: 'white',
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 1.5,
+              '&:hover': {
+                bgcolor: '#f3f4f6',
+                borderColor: '#667eea',
+              },
+              '&:disabled': {
+                bgcolor: '#f9fafb',
+              },
+            }}
+          >
+            <Refresh
               sx={{
-                color: 'white',
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                },
-                '&:disabled': {
-                  color: 'rgba(255, 255, 255, 0.5)',
+                fontSize: 20,
+                color: loading ? '#9ca3af' : '#667eea',
+                animation: loading ? 'spin 1s linear infinite' : 'none',
+                '@keyframes spin': {
+                  '0%': { transform: 'rotate(0deg)' },
+                  '100%': { transform: 'rotate(360deg)' },
                 },
               }}
-            >
-              <Refresh />
-            </IconButton>
-          </Tooltip>
-        </Box>
+            />
+          </IconButton>
+        </Tooltip>
       </Box>
 
       {/* Loading State */}

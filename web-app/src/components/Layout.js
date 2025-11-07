@@ -47,6 +47,12 @@ export default function Layout({ children }) {
     setMobileOpen(!mobileOpen);
   };
 
+  // Get dynamic header title based on current route
+  const getPageTitle = () => {
+    const currentItem = menuItems.find(item => item.path === location.pathname);
+    return currentItem ? currentItem.text : 'Knowledge Graph Builder & KPI';
+  };
+
   const drawer = (
     <div>
       <Toolbar>
@@ -94,7 +100,7 @@ export default function Layout({ children }) {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div">
-            Knowledge Graph Builder & KPI
+            {getPageTitle()}
           </Typography>
         </Toolbar>
       </AppBar>

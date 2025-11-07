@@ -10,15 +10,17 @@ import {
   Chip,
   Alert,
   Skeleton,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import {
   CheckCircle,
   Error,
   Storage,
   AccountTree,
-  Dashboard as DashboardIcon,
   TrendingUp,
   Speed,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { checkHealth, checkLLMStatus, listSchemas, listKGs } from '../services/api';
 
@@ -60,56 +62,39 @@ export default function Overview() {
 
   return (
     <Container sx={{ p: 0 }}>
-      {/* Enhanced Gradient Header with Stats */}
-      <Box
-        sx={{
-          mb: 1,
-          p: 1,
-          borderRadius: 2,
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
-          boxShadow: '0 2px 8px rgba(102, 126, 234, 0.2)',
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-          <DashboardIcon sx={{ fontSize: 22 }} />
-          <Box>
-            <Typography variant="h6" fontWeight="700" sx={{ mb: 0, lineHeight: 1.2, fontSize: '1rem' }}>
-              Overview
-            </Typography>
-            <Typography variant="body2" fontSize="0.75rem" sx={{ opacity: 0.95, fontWeight: 400 }}>
-              Overview of Data Quality System Status and Statistics.
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* Stats Row in Header */}
-        {!loading && (
-          <Box sx={{ display: 'flex', gap: 2, mt: 1, flexWrap: 'wrap' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-              <Storage sx={{ fontSize: 16 }} />
-              <Box>
-                <Typography variant="h6" fontWeight="600" sx={{ lineHeight: 1.2, fontSize: '0.875rem' }}>
-                  {stats.schemas}
-                </Typography>
-                <Typography variant="caption" sx={{ opacity: 0.9, fontSize: '0.625rem' }}>
-                  Schemas
-                </Typography>
-              </Box>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-              <AccountTree sx={{ fontSize: 16 }} />
-              <Box>
-                <Typography variant="h6" fontWeight="600" sx={{ lineHeight: 1.2, fontSize: '0.875rem' }}>
-                  {stats.knowledgeGraphs}
-                </Typography>
-                <Typography variant="caption" sx={{ opacity: 0.9, fontSize: '0.625rem' }}>
-                  Knowledge Graphs
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-        )}
+      {/* Refresh Button */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1.5 }}>
+        <Tooltip title="Refresh data">
+          <IconButton
+            onClick={loadDashboardData}
+            disabled={loading}
+            sx={{
+              bgcolor: 'white',
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 1.5,
+              '&:hover': {
+                bgcolor: '#f3f4f6',
+                borderColor: '#667eea',
+              },
+              '&:disabled': {
+                bgcolor: '#f9fafb',
+              },
+            }}
+          >
+            <RefreshIcon
+              sx={{
+                fontSize: 20,
+                color: loading ? '#9ca3af' : '#667eea',
+                animation: loading ? 'spin 1s linear infinite' : 'none',
+                '@keyframes spin': {
+                  '0%': { transform: 'rotate(0deg)' },
+                  '100%': { transform: 'rotate(360deg)' },
+                },
+              }}
+            />
+          </IconButton>
+        </Tooltip>
       </Box>
 
       {/* System Status */}

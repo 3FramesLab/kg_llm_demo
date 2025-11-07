@@ -17,10 +17,10 @@ import {
   useMediaQuery,
   Divider,
   IconButton,
+  Tooltip,
 } from '@mui/material';
 import {
   Add as AddIcon,
-  Assessment as AssessmentIcon,
   PlayArrow as PlayArrowIcon,
   History as HistoryIcon,
   TrendingUp as TrendingUpIcon,
@@ -97,56 +97,31 @@ const LandingKPIManagement = () => {
 
   return (
     <Container sx={{ p: 0 }}>
-      {/* Enhanced Header with Gradient Background */}
-      <Box
-        sx={{
-          mb: 2.5,
-          p: { xs: 2, sm: 2.5, md: 3 },
-          borderRadius: 2,
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
-          boxShadow: '0 8px 32px rgba(102, 126, 234, 0.25)',
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.75 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <AssessmentIcon sx={{ fontSize: { xs: 24, sm: 28 }, mr: 2 }} />
-            <Typography
-              variant="h5"
-              fontWeight="700"
-              sx={{
-                mb: 0.25,
-                lineHeight: 1.2,
-                fontSize: '1.15rem'
-              }}
-            >
-              NL KPI Management
-            </Typography>
-          </Box>
+      {/* Refresh Button */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1.5 }}>
+        <Tooltip title="Refresh data">
           <IconButton
             onClick={handleRefresh}
             sx={{
-              color: 'white',
+              bgcolor: 'white',
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 1.5,
               '&:hover': {
-                bgcolor: 'rgba(255, 255, 255, 0.1)',
+                bgcolor: '#f3f4f6',
+                borderColor: '#667eea',
               },
             }}
             aria-label="refresh"
           >
-            <RefreshIcon />
+            <RefreshIcon
+              sx={{
+                fontSize: 20,
+                color: '#667eea',
+              }}
+            />
           </IconButton>
-        </Box>
-        <Typography
-          variant="body2"
-          fontSize="0.8rem"
-          sx={{
-            opacity: 0.95,
-            fontWeight: 400,
-            maxWidth: '800px',
-          }}
-        >
-          Create, manage, and execute Key Performance Indicators using natural language definitions
-        </Typography>
+        </Tooltip>
       </Box>
 
       {/* Animated Success Message */}
@@ -513,7 +488,7 @@ const LandingKPIManagement = () => {
                       alignItems: 'center'
                     }}
                   >
-                    <AssessmentIcon sx={{ mr: 1, fontSize: 22 }} />
+                    <TrendingUpIcon sx={{ mr: 1, fontSize: 22 }} />
                     Getting Started
                   </Typography>
                   <Typography variant="body2" fontSize="0.8rem" color="text.secondary">

@@ -320,46 +320,39 @@ export default function KnowledgeGraph() {
 
   return (
     <Container sx={{ p: 0 }}>
-      {/* Enhanced Header with Gradient */}
-      <Box
-        sx={{
-          mb: 1.5,
-          p: 1.5,
-          borderRadius: 2,
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
-          boxShadow: '0 3px 15px rgba(102, 126, 234, 0.25)',
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-          <Hub sx={{ fontSize: 28 }} />
-          <Box>
-            <Typography variant="h5" fontWeight="700" sx={{ mb: 0.25, lineHeight: 1.2, fontSize: '1.15rem' }}>
-              Knowledge Graph Builder
-            </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 400, fontSize: '0.8rem' }}>
-              Generate and visualize knowledge graphs from database schemas
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* Stats Row */}
-        <Box sx={{ display: 'flex', gap: 1.5, mt: 1, flexWrap: 'wrap' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <AccountTree sx={{ fontSize: 16 }} />
-            <Box>
-              <Typography variant="h6" fontWeight="600" sx={{ lineHeight: 1.2, fontSize: '0.9rem' }}>{knowledgeGraphs.length}</Typography>
-              <Typography variant="caption" sx={{ opacity: 0.9, fontSize: '0.65rem' }}>Knowledge Graphs</Typography>
-            </Box>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Hub sx={{ fontSize: 16 }} />
-            <Box>
-              <Typography variant="h6" fontWeight="600" sx={{ lineHeight: 1.2, fontSize: '0.9rem' }}>{schemas.length}</Typography>
-              <Typography variant="caption" sx={{ opacity: 0.9, fontSize: '0.65rem' }}>Available Schemas</Typography>
-            </Box>
-          </Box>
-        </Box>
+      {/* Refresh Button */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1.5 }}>
+        <Tooltip title="Refresh data">
+          <IconButton
+            onClick={loadInitialData}
+            disabled={loading}
+            sx={{
+              bgcolor: 'white',
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 1.5,
+              '&:hover': {
+                bgcolor: '#f3f4f6',
+                borderColor: '#667eea',
+              },
+              '&:disabled': {
+                bgcolor: '#f9fafb',
+              },
+            }}
+          >
+            <Refresh
+              sx={{
+                fontSize: 20,
+                color: loading ? '#9ca3af' : '#667eea',
+                animation: loading ? 'spin 1s linear infinite' : 'none',
+                '@keyframes spin': {
+                  '0%': { transform: 'rotate(0deg)' },
+                  '100%': { transform: 'rotate(360deg)' },
+                },
+              }}
+            />
+          </IconButton>
+        </Tooltip>
       </Box>
 
       {/* Alerts with Animation */}
@@ -945,116 +938,33 @@ export default function KnowledgeGraph() {
 
               {selectedKG ? (
                 <>
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: 2.5,
-                      mb: 2,
-                      borderRadius: 2,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)',
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1.5 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Box
-                          sx={{
-                            p: 1,
-                            borderRadius: 1.5,
-                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          <Hub sx={{ color: 'white', fontSize: 22 }} />
-                        </Box>
-                        <Box>
-                          <Typography variant="h6" fontWeight="700">
-                            {selectedKG}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary" fontSize="0.8rem">
-                            Knowledge Graph Visualization
-                          </Typography>
-                        </Box>
-                      </Box>
-                      {selectedKG === 'Sample Knowledge Graph' && (
-                        <Chip
-                          label="Sample Data"
-                          color="info"
-                          icon={<Info />}
-                          size="small"
-                          sx={{
-                            fontWeight: 600,
-                            fontSize: '0.65rem',
-                            height: 20,
-                          }}
-                        />
-                      )}
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
-                      <Chip
-                        label={`${kgEntities.length} Entities`}
-                        icon={<Hub />}
-                        sx={{
-                          bgcolor: 'rgba(102, 126, 234, 0.1)',
-                          color: '#667eea',
-                          fontWeight: 600,
-                          fontSize: '0.95rem',
-                          px: 1,
-                          '& .MuiChip-icon': {
-                            color: '#667eea',
-                          },
-                        }}
-                      />
-                      <Chip
-                        label={`${kgRelationships.length} Relationships`}
-                        icon={<AccountTree />}
-                        sx={{
-                          bgcolor: 'rgba(118, 75, 162, 0.1)',
-                          color: '#764ba2',
-                          fontWeight: 600,
-                          fontSize: '0.95rem',
-                          px: 1,
-                          '& .MuiChip-icon': {
-                            color: '#764ba2',
-                          },
-                        }}
-                      />
-                    </Box>
-
-                    {/* Relationship Type Breakdown */}
-
-                  </Paper>
-
                   {/* Force-Directed Graph Visualization */}
                   <Paper
                     elevation={0}
                     sx={{
-                      p: 3,
-                      borderRadius: 3,
-                      mb: 3,
+                      p: 0.75,
+                      borderRadius: 1.5,
+                      mb: 0.75,
                       border: '1px solid',
                       borderColor: 'divider',
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                      boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
                     }}
                   >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
                       <Box
                         sx={{
-                          p: 1.5,
-                          borderRadius: 2,
+                          p: 0.75,
+                          borderRadius: 1,
                           bgcolor: 'primary.light',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                         }}
                       >
-                        <AccountTree sx={{ color: 'primary.dark', fontSize: 28 }} />
+                        <AccountTree sx={{ color: 'primary.dark', fontSize: 20 }} />
                       </Box>
-                      <Typography variant="h5" fontWeight="700">
-                        Graph Visualization
+                      <Typography variant="h6" fontWeight="700" fontSize="0.95rem">
+                        {selectedKG}
                       </Typography>
                     </Box>
                     <KnowledgeGraphEditor entities={kgEntities} relationships={kgRelationships} />
