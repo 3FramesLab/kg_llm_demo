@@ -95,19 +95,44 @@ const KPIAnalyticsDashboard = () => {
     fetchKPIs();
   };
 
-  const handleExecutionSuccess = (executionResult) => {
+  const handleExecutionSuccess = (executionResult, kpiData) => {
     console.log('handleExecutionSuccess called with:', executionResult);
+    console.log('kpiData passed:', kpiData);
     console.log('selectedKPI:', selectedKPI);
 
     fetchKPIs();
+
+    // Use the passed KPI data first, fallback to selectedKPI
+    const kpiToUse = kpiData || selectedKPI;
+
     // Navigate to execution history page to show the results
-    if (selectedKPI) {
-      console.log('Navigating to execution history for KPI:', selectedKPI.id);
-      const historyPath = `/landing-kpi/${selectedKPI.id}/history`;
+    if (kpiToUse) {
+      console.log('Navigating to execution history for KPI:', kpiToUse.id);
+      const historyPath = `/landing-kpi/${kpiToUse.id}/history`;
       console.log('Navigation path:', historyPath);
-      navigate(historyPath);
+      console.log('Current location before navigation:', window.location.pathname);
+
+      try {
+        navigate(historyPath);
+        console.log('Navigation initiated successfully');
+
+        // Verify navigation after a short delay
+        setTimeout(() => {
+          console.log('Current location after navigation:', window.location.pathname);
+          // If navigation didn't work, try fallback
+          if (window.location.pathname !== historyPath) {
+            console.warn('Navigation may have failed, trying fallback method');
+            window.location.href = historyPath;
+          }
+        }, 500);
+      } catch (navError) {
+        console.error('Navigation error:', navError);
+        // Fallback to direct window navigation
+        console.log('Using fallback navigation method');
+        window.location.href = historyPath;
+      }
     } else {
-      console.warn('No selectedKPI available for navigation');
+      console.warn('No KPI data available for navigation');
     }
   };
 

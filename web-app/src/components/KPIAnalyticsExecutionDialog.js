@@ -104,14 +104,21 @@ const KPIAnalyticsExecutionDialog = ({ open, kpi, onClose, onSuccess }) => {
       // Show navigation state and then navigate to execution history
       if (onSuccess) {
         console.log('Success handler available, starting navigation flow');
+        // Show success state briefly, then navigate
         setTimeout(() => {
           console.log('Setting navigating state to true');
           setNavigating(true);
+          // Navigate immediately after showing navigation state
           setTimeout(() => {
-            console.log('Closing dialog and calling success handler');
-            onClose(); // Close dialog first
-            onSuccess(response.data.data); // Then call success handler with result data
-          }, 1500); // Show "Opening execution history..." for 1.5 seconds
+            console.log('Calling success handler with KPI data');
+            // Pass the KPI data along with execution result for navigation
+            onSuccess(response.data.data, kpi);
+            // Close dialog after navigation is initiated
+            setTimeout(() => {
+              console.log('Closing dialog after navigation');
+              onClose();
+            }, 100);
+          }, 800); // Shorter delay to show "Opening execution history..."
         }, 1000); // Wait 1 second to show success state first
       } else {
         console.warn('No onSuccess handler provided');
@@ -122,6 +129,7 @@ const KPIAnalyticsExecutionDialog = ({ open, kpi, onClose, onSuccess }) => {
       console.error('Error response data:', err.response?.data);
 
       setError(err.response?.data?.detail || err.response?.data?.error || err.message || 'Execution failed');
+      setNavigating(false); // Reset navigating state on error
 
       // IMPORTANT: Even on error, show the generated SQL if available
       if (err.response?.data?.generated_sql) {

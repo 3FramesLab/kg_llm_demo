@@ -27,7 +27,20 @@ logger = logging.getLogger(__name__)
 
 class LandingKPIServiceJDBC:
     """Landing KPI Service using JDBC connections (like the rest of the system)."""
-    
+
+    @staticmethod
+    def _to_bool(value):
+        """Convert database value to boolean safely."""
+        if value is None:
+            return False
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)):
+            return value != 0
+        if isinstance(value, str):
+            return value.lower() in ('true', '1', 'yes', 'on')
+        return bool(value)
+
     def __init__(self, database: str = None):
         """Initialize with JDBC connection to KPI database."""
         self.host = KPI_DB_HOST
@@ -86,52 +99,114 @@ class LandingKPIServiceJDBC:
         try:
             where_clause = "" if include_inactive else "WHERE k.is_active = 1"
             
-            query = f"""
-                SELECT 
-                    k.id, k.name, k.alias_name, k.group_name, k.description, k.nl_definition,
-                    k.created_at, k.updated_at, k.created_by, k.is_active,
-                    e.id as latest_execution_id,
-                    e.execution_timestamp as latest_execution,
-                    e.execution_status as latest_status,
-                    e.number_of_records as latest_record_count,
-                    e.generated_sql as latest_sql,
-                    e.error_message as latest_error
-                FROM kpi_definitions k
-                LEFT JOIN kpi_execution_results e ON k.id = e.kpi_id
-                    AND e.execution_timestamp = (
-                        SELECT MAX(execution_timestamp) 
-                        FROM kpi_execution_results 
-                        WHERE kpi_id = k.id
-                    )
-                {where_clause}
-                ORDER BY k.group_name, k.name
-            """
+            # Try to include cache fields, but handle gracefully if they don't exist
+            try:
+                # First check if cache fields exist
+                cursor.execute("SELECT TOP 1 isAccept FROM kpi_definitions")
+                cache_fields_exist = True
+            except Exception:
+                cache_fields_exist = False
+                logger.info("Cache fields not yet available in database")
+
+            if cache_fields_exist:
+                query = f"""
+                    SELECT
+                        k.id, k.name, k.alias_name, k.group_name, k.description, k.nl_definition,
+                        k.created_at, k.updated_at, k.created_by, k.is_active,
+                        k.isAccept, k.isSQLCached, k.cached_sql,
+                        e.id as latest_execution_id,
+                        e.execution_timestamp as latest_execution,
+                        e.execution_status as latest_status,
+                        e.number_of_records as latest_record_count,
+                        e.generated_sql as latest_sql,
+                        e.error_message as latest_error
+                    FROM kpi_definitions k
+                    LEFT JOIN kpi_execution_results e ON k.id = e.kpi_id
+                        AND e.execution_timestamp = (
+                            SELECT MAX(execution_timestamp)
+                            FROM kpi_execution_results
+                            WHERE kpi_id = k.id
+                        )
+                    {where_clause}
+                    ORDER BY k.group_name, k.name
+                """
+            else:
+                query = f"""
+                    SELECT
+                        k.id, k.name, k.alias_name, k.group_name, k.description, k.nl_definition,
+                        k.created_at, k.updated_at, k.created_by, k.is_active,
+                        e.id as latest_execution_id,
+                        e.execution_timestamp as latest_execution,
+                        e.execution_status as latest_status,
+                        e.number_of_records as latest_record_count,
+                        e.generated_sql as latest_sql,
+                        e.error_message as latest_error
+                    FROM kpi_definitions k
+                    LEFT JOIN kpi_execution_results e ON k.id = e.kpi_id
+                        AND e.execution_timestamp = (
+                            SELECT MAX(execution_timestamp)
+                            FROM kpi_execution_results
+                            WHERE kpi_id = k.id
+                        )
+                    {where_clause}
+                    ORDER BY k.group_name, k.name
+                """
             
             cursor.execute(query)
             rows = cursor.fetchall()
             
             kpis = []
             for row in rows:
-                kpi = {
-                    'id': row[0],
-                    'name': row[1],
-                    'alias_name': row[2],
-                    'group_name': row[3],
-                    'description': row[4],
-                    'nl_definition': row[5],
-                    'created_at': str(row[6]) if row[6] else None,
-                    'updated_at': str(row[7]) if row[7] else None,
-                    'created_by': row[8],
-                    'is_active': bool(row[9]),
-                    'latest_execution': {
-                        'id': row[10],
-                        'timestamp': str(row[11]) if row[11] else None,
-                        'status': row[12],
-                        'record_count': row[13],
-                        'generated_sql': row[14],  # Always include SQL
-                        'error_message': row[15]
-                    } if row[10] else None
-                }
+                if cache_fields_exist:
+                    # Include cache fields
+                    kpi = {
+                        'id': row[0],
+                        'name': row[1],
+                        'alias_name': row[2],
+                        'group_name': row[3],
+                        'description': row[4],
+                        'nl_definition': row[5],
+                        'created_at': str(row[6]) if row[6] else None,
+                        'updated_at': str(row[7]) if row[7] else None,
+                        'created_by': row[8],
+                        'is_active': bool(row[9]),
+                        'isAccept': self._to_bool(row[10]),
+                        'isSQLCached': self._to_bool(row[11]),
+                        'cached_sql': row[12],
+                        'latest_execution': {
+                            'id': row[13],
+                            'timestamp': str(row[14]) if row[14] else None,
+                            'status': row[15],
+                            'record_count': row[16],
+                            'generated_sql': row[17],
+                            'error_message': row[18]
+                        } if row[13] else None
+                    }
+                else:
+                    # Without cache fields (backward compatibility)
+                    kpi = {
+                        'id': row[0],
+                        'name': row[1],
+                        'alias_name': row[2],
+                        'group_name': row[3],
+                        'description': row[4],
+                        'nl_definition': row[5],
+                        'created_at': str(row[6]) if row[6] else None,
+                        'updated_at': str(row[7]) if row[7] else None,
+                        'created_by': row[8],
+                        'is_active': bool(row[9]),
+                        'isAccept': False,  # Default values
+                        'isSQLCached': False,
+                        'cached_sql': None,
+                        'latest_execution': {
+                            'id': row[10],
+                            'timestamp': str(row[11]) if row[11] else None,
+                            'status': row[12],
+                            'record_count': row[13],
+                            'generated_sql': row[14],
+                            'error_message': row[15]
+                        } if row[10] else None
+                    }
                 kpis.append(kpi)
             
             logger.info(f"Retrieved {len(kpis)} KPIs via JDBC")
@@ -168,7 +243,6 @@ class LandingKPIServiceJDBC:
             return deleted_kpi > 0
 
         except Exception as e:
-            conn.rollback()
             logger.error(f"❌ Failed to delete KPI {kpi_id}: {e}")
             raise
         finally:
@@ -213,15 +287,51 @@ class LandingKPIServiceJDBC:
         return {'groups': groups_list}
     
     def create_kpi(self, kpi_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Create a new KPI (placeholder - would need full implementation)."""
-        # For now, just return the data with a fake ID
-        # In a real implementation, this would insert into the database
-        return {
-            'id': 999,
-            'success': True,
-            'message': 'KPI creation not fully implemented yet',
-            **kpi_data
-        }
+        """Create a new KPI definition."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute("""
+                INSERT INTO kpi_definitions
+                (name, alias_name, group_name, description, nl_definition, created_by,
+                 isAccept, isSQLCached, cached_sql)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                kpi_data.get('name'),
+                kpi_data.get('alias_name'),
+                kpi_data.get('group_name'),
+                kpi_data.get('description'),
+                kpi_data.get('nl_definition'),
+                kpi_data.get('created_by'),
+                kpi_data.get('isAccept', False),
+                kpi_data.get('isSQLCached', False),
+                kpi_data.get('cached_sql')
+            ))
+
+            conn.commit()
+            logger.info(f"✓ Created KPI: {kpi_data.get('name')}")
+
+            # Get the created KPI (since JDBC doesn't return the ID easily, we'll find it by name)
+            created_kpis = self.get_all_kpis()
+            for kpi in created_kpis:
+                if kpi['name'] == kpi_data.get('name'):
+                    return kpi
+
+            # Fallback - return the data with a placeholder ID
+            return {
+                'id': 0,
+                'success': True,
+                'message': 'KPI created successfully',
+                **kpi_data
+            }
+
+        except Exception as e:
+            logger.error(f"❌ Failed to create KPI: {e}")
+            raise
+        finally:
+            cursor.close()
+            conn.close()
 
     def update_kpi(self, kpi_id: int, kpi_data: Dict[str, Any]) -> Dict[str, Any]:
         """Update KPI definition using JDBC connection."""
@@ -233,8 +343,8 @@ class LandingKPIServiceJDBC:
             updates = []
             params = []
 
-            # Handle the fields that can be updated
-            for key in ['name', 'alias_name', 'group_name', 'description', 'nl_definition', 'is_active']:
+            # Handle the fields that can be updated (including new cache fields)
+            for key in ['name', 'alias_name', 'group_name', 'description', 'nl_definition', 'is_active', 'isAccept', 'isSQLCached', 'cached_sql']:
                 if key in kpi_data and kpi_data[key] is not None:
                     updates.append(f"{key} = ?")
                     params.append(kpi_data[key])
@@ -261,20 +371,243 @@ class LandingKPIServiceJDBC:
             return self.get_kpi(kpi_id)
 
         except Exception as e:
-            conn.rollback()
             logger.error(f"❌ Failed to update KPI {kpi_id}: {e}")
             raise
         finally:
             cursor.close()
             conn.close()
-    
+
+    def update_cache_flags(self, kpi_id: int, cache_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update KPI cache flags (isAccept, isSQLCached, cached_sql)."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        try:
+            updates = []
+            params = []
+
+            # Check if cache fields exist in the database first
+            try:
+                cursor.execute("SELECT TOP 1 isAccept, isSQLCached, cached_sql FROM kpi_definitions WHERE id = ?", (kpi_id,))
+                cache_fields_exist = True
+            except Exception:
+                logger.warning("Cache fields don't exist in database yet. Please run the migration script.")
+                cache_fields_exist = False
+
+            if not cache_fields_exist:
+                # Fallback to regular update without cache fields
+                logger.info(f"Cache fields not available, skipping cache update for KPI {kpi_id}")
+                return self.get_kpi(kpi_id)
+
+            if 'isAccept' in cache_data:
+                updates.append("isAccept = ?")
+                params.append(cache_data['isAccept'])
+                logger.info(f"   Setting isAccept = {cache_data['isAccept']}")
+
+            if 'isSQLCached' in cache_data:
+                updates.append("isSQLCached = ?")
+                params.append(cache_data['isSQLCached'])
+                logger.info(f"   Setting isSQLCached = {cache_data['isSQLCached']}")
+
+            if 'cached_sql' in cache_data:
+                sql_value = cache_data['cached_sql']
+                updates.append("cached_sql = ?")
+                params.append(sql_value)
+                logger.info(f"   Setting cached_sql = {sql_value[:100] if sql_value else 'NULL'}...")
+                logger.info(f"   cached_sql length: {len(sql_value) if sql_value else 0}")
+
+            if not updates:
+                return self.get_kpi(kpi_id)
+
+            updates.append("updated_at = GETDATE()")
+            params.append(kpi_id)
+
+            query = f"UPDATE kpi_definitions SET {', '.join(updates)} WHERE id = ?"
+            logger.info(f"🔄 Executing SQL: {query}")
+            logger.info(f"🔄 With params: {[str(p)[:100] if isinstance(p, str) else p for p in params]}")
+
+            cursor.execute(query, params)
+
+            if cursor.rowcount == 0:
+                raise ValueError(f"KPI with ID {kpi_id} not found")
+
+            conn.commit()
+            logger.info(f"✓ Updated cache flags for KPI ID: {kpi_id}, rows affected: {cursor.rowcount}")
+
+            # Get and return updated KPI
+            updated_kpi = self.get_kpi(kpi_id)
+            logger.info(f"✓ Returning updated KPI with cached_sql length: {len(updated_kpi.get('cached_sql', ''))}")
+            return updated_kpi
+
+        except Exception as e:
+            logger.error(f"❌ Failed to update cache flags for KPI {kpi_id}: {e}")
+            raise
+        finally:
+            cursor.close()
+            conn.close()
+
+    def clear_cache_flags(self, kpi_id: int) -> Dict[str, Any]:
+        """Clear both isAccept and isSQLCached flags for a KPI."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        try:
+            # Check if cache fields exist in the database first
+            try:
+                cursor.execute("SELECT TOP 1 isAccept, isSQLCached, cached_sql FROM kpi_definitions WHERE id = ?", (kpi_id,))
+                cache_fields_exist = True
+            except Exception:
+                logger.warning("Cache fields don't exist in database yet. Please run the migration script.")
+                cache_fields_exist = False
+
+            if not cache_fields_exist:
+                logger.info(f"Cache fields not available, skipping cache clear for KPI {kpi_id}")
+                return self.get_kpi(kpi_id)
+
+            cursor.execute("""
+                UPDATE kpi_definitions
+                SET isAccept = 0, isSQLCached = 0, cached_sql = NULL, updated_at = GETDATE()
+                WHERE id = ?
+            """, (kpi_id,))
+
+            if cursor.rowcount == 0:
+                raise ValueError(f"KPI with ID {kpi_id} not found")
+
+            conn.commit()
+            logger.info(f"✓ Cleared cache flags for KPI ID: {kpi_id}")
+            return self.get_kpi(kpi_id)
+
+        except Exception as e:
+            logger.error(f"❌ Failed to clear cache flags for KPI {kpi_id}: {e}")
+            raise
+        finally:
+            cursor.close()
+            conn.close()
+
     def get_kpi(self, kpi_id: int) -> Optional[Dict[str, Any]]:
-        """Get a specific KPI by ID."""
-        kpis = self.get_all_kpis(include_inactive=True)
-        for kpi in kpis:
-            if kpi['id'] == kpi_id:
-                return kpi
-        return None
+        """Get a specific KPI by ID with cache fields."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        try:
+            # Check if cache fields exist
+            try:
+                cursor.execute("SELECT TOP 1 isAccept FROM kpi_definitions")
+                cache_fields_exist = True
+            except Exception:
+                cache_fields_exist = False
+                logger.info("Cache fields not yet available in database")
+
+            if cache_fields_exist:
+                query = """
+                    SELECT
+                        k.id, k.name, k.alias_name, k.group_name, k.description, k.nl_definition,
+                        k.created_at, k.updated_at, k.created_by, k.is_active,
+                        k.isAccept, k.isSQLCached, k.cached_sql,
+                        e.id as latest_execution_id,
+                        e.execution_timestamp as latest_execution,
+                        e.execution_status as latest_status,
+                        e.number_of_records as latest_record_count,
+                        e.generated_sql as latest_sql,
+                        e.error_message as latest_error
+                    FROM kpi_definitions k
+                    LEFT JOIN kpi_execution_results e ON k.id = e.kpi_id
+                        AND e.execution_timestamp = (
+                            SELECT MAX(execution_timestamp)
+                            FROM kpi_execution_results
+                            WHERE kpi_id = k.id
+                        )
+                    WHERE k.id = ?
+                """
+            else:
+                query = """
+                    SELECT
+                        k.id, k.name, k.alias_name, k.group_name, k.description, k.nl_definition,
+                        k.created_at, k.updated_at, k.created_by, k.is_active,
+                        e.id as latest_execution_id,
+                        e.execution_timestamp as latest_execution,
+                        e.execution_status as latest_status,
+                        e.number_of_records as latest_record_count,
+                        e.generated_sql as latest_sql,
+                        e.error_message as latest_error
+                    FROM kpi_definitions k
+                    LEFT JOIN kpi_execution_results e ON k.id = e.kpi_id
+                        AND e.execution_timestamp = (
+                            SELECT MAX(execution_timestamp)
+                            FROM kpi_execution_results
+                            WHERE kpi_id = k.id
+                        )
+                    WHERE k.id = ?
+                """
+
+            cursor.execute(query, (kpi_id,))
+            row = cursor.fetchone()
+
+            if not row:
+                return None
+
+            if cache_fields_exist:
+                # Include cache fields
+                kpi = {
+                    'id': row[0],
+                    'name': row[1],
+                    'alias_name': row[2],
+                    'group_name': row[3],
+                    'description': row[4],
+                    'nl_definition': row[5],
+                    'created_at': str(row[6]) if row[6] else None,
+                    'updated_at': str(row[7]) if row[7] else None,
+                    'created_by': row[8],
+                    'is_active': bool(row[9]),
+                    'isAccept': self._to_bool(row[10]),
+                    'isSQLCached': self._to_bool(row[11]),
+                    'cached_sql': row[12],
+                    'latest_execution': {
+                        'id': row[13],
+                        'timestamp': str(row[14]) if row[14] else None,
+                        'status': row[15],
+                        'record_count': row[16],
+                        'generated_sql': row[17],
+                        'error_message': row[18]
+                    } if row[13] else None
+                }
+            else:
+                # Without cache fields (backward compatibility)
+                kpi = {
+                    'id': row[0],
+                    'name': row[1],
+                    'alias_name': row[2],
+                    'group_name': row[3],
+                    'description': row[4],
+                    'nl_definition': row[5],
+                    'created_at': str(row[6]) if row[6] else None,
+                    'updated_at': str(row[7]) if row[7] else None,
+                    'created_by': row[8],
+                    'is_active': bool(row[9]),
+                    'isAccept': False,  # Default values
+                    'isSQLCached': False,
+                    'cached_sql': None,
+                    'latest_execution': {
+                        'id': row[10],
+                        'timestamp': str(row[11]) if row[11] else None,
+                        'status': row[12],
+                        'record_count': row[13],
+                        'generated_sql': row[14],
+                        'error_message': row[15]
+                    } if row[10] else None
+                }
+
+            # Debug logging
+            logger.info(f"🔍 get_kpi({kpi_id}) returning:")
+            logger.info(f"   isAccept: {kpi.get('isAccept')} (type: {type(kpi.get('isAccept'))})")
+            logger.info(f"   isSQLCached: {kpi.get('isSQLCached')} (type: {type(kpi.get('isSQLCached'))})")
+            logger.info(f"   cached_sql: {bool(kpi.get('cached_sql'))}")
+
+            return kpi
+
+        finally:
+            cursor.close()
+            conn.close()
     
     def execute_kpi(self, kpi_id: int, execution_params: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a KPI and store results in the database."""
@@ -560,7 +893,6 @@ class LandingKPIServiceJDBC:
             return execution_id
 
         except Exception as e:
-            conn.rollback()
             logger.error(f"❌ Failed to store execution result: {e}")
             raise
         finally:
@@ -579,22 +911,57 @@ class LandingKPIServiceJDBC:
                     number_of_records, execution_status, execution_timestamp,
                     execution_time_ms, confidence_score, error_message, result_data
                 FROM kpi_execution_results
-                WHERE kpi_id = ?
+                WHERE kpi_id = ? AND execution_status = 'success' AND result_data IS NOT NULL
                 ORDER BY execution_timestamp DESC
             """, (kpi_id,))
 
             row = cursor.fetchone()
             if not row:
+                logger.info(f"No successful execution with result_data found for KPI {kpi_id}")
                 return None
+
+            logger.info(f"📊 Raw result for KPI {kpi_id}: execution_id={row[0]}, result_data length={len(str(row[11])) if row[11] else 0}")
 
             # Parse result data if it exists
             result_data = None
+            column_names = None
+
             if row[11]:  # result_data column
                 try:
                     import json
-                    result_data = json.loads(row[11])
-                except:
+                    parsed_data = json.loads(row[11])
+
+                    # Log the structure of parsed data
+                    if isinstance(parsed_data, dict):
+                        logger.info(f"📋 Parsed result_data keys: {list(parsed_data.keys())}")
+
+                        # Handle nested result_data structure
+                        if 'result_data' in parsed_data:
+                            result_data = parsed_data['result_data']
+                            logger.info(f"📊 Found nested result_data with {len(result_data) if isinstance(result_data, list) else 'non-list'} items")
+                        else:
+                            result_data = parsed_data
+
+                        # Extract column names
+                        if 'column_names' in parsed_data:
+                            column_names = parsed_data['column_names']
+                            logger.info(f"📋 Found column names: {column_names}")
+                        elif isinstance(result_data, list) and len(result_data) > 0 and isinstance(result_data[0], dict):
+                            column_names = list(result_data[0].keys())
+                            logger.info(f"📋 Extracted column names from first row: {column_names}")
+
+                    elif isinstance(parsed_data, list):
+                        result_data = parsed_data
+                        logger.info(f"📊 Result_data is a list with {len(parsed_data)} items")
+                        if len(parsed_data) > 0 and isinstance(parsed_data[0], dict):
+                            column_names = list(parsed_data[0].keys())
+
+                except Exception as e:
+                    logger.warning(f"Could not parse result_data for execution {row[0]}: {e}")
+                    logger.warning(f"Raw result_data: {str(row[11])[:200]}...")
                     result_data = None
+            else:
+                logger.warning(f"No result_data found for KPI {kpi_id} execution {row[0]}")
 
             return {
                 'execution_id': row[0],
@@ -608,8 +975,14 @@ class LandingKPIServiceJDBC:
                 'execution_time_ms': row[8],
                 'confidence_score': row[9],
                 'error_message': row[10],
-                'result_data': result_data
+                'result_data': result_data,
+                'column_names': column_names,
+                'record_count': row[5]  # Alias for compatibility
             }
+
+        except Exception as e:
+            logger.error(f"Error getting latest results for KPI {kpi_id}: {e}")
+            return None
 
         finally:
             cursor.close()

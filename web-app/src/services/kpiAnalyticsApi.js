@@ -6,7 +6,8 @@
 import api from './api';
 
 // Base URL for KPI Analytics endpoints (separate database)
-const KPI_ANALYTICS_BASE = '/v1/landing-kpi-mssql';
+// Note: Don't include /v1 here as it's already in the API base URL
+const KPI_ANALYTICS_BASE = '/landing-kpi-mssql';
 
 // ==================== KPI CRUD Operations ====================
 

@@ -738,7 +738,7 @@ Generate ONLY the SQL query, no explanations, no markdown formatting."""
                 raise ValueError(
                     f"Invalid query: Cannot join tables from different business domains. "
                     f"Found domains: {', '.join(error_details)}. "
-                    f"NBU (National Bank of Ukraine) data should not be joined with GPU (Graphics Processing Unit) data."
+                    f"Tables from incompatible business domains should not be joined together."
                 )
 
     def _tables_are_similar(self, table1: str, table2: str) -> bool:

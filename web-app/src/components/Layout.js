@@ -24,6 +24,8 @@ import {
   BarChart as BarChartIcon,
   ShowChart as ShowChartIcon,
   Label as LabelIcon,
+  Analytics as AnalyticsIcon,
+  TableChart as TableChartIcon,
 } from '@mui/icons-material';
 
 const drawerWidth = 240;
@@ -32,9 +34,11 @@ const menuItems = [
   { text: 'Overview', icon: <DashboardIcon />, path: '/' },
   { text: 'Schemas', icon: <SchemaIcon />, path: '/schemas' },
   { text: 'Knowledge Graph Builder', icon: <GraphIcon />, path: '/knowledge-graph' },
+  { text: 'Table Aliases', icon: <TableChartIcon />, path: '/table-aliases' },
   { text: 'Column Hints', icon: <LabelIcon />, path: '/hints-management' },
-  { text: 'Natural Language', icon: <NLIcon />, path: '/natural-language' },
+  // { text: 'Natural Language', icon: <NLIcon />, path: '/natural-language' }, // Hidden
   { text: 'NL KPI Management', icon: <KPIIcon />, path: '/landing-kpi' },
+  // { text: 'KPI Analytics', icon: <AnalyticsIcon />, path: '/kpi-analytics' }, // Hidden
   { text: 'Dashboard', icon: <ShowChartIcon />, path: '/dashboard-trends' },
 ];
 

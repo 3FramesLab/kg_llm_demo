@@ -1022,6 +1022,10 @@ class KPIUpdateRequest(BaseModel):
     description: Optional[str] = Field(None, description="Detailed description")
     nl_definition: Optional[str] = Field(None, min_length=1, description="Natural language query definition")
     is_active: Optional[bool] = Field(None, description="Active status")
+    # New cache-related fields
+    isAccept: Optional[bool] = Field(None, description="Whether the generated SQL is accepted by user")
+    isSQLCached: Optional[bool] = Field(None, description="Whether to use cached SQL instead of LLM generation")
+    cached_sql: Optional[str] = Field(None, description="Cached/accepted SQL query")
 
 
 class KPIDefinition(BaseModel):
@@ -1036,6 +1040,10 @@ class KPIDefinition(BaseModel):
     updated_at: datetime = Field(..., description="Last update timestamp")
     created_by: Optional[str] = Field(None, description="User who created the KPI")
     is_active: bool = Field(default=True, description="Active status")
+    # New cache-related fields
+    isAccept: bool = Field(default=False, description="Whether the generated SQL is accepted by user")
+    isSQLCached: bool = Field(default=False, description="Whether to use cached SQL instead of LLM generation")
+    cached_sql: Optional[str] = Field(None, description="Cached/accepted SQL query")
 
 
 class KPIListResponse(BaseModel):
@@ -1043,6 +1051,18 @@ class KPIListResponse(BaseModel):
     success: bool = Field(..., description="Whether request was successful")
     total: int = Field(..., description="Total number of KPIs")
     kpis: List[KPIDefinition] = Field(default=[], description="List of KPI definitions")
+
+
+class KPICacheFlagsRequest(BaseModel):
+    """Request model for updating KPI cache flags."""
+    isAccept: Optional[bool] = Field(None, description="Whether the generated SQL is accepted by user")
+    isSQLCached: Optional[bool] = Field(None, description="Whether to use cached SQL instead of LLM generation")
+    cached_sql: Optional[str] = Field(None, description="SQL query to cache (when accepting)")
+
+
+class KPIClearCacheRequest(BaseModel):
+    """Request model for clearing KPI cache flags."""
+    clear_cache: bool = Field(default=True, description="Clear both isAccept and isSQLCached flags")
 
 
 # ==================== KPI Execution Models ====================

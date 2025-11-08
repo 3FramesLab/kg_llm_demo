@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Container,
   Box,
@@ -34,6 +35,7 @@ import KPIExecutionHistory from '../components/KPIExecutionHistory';
 import KPIDrilldown from '../components/KPIDrilldown';
 
 const LandingKPIManagement = () => {
+  const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
@@ -80,9 +82,26 @@ const LandingKPIManagement = () => {
   };
 
   const handleExecutionSuccess = () => {
-    setSuccessMessage('KPI execution started successfully!');
+    console.log('KPI execution completed successfully');
+    console.log('Selected KPI for navigation:', selectedKPI);
+
+    setSuccessMessage('KPI execution completed successfully!');
     setRefreshTrigger((prev) => prev + 1);
-    setTimeout(() => setSuccessMessage(''), 3000);
+
+    // Navigate to execution history page after successful execution
+    if (selectedKPI) {
+      console.log('Navigating to execution history for KPI:', selectedKPI.id);
+      const historyPath = `/landing-kpi/${selectedKPI.id}/history`;
+      console.log('Navigation path:', historyPath);
+
+      // Small delay to show success message briefly, then navigate
+      setTimeout(() => {
+        navigate(historyPath);
+      }, 1500);
+    } else {
+      console.warn('No selectedKPI available for navigation');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    }
   };
 
   const handleTabChange = (event, newValue) => {

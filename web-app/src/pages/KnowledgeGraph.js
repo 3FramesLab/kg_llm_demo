@@ -121,11 +121,16 @@ export default function KnowledgeGraph() {
         listKGs(),
         checkLLMStatus(),
       ]);
+
+      console.log('KGs Response:', kgsRes.data); // Debug log
+      console.log('Schemas Response:', schemasRes.data); // Debug log
+
       setSchemas(schemasRes.data.schemas || []);
-      setKnowledgeGraphs(kgsRes.data.graphs || []);
+      setKnowledgeGraphs(kgsRes.data.data || []); // Fixed: changed from 'graphs' to 'data'
       setLlmStatus(llmStatusRes.data);
     } catch (err) {
       console.error('Error loading data:', err);
+      console.error('Full error details:', err.response || err);
     }
   };
 

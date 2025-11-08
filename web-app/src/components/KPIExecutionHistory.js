@@ -20,6 +20,8 @@ import {
   Tooltip,
   Typography,
   Collapse,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   Visibility as VisibilityIcon,
@@ -30,7 +32,10 @@ import {
 } from '@mui/icons-material';
 import { getKPIExecutions } from '../services/api';
 
-const KPIExecutionHistory = ({ open, kpi, onClose, onViewDrilldown }) => {
+const KPIExecutionHistory = ({ open, kpi, onClose, onViewDrilldown, fullScreen }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
   const [executions, setExecutions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -276,8 +281,13 @@ const KPIExecutionHistory = ({ open, kpi, onClose, onViewDrilldown }) => {
           </TableContainer>
         )}
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Close</Button>
+      <DialogActions sx={{ px: isMobile ? 2 : 3, pb: isMobile ? 2 : 1 }}>
+        <Button
+          onClick={onClose}
+          fullWidth={isMobile}
+        >
+          Close
+        </Button>
       </DialogActions>
     </Dialog>
   );

@@ -284,12 +284,50 @@ const DashboardTrendsWidget = ({
       setResultsError(null);
       const response = await getLatestResults(kpi.id);
 
-      const data = await response.json();
-      setResults(data.results);
+      // getLatestResults uses axios, so response.data contains the parsed JSON
+      const data = response.data;
+      console.log('🔍 Latest results response:', data);
+
+      // Handle different response formats
+      let resultsData = null;
+      if (data.success && data.results) {
+        resultsData = data.results;
+      } else if (data.results) {
+        resultsData = data.results;
+      } else if (data.success && data.data) {
+        resultsData = data.data;
+      }
+
+      console.log('📊 Processed results data:', resultsData);
+      setResults(resultsData);
       setPage(0);
     } catch (err) {
       console.error('Error fetching results:', err);
-      setResultsError(err.message);
+
+      // Handle specific error cases gracefully
+      let errorMessage = err.message;
+
+      // Check if it's a 404 error (no execution results found)
+      if (err.response?.status === 404) {
+        const errorDetail = err.response?.data?.detail || err.response?.data?.error || err.message;
+        if (errorDetail.includes('No execution results found')) {
+          errorMessage = `No execution results found for this KPI. The KPI may not have been executed yet or may not have any successful executions with data.`;
+        } else {
+          errorMessage = errorDetail;
+        }
+      }
+      // Check if it's a network error
+      else if (err.code === 'NETWORK_ERROR' || err.message.includes('Network Error')) {
+        errorMessage = 'Unable to connect to the server. Please check your connection and try again.';
+      }
+      // Check for other HTTP errors
+      else if (err.response?.data?.detail) {
+        errorMessage = err.response.data.detail;
+      } else if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      }
+
+      setResultsError(errorMessage);
     } finally {
       setResultsLoading(false);
     }
@@ -307,14 +345,26 @@ const DashboardTrendsWidget = ({
     try {
       const result = await getKPIExecutions(kpi.id);
 
-      if (result.data.success && result.data.executions) {
+      // Handle different response formats from getKPIExecutions
+      let executions = [];
+      if (result.data) {
+        if (result.data.success && result.data.executions) {
+          executions = result.data.executions;
+        } else if (result.data.executions) {
+          executions = result.data.executions;
+        } else if (Array.isArray(result.data)) {
+          executions = result.data;
+        }
+      }
+
+      if (executions.length > 0) {
         // Get last 10 executions and extract record counts
-        const executions = result.data.executions
+        const filteredExecutions = executions
           .filter(exec => exec.execution_status === 'success' && exec.number_of_records != null)
           .slice(0, 10)
           .reverse(); // Oldest to newest for chart
 
-        const chartData = executions.map((exec) => ({
+        const chartData = filteredExecutions.map((exec) => ({
           date: new Date(exec.execution_timestamp).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric'
@@ -328,6 +378,12 @@ const DashboardTrendsWidget = ({
       }
     } catch (error) {
       console.error('Error fetching execution data:', error);
+
+      // Log specific error details for debugging
+      if (error.response?.status === 404) {
+        console.log(`ℹ️ No execution history found for KPI ${kpi.id}`);
+      }
+
       setDetailedTrendData([]);
     }
   };
@@ -855,7 +911,35 @@ const DashboardTrendsWidget = ({
               <CircularProgress />
             </Box>
           ) : resultsError ? (
-            <Alert severity="error">{resultsError}</Alert>
+            <Alert
+              severity={resultsError.includes('No execution results found') ? 'info' : 'error'}
+              sx={{ mb: 2 }}
+            >
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  {resultsError.includes('No execution results found') ? 'No Results Available' : 'Error Loading Results'}
+                </Typography>
+                <Typography variant="body2">
+                  {resultsError}
+                </Typography>
+                {resultsError.includes('No execution results found') && (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
+                      💡 To see results here:
+                    </Typography>
+                    <Typography variant="body2" sx={{ ml: 2, color: 'text.secondary' }}>
+                      • Execute this KPI from the KPI Management page
+                    </Typography>
+                    <Typography variant="body2" sx={{ ml: 2, color: 'text.secondary' }}>
+                      • Ensure the execution completes successfully
+                    </Typography>
+                    <Typography variant="body2" sx={{ ml: 2, color: 'text.secondary' }}>
+                      • Results will appear here after successful execution
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            </Alert>
           ) : !results ? (
             <Alert severity="info">No results available</Alert>
           ) : (
@@ -863,9 +947,29 @@ const DashboardTrendsWidget = ({
               {/* Results Table Section */}
               <Box>
                 <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                  Query Results ({results.record_count || 0} records)
+                  Query Results ({results?.number_of_records || results?.record_count || 0} records)
                 </Typography>
-                {results.result_data && results.result_data.length > 0 ? (
+
+                {/* Debug information */}
+                <Box sx={{ mb: 2, p: 1, bgcolor: '#f5f5f5', borderRadius: 1, fontSize: '0.8rem' }}>
+                  <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Debug Info:</Typography>
+                  <br />
+                  <Typography variant="caption">
+                    result_data exists: {results?.result_data ? 'Yes' : 'No'}
+                    {results?.result_data && ` (${results.result_data.length} items)`}
+                  </Typography>
+                  <br />
+                  <Typography variant="caption">
+                    column_names exists: {results?.column_names ? 'Yes' : 'No'}
+                    {results?.column_names && ` (${results.column_names.length} columns)`}
+                  </Typography>
+                  <br />
+                  <Typography variant="caption">
+                    Available keys: {results ? Object.keys(results).join(', ') : 'None'}
+                  </Typography>
+                </Box>
+
+                {results?.result_data && results.result_data.length > 0 ? (
                   <>
                     <TableContainer component={Paper}>
                       <Table size="small">
@@ -875,7 +979,14 @@ const DashboardTrendsWidget = ({
                               <TableCell key={col} sx={{ fontWeight: 'bold' }}>
                                 {col}
                               </TableCell>
-                            ))}
+                            )) || (
+                              // Fallback: use keys from first row if column_names not available
+                              results.result_data[0] && Object.keys(results.result_data[0]).map((col) => (
+                                <TableCell key={col} sx={{ fontWeight: 'bold' }}>
+                                  {col}
+                                </TableCell>
+                              ))
+                            )}
                           </TableRow>
                         </TableHead>
                         <TableBody>
@@ -883,7 +994,7 @@ const DashboardTrendsWidget = ({
                             .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                             .map((row, idx) => (
                               <TableRow key={idx}>
-                                {results.column_names?.map((col) => (
+                                {(results.column_names || Object.keys(row))?.map((col) => (
                                   <TableCell key={`${idx}-${col}`}>
                                     {String(row[col] ?? '')}
                                   </TableCell>
@@ -903,8 +1014,22 @@ const DashboardTrendsWidget = ({
                       onRowsPerPageChange={handleChangeRowsPerPage}
                     />
                   </>
+                ) : results ? (
+                  <Box>
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                      No result_data found in response
+                    </Alert>
+                    <Box sx={{ p: 2, bgcolor: '#f9f9f9', borderRadius: 1 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                        Raw Response Data:
+                      </Typography>
+                      <pre style={{ fontSize: '0.8rem', overflow: 'auto', maxHeight: '200px' }}>
+                        {JSON.stringify(results, null, 2)}
+                      </pre>
+                    </Box>
+                  </Box>
                 ) : (
-                  <Alert severity="info">No data returned from query</Alert>
+                  <Alert severity="info">No results available</Alert>
                 )}
               </Box>
             </Box>
@@ -1009,8 +1134,11 @@ const DashboardTrendsWidget = ({
               <Typography variant="body1" sx={{ fontWeight: 600 }}>
                 No trend data available
               </Typography>
-              <Typography variant="body2" sx={{ mt: 1 }}>
-                Execute this KPI to start collecting trend data
+              <Typography variant="body2" sx={{ mt: 1, textAlign: 'center' }}>
+                Execute this KPI multiple times to start collecting trend data
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 1, textAlign: 'center', fontSize: '0.875rem', fontStyle: 'italic' }}>
+                Trend charts show execution history over time
               </Typography>
             </Box>
           )}

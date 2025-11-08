@@ -39,6 +39,7 @@ import {
   Code as CodeIcon,
 } from '@mui/icons-material';
 import { getKPIExecutions, getKPI } from '../services/api';
+import KPIDrilldown from '../components/KPIDrilldown';
 
 const KPIExecutionHistoryPage = () => {
   const { kpiId } = useParams();
@@ -49,6 +50,8 @@ const KPIExecutionHistoryPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expandedRows, setExpandedRows] = useState(new Set());
+  const [drilldownDialogOpen, setDrilldownDialogOpen] = useState(false);
+  const [selectedExecution, setSelectedExecution] = useState(null);
 
   useEffect(() => {
     if (kpiId) {
@@ -86,9 +89,12 @@ const KPIExecutionHistoryPage = () => {
   };
 
   const handleViewDrilldown = (execution) => {
-    // Navigate to drilldown page or open drilldown dialog
     console.log('View drilldown for execution:', execution.id);
-    // TODO: Implement drilldown navigation
+    console.log('Execution data:', execution);
+
+    // Open the drilldown dialog to show detailed results
+    setSelectedExecution(execution);
+    setDrilldownDialogOpen(true);
   };
 
   const getStatusColor = (status) => {
@@ -179,12 +185,16 @@ const KPIExecutionHistoryPage = () => {
               <Typography variant="h4" fontWeight="600" sx={{ mb: 1 }}>
                 {kpi.name}
               </Typography>
-              {kpi.alias_name && (
+              {/* Only show alias_name if it's different from name */}
+              {kpi.alias_name && kpi.alias_name !== kpi.name && (
                 <Typography variant="h6" sx={{ opacity: 0.9, mb: 1 }}>
                   {kpi.alias_name}
                 </Typography>
               )}
-              {kpi.description && (
+              {/* Only show description if it's different from both name and alias_name */}
+              {kpi.description &&
+               kpi.description !== kpi.name &&
+               kpi.description !== kpi.alias_name && (
                 <Typography variant="body1" sx={{ opacity: 0.8, mb: 2 }}>
                   {kpi.description}
                 </Typography>
@@ -397,6 +407,13 @@ const KPIExecutionHistoryPage = () => {
           </TableContainer>
         </CardContent>
       </Card>
+
+      {/* Drilldown Dialog */}
+      <KPIDrilldown
+        open={drilldownDialogOpen}
+        execution={selectedExecution}
+        onClose={() => setDrilldownDialogOpen(false)}
+      />
     </Container>
   );
 };

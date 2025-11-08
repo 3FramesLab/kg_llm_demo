@@ -377,12 +377,13 @@ class NLQueryParser:
             return
 
         # Define domain patterns
+        # Note: NBU = Network Business Unit, GPU = Graphics Processing Unit
+        # These are compatible hardware business domains
         domain_patterns = {
-            'NBU': ['_NBU', '_nbu'],  # National Bank of Ukraine
-            'GPU': ['_GPU', '_gpu'],  # Graphics Processing Unit
+            'HARDWARE_PRODUCTS': ['_NBU', '_nbu', '_GPU', '_gpu'],  # Hardware business units (compatible)
             'CPU': ['_CPU', '_cpu'],  # Central Processing Unit
             'BANKING': ['_BANK', '_bank', '_FINANCE', '_finance'],
-            'HARDWARE': ['_HARDWARE', '_hardware', '_DEVICE', '_device']
+            'GENERAL_HARDWARE': ['_HARDWARE', '_hardware', '_DEVICE', '_device']
         }
 
         # Get domains for both tables

@@ -8,7 +8,7 @@ Integrates KPI definitions with NL query execution pipeline.
 import logging
 import time
 from typing import Any, Dict, Optional
-from kg_builder.services.landing_kpi_service import LandingKPIService
+from kg_builder.services.landing_kpi_service_jdbc import LandingKPIServiceJDBC
 from kg_builder.services.nl_query_classifier import get_nl_query_classifier
 from kg_builder.services.nl_query_parser import get_nl_query_parser
 from kg_builder.services.nl_query_executor import get_nl_query_executor
@@ -21,7 +21,7 @@ class LandingKPIExecutor:
     
     def __init__(self):
         """Initialize Landing KPI executor."""
-        self.kpi_service = LandingKPIService()
+        self.kpi_service = LandingKPIServiceJDBC()
     
     def execute_kpi_async(
         self,
@@ -46,6 +46,17 @@ class LandingKPIExecutor:
             kpi = self.kpi_service.get_kpi(kpi_id)
             if not kpi:
                 raise ValueError(f"KPI ID {kpi_id} not found")
+
+            # Debug: Log the KPI data structure
+            logger.info(f"🔍 KPI Data Retrieved:")
+            logger.info(f"   KPI ID: {kpi.get('id')}")
+            logger.info(f"   KPI Name: {kpi.get('name')}")
+            logger.info(f"   isAccept: {kpi.get('isAccept', 'NOT_SET')}")
+            logger.info(f"   isSQLCached: {kpi.get('isSQLCached', 'NOT_SET')}")
+            logger.info(f"   cached_sql exists: {bool(kpi.get('cached_sql'))}")
+            if kpi.get('cached_sql'):
+                logger.info(f"   cached_sql preview: {kpi['cached_sql'][:100]}...")
+            logger.info(f"   KPI keys: {list(kpi.keys())}")
             
             # Execute the KPI
             result = self._execute_kpi_internal(kpi, execution_params)
@@ -185,13 +196,49 @@ class LandingKPIExecutor:
             if not connection:
                 raise ValueError("Could not establish database connection")
 
-            # Step 5: Execute the query (Force LLM-only SQL generation)
-            executor = get_nl_query_executor(db_type, kg=kg, use_llm=True)  # Pass KG and force LLM for SQL generation
-            query_result = executor.execute(
-                intent,
-                connection,
-                limit=limit
-            )
+            # Step 5: Check if SQL is cached and should be used instead of LLM generation
+            logger.info(f"🔍 Cache Status Check:")
+            logger.info(f"   isSQLCached: {kpi.get('isSQLCached', False)} (type: {type(kpi.get('isSQLCached'))})")
+            logger.info(f"   cached_sql exists: {bool(kpi.get('cached_sql'))}")
+            logger.info(f"   cached_sql length: {len(kpi.get('cached_sql', ''))}")
+            logger.info(f"   isAccept: {kpi.get('isAccept', False)}")
+
+            # More explicit cache check
+            is_cached = kpi.get('isSQLCached', False)
+            has_cached_sql = bool(kpi.get('cached_sql', '').strip())
+
+            logger.info(f"🎯 Cache Decision:")
+            logger.info(f"   is_cached: {is_cached}")
+            logger.info(f"   has_cached_sql: {has_cached_sql}")
+            logger.info(f"   will_use_cache: {is_cached and has_cached_sql}")
+
+            if is_cached and has_cached_sql:
+                logger.info(f"🔄 USING CACHED SQL instead of LLM generation")
+                logger.info(f"   Cached SQL preview: {kpi['cached_sql'][:200]}...")
+
+                # Execute cached SQL directly
+                query_result = self._execute_cached_sql(
+                    kpi['cached_sql'],
+                    connection,
+                    limit,
+                    intent.definition
+                )
+                logger.info(f"✅ Cached SQL execution completed")
+            else:
+                logger.info(f"🤖 USING LLM GENERATION")
+                if not is_cached:
+                    logger.info(f"   Reason: isSQLCached is False")
+                if not has_cached_sql:
+                    logger.info(f"   Reason: No cached SQL available")
+
+                # Step 5: Execute the query (Force LLM-only SQL generation)
+                executor = get_nl_query_executor(db_type, kg=kg, use_llm=True)  # Pass KG and force LLM for SQL generation
+                query_result = executor.execute(
+                    intent,
+                    connection,
+                    limit=limit
+                )
+                logger.info(f"✅ LLM SQL generation completed")
 
             # Step 6: Prepare result data
             execution_time_ms = (time.time() - start_time) * 1000
@@ -225,6 +272,78 @@ class LandingKPIExecutor:
                 'execution_time_ms': execution_time_ms,
                 'number_of_records': 0,
                 'result_data': []
+            }
+
+    def _execute_cached_sql(self, cached_sql: str, connection, limit: int, definition: str) -> Dict[str, Any]:
+        """Execute cached SQL directly without LLM generation."""
+        import time
+        from kg_builder.services.nl_query_executor import NLQueryExecutor
+
+        start_time = time.time()
+
+        try:
+            logger.info(f"🔄 Executing cached SQL")
+
+            # Add LIMIT clause to cached SQL if needed
+            executor = NLQueryExecutor()
+            sql_with_limit = executor._add_limit_clause(cached_sql, limit)
+
+            # Log the SQL being executed
+            logger.info("="*80)
+            logger.info(f"📝 Query Definition: {definition}")
+            logger.info(f"🔄 Using Cached SQL (isSQLCached=true)")
+            logger.info("-"*80)
+            logger.info("🔹 CACHED SQL TO BE EXECUTED:")
+            logger.info(f"\n{sql_with_limit}\n")
+            logger.info("="*80)
+
+            # Execute the SQL
+            cursor = connection.cursor()
+            cursor.execute(sql_with_limit)
+
+            # Fetch results
+            columns = [desc[0] for desc in cursor.description]
+            rows = cursor.fetchall()
+
+            # Convert to list of dictionaries
+            records = []
+            for row in rows:
+                record = {}
+                for i, value in enumerate(row):
+                    record[columns[i]] = value
+                records.append(record)
+
+            execution_time_ms = (time.time() - start_time) * 1000
+
+            logger.info(f"✅ Cached SQL executed successfully")
+            logger.info(f"   Records returned: {len(records)}")
+            logger.info(f"   Execution time: {execution_time_ms:.2f}ms")
+
+            return {
+                'execution_status': 'success',
+                'generated_sql': cached_sql,
+                'number_of_records': len(records),
+                'result_data': records,
+                'execution_time_ms': execution_time_ms,
+                'sql_query_type': 'cached_sql',
+                'operation': 'CACHED',
+                'confidence_score': 1.0,  # High confidence for cached SQL
+                'joined_columns': '',
+                'used_cached_sql': True
+            }
+
+        except Exception as e:
+            execution_time_ms = (time.time() - start_time) * 1000
+            logger.error(f"❌ Cached SQL execution failed: {e}")
+
+            return {
+                'execution_status': 'failed',
+                'error_message': f"Cached SQL execution failed: {str(e)}",
+                'generated_sql': cached_sql,
+                'execution_time_ms': execution_time_ms,
+                'number_of_records': 0,
+                'result_data': [],
+                'used_cached_sql': True
             }
 
 

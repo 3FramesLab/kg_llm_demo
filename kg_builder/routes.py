@@ -23,7 +23,8 @@ from kg_builder.models import (
     RelationshipPair, KGRelationshipType,
     NLQueryExecutionRequest, NLQueryExecutionResponse,
     KPIDefinition, KPIUpdateRequest as KPIUpdateRequestNew,
-    KPIExecutionResult, DrilldownRequest, DrilldownResponse
+    KPIExecutionResult, DrilldownRequest, DrilldownResponse,
+    KPICacheFlagsRequest, KPIClearCacheRequest
 )
 from kg_builder.services.schema_parser import SchemaParser
 from kg_builder.services.falkordb_backend import get_falkordb_backend
@@ -143,6 +144,34 @@ async def list_schemas():
         }
     except Exception as e:
         logger.error(f"Error listing schemas: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/schemas/{schema_name}/tables")
+async def get_schema_tables(schema_name: str):
+    """Get all tables from a specific schema."""
+    try:
+        schema = SchemaParser.load_schema(schema_name)
+
+        tables = []
+        for table_name, table_info in schema.tables.items():
+            tables.append({
+                "name": table_name,
+                "columns_count": len(table_info.columns),
+                "primary_keys": table_info.primary_keys,
+                "foreign_keys": len(table_info.foreign_keys)
+            })
+
+        return {
+            "success": True,
+            "schema_name": schema_name,
+            "data": tables,
+            "count": len(tables)
+        }
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Schema '{schema_name}' not found")
+    except Exception as e:
+        logger.error(f"Error getting schema tables: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -414,6 +443,197 @@ async def get_kg_metadata(kg_name: str, backend: str = "graphiti"):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# Table Aliases CRUD endpoints
+@router.get("/table-aliases")
+async def get_all_table_aliases():
+    """Get all table aliases from all knowledge graphs."""
+    try:
+        backend_obj = get_graphiti_backend()
+        all_aliases = {}
+
+        # Get all KG names
+        kg_graphs = backend_obj.list_graphs()
+        kg_names = [graph.get('name', graph) if isinstance(graph, dict) else graph for graph in kg_graphs]
+
+        for kg_name in kg_names:
+            try:
+                metadata = backend_obj.get_kg_metadata(kg_name)
+                if metadata and "table_aliases" in metadata:
+                    table_aliases = metadata["table_aliases"]
+                    for table_name, aliases in table_aliases.items():
+                        if table_name not in all_aliases:
+                            all_aliases[table_name] = {
+                                "table_name": table_name,
+                                "aliases": aliases,
+                                "kg_name": kg_name,
+                                "id": f"{kg_name}_{table_name}"
+                            }
+            except Exception as e:
+                logger.warning(f"Error getting aliases from KG {kg_name}: {e}")
+                continue
+
+        return {
+            "success": True,
+            "data": list(all_aliases.values())
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving table aliases: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/kg/{kg_name}/table-aliases")
+async def get_kg_table_aliases(kg_name: str):
+    """Get table aliases for a specific knowledge graph."""
+    try:
+        backend_obj = get_graphiti_backend()
+        metadata = backend_obj.get_kg_metadata(kg_name)
+
+        if not metadata:
+            raise HTTPException(status_code=404, detail=f"KG '{kg_name}' not found")
+
+        table_aliases = metadata.get("table_aliases", {})
+
+        # Format for frontend
+        formatted_aliases = []
+        for table_name, aliases in table_aliases.items():
+            formatted_aliases.append({
+                "id": f"{kg_name}_{table_name}",
+                "table_name": table_name,
+                "aliases": aliases,
+                "kg_name": kg_name
+            })
+
+        return {
+            "success": True,
+            "kg_name": kg_name,
+            "data": formatted_aliases
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving table aliases for KG {kg_name}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/kg/{kg_name}/table-aliases")
+async def create_table_alias(kg_name: str, alias_data: dict):
+    """Create or update table aliases for a specific table in a KG."""
+    try:
+        table_name = alias_data.get("table_name")
+        aliases = alias_data.get("aliases", [])
+
+        if not table_name:
+            raise HTTPException(status_code=400, detail="table_name is required")
+
+        if not isinstance(aliases, list):
+            raise HTTPException(status_code=400, detail="aliases must be a list")
+
+        backend_obj = get_graphiti_backend()
+        metadata = backend_obj.get_kg_metadata(kg_name)
+
+        if not metadata:
+            raise HTTPException(status_code=404, detail=f"KG '{kg_name}' not found")
+
+        # Update table aliases
+        if "table_aliases" not in metadata:
+            metadata["table_aliases"] = {}
+
+        metadata["table_aliases"][table_name] = aliases
+
+        # Save updated metadata
+        backend_obj.save_kg_metadata(kg_name, metadata)
+
+        return {
+            "success": True,
+            "message": f"Table aliases updated for {table_name}",
+            "data": {
+                "id": f"{kg_name}_{table_name}",
+                "table_name": table_name,
+                "aliases": aliases,
+                "kg_name": kg_name
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating table alias: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/kg/{kg_name}/table-aliases/{table_name}")
+async def update_table_alias(kg_name: str, table_name: str, alias_data: dict):
+    """Update table aliases for a specific table."""
+    try:
+        aliases = alias_data.get("aliases", [])
+
+        if not isinstance(aliases, list):
+            raise HTTPException(status_code=400, detail="aliases must be a list")
+
+        backend_obj = get_graphiti_backend()
+        metadata = backend_obj.get_kg_metadata(kg_name)
+
+        if not metadata:
+            raise HTTPException(status_code=404, detail=f"KG '{kg_name}' not found")
+
+        if "table_aliases" not in metadata:
+            metadata["table_aliases"] = {}
+
+        if table_name not in metadata["table_aliases"]:
+            raise HTTPException(status_code=404, detail=f"Table '{table_name}' not found in KG '{kg_name}'")
+
+        # Update aliases
+        metadata["table_aliases"][table_name] = aliases
+
+        # Save updated metadata
+        backend_obj.save_kg_metadata(kg_name, metadata)
+
+        return {
+            "success": True,
+            "message": f"Table aliases updated for {table_name}",
+            "data": {
+                "id": f"{kg_name}_{table_name}",
+                "table_name": table_name,
+                "aliases": aliases,
+                "kg_name": kg_name
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating table alias: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/kg/{kg_name}/table-aliases/{table_name}")
+async def delete_table_alias(kg_name: str, table_name: str):
+    """Delete table aliases for a specific table."""
+    try:
+        backend_obj = get_graphiti_backend()
+        metadata = backend_obj.get_kg_metadata(kg_name)
+
+        if not metadata:
+            raise HTTPException(status_code=404, detail=f"KG '{kg_name}' not found")
+
+        if "table_aliases" not in metadata or table_name not in metadata["table_aliases"]:
+            raise HTTPException(status_code=404, detail=f"Table '{table_name}' not found in KG '{kg_name}'")
+
+        # Remove table aliases
+        del metadata["table_aliases"][table_name]
+
+        # Save updated metadata
+        backend_obj.save_kg_metadata(kg_name, metadata)
+
+        return {
+            "success": True,
+            "message": f"Table aliases deleted for {table_name}"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting table alias: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/kg/{kg_name}/export")
 async def export_graph(kg_name: str, backend: str = "graphiti"):
     """Export a knowledge graph."""
@@ -454,7 +674,7 @@ async def list_graphs():
         
         return {
             "success": True,
-            "graphs": graphs,
+            "data": graphs,  # Changed from "graphs" to "data" for frontend compatibility
             "count": len(graphs)
         }
     except Exception as e:
@@ -3078,6 +3298,128 @@ async def update_kpi_mssql(kpi_id: int, request: KPIUpdateRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.patch("/landing-kpi-mssql/kpis/{kpi_id}/cache-flags", tags=["KPI Analytics"], response_model=dict)
+async def update_kpi_cache_flags(kpi_id: int, request: KPICacheFlagsRequest):
+    """Update KPI cache flags (isAccept, isSQLCached, cached_sql)."""
+    try:
+        service = get_kpi_analytics_service()
+        kpi = service.update_cache_flags(kpi_id, request.dict(exclude_unset=True))
+
+        if not kpi:
+            raise HTTPException(status_code=404, detail=f"KPI with ID {kpi_id} not found")
+
+        return {
+            "success": True,
+            "message": "Cache flags updated successfully",
+            "data": kpi,
+            "storage_type": "mssql"
+        }
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error updating cache flags for KPI {kpi_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/landing-kpi-mssql/kpis/{kpi_id}/clear-cache", tags=["KPI Analytics"], response_model=dict)
+async def clear_kpi_cache_flags(kpi_id: int, request: KPIClearCacheRequest):
+    """Clear both isAccept and isSQLCached flags for a KPI."""
+    try:
+        service = get_kpi_analytics_service()
+        kpi = service.clear_cache_flags(kpi_id)
+
+        if not kpi:
+            raise HTTPException(status_code=404, detail=f"KPI with ID {kpi_id} not found")
+
+        return {
+            "success": True,
+            "message": "Cache flags cleared successfully",
+            "data": kpi,
+            "storage_type": "mssql"
+        }
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error clearing cache flags for KPI {kpi_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/landing-kpi-mssql/kpis/{kpi_id}/debug-cache", tags=["KPI Analytics"], response_model=dict)
+async def debug_kpi_cache_status(kpi_id: int):
+    """Debug endpoint to check KPI cache status."""
+    try:
+        service = get_kpi_analytics_service()
+        kpi = service.get_kpi(kpi_id)
+
+        if not kpi:
+            raise HTTPException(status_code=404, detail=f"KPI with ID {kpi_id} not found")
+
+        return {
+            "success": True,
+            "kpi_id": kpi_id,
+            "cache_status": {
+                "isAccept": kpi.get('isAccept'),
+                "isSQLCached": kpi.get('isSQLCached'),
+                "cached_sql_exists": bool(kpi.get('cached_sql')),
+                "cached_sql_length": len(kpi.get('cached_sql', '')),
+                "cached_sql_preview": kpi.get('cached_sql', '')[:200] + '...' if kpi.get('cached_sql') else None
+            },
+            "service_type": "LandingKPIServiceJDBC",
+            "all_kpi_keys": list(kpi.keys())
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error debugging cache status for KPI {kpi_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/landing-kpi-mssql/kpis/{kpi_id}/test-sql-storage", tags=["KPI Analytics"], response_model=dict)
+async def test_sql_storage(kpi_id: int):
+    """Test endpoint to verify SQL storage works."""
+    try:
+        service = get_kpi_analytics_service()
+
+        # Test SQL to store
+        test_sql = f"SELECT 'Test SQL storage for KPI {kpi_id}' as test_message, GETDATE() as test_timestamp"
+
+        # Store the test SQL
+        logger.info(f"🧪 Testing SQL storage for KPI {kpi_id}")
+        logger.info(f"   Test SQL: {test_sql}")
+
+        result = service.update_cache_flags(kpi_id, {
+            "isAccept": True,
+            "cached_sql": test_sql
+        })
+
+        # Verify it was stored
+        kpi = service.get_kpi(kpi_id)
+        stored_sql = kpi.get('cached_sql', '')
+
+        return {
+            "success": True,
+            "test_sql": test_sql,
+            "stored_sql": stored_sql,
+            "storage_successful": stored_sql == test_sql,
+            "stored_length": len(stored_sql),
+            "test_length": len(test_sql),
+            "kpi_cache_status": {
+                "isAccept": kpi.get('isAccept'),
+                "isSQLCached": kpi.get('isSQLCached'),
+                "cached_sql_exists": bool(kpi.get('cached_sql'))
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error testing SQL storage for KPI {kpi_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.delete("/landing-kpi-mssql/kpis/{kpi_id}", tags=["KPI Analytics"], response_model=dict)
 async def delete_kpi_mssql(kpi_id: int):
     """Delete (deactivate) a KPI in MS SQL Server."""
@@ -3529,4 +3871,67 @@ async def preview_sql_mssql(request: SQLPreviewRequest):
     except Exception as e:
         logger.error(f"Error in SQL preview: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/material-master/ops-planners", tags=["Material Master"], response_model=dict)
+async def get_unique_ops_planners():
+    """
+    Get unique OPS_PLANNER values from hana_material_master table.
+
+    Returns a list of distinct planner names from the material master table.
+    Useful for filtering, dropdowns, and analytics.
+    """
+    try:
+        logger.info("Fetching unique OPS_PLANNER values from hana_material_master")
+
+        # Get connection to source database (NewDQ)
+        conn = get_source_database_connection()
+        if not conn:
+            raise HTTPException(
+                status_code=500,
+                detail="Unable to connect to source database"
+            )
+
+        cursor = conn.cursor()
+
+        try:
+            # Query to get unique non-null OPS_PLANNER values
+            query = """
+                SELECT DISTINCT OPS_PLANNER
+                FROM hana_material_master
+                WHERE OPS_PLANNER IS NOT NULL
+                ORDER BY OPS_PLANNER
+            """
+
+            logger.debug(f"Executing query: {query}")
+            cursor.execute(query)
+
+            # Fetch all results
+            rows = cursor.fetchall()
+
+            # Extract planner names from result tuples
+            planners = [row[0] for row in rows if row[0]]
+
+            logger.info(f"Found {len(planners)} unique OPS_PLANNER values")
+
+            return {
+                "success": True,
+                "data": planners,
+                "count": len(planners),
+                "source_table": "hana_material_master",
+                "source_database": "NewDQ"
+            }
+
+        finally:
+            cursor.close()
+            conn.close()
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching unique OPS_PLANNER values: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch OPS_PLANNER values: {str(e)}"
+        )
 

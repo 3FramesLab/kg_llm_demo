@@ -61,20 +61,24 @@ class LandingKPIServiceMSSQL:
         """Create a new KPI definition."""
         conn = self._get_connection()
         cursor = conn.cursor()
-        
+
         try:
             cursor.execute("""
-                INSERT INTO kpi_definitions 
-                (name, alias_name, group_name, description, nl_definition, created_by)
+                INSERT INTO kpi_definitions
+                (name, alias_name, group_name, description, nl_definition, created_by,
+                 isAccept, isSQLCached, cached_sql)
                 OUTPUT INSERTED.id
-                VALUES (?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 kpi_data.get('name'),
                 kpi_data.get('alias_name'),
                 kpi_data.get('group_name'),
                 kpi_data.get('description'),
                 kpi_data.get('nl_definition'),
-                kpi_data.get('created_by')
+                kpi_data.get('created_by'),
+                kpi_data.get('isAccept', False),
+                kpi_data.get('isSQLCached', False),
+                kpi_data.get('cached_sql')
             ))
             
             kpi_id = cursor.fetchone()[0]
@@ -181,21 +185,37 @@ class LandingKPIServiceMSSQL:
         """Update KPI definition."""
         conn = self._get_connection()
         cursor = conn.cursor()
-        
+
         try:
-            cursor.execute("""
-                UPDATE kpi_definitions 
-                SET name = ?, alias_name = ?, group_name = ?, description = ?, 
-                    nl_definition = ?, updated_at = GETDATE()
-                WHERE id = ?
-            """, (
-                kpi_data.get('name'),
-                kpi_data.get('alias_name'),
-                kpi_data.get('group_name'),
-                kpi_data.get('description'),
-                kpi_data.get('nl_definition'),
-                kpi_id
-            ))
+            # Build dynamic update query to only update provided fields
+            updates = []
+            params = []
+
+            field_mappings = {
+                'name': 'name',
+                'alias_name': 'alias_name',
+                'group_name': 'group_name',
+                'description': 'description',
+                'nl_definition': 'nl_definition',
+                'is_active': 'is_active',
+                'isAccept': 'isAccept',
+                'isSQLCached': 'isSQLCached',
+                'cached_sql': 'cached_sql'
+            }
+
+            for key, db_field in field_mappings.items():
+                if key in kpi_data and kpi_data[key] is not None:
+                    updates.append(f"{db_field} = ?")
+                    params.append(kpi_data[key])
+
+            if not updates:
+                return self.get_kpi(kpi_id)
+
+            updates.append("updated_at = GETDATE()")
+            params.append(kpi_id)
+
+            query = f"UPDATE kpi_definitions SET {', '.join(updates)} WHERE id = ?"
+            cursor.execute(query, params)
             
             if cursor.rowcount == 0:
                 raise ValueError(f"KPI with ID {kpi_id} not found")
@@ -224,6 +244,66 @@ class LandingKPIServiceMSSQL:
             conn.commit()
             logger.info(f"✓ Deactivated KPI ID: {kpi_id}")
             return True
+        finally:
+            conn.close()
+
+    def update_cache_flags(self, kpi_id: int, cache_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update KPI cache flags (isAccept, isSQLCached, cached_sql)."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        try:
+            updates = []
+            params = []
+
+            if 'isAccept' in cache_data:
+                updates.append("isAccept = ?")
+                params.append(cache_data['isAccept'])
+
+            if 'isSQLCached' in cache_data:
+                updates.append("isSQLCached = ?")
+                params.append(cache_data['isSQLCached'])
+
+            if 'cached_sql' in cache_data:
+                updates.append("cached_sql = ?")
+                params.append(cache_data['cached_sql'])
+
+            if not updates:
+                return self.get_kpi(kpi_id)
+
+            updates.append("updated_at = GETDATE()")
+            params.append(kpi_id)
+
+            query = f"UPDATE kpi_definitions SET {', '.join(updates)} WHERE id = ?"
+            cursor.execute(query, params)
+
+            if cursor.rowcount == 0:
+                raise ValueError(f"KPI with ID {kpi_id} not found")
+
+            conn.commit()
+            logger.info(f"✓ Updated cache flags for KPI ID: {kpi_id}")
+            return self.get_kpi(kpi_id)
+        finally:
+            conn.close()
+
+    def clear_cache_flags(self, kpi_id: int) -> Dict[str, Any]:
+        """Clear both isAccept and isSQLCached flags for a KPI."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute("""
+                UPDATE kpi_definitions
+                SET isAccept = 0, isSQLCached = 0, cached_sql = NULL, updated_at = GETDATE()
+                WHERE id = ?
+            """, (kpi_id,))
+
+            if cursor.rowcount == 0:
+                raise ValueError(f"KPI with ID {kpi_id} not found")
+
+            conn.commit()
+            logger.info(f"✓ Cleared cache flags for KPI ID: {kpi_id}")
+            return self.get_kpi(kpi_id)
         finally:
             conn.close()
 
