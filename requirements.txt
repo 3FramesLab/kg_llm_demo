@@ -13,21 +13,35 @@ falkordb>=1.0.1
 mysql-connector-python==8.2.0
 pymysql==1.1.0  # For landing database (MySQL)
 jaydebeapi==1.2.3  # For JDBC connections to source/target DBs
+pyodbc>=5.0.1  # For ODBC connections (Airflow/MSSQL)
 sqlalchemy==2.0.23
 pymongo==4.6.1
 
 # LLM Integration
 openai==1.3.9
 
+# HTTP and API clients
+requests>=2.31.0  # For HTTP requests and API calls
+httpx==0.25.2  # For async HTTP requests
+
 # Utilities
 python-dotenv==1.0.0
 python-multipart==0.0.6
 filelock==3.13.1  # For file-based KPI storage concurrency
+croniter==2.0.1  # For cron expression parsing in KPI scheduling
+python-dateutil>=2.8.2  # Date/time utilities
+tenacity>=8.2.0  # Retry utilities
+orjson>=3.9.0  # Fast JSON handling
+jinja2>=3.1.2  # Template engine for email notifications
+
+# Logging and monitoring
+structlog>=23.1.0  # Enhanced logging
+prometheus-client>=0.17.0  # Metrics and monitoring (optional)
 
 # Development dependencies (optional)
 pytest==7.4.3
 pytest-asyncio==0.21.1
-httpx==0.25.2
+pytest-airflow>=0.1.0  # Airflow DAG testing
 black==23.12.0
 flake8==6.1.0
 mypy==1.7.1

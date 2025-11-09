@@ -1,0 +1,124 @@
+# Docker Compose for Airflow Integration with KPI Scheduling System
+# This sets up Airflow to work with the KPI scheduler
+
+version: '3.8'
+
+services:
+  # PostgreSQL for Airflow metadata
+  airflow-postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      retries: 5
+    restart: always
+
+  # Redis for Celery (if using CeleryExecutor)
+  airflow-redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 30s
+      retries: 50
+    restart: always
+
+  # Airflow Webserver
+  airflow-webserver:
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow
+      - AIRFLOW__CORE__DAGS_FOLDER=/opt/airflow/dags
+      - AIRFLOW__CORE__LOAD_EXAMPLES=false
+      - AIRFLOW__WEBSERVER__EXPOSE_CONFIG=true
+      - AIRFLOW__WEBSERVER__AUTHENTICATE=false
+      - AIRFLOW__SCHEDULER__CATCHUP_BY_DEFAULT=false
+      - KPI_SCHEDULER_API_BASE_URL=http://host.docker.internal:8000/v1
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+    ports:
+      - "8080:8080"
+    command: webserver
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    restart: always
+
+  # Airflow Scheduler
+  airflow-scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow
+      - AIRFLOW__CORE__DAGS_FOLDER=/opt/airflow/dags
+      - AIRFLOW__CORE__LOAD_EXAMPLES=false
+      - AIRFLOW__SCHEDULER__CATCHUP_BY_DEFAULT=false
+      - KPI_SCHEDULER_API_BASE_URL=http://host.docker.internal:8000/v1
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+    command: scheduler
+    restart: always
+
+  # Airflow Init (run once to initialize database)
+  airflow-init:
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow
+      - AIRFLOW__CORE__DAGS_FOLDER=/opt/airflow/dags
+      - AIRFLOW__CORE__LOAD_EXAMPLES=false
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+    command: >
+      bash -c "
+        airflow db init &&
+        airflow users create \
+          --username admin \
+          --firstname Admin \
+          --lastname User \
+          --role Admin \
+          --email admin@example.com \
+          --password admin
+      "
+    restart: "no"
+
+volumes:
+  airflow_postgres_data:
+
+networks:
+  default:
+    name: kpi-scheduler-network

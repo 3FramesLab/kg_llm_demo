@@ -18,6 +18,10 @@ import {
   useMediaQuery,
   Divider,
   IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -27,12 +31,15 @@ import {
   TrendingUp as TrendingUpIcon,
   Description as DescriptionIcon,
   Refresh as RefreshIcon,
+  Schedule as ScheduleIcon,
 } from '@mui/icons-material';
 import KPIList from '../components/KPIList';
 import KPIForm from '../components/KPIForm';
 import KPIExecutionDialog from '../components/KPIExecutionDialog';
 import KPIExecutionHistory from '../components/KPIExecutionHistory';
 import KPIDrilldown from '../components/KPIDrilldown';
+import ScheduleManagement from '../components/ScheduleManagement';
+import ScheduleMonitoringDashboard from '../components/ScheduleMonitoringDashboard';
 
 const LandingKPIManagement = () => {
   const navigate = useNavigate();
@@ -49,6 +56,8 @@ const LandingKPIManagement = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [successMessage, setSuccessMessage] = useState('');
   const [activeTab, setActiveTab] = useState(0);
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [monitoringDialogOpen, setMonitoringDialogOpen] = useState(false);
 
   const handleCreateKPI = () => {
     setSelectedKPI(null);
@@ -73,6 +82,11 @@ const LandingKPIManagement = () => {
   const handleViewDrilldown = (execution) => {
     setSelectedExecution(execution);
     setDrilldownDialogOpen(true);
+  };
+
+  const handleManageSchedule = (kpi) => {
+    setSelectedKPI(kpi);
+    setScheduleDialogOpen(true);
   };
 
   const handleFormSuccess = () => {
@@ -278,6 +292,15 @@ const LandingKPIManagement = () => {
                   >
                     Create New KPI
                   </Button>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<ScheduleIcon />}
+                    onClick={() => setMonitoringDialogOpen(true)}
+                    sx={{ ml: 2 }}
+                  >
+                    Schedule Monitor
+                  </Button>
                 </Box>
 
                 {/* KPI List */}
@@ -285,6 +308,7 @@ const LandingKPIManagement = () => {
                   onEdit={handleEditKPI}
                   onExecute={handleExecuteKPI}
                   onViewHistory={handleViewHistory}
+                  onManageSchedule={handleManageSchedule}
                   refreshTrigger={refreshTrigger}
                 />
               </Box>
@@ -574,6 +598,49 @@ const LandingKPIManagement = () => {
         execution={selectedExecution}
         onClose={() => setDrilldownDialogOpen(false)}
       />
+
+      {/* Schedule Management Dialog */}
+      <Dialog
+        open={scheduleDialogOpen}
+        onClose={() => setScheduleDialogOpen(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <ScheduleIcon />
+          Schedule Management - {selectedKPI?.name || selectedKPI?.alias_name}
+        </DialogTitle>
+        <DialogContent>
+          {selectedKPI && (
+            <ScheduleManagement
+              kpiId={selectedKPI.id}
+              kpiName={selectedKPI.name || selectedKPI.alias_name}
+            />
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setScheduleDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Schedule Monitoring Dashboard Dialog */}
+      <Dialog
+        open={monitoringDialogOpen}
+        onClose={() => setMonitoringDialogOpen(false)}
+        maxWidth="xl"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <ScheduleIcon />
+          Schedule Monitoring Dashboard
+        </DialogTitle>
+        <DialogContent>
+          <ScheduleMonitoringDashboard />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setMonitoringDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

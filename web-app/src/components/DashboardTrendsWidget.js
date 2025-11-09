@@ -30,6 +30,7 @@ import {
   Chip,
   TextField,
   InputAdornment,
+  MenuItem,
 } from '@mui/material';
 import {
   Refresh as RefreshIcon,
@@ -44,7 +45,7 @@ import {
 import { VegaEmbed } from 'react-vega';
 
 // Service Dependencies
-import { getDashboardData, getLatestResults, getKPIExecutions } from '../services/api';
+import { getDashboardData, getLatestResults, getKPIExecutions, getUniqueOpsPlanner } from '../services/api';
 
 /**
  * Helper function to determine background color based on record count
@@ -133,6 +134,12 @@ const DashboardTrendsWidget = ({
   const [availableOwners, setAvailableOwners] = useState([]);
   const [loadingOwners, setLoadingOwners] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // OPS Planner filter state
+  const [selectedOpsPlanner, setSelectedOpsPlanner] = useState('');
+  const [availableOpsPlanner, setAvailableOpsPlanner] = useState([]);
+  const [loadingOpsPlanner, setLoadingOpsPlanner] = useState(true);
+  const [opsSearchQuery, setOpsSearchQuery] = useState('');
 
   // Vega-Lite specification for the trend chart
   const getVegaSpec = (data) => ({
@@ -239,6 +246,7 @@ const DashboardTrendsWidget = ({
   const fetchDashboardData = async () => {
     setLoading(true);
     setLoadingOwners(true);
+    setLoadingOpsPlanner(true);
     try {
       const response = await getDashboardData();
       const data = response.data;
@@ -260,13 +268,28 @@ const DashboardTrendsWidget = ({
         });
       }
       setAvailableOwners(Array.from(ownersSet).sort());
+
+      // Fetch unique OPS Planners from hana master
+      try {
+        const opsResponse = await getUniqueOpsPlanner();
+        if (opsResponse.data && opsResponse.data.success) {
+          setAvailableOpsPlanner(opsResponse.data.data || []);
+        } else {
+          setAvailableOpsPlanner([]);
+        }
+      } catch (opsError) {
+        console.error('Error fetching OPS Planners:', opsError);
+        setAvailableOpsPlanner([]);
+      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       setDashboardData({ groups: [] });
       setAvailableOwners([]);
+      setAvailableOpsPlanner([]);
     } finally {
       setLoading(false);
       setLoadingOwners(false);
+      setLoadingOpsPlanner(false);
     }
   };
 
@@ -410,6 +433,35 @@ const DashboardTrendsWidget = ({
     });
   };
 
+  const handleOpsplannerChange = (event) => {
+    setSelectedOpsPlanner(event.target.value);
+  };
+
+  // Function to filter results data based on ops_planner
+  const filterResultsByOpsPlanner = (resultData, columnNames) => {
+    if (!selectedOpsPlanner || !resultData || !Array.isArray(resultData)) {
+      return resultData;
+    }
+
+    // Check if ops_planner column exists (case insensitive)
+    const opsColumnName = columnNames?.find(col =>
+      col.toLowerCase().includes('ops_planner') ||
+      col.toLowerCase().includes('ops planner') ||
+      col.toLowerCase() === 'ops_planner'
+    );
+
+    if (!opsColumnName) {
+      // No ops_planner column found, return original data
+      return resultData;
+    }
+
+    // Filter data based on selected ops_planner
+    return resultData.filter(row => {
+      const opsValue = row[opsColumnName];
+      return opsValue && opsValue.toString().toLowerCase().includes(selectedOpsPlanner.toLowerCase());
+    });
+  };
+
   const handleChangePage = (_event, newPage) => {
     setPage(newPage);
   };
@@ -455,6 +507,9 @@ const DashboardTrendsWidget = ({
     setResults(null);
     setResultsError(null);
     setPage(0);
+    // Reset OPS planner filter when dialog closes
+    setSelectedOpsPlanner('');
+    setOpsSearchQuery('');
   };
 
   if (loading) {
@@ -906,6 +961,143 @@ const DashboardTrendsWidget = ({
         </DialogTitle>
 
         <DialogContent sx={{ pt: 3, pb: 2 }}>
+          {/* OPS Planner Filter Section - Only show when results are available */}
+          {!resultsLoading && !resultsError && results?.result_data && (
+            <Box sx={{ mb: 3, p: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <AssessmentIcon sx={{ fontSize: 20, color: '#6366f1' }} />
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    color: '#374151',
+                    fontWeight: 600,
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  Filter Results by OPS Planner
+                </Typography>
+              </Box>
+
+              {loadingOpsPlanner ? (
+                <Skeleton variant="rectangular" width="100%" height={40} sx={{ borderRadius: 1 }} />
+              ) : availableOpsPlanner.length > 0 ? (
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+                  {/* OPS Planner Dropdown */}
+                  <TextField
+                    select
+                    size="small"
+                    value={selectedOpsPlanner}
+                    onChange={handleOpsplannerChange}
+                    placeholder="Select OPS Planner"
+                    sx={{
+                      minWidth: 200,
+                      '& .MuiOutlinedInput-root': {
+                        fontSize: '0.875rem',
+                        borderRadius: 1,
+                        bgcolor: selectedOpsPlanner ? '#e0e7ff' : 'white',
+                        '&:hover': {
+                          bgcolor: selectedOpsPlanner ? '#ddd6fe' : '#f9fafb',
+                        },
+                      },
+                    }}
+                  >
+                    <MenuItem value="">
+                      <em>All OPS Planners</em>
+                    </MenuItem>
+                    {(() => {
+                      const filteredPlanners = availableOpsPlanner.filter(planner =>
+                        planner.toLowerCase().includes(opsSearchQuery.toLowerCase())
+                      );
+
+                      return filteredPlanners.map((planner) => (
+                        <MenuItem key={planner} value={planner}>
+                          {planner}
+                        </MenuItem>
+                      ));
+                    })()}
+                  </TextField>
+
+                  {/* Search Input for OPS Planner */}
+                  <TextField
+                    size="small"
+                    placeholder="Search planners..."
+                    value={opsSearchQuery}
+                    onChange={(e) => setOpsSearchQuery(e.target.value)}
+                    sx={{
+                      minWidth: 150,
+                      '& .MuiOutlinedInput-root': {
+                        fontSize: '0.875rem',
+                        borderRadius: 1,
+                        bgcolor: 'white',
+                      },
+                    }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon sx={{ fontSize: 18, color: '#9ca3af' }} />
+                        </InputAdornment>
+                      ),
+                      endAdornment: opsSearchQuery && (
+                        <InputAdornment position="end">
+                          <IconButton
+                            size="small"
+                            onClick={() => setOpsSearchQuery('')}
+                            sx={{ p: 0.5 }}
+                          >
+                            <ClearIcon sx={{ fontSize: 16, color: '#9ca3af' }} />
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+
+                  {/* Filter Status Chip */}
+                  {selectedOpsPlanner && (
+                    <Chip
+                      label={`Filtered by: ${selectedOpsPlanner}`}
+                      size="small"
+                      onDelete={() => setSelectedOpsPlanner('')}
+                      sx={{
+                        bgcolor: '#e0e7ff',
+                        color: '#4f46e5',
+                        fontWeight: 600,
+                        '& .MuiChip-deleteIcon': {
+                          color: '#4f46e5',
+                          '&:hover': {
+                            color: '#3730a3',
+                          },
+                        },
+                      }}
+                    />
+                  )}
+                </Box>
+              ) : (
+                <Alert severity="info" sx={{ fontSize: '0.875rem' }}>
+                  No OPS planners available for filtering
+                </Alert>
+              )}
+
+              {/* Filter Info */}
+              {(() => {
+                const hasOpsColumn = results?.column_names?.find(col =>
+                  col.toLowerCase().includes('ops_planner') ||
+                  col.toLowerCase().includes('ops planner') ||
+                  col.toLowerCase() === 'ops_planner'
+                );
+
+                if (!hasOpsColumn) {
+                  return (
+                    <Alert severity="info" sx={{ mt: 2, fontSize: '0.875rem' }}>
+                      This KPI result doesn't include an OPS Planner column. Filter will have no effect.
+                    </Alert>
+                  );
+                }
+
+                return null;
+              })()}
+            </Box>
+          )}
+
           {resultsLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
               <CircularProgress />
@@ -947,90 +1139,114 @@ const DashboardTrendsWidget = ({
               {/* Results Table Section */}
               <Box>
                 <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                  Query Results ({results?.number_of_records || results?.record_count || 0} records)
+                  Query Results ({(() => {
+                    const filteredResults = filterResultsByOpsPlanner(results?.result_data, results?.column_names);
+                    const originalCount = results?.number_of_records || results?.record_count || 0;
+                    const filteredCount = filteredResults?.length || 0;
+
+                    if (selectedOpsPlanner && filteredCount !== originalCount) {
+                      return `${filteredCount} of ${originalCount} records (filtered by OPS Planner)`;
+                    }
+                    return `${originalCount} records`;
+                  })()} )
                 </Typography>
 
-                {/* Debug information */}
-                <Box sx={{ mb: 2, p: 1, bgcolor: '#f5f5f5', borderRadius: 1, fontSize: '0.8rem' }}>
-                  <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Debug Info:</Typography>
-                  <br />
-                  <Typography variant="caption">
-                    result_data exists: {results?.result_data ? 'Yes' : 'No'}
-                    {results?.result_data && ` (${results.result_data.length} items)`}
-                  </Typography>
-                  <br />
-                  <Typography variant="caption">
-                    column_names exists: {results?.column_names ? 'Yes' : 'No'}
-                    {results?.column_names && ` (${results.column_names.length} columns)`}
-                  </Typography>
-                  <br />
-                  <Typography variant="caption">
-                    Available keys: {results ? Object.keys(results).join(', ') : 'None'}
-                  </Typography>
-                </Box>
+                {(() => {
+                  // Apply ops_planner filter to results
+                  const filteredResults = filterResultsByOpsPlanner(
+                    results?.result_data,
+                    results?.column_names
+                  );
 
-                {results?.result_data && results.result_data.length > 0 ? (
-                  <>
-                    <TableContainer component={Paper}>
-                      <Table size="small">
-                        <TableHead>
-                          <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                            {results.column_names?.map((col) => (
-                              <TableCell key={col} sx={{ fontWeight: 'bold' }}>
-                                {col}
-                              </TableCell>
-                            )) || (
-                              // Fallback: use keys from first row if column_names not available
-                              results.result_data[0] && Object.keys(results.result_data[0]).map((col) => (
+                  return filteredResults && filteredResults.length > 0 ? (
+                    <>
+                      <TableContainer component={Paper}>
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                              {results.column_names?.map((col) => (
                                 <TableCell key={col} sx={{ fontWeight: 'bold' }}>
                                   {col}
+                                  {/* Add filter indicator for ops_planner column */}
+                                  {selectedOpsPlanner && (
+                                    col.toLowerCase().includes('ops_planner') ||
+                                    col.toLowerCase().includes('ops planner') ||
+                                    col.toLowerCase() === 'ops_planner'
+                                  ) && (
+                                    <Chip
+                                      label={`Filtered: ${selectedOpsPlanner}`}
+                                      size="small"
+                                      color="primary"
+                                      sx={{ ml: 1, fontSize: '0.6rem', height: '16px' }}
+                                    />
+                                  )}
                                 </TableCell>
-                              ))
-                            )}
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {results.result_data
-                            .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                            .map((row, idx) => (
-                              <TableRow key={idx}>
-                                {(results.column_names || Object.keys(row))?.map((col) => (
-                                  <TableCell key={`${idx}-${col}`}>
-                                    {String(row[col] ?? '')}
+                              )) || (
+                                // Fallback: use keys from first row if column_names not available
+                                filteredResults[0] && Object.keys(filteredResults[0]).map((col) => (
+                                  <TableCell key={col} sx={{ fontWeight: 'bold' }}>
+                                    {col}
+                                    {/* Add filter indicator for ops_planner column */}
+                                    {selectedOpsPlanner && (
+                                      col.toLowerCase().includes('ops_planner') ||
+                                      col.toLowerCase().includes('ops planner') ||
+                                      col.toLowerCase() === 'ops_planner'
+                                    ) && (
+                                      <Chip
+                                        label={`Filtered: ${selectedOpsPlanner}`}
+                                        size="small"
+                                        color="primary"
+                                        sx={{ ml: 1, fontSize: '0.6rem', height: '16px' }}
+                                      />
+                                    )}
                                   </TableCell>
-                                ))}
-                              </TableRow>
-                            ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                    <TablePagination
-                      rowsPerPageOptions={[5, 10, 25, 50]}
-                      component="div"
-                      count={results.result_data.length}
-                      rowsPerPage={rowsPerPage}
-                      page={page}
-                      onPageChange={handleChangePage}
-                      onRowsPerPageChange={handleChangeRowsPerPage}
-                    />
-                  </>
-                ) : results ? (
-                  <Box>
-                    <Alert severity="info" sx={{ mb: 2 }}>
-                      No result_data found in response
-                    </Alert>
-                    <Box sx={{ p: 2, bgcolor: '#f9f9f9', borderRadius: 1 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                        Raw Response Data:
-                      </Typography>
-                      <pre style={{ fontSize: '0.8rem', overflow: 'auto', maxHeight: '200px' }}>
-                        {JSON.stringify(results, null, 2)}
-                      </pre>
+                                ))
+                              )}
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {filteredResults
+                              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                              .map((row, idx) => (
+                                <TableRow key={idx}>
+                                  {(results.column_names || Object.keys(row))?.map((col) => (
+                                    <TableCell key={`${idx}-${col}`}>
+                                      {String(row[col] ?? '')}
+                                    </TableCell>
+                                  ))}
+                                </TableRow>
+                              ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                      <TablePagination
+                        rowsPerPageOptions={[5, 10, 25, 50]}
+                        component="div"
+                        count={filteredResults.length}
+                        rowsPerPage={rowsPerPage}
+                        page={page}
+                        onPageChange={handleChangePage}
+                        onRowsPerPageChange={handleChangeRowsPerPage}
+                      />
+                    </>
+                  ) : results ? (
+                    <Box>
+                      <Alert severity="info" sx={{ mb: 2 }}>
+                        No result_data found in response
+                      </Alert>
+                      <Box sx={{ p: 2, bgcolor: '#f9f9f9', borderRadius: 1 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                          Raw Response Data:
+                        </Typography>
+                        <pre style={{ fontSize: '0.8rem', overflow: 'auto', maxHeight: '200px' }}>
+                          {JSON.stringify(results, null, 2)}
+                        </pre>
+                      </Box>
                     </Box>
-                  </Box>
-                ) : (
-                  <Alert severity="info">No results available</Alert>
-                )}
+                  ) : (
+                    <Alert severity="info">No results available</Alert>
+                  );
+                })()}
               </Box>
             </Box>
           )}
@@ -1425,6 +1641,8 @@ const DashboardTrendsWidget = ({
                 </Typography>
               </Box>
             )}
+
+
           </Box>
         </Paper>
       </Box>

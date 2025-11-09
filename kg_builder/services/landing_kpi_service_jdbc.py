@@ -609,6 +609,51 @@ class LandingKPIServiceJDBC:
             cursor.close()
             conn.close()
     
+    def create_execution_record(self, kpi_id: int, execution_params: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a new execution record for a KPI without executing it."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute("""
+                INSERT INTO kpi_execution_results
+                (kpi_id, kg_name, select_schema, db_type, limit_records, use_llm,
+                 execution_status, user_id, session_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                kpi_id,
+                execution_params.get('kg_name', 'default'),
+                execution_params.get('select_schema', 'newdqschemanov'),
+                execution_params.get('db_type', 'sqlserver'),
+                execution_params.get('limit_records', 1000),
+                execution_params.get('use_llm', True),
+                'pending',
+                execution_params.get('user_id'),
+                execution_params.get('session_id')
+            ))
+
+            # Get the inserted ID
+            cursor.execute("SELECT @@IDENTITY")
+            execution_id = cursor.fetchone()[0]
+
+            conn.commit()
+            logger.info(f"✓ Created execution record ID: {execution_id} for KPI ID: {kpi_id}")
+
+            return {
+                'id': execution_id,
+                'kpi_id': kpi_id,
+                'execution_status': 'pending',
+                'kg_name': execution_params.get('kg_name', 'default'),
+                'select_schema': execution_params.get('select_schema', 'newdqschemanov')
+            }
+
+        except Exception as e:
+            logger.error(f"❌ Failed to create execution record for KPI {kpi_id}: {e}")
+            raise
+        finally:
+            cursor.close()
+            conn.close()
+
     def execute_kpi(self, kpi_id: int, execution_params: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a KPI and store results in the database."""
         import time
@@ -852,6 +897,74 @@ class LandingKPIServiceJDBC:
                 'execution_time_ms': execution_time_ms
             }
 
+    def update_execution_result(self, execution_id: int, result_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update execution result with query results."""
+        import json
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        try:
+            # Convert complex data to JSON
+            joined_columns_json = json.dumps(result_data.get('joined_columns', []))
+            result_json = json.dumps(result_data.get('result_data', []))
+            evidence_json = json.dumps(result_data.get('evidence_data', []))
+
+            cursor.execute("""
+                UPDATE kpi_execution_results
+                SET
+                    generated_sql = ?,
+                    number_of_records = ?,
+                    joined_columns = ?,
+                    sql_query_type = ?,
+                    operation = ?,
+                    execution_status = ?,
+                    execution_time_ms = ?,
+                    confidence_score = ?,
+                    error_message = ?,
+                    result_data = ?,
+                    evidence_data = ?,
+                    evidence_count = ?,
+                    source_table = ?,
+                    target_table = ?
+                WHERE id = ?
+            """, (
+                result_data.get('generated_sql'),
+                result_data.get('number_of_records', 0),
+                joined_columns_json,
+                result_data.get('sql_query_type'),
+                result_data.get('operation'),
+                result_data.get('execution_status', 'success'),
+                result_data.get('execution_time_ms'),
+                result_data.get('confidence_score'),
+                result_data.get('error_message'),
+                result_json,
+                evidence_json,
+                len(result_data.get('evidence_data', [])),
+                result_data.get('source_table'),
+                result_data.get('target_table'),
+                execution_id
+            ))
+
+            conn.commit()
+            logger.info(f"✓ Updated execution result ID: {execution_id}")
+
+            # Return updated execution result
+            return {
+                'id': execution_id,
+                'execution_status': result_data.get('execution_status', 'success'),
+                'generated_sql': result_data.get('generated_sql'),
+                'number_of_records': result_data.get('number_of_records', 0),
+                'execution_time_ms': result_data.get('execution_time_ms'),
+                'error_message': result_data.get('error_message')
+            }
+
+        except Exception as e:
+            logger.error(f"❌ Failed to update execution result {execution_id}: {e}")
+            raise
+        finally:
+            cursor.close()
+            conn.close()
+
     def store_execution_result(self, execution_record: Dict[str, Any]) -> int:
         """Store KPI execution result in the database."""
         conn = self._get_connection()
@@ -987,3 +1100,15 @@ class LandingKPIServiceJDBC:
         finally:
             cursor.close()
             conn.close()
+
+
+# Singleton instance
+_landing_kpi_service_jdbc: Optional[LandingKPIServiceJDBC] = None
+
+
+def get_landing_kpi_service_jdbc() -> LandingKPIServiceJDBC:
+    """Get or create Landing KPI Service JDBC singleton instance."""
+    global _landing_kpi_service_jdbc
+    if _landing_kpi_service_jdbc is None:
+        _landing_kpi_service_jdbc = LandingKPIServiceJDBC()
+    return _landing_kpi_service_jdbc

@@ -49,7 +49,7 @@ export default function Overview() {
       setLlmStatus(llmRes.data);
       setStats({
         schemas: schemasRes.data.count || 0,
-        knowledgeGraphs: kgsRes.data.graphs?.length || 0,
+        knowledgeGraphs: kgsRes.data.count || 0,
       });
     } catch (error) {
       console.error('Error loading dashboard:', error);

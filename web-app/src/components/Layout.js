@@ -55,7 +55,7 @@ export default function Layout({ children }) {
     <div>
       <Toolbar>
         <Typography variant="h6" noWrap component="div">
-          DQ-Reconciliation
+          Data Quality
         </Typography>
       </Toolbar>
       <Divider />

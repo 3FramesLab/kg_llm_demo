@@ -221,7 +221,8 @@ class LandingKPIExecutor:
                     kpi['cached_sql'],
                     connection,
                     limit,
-                    intent.definition
+                    intent.definition,
+                    db_type
                 )
                 logger.info(f"✅ Cached SQL execution completed")
             else:
@@ -242,24 +243,50 @@ class LandingKPIExecutor:
 
             # Step 6: Prepare result data
             execution_time_ms = (time.time() - start_time) * 1000
-            logger.info(f"✓ Query executed in {execution_time_ms:.2f}ms, returned {query_result.record_count} records")
+
+            # Handle both dict (cached SQL) and QueryResult (LLM) responses
+            if isinstance(query_result, dict):
+                record_count = query_result.get('number_of_records', 0)
+                logger.info(f"✓ Query executed in {execution_time_ms:.2f}ms, returned {record_count} records")
+            else:
+                record_count = query_result.record_count
+                logger.info(f"✓ Query executed in {execution_time_ms:.2f}ms, returned {query_result.record_count} records")
             
-            result = {
-                'generated_sql': query_result.sql,
-                'number_of_records': query_result.record_count,
-                'joined_columns': query_result.join_columns or [],
-                'sql_query_type': str(query_result.query_type),
-                'operation': query_result.operation,
-                'execution_status': 'success' if not query_result.error else 'failed',
-                'execution_time_ms': execution_time_ms,
-                'confidence_score': query_result.confidence,
-                'error_message': query_result.error,
-                'result_data': query_result.records,
-                'source_table': query_result.source_table,
-                'target_table': query_result.target_table
-            }
-            
-            logger.info(f"✓ KPI execution successful: {query_result.record_count} records in {execution_time_ms:.2f}ms")
+            # Handle both dict (cached SQL) and QueryResult (LLM) responses
+            if isinstance(query_result, dict):
+                # Handle dict response (from cached SQL)
+                result = {
+                    'generated_sql': query_result.get('generated_sql', ''),
+                    'number_of_records': query_result.get('number_of_records', 0),
+                    'joined_columns': query_result.get('joined_columns', ''),
+                    'sql_query_type': query_result.get('sql_query_type', 'cached_sql'),
+                    'operation': query_result.get('operation', 'CACHED'),
+                    'execution_status': query_result.get('execution_status', 'success'),
+                    'execution_time_ms': execution_time_ms,
+                    'confidence_score': query_result.get('confidence_score', 1.0),
+                    'error_message': query_result.get('error_message', None),
+                    'result_data': query_result.get('result_data', []),
+                    'source_table': query_result.get('source_table', ''),
+                    'target_table': query_result.get('target_table', '')
+                }
+                logger.info(f"✓ KPI execution successful: {record_count} records in {execution_time_ms:.2f}ms")
+            else:
+                # Handle QueryResult response (from LLM)
+                result = {
+                    'generated_sql': query_result.sql,
+                    'number_of_records': query_result.record_count,
+                    'joined_columns': query_result.join_columns or [],
+                    'sql_query_type': str(query_result.query_type),
+                    'operation': query_result.operation,
+                    'execution_status': 'success' if not query_result.error else 'failed',
+                    'execution_time_ms': execution_time_ms,
+                    'confidence_score': query_result.confidence,
+                    'error_message': query_result.error,
+                    'result_data': query_result.records,
+                    'source_table': query_result.source_table,
+                    'target_table': query_result.target_table
+                }
+                logger.info(f"✓ KPI execution successful: {query_result.record_count} records in {execution_time_ms:.2f}ms")
             return result
             
         except Exception as e:
@@ -274,7 +301,7 @@ class LandingKPIExecutor:
                 'result_data': []
             }
 
-    def _execute_cached_sql(self, cached_sql: str, connection, limit: int, definition: str) -> Dict[str, Any]:
+    def _execute_cached_sql(self, cached_sql: str, connection, limit: int, definition: str, db_type: str = 'sqlserver') -> Dict[str, Any]:
         """Execute cached SQL directly without LLM generation."""
         import time
         from kg_builder.services.nl_query_executor import NLQueryExecutor
@@ -284,8 +311,8 @@ class LandingKPIExecutor:
         try:
             logger.info(f"🔄 Executing cached SQL")
 
-            # Add LIMIT clause to cached SQL if needed
-            executor = NLQueryExecutor()
+            # Add LIMIT clause to cached SQL if needed (pass db_type for correct syntax)
+            executor = NLQueryExecutor(db_type=db_type)
             sql_with_limit = executor._add_limit_clause(cached_sql, limit)
 
             # Log the SQL being executed

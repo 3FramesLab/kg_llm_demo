@@ -247,3 +247,20 @@ def get_database_connection():
 
     return conn
 
+
+def get_mssql_connection_string() -> str:
+    """
+    Build MS SQL Server connection string for KPI database from configuration.
+
+    Returns:
+        ODBC connection string for SQL Server
+    """
+    return (
+        f"DRIVER={{ODBC Driver 17 for SQL Server}};"
+        f"SERVER={KPI_DB_HOST},{KPI_DB_PORT};"
+        f"DATABASE={KPI_DB_DATABASE};"
+        f"UID={KPI_DB_USERNAME};"
+        f"PWD={KPI_DB_PASSWORD};"
+        f"TrustServerCertificate=yes;"
+    )
+

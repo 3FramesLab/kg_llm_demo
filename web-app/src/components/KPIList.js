@@ -34,10 +34,11 @@ import {
   CheckCircle as CheckCircleIcon,
   Cached as CacheIcon,
   Clear as ClearIcon,
+  Schedule as ScheduleIcon,
 } from '@mui/icons-material';
 import { listKPIs, deleteKPI, updateKPICacheFlags, clearKPICacheFlags, getKPIExecutions } from '../services/api';
 
-const KPIList = ({ onEdit, onExecute, onViewHistory, refreshTrigger }) => {
+const KPIList = ({ onEdit, onExecute, onViewHistory, onManageSchedule, refreshTrigger }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isTablet = useMediaQuery(theme.breakpoints.down('lg'));
@@ -440,6 +441,18 @@ const KPIList = ({ onEdit, onExecute, onViewHistory, refreshTrigger }) => {
                         <HistoryIcon />
                       </IconButton>
                     </Tooltip>
+
+                    {onManageSchedule && (
+                      <Tooltip title="Manage Schedule">
+                        <IconButton
+                          size="small"
+                          color="warning"
+                          onClick={() => onManageSchedule(kpi)}
+                        >
+                          <ScheduleIcon />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                     <Tooltip title="Edit">
                       <IconButton
                         size="small"
