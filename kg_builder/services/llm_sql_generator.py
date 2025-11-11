@@ -579,14 +579,14 @@ Generate ONLY the SQL query, no explanations, no markdown formatting."""
 
     def _validate_sql_security(self, sql: str, intent: QueryIntent):
         """
-        Validate generated SQL for security issues.
+        Validate generated SQL for security issues and table existence.
 
         Args:
             sql: Generated SQL query
             intent: Original query intent
 
         Raises:
-            ValueError: If SQL contains dangerous operations
+            ValueError: If SQL contains dangerous operations or invalid table names
         """
         sql_upper = sql.upper()
 
@@ -610,7 +610,159 @@ Generate ONLY the SQL query, no explanations, no markdown formatting."""
             if 'JOIN' not in sql_upper:
                 raise ValueError("Comparison query missing JOIN clause")
 
+        # Validate table names exist in KG
+        self._validate_table_names_in_sql(sql, intent)
+
         logger.debug("✓ SQL security validation passed")
+
+    def _validate_table_names_in_sql(self, sql: str, intent: QueryIntent):
+        """
+        Validate that all table names in the SQL exist in the Knowledge Graph
+        and check for domain mismatches (e.g., NBU vs GPU).
+
+        Args:
+            sql: Generated SQL query
+            intent: Original query intent
+
+        Raises:
+            ValueError: If SQL references non-existent tables or has domain mismatches
+        """
+        if not self.kg:
+            logger.warning("No KG available for table name validation")
+            return
+
+        # Get all valid table names from KG
+        valid_tables = set()
+        for node in self.kg.nodes:
+            if node.properties.get("type") == "Table":
+                valid_tables.add(node.label)
+
+        if not valid_tables:
+            logger.warning("No tables found in KG for validation")
+            return
+
+        # Extract table names from SQL using regex
+        import re
+
+        # Pattern to match table names in FROM and JOIN clauses
+        # Handles: FROM [table], JOIN [table], FROM table, JOIN table
+        table_patterns = [
+            r'FROM\s+\[([^\]]+)\]',  # FROM [table_name]
+            r'FROM\s+([a-zA-Z_][a-zA-Z0-9_]*)',  # FROM table_name
+            r'JOIN\s+\[([^\]]+)\]',  # JOIN [table_name]
+            r'JOIN\s+([a-zA-Z_][a-zA-Z0-9_]*)',  # JOIN table_name
+        ]
+
+        referenced_tables = set()
+        for pattern in table_patterns:
+            matches = re.findall(pattern, sql, re.IGNORECASE)
+            referenced_tables.update(matches)
+
+        # Check for invalid table names
+        invalid_tables = referenced_tables - valid_tables
+
+        if invalid_tables:
+            valid_table_list = sorted(list(valid_tables))
+            logger.error(f"❌ SQL references non-existent tables: {invalid_tables}")
+            logger.error(f"   Available tables in KG: {valid_table_list}")
+
+            # Try to suggest corrections
+            suggestions = []
+            for invalid_table in invalid_tables:
+                # Find similar table names
+                for valid_table in valid_tables:
+                    if self._tables_are_similar(invalid_table, valid_table):
+                        suggestions.append(f"'{invalid_table}' → '{valid_table}'")
+
+            suggestion_text = f" Suggestions: {', '.join(suggestions)}" if suggestions else ""
+            raise ValueError(f"SQL references non-existent tables: {list(invalid_tables)}.{suggestion_text}")
+
+        # Check for domain mismatches (NBU vs GPU, etc.)
+        self._validate_domain_consistency(referenced_tables)
+
+        logger.debug(f"✓ All referenced tables exist in KG: {referenced_tables}")
+
+    def _validate_domain_consistency(self, referenced_tables: set):
+        """
+        Validate that all referenced tables belong to the same business domain.
+
+        Args:
+            referenced_tables: Set of table names referenced in the SQL
+
+        Raises:
+            ValueError: If tables from different domains are mixed
+        """
+        if len(referenced_tables) < 2:
+            return  # Single table queries are always valid
+
+        # Define domain patterns
+        domain_patterns = {
+            'NBU': ['_NBU', '_nbu'],  # National Bank of Ukraine
+            'GPU': ['_GPU', '_gpu'],  # Graphics Processing Unit
+            'CPU': ['_CPU', '_cpu'],  # Central Processing Unit
+            'BANKING': ['_BANK', '_bank', '_FINANCE', '_finance'],
+            'HARDWARE': ['_HARDWARE', '_hardware', '_DEVICE', '_device']
+        }
+
+        # Classify tables by domain
+        table_domains = {}
+        for table in referenced_tables:
+            table_domain = None
+            for domain, patterns in domain_patterns.items():
+                if any(pattern in table for pattern in patterns):
+                    table_domain = domain
+                    break
+
+            if table_domain:
+                table_domains[table] = table_domain
+
+        # Check for domain conflicts
+        if len(table_domains) > 0:
+            unique_domains = set(table_domains.values())
+
+            if len(unique_domains) > 1:
+                # Group tables by domain for error message
+                domain_groups = {}
+                for table, domain in table_domains.items():
+                    if domain not in domain_groups:
+                        domain_groups[domain] = []
+                    domain_groups[domain].append(table)
+
+                error_details = []
+                for domain, tables in domain_groups.items():
+                    error_details.append(f"{domain}: {', '.join(tables)}")
+
+                logger.error(f"❌ Domain mismatch detected in SQL query!")
+                logger.error(f"   Tables from different domains: {error_details}")
+
+                raise ValueError(
+                    f"Invalid query: Cannot join tables from different business domains. "
+                    f"Found domains: {', '.join(error_details)}. "
+                    f"Tables from incompatible business domains should not be joined together."
+                )
+
+    def _tables_are_similar(self, table1: str, table2: str) -> bool:
+        """Check if two table names are similar (for suggestions)."""
+        # Simple similarity check - could be enhanced
+        table1_lower = table1.lower()
+        table2_lower = table2.lower()
+
+        # Check if one contains the other (but not if they're too different)
+        if table1_lower in table2_lower or table2_lower in table1_lower:
+            # Additional check: they should share some meaningful parts
+            table1_parts = set(table1_lower.split('_'))
+            table2_parts = set(table2_lower.split('_'))
+            common_parts = table1_parts & table2_parts
+            # Only consider similar if they share at least 2 parts or one is contained in the other with similar length
+            return len(common_parts) >= 2 or abs(len(table1_lower) - len(table2_lower)) < 10
+
+        # Check for common patterns
+        table1_parts = set(table1_lower.split('_'))
+        table2_parts = set(table2_lower.split('_'))
+
+        # If they share significant parts (at least 2)
+        common_parts = table1_parts & table2_parts
+        return len(common_parts) >= 2
 
 
 def get_llm_sql_generator(db_type: str = "mysql", kg: Optional["KnowledgeGraph"] = None) -> LLMSQLGenerator:

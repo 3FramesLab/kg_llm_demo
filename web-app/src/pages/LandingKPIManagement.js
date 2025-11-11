@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Container,
   Box,
@@ -18,6 +19,10 @@ import {
   Divider,
   IconButton,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -26,14 +31,18 @@ import {
   TrendingUp as TrendingUpIcon,
   Description as DescriptionIcon,
   Refresh as RefreshIcon,
+  Schedule as ScheduleIcon,
 } from '@mui/icons-material';
 import KPIList from '../components/KPIList';
 import KPIForm from '../components/KPIForm';
 import KPIExecutionDialog from '../components/KPIExecutionDialog';
 import KPIExecutionHistory from '../components/KPIExecutionHistory';
 import KPIDrilldown from '../components/KPIDrilldown';
+import ScheduleManagement from '../components/ScheduleManagement';
+import ScheduleMonitoringDashboard from '../components/ScheduleMonitoringDashboard';
 
 const LandingKPIManagement = () => {
+  const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
@@ -47,6 +56,8 @@ const LandingKPIManagement = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [successMessage, setSuccessMessage] = useState('');
   const [activeTab, setActiveTab] = useState(0);
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [monitoringDialogOpen, setMonitoringDialogOpen] = useState(false);
 
   const handleCreateKPI = () => {
     setSelectedKPI(null);
@@ -73,6 +84,11 @@ const LandingKPIManagement = () => {
     setDrilldownDialogOpen(true);
   };
 
+  const handleManageSchedule = (kpi) => {
+    setSelectedKPI(kpi);
+    setScheduleDialogOpen(true);
+  };
+
   const handleFormSuccess = () => {
     setSuccessMessage(selectedKPI ? 'KPI updated successfully!' : 'KPI created successfully!');
     setRefreshTrigger((prev) => prev + 1);
@@ -80,9 +96,26 @@ const LandingKPIManagement = () => {
   };
 
   const handleExecutionSuccess = () => {
-    setSuccessMessage('KPI execution started successfully!');
+    console.log('KPI execution completed successfully');
+    console.log('Selected KPI for navigation:', selectedKPI);
+
+    setSuccessMessage('KPI execution completed successfully!');
     setRefreshTrigger((prev) => prev + 1);
-    setTimeout(() => setSuccessMessage(''), 3000);
+
+    // Navigate to execution history page after successful execution
+    if (selectedKPI) {
+      console.log('Navigating to execution history for KPI:', selectedKPI.id);
+      const historyPath = `/landing-kpi/${selectedKPI.id}/history`;
+      console.log('Navigation path:', historyPath);
+
+      // Small delay to show success message briefly, then navigate
+      setTimeout(() => {
+        navigate(historyPath);
+      }, 1500);
+    } else {
+      console.warn('No selectedKPI available for navigation');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    }
   };
 
   const handleTabChange = (event, newValue) => {
@@ -234,6 +267,15 @@ const LandingKPIManagement = () => {
                   >
                     Create New KPI
                   </Button>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<ScheduleIcon />}
+                    onClick={() => setMonitoringDialogOpen(true)}
+                    sx={{ ml: 2 }}
+                  >
+                    Schedule Monitor
+                  </Button>
                 </Box>
 
                 {/* KPI List */}
@@ -241,6 +283,7 @@ const LandingKPIManagement = () => {
                   onEdit={handleEditKPI}
                   onExecute={handleExecuteKPI}
                   onViewHistory={handleViewHistory}
+                  onManageSchedule={handleManageSchedule}
                   refreshTrigger={refreshTrigger}
                 />
               </Box>
@@ -530,6 +573,49 @@ const LandingKPIManagement = () => {
         execution={selectedExecution}
         onClose={() => setDrilldownDialogOpen(false)}
       />
+
+      {/* Schedule Management Dialog */}
+      <Dialog
+        open={scheduleDialogOpen}
+        onClose={() => setScheduleDialogOpen(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <ScheduleIcon />
+          Schedule Management - {selectedKPI?.name || selectedKPI?.alias_name}
+        </DialogTitle>
+        <DialogContent>
+          {selectedKPI && (
+            <ScheduleManagement
+              kpiId={selectedKPI.id}
+              kpiName={selectedKPI.name || selectedKPI.alias_name}
+            />
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setScheduleDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Schedule Monitoring Dashboard Dialog */}
+      <Dialog
+        open={monitoringDialogOpen}
+        onClose={() => setMonitoringDialogOpen(false)}
+        maxWidth="xl"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <ScheduleIcon />
+          Schedule Monitoring Dashboard
+        </DialogTitle>
+        <DialogContent>
+          <ScheduleMonitoringDashboard />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setMonitoringDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

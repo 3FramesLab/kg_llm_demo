@@ -1,7 +1,7 @@
 {
   "metadata": {
     "version": "1.0",
-    "last_updated": "2025-11-04T23:19:52.653121",
+    "last_updated": "2025-11-07T18:08:30.306449",
     "updated_by": "web-user",
     "schema_name": "",
     "total_tables": 8,
@@ -220,7 +220,9 @@
         "OPS_MKTG_NM": {
           "business_name": "Ops Mktg Nm",
           "aliases": [
-            "ops mktg nm"
+            "ops mktg nm",
+            "marketing code",
+            "marketing_code"
           ],
           "description": "Column OPS_MKTG_NM in hana_material_master",
           "semantic_type": "dimension",
@@ -232,16 +234,18 @@
             "what ops"
           ],
           "examples": [],
+          "allowed_values": null,
           "searchable": true,
           "filterable": true,
           "aggregatable": false,
           "priority": "medium",
+          "default_filter": null,
           "business_rules": [],
           "user_notes": "",
           "auto_generated": true,
-          "manual_verified": false,
-          "last_edited_by": "initialization_script",
-          "last_edited_at": "2025-11-04T16:42:16.677297"
+          "manual_verified": true,
+          "last_edited_by": "web-user",
+          "last_edited_at": "2025-11-07T18:08:30.305466"
         },
         "OPS_STATUS": {
           "business_name": "Ops Status",
@@ -4782,10 +4786,9 @@
         "ZTOPLVLNAME": {
           "business_name": "Ztoplvlname",
           "aliases": [
-            "title",
-            "label",
             "top level",
-            "top-level"
+            "top-level",
+            "level top"
           ],
           "description": "Column ZTOPLVLNAME in brz_lnd_IBP_Product_Master",
           "semantic_type": "dimension",
@@ -4794,10 +4797,7 @@
           "common_terms": [
             "ztoplvlname",
             "what ztoplvlname",
-            "which ztoplvlname",
-            "which top-level",
-            "having top level",
-            "top-level"
+            "which ztoplvlname"
           ],
           "examples": [],
           "allowed_values": null,
@@ -4811,7 +4811,7 @@
           "auto_generated": true,
           "manual_verified": true,
           "last_edited_by": "web-user",
-          "last_edited_at": "2025-11-04T23:18:08.169526"
+          "last_edited_at": "2025-11-04T23:20:40.833377"
         },
         "ZVIRTUALKIT": {
           "business_name": "Zvirtualkit",

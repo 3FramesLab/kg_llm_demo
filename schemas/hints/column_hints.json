@@ -1,7 +1,7 @@
 {
   "metadata": {
     "version": "1.0",
-    "last_updated": "2025-11-04T23:20:40.835672",
+    "last_updated": "2025-11-07T20:18:46.219865",
     "updated_by": "web-user",
     "schema_name": "",
     "total_tables": 8,
@@ -220,7 +220,9 @@
         "OPS_MKTG_NM": {
           "business_name": "Ops Mktg Nm",
           "aliases": [
-            "ops mktg nm"
+            "ops mktg nm",
+            "marketing code",
+            "marketing_code"
           ],
           "description": "Column OPS_MKTG_NM in hana_material_master",
           "semantic_type": "dimension",
@@ -232,16 +234,18 @@
             "what ops"
           ],
           "examples": [],
+          "allowed_values": null,
           "searchable": true,
           "filterable": true,
           "aggregatable": false,
           "priority": "medium",
+          "default_filter": null,
           "business_rules": [],
           "user_notes": "",
           "auto_generated": true,
-          "manual_verified": false,
-          "last_edited_by": "initialization_script",
-          "last_edited_at": "2025-11-04T16:42:16.677297"
+          "manual_verified": true,
+          "last_edited_by": "web-user",
+          "last_edited_at": "2025-11-07T18:08:30.305466"
         },
         "OPS_STATUS": {
           "business_name": "Ops Status",
@@ -2556,7 +2560,8 @@
         "Top_Level": {
           "business_name": "Top Level",
           "aliases": [
-            "top level"
+            "top level",
+            "top_level"
           ],
           "description": "Column Top_Level in brz_lnd_OPS_EXCEL_GPU",
           "semantic_type": "dimension",
@@ -2568,16 +2573,18 @@
             "which top"
           ],
           "examples": [],
+          "allowed_values": null,
           "searchable": true,
           "filterable": true,
           "aggregatable": false,
           "priority": "medium",
+          "default_filter": null,
           "business_rules": [],
           "user_notes": "",
           "auto_generated": true,
-          "manual_verified": false,
-          "last_edited_by": "initialization_script",
-          "last_edited_at": "2025-11-04T16:42:18.865565"
+          "manual_verified": true,
+          "last_edited_by": "web-user",
+          "last_edited_at": "2025-11-07T20:18:46.217790"
         },
         "AT": {
           "business_name": "At",

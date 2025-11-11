@@ -80,6 +80,7 @@ class NLSQLGenerator:
 
         # Python-based generation (original implementation)
         sql = self._generate_python(intent)
+
         logger.info(f"✅ SQL Generated Successfully (via Python)")
         return sql
 

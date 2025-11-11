@@ -9,10 +9,14 @@ import {
   Box,
   Alert,
   CircularProgress,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { createKPI, updateKPI } from '../services/api';
 
-const KPIForm = ({ open, kpi, onClose, onSuccess }) => {
+const KPIForm = ({ open, kpi, onClose, onSuccess, fullScreen }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [formData, setFormData] = useState({
     name: '',
     alias_name: '',

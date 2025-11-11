@@ -294,7 +294,29 @@ class GraphitiBackend:
         except Exception as e:
             logger.error(f"❌ Error retrieving metadata for KG '{kg_name}': {e}")
             return None
-    
+
+    def save_kg_metadata(self, kg_name: str, metadata: Dict[str, Any]) -> bool:
+        """Save metadata for a specific knowledge graph."""
+        try:
+            graph_dir = self.storage_path / kg_name
+            metadata_file = graph_dir / "metadata.json"
+
+            logger.info(f"💾 Saving metadata for KG '{kg_name}' to {metadata_file}")
+
+            # Ensure directory exists
+            graph_dir.mkdir(parents=True, exist_ok=True)
+
+            # Save metadata
+            with open(metadata_file, 'w') as f:
+                json.dump(metadata, f, indent=2, default=str)
+
+            logger.info(f"✅ Saved metadata for KG '{kg_name}'")
+            logger.info(f"   - table_aliases: {metadata.get('table_aliases', {})}")
+            return True
+        except Exception as e:
+            logger.error(f"❌ Error saving metadata for KG '{kg_name}': {e}")
+            return False
+
     def delete_graph(self, kg_name: str) -> bool:
         """Delete a graph."""
         try:

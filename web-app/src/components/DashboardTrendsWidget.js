@@ -26,6 +26,7 @@ import {
   TablePagination,
   TextField,
   InputAdornment,
+  MenuItem,
 } from '@mui/material';
 import {
   Assessment as AssessmentIcon,
@@ -37,7 +38,7 @@ import {
 import { VegaEmbed } from 'react-vega';
 
 // Service Dependencies
-import { API_BASE_URL, getKPIExecutions } from '../services/api';
+import { getDashboardData, getLatestResults, getKPIExecutions, getUniqueOpsPlanner } from '../services/api';
 
 /**
  * Helper function to determine background color based on record count
@@ -107,7 +108,18 @@ const DashboardTrendsWidget = ({
   const [resultsError, setResultsError] = useState(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [searchFilter, setSearchFilter] = useState('');
+
+  // Owner filter state
+  const [selectedOwners, setSelectedOwners] = useState([]);
+  const [availableOwners, setAvailableOwners] = useState([]);
+  const [loadingOwners, setLoadingOwners] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // OPS Planner filter state
+  const [selectedOpsPlanner, setSelectedOpsPlanner] = useState('');
+  const [availableOpsPlanner, setAvailableOpsPlanner] = useState([]);
+  const [loadingOpsPlanner, setLoadingOpsPlanner] = useState(true);
+  const [opsSearchQuery, setOpsSearchQuery] = useState('');
 
   // Vega-Lite specification for the trend chart
   const getVegaSpec = (data) => ({
@@ -213,15 +225,51 @@ const DashboardTrendsWidget = ({
 
   const fetchDashboardData = async () => {
     setLoading(true);
+    setLoadingOwners(true);
+    setLoadingOpsPlanner(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/landing-kpi/dashboard`);
-      const data = await response.json();
+      const response = await getDashboardData();
+      const data = response.data;
       setDashboardData(data);
+
+      // Extract unique owners from all KPIs in all groups
+      const ownersSet = new Set();
+      if (data.groups) {
+        data.groups.forEach(group => {
+          if (group.kpis) {
+            group.kpis.forEach(kpi => {
+              if (kpi.created_by) {
+                ownersSet.add(kpi.created_by);
+              } else {
+                ownersSet.add('Unassigned');
+              }
+            });
+          }
+        });
+      }
+      setAvailableOwners(Array.from(ownersSet).sort());
+
+      // Fetch unique OPS Planners from hana master
+      try {
+        const opsResponse = await getUniqueOpsPlanner();
+        if (opsResponse.data && opsResponse.data.success) {
+          setAvailableOpsPlanner(opsResponse.data.data || []);
+        } else {
+          setAvailableOpsPlanner([]);
+        }
+      } catch (opsError) {
+        console.error('Error fetching OPS Planners:', opsError);
+        setAvailableOpsPlanner([]);
+      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       setDashboardData({ groups: [] });
+      setAvailableOwners([]);
+      setAvailableOpsPlanner([]);
     } finally {
       setLoading(false);
+      setLoadingOwners(false);
+      setLoadingOpsPlanner(false);
     }
   };
 
@@ -237,18 +285,52 @@ const DashboardTrendsWidget = ({
     try {
       setResultsLoading(true);
       setResultsError(null);
-      const response = await fetch(`${API_BASE_URL}/landing-kpi/${kpi.id}/latest-results`);
+      const response = await getLatestResults(kpi.id);
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch results: ${response.statusText}`);
+      // getLatestResults uses axios, so response.data contains the parsed JSON
+      const data = response.data;
+      console.log('🔍 Latest results response:', data);
+
+      // Handle different response formats
+      let resultsData = null;
+      if (data.success && data.results) {
+        resultsData = data.results;
+      } else if (data.results) {
+        resultsData = data.results;
+      } else if (data.success && data.data) {
+        resultsData = data.data;
       }
 
-      const data = await response.json();
-      setResults(data.results);
+      console.log('📊 Processed results data:', resultsData);
+      setResults(resultsData);
       setPage(0);
     } catch (err) {
       console.error('Error fetching results:', err);
-      setResultsError(err.message);
+
+      // Handle specific error cases gracefully
+      let errorMessage = err.message;
+
+      // Check if it's a 404 error (no execution results found)
+      if (err.response?.status === 404) {
+        const errorDetail = err.response?.data?.detail || err.response?.data?.error || err.message;
+        if (errorDetail.includes('No execution results found')) {
+          errorMessage = `No execution results found for this KPI. The KPI may not have been executed yet or may not have any successful executions with data.`;
+        } else {
+          errorMessage = errorDetail;
+        }
+      }
+      // Check if it's a network error
+      else if (err.code === 'NETWORK_ERROR' || err.message.includes('Network Error')) {
+        errorMessage = 'Unable to connect to the server. Please check your connection and try again.';
+      }
+      // Check for other HTTP errors
+      else if (err.response?.data?.detail) {
+        errorMessage = err.response.data.detail;
+      } else if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      }
+
+      setResultsError(errorMessage);
     } finally {
       setResultsLoading(false);
     }
@@ -266,14 +348,26 @@ const DashboardTrendsWidget = ({
     try {
       const result = await getKPIExecutions(kpi.id);
 
-      if (result.data.success && result.data.executions) {
+      // Handle different response formats from getKPIExecutions
+      let executions = [];
+      if (result.data) {
+        if (result.data.success && result.data.executions) {
+          executions = result.data.executions;
+        } else if (result.data.executions) {
+          executions = result.data.executions;
+        } else if (Array.isArray(result.data)) {
+          executions = result.data;
+        }
+      }
+
+      if (executions.length > 0) {
         // Get last 10 executions and extract record counts
-        const executions = result.data.executions
+        const filteredExecutions = executions
           .filter(exec => exec.execution_status === 'success' && exec.number_of_records != null)
           .slice(0, 10)
           .reverse(); // Oldest to newest for chart
 
-        const chartData = executions.map((exec) => ({
+        const chartData = filteredExecutions.map((exec) => ({
           date: new Date(exec.execution_timestamp).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric'
@@ -287,6 +381,12 @@ const DashboardTrendsWidget = ({
       }
     } catch (error) {
       console.error('Error fetching execution data:', error);
+
+      // Log specific error details for debugging
+      if (error.response?.status === 404) {
+        console.log(`ℹ️ No execution history found for KPI ${kpi.id}`);
+      }
+
       setDetailedTrendData([]);
     }
   };
@@ -294,6 +394,52 @@ const DashboardTrendsWidget = ({
   const handleRecordsClick = (kpi) => {
     // Same action as View Results button
     handleViewResults(kpi);
+  };
+
+  const handleRefresh = () => {
+    fetchDashboardData();
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
+
+  const handleOwnerToggle = (owner) => {
+    setSelectedOwners(prev => {
+      if (prev.includes(owner)) {
+        return prev.filter(o => o !== owner);
+      } else {
+        return [...prev, owner];
+      }
+    });
+  };
+
+  const handleOpsplannerChange = (event) => {
+    setSelectedOpsPlanner(event.target.value);
+  };
+
+  // Function to filter results data based on ops_planner
+  const filterResultsByOpsPlanner = (resultData, columnNames) => {
+    if (!selectedOpsPlanner || !resultData || !Array.isArray(resultData)) {
+      return resultData;
+    }
+
+    // Check if ops_planner column exists (case insensitive)
+    const opsColumnName = columnNames?.find(col =>
+      col.toLowerCase().includes('ops_planner') ||
+      col.toLowerCase().includes('ops planner') ||
+      col.toLowerCase() === 'ops_planner'
+    );
+
+    if (!opsColumnName) {
+      // No ops_planner column found, return original data
+      return resultData;
+    }
+
+    // Filter data based on selected ops_planner
+    return resultData.filter(row => {
+      const opsValue = row[opsColumnName];
+      return opsValue && opsValue.toString().toLowerCase().includes(selectedOpsPlanner.toLowerCase());
+    });
   };
 
   const handleChangePage = (_event, newPage) => {
@@ -329,7 +475,7 @@ const DashboardTrendsWidget = ({
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${selectedKPI.name}-results.csv`;
+    a.download = `${selectedKPI.alias_name || selectedKPI.name}-results.csv`;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
@@ -341,22 +487,9 @@ const DashboardTrendsWidget = ({
     setResults(null);
     setResultsError(null);
     setPage(0);
-    setSearchFilter('');
-  };
-
-  // Filter results based on search term
-  const getFilteredResults = () => {
-    if (!results?.result_data || !searchFilter.trim()) {
-      return results?.result_data || [];
-    }
-
-    const searchLower = searchFilter.toLowerCase();
-    return results.result_data.filter((row) => {
-      return results.column_names?.some((col) => {
-        const value = row[col];
-        return String(value ?? '').toLowerCase().includes(searchLower);
-      });
-    });
+    // Reset OPS planner filter when dialog closes
+    setSelectedOpsPlanner('');
+    setOpsSearchQuery('');
   };
 
   if (loading) {
@@ -453,11 +586,18 @@ const DashboardTrendsWidget = ({
         width: '100%',
         height: 'calc(100vh - 100px)',
         bgcolor: '#f9fafb',
+        gap: 2,
         p: 2,
-        overflow: 'auto',
-        boxSizing: 'border-box',
       }}
     >
+      {/* Main Content Area */}
+      <Box
+        sx={{
+          flex: 1,
+          minWidth: 0,
+          marginRight: { xs: 0, lg: '200px' }, // Reserve space for right sidebar
+        }}
+      >
         <Container maxWidth={maxWidth} sx={{ p: 0, ...containerSx }}>
           {/* KPI Cards - Grouped Card Layout */}
           <Grid container>
@@ -521,266 +661,468 @@ const DashboardTrendsWidget = ({
                     </Typography>
                   </Box>
 
-                  {/* KPIs List */}
-                  <CardContent sx={{ p: 0, mt: 2, borderTop: '1px solid #e0e0e0', mx: 1.5, mr: 2.5 }}>
-                    {group.kpis.map((kpi) => (
+              {/* KPIs List */}
+              <CardContent sx={{ p: 0 }}>
+                {group.kpis.map((kpi, kpiIndex) => (
+                  <Box
+                    key={kpi.id}
+                    onClick={() => handleRecordsClick(kpi)}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      px: 1.5,
+                      py: 1,
+                      borderBottom: kpiIndex < group.kpis.length - 1 ? '1px solid #f3f4f6' : 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      '&:hover': {
+                        bgcolor: '#f9fafb',
+                        '& .kpi-name': {
+                          color: '#84cc16',
+                        },
+                        '& .record-count': {
+                          transform: 'scale(1.05)',
+                        },
+                      },
+                    }}
+                  >
+                    {/* KPI Name */}
+                    <Box sx={{ flex: 1, pr: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {/* Sparkline Icon */}
                       <Box
-                        key={kpi.id}
-                        onClick={() => handleRecordsClick(kpi)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSparklineClick(kpi);
+                        }}
                         sx={{
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'space-between',
-                          px: 1.25,
-                          pr: 0,
-                          borderBottom: '1px solid #e0e0e0',
+                          justifyContent: 'center',
                           cursor: 'pointer',
-                          '&:last-child': {
-                            borderBottom: 'none',
+                          transition: 'all 0.15s ease',
+                          '&:hover': {
+                            transform: 'scale(1.15)',
                           },
                         }}
                       >
-                        {/* KPI Name */}
-                        <Box sx={{ flex: 1, pr: 1 }}>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: '#616161',
-                              fontSize: '0.8125rem',
-                              fontWeight: 400,
-                              lineHeight: 1.4,
-                            }}
-                          >
-                            {kpi.name}
-                          </Typography>
-                        </Box>
-                        
-                        {/* Sparkline */}
-                        {kpi.latest_execution && (
-                          <Box
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSparklineClick(kpi);
-                            }}
-                            sx={{
-                              width: 60,
-                              height: 24,
-                              mr: 1,
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              '&:hover': {
-                                opacity: 0.7,
-                              },
-                            }}
-                          >
-                            <ShowChartIcon
-                              sx={{
-                                fontSize: 20,
-                                color: '#6366f1',
-                              }}
-                            />
-                          </Box>
-                        )}
-                        {/* Record Count Badge */}
-                        {kpi.latest_execution ? (
-                          <Box
-                            sx={{
-                              minWidth: 50,
-                              maxWidth: 50,
-                              px: 0.875,
-                              py: 0.25,
-                              borderRadius: 0.375,
-                              bgcolor: getRecordCountColor(kpi.latest_execution.record_count),
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'flex-end',
-                            }}
-                          >
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                fontSize: '0.8125rem',
-                                fontWeight: 700,
-                                color: '#212121',
-                                lineHeight: 1.2,
-                              }}
-                            >
-                              {kpi.latest_execution.record_count.toLocaleString()}
-                            </Typography>
-                          </Box>
-                        ) : (
-                          <Box
-                            sx={{
-                              minWidth: 35,
-                              px: 0.875,
-                              py: 0.25,
-                              borderRadius: 0.375,
-                              bgcolor: '#e0e0e0',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'flex-end',
-                            }}
-                          >
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                fontSize: '0.8125rem',
-                                fontWeight: 700,
-                                color: '#757575',
-                                lineHeight: 1.2,
-                              }}
-                            >
-                              N/A
-                            </Typography>
-                          </Box>
-                        )}
+                        <ShowChartIcon
+                          sx={{
+                            fontSize: 18,
+                            color: '#6366f1',
+                            opacity: 1,
+                            fontWeight: 700,
+                          }}
+                        />
                       </Box>
-                    ))}
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
 
-          {/* Results Dialog */}
-          <Dialog
-            open={resultsDialogOpen}
-            onClose={handleCloseResultsDialog}
-            maxWidth="lg"
-            fullWidth
-            PaperProps={{
-              sx: {
-                borderRadius: 2,
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)'
+                      <Typography
+                        className="kpi-name"
+                        variant="body2"
+                        sx={{
+                          color: '#4b5563',
+                          fontSize: '0.875rem',
+                          fontWeight: 500,
+                          lineHeight: 1.3,
+                          transition: 'color 0.15s ease',
+                        }}
+                      >
+                        {kpi.alias_name || kpi.name}
+                      </Typography>
+                    </Box>
+
+                    {/* Record Count Badge */}
+                    {kpi.latest_execution ? (
+                      <Box
+                        className="record-count"
+                        sx={{
+                          minWidth: 50,
+                          px: 1.5,
+                          py: 0.5,
+                          borderRadius: 1,
+                          bgcolor: getRecordCountColor(kpi.latest_execution.record_count),
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'transform 0.15s ease',
+                        }}
+                      >
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontSize: '1rem',
+                            fontWeight: 700,
+                            color: '#1f2937',
+                            lineHeight: 1,
+                          }}
+                        >
+                          {kpi.latest_execution.record_count.toLocaleString()}
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <Box
+                        sx={{
+                          minWidth: 50,
+                          px: 1.5,
+                          py: 0.5,
+                          borderRadius: 1,
+                          bgcolor: '#f3f4f6',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontSize: '0.6875rem',
+                            fontWeight: 600,
+                            color: '#9ca3af',
+                          }}
+                        >
+                          N/A
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                ))}
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+
+      {/* Results Dialog */}
+      <Dialog
+        open={resultsDialogOpen}
+        onClose={handleCloseResultsDialog}
+        maxWidth="lg"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)'
+          }
+        }}
+      >
+        <DialogTitle
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            pb: 2,
+            borderBottom: '1px solid #e5e7eb'
+          }}
+        >
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: '#111827' }}>
+              {selectedKPI?.alias_name || selectedKPI?.name || 'KPI'} - Results
+            </Typography>
+          </Box>
+          <IconButton
+            onClick={handleCloseResultsDialog}
+            sx={{
+              color: '#6b7280',
+              '&:hover': {
+                bgcolor: '#f3f4f6'
               }
             }}
           >
-            <DialogTitle
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                pb: 2,
-                borderBottom: '1px solid #e5e7eb'
-              }}
-            >
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 700, color: '#111827' }}>
-                  {selectedKPI?.name || 'KPI'} - Results
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent sx={{ pt: 3, pb: 2 }}>
+          {/* OPS Planner Filter Section - Only show when results are available */}
+          {!resultsLoading && !resultsError && results?.result_data && (
+            <Box sx={{ mb: 3, p: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <AssessmentIcon sx={{ fontSize: 20, color: '#6366f1' }} />
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    color: '#374151',
+                    fontWeight: 600,
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  Filter Results by OPS Planner
                 </Typography>
               </Box>
-              <IconButton
-                onClick={handleCloseResultsDialog}
-                sx={{
-                  color: '#6b7280',
-                  '&:hover': {
-                    bgcolor: '#f3f4f6'
-                  }
-                }}
-              >
-                <CloseIcon />
-              </IconButton>
-            </DialogTitle>
 
-            <DialogContent sx={{ pt: 3, pb: 2 }}>
-              {resultsLoading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                  <CircularProgress />
+              {loadingOpsPlanner ? (
+                <Skeleton variant="rectangular" width="100%" height={40} sx={{ borderRadius: 1 }} />
+              ) : availableOpsPlanner.length > 0 ? (
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+                  {/* OPS Planner Dropdown */}
+                  <TextField
+                    select
+                    size="small"
+                    value={selectedOpsPlanner}
+                    onChange={handleOpsplannerChange}
+                    placeholder="Select OPS Planner"
+                    sx={{
+                      minWidth: 200,
+                      '& .MuiOutlinedInput-root': {
+                        fontSize: '0.875rem',
+                        borderRadius: 1,
+                        bgcolor: selectedOpsPlanner ? '#e0e7ff' : 'white',
+                        '&:hover': {
+                          bgcolor: selectedOpsPlanner ? '#ddd6fe' : '#f9fafb',
+                        },
+                      },
+                    }}
+                  >
+                    <MenuItem value="">
+                      <em>All OPS Planners</em>
+                    </MenuItem>
+                    {(() => {
+                      const filteredPlanners = availableOpsPlanner.filter(planner =>
+                        planner.toLowerCase().includes(opsSearchQuery.toLowerCase())
+                      );
+
+                      return filteredPlanners.map((planner) => (
+                        <MenuItem key={planner} value={planner}>
+                          {planner}
+                        </MenuItem>
+                      ));
+                    })()}
+                  </TextField>
+
+                  {/* Search Input for OPS Planner */}
+                  <TextField
+                    size="small"
+                    placeholder="Search planners..."
+                    value={opsSearchQuery}
+                    onChange={(e) => setOpsSearchQuery(e.target.value)}
+                    sx={{
+                      minWidth: 150,
+                      '& .MuiOutlinedInput-root': {
+                        fontSize: '0.875rem',
+                        borderRadius: 1,
+                        bgcolor: 'white',
+                      },
+                    }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon sx={{ fontSize: 18, color: '#9ca3af' }} />
+                        </InputAdornment>
+                      ),
+                      endAdornment: opsSearchQuery && (
+                        <InputAdornment position="end">
+                          <IconButton
+                            size="small"
+                            onClick={() => setOpsSearchQuery('')}
+                            sx={{ p: 0.5 }}
+                          >
+                            <ClearIcon sx={{ fontSize: 16, color: '#9ca3af' }} />
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+
+                  {/* Filter Status Chip */}
+                  {selectedOpsPlanner && (
+                    <Chip
+                      label={`Filtered by: ${selectedOpsPlanner}`}
+                      size="small"
+                      onDelete={() => setSelectedOpsPlanner('')}
+                      sx={{
+                        bgcolor: '#e0e7ff',
+                        color: '#4f46e5',
+                        fontWeight: 600,
+                        '& .MuiChip-deleteIcon': {
+                          color: '#4f46e5',
+                          '&:hover': {
+                            color: '#3730a3',
+                          },
+                        },
+                      }}
+                    />
+                  )}
                 </Box>
-              ) : resultsError ? (
-                <Alert severity="error">{resultsError}</Alert>
-              ) : !results ? (
-                <Alert severity="info">No results available</Alert>
               ) : (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  {/* Results Table Section */}
-                  <Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                        Query Results ({results.record_count || 0} records)
-                      </Typography>
-                      <TextField
-                        size="small"
-                        placeholder="Search in results..."
-                        value={searchFilter}
-                        onChange={(e) => {
-                          setSearchFilter(e.target.value);
-                          setPage(0); // Reset to first page when searching
-                        }}
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <SearchIcon sx={{ color: '#9ca3af', fontSize: 20 }} />
-                            </InputAdornment>
-                          ),
-                        }}
-                        sx={{
-                          width: 300,
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: 1.5,
-                            bgcolor: '#f9fafb',
-                            '&:hover': {
-                              bgcolor: '#f3f4f6',
-                            },
-                            '&.Mui-focused': {
-                              bgcolor: 'white',
-                            }
-                          }
-                        }}
-                      />
-                    </Box>
-                    {results.result_data && results.result_data.length > 0 ? (
-                      <>
-                        <TableContainer component={Paper}>
-                          <Table size="small">
-                            <TableHead>
-                              <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                                {results.column_names?.map((col) => (
+                <Alert severity="info" sx={{ fontSize: '0.875rem' }}>
+                  No OPS planners available for filtering
+                </Alert>
+              )}
+
+              {/* Filter Info */}
+              {(() => {
+                const hasOpsColumn = results?.column_names?.find(col =>
+                  col.toLowerCase().includes('ops_planner') ||
+                  col.toLowerCase().includes('ops planner') ||
+                  col.toLowerCase() === 'ops_planner'
+                );
+
+                if (!hasOpsColumn) {
+                  return (
+                    <Alert severity="info" sx={{ mt: 2, fontSize: '0.875rem' }}>
+                      This KPI result doesn't include an OPS Planner column. Filter will have no effect.
+                    </Alert>
+                  );
+                }
+
+                return null;
+              })()}
+            </Box>
+          )}
+
+          {resultsLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : resultsError ? (
+            <Alert
+              severity={resultsError.includes('No execution results found') ? 'info' : 'error'}
+              sx={{ mb: 2 }}
+            >
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  {resultsError.includes('No execution results found') ? 'No Results Available' : 'Error Loading Results'}
+                </Typography>
+                <Typography variant="body2">
+                  {resultsError}
+                </Typography>
+                {resultsError.includes('No execution results found') && (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
+                      💡 To see results here:
+                    </Typography>
+                    <Typography variant="body2" sx={{ ml: 2, color: 'text.secondary' }}>
+                      • Execute this KPI from the KPI Management page
+                    </Typography>
+                    <Typography variant="body2" sx={{ ml: 2, color: 'text.secondary' }}>
+                      • Ensure the execution completes successfully
+                    </Typography>
+                    <Typography variant="body2" sx={{ ml: 2, color: 'text.secondary' }}>
+                      • Results will appear here after successful execution
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            </Alert>
+          ) : !results ? (
+            <Alert severity="info">No results available</Alert>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {/* Results Table Section */}
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  Query Results ({(() => {
+                    const filteredResults = filterResultsByOpsPlanner(results?.result_data, results?.column_names);
+                    const originalCount = results?.number_of_records || results?.record_count || 0;
+                    const filteredCount = filteredResults?.length || 0;
+
+                    if (selectedOpsPlanner && filteredCount !== originalCount) {
+                      return `${filteredCount} of ${originalCount} records (filtered by OPS Planner)`;
+                    }
+                    return `${originalCount} records`;
+                  })()} )
+                </Typography>
+
+                {(() => {
+                  // Apply ops_planner filter to results
+                  const filteredResults = filterResultsByOpsPlanner(
+                    results?.result_data,
+                    results?.column_names
+                  );
+
+                  return filteredResults && filteredResults.length > 0 ? (
+                    <>
+                      <TableContainer component={Paper}>
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                              {results.column_names?.map((col) => (
+                                <TableCell key={col} sx={{ fontWeight: 'bold' }}>
+                                  {col}
+                                  {/* Add filter indicator for ops_planner column */}
+                                  {selectedOpsPlanner && (
+                                    col.toLowerCase().includes('ops_planner') ||
+                                    col.toLowerCase().includes('ops planner') ||
+                                    col.toLowerCase() === 'ops_planner'
+                                  ) && (
+                                    <Chip
+                                      label={`Filtered: ${selectedOpsPlanner}`}
+                                      size="small"
+                                      color="primary"
+                                      sx={{ ml: 1, fontSize: '0.6rem', height: '16px' }}
+                                    />
+                                  )}
+                                </TableCell>
+                              )) || (
+                                // Fallback: use keys from first row if column_names not available
+                                filteredResults[0] && Object.keys(filteredResults[0]).map((col) => (
                                   <TableCell key={col} sx={{ fontWeight: 'bold' }}>
                                     {col}
+                                    {/* Add filter indicator for ops_planner column */}
+                                    {selectedOpsPlanner && (
+                                      col.toLowerCase().includes('ops_planner') ||
+                                      col.toLowerCase().includes('ops planner') ||
+                                      col.toLowerCase() === 'ops_planner'
+                                    ) && (
+                                      <Chip
+                                        label={`Filtered: ${selectedOpsPlanner}`}
+                                        size="small"
+                                        color="primary"
+                                        sx={{ ml: 1, fontSize: '0.6rem', height: '16px' }}
+                                      />
+                                    )}
                                   </TableCell>
-                                ))}
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {getFilteredResults()
-                                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                .map((row, idx) => (
-                                  <TableRow key={idx}>
-                                    {results.column_names?.map((col) => (
-                                      <TableCell key={`${idx}-${col}`}>
-                                        {String(row[col] ?? '')}
-                                      </TableCell>
-                                    ))}
-                                  </TableRow>
-                                ))}
-                            </TableBody>
-                          </Table>
-                        </TableContainer>
-                        {getFilteredResults().length === 0 ? (
-                          <Alert severity="info" sx={{ mt: 2 }}>
-                            No results match your search criteria
-                          </Alert>
-                        ) : (
-                          <TablePagination
-                            rowsPerPageOptions={[5, 10, 25, 50]}
-                            component="div"
-                            count={getFilteredResults().length}
-                            rowsPerPage={rowsPerPage}
-                            page={page}
-                            onPageChange={handleChangePage}
-                            onRowsPerPageChange={handleChangeRowsPerPage}
-                          />
-                        )}
-                      </>
-                    ) : (
-                      <Alert severity="info">No data returned from query</Alert>
-                    )}
-                  </Box>
-                </Box>
-              )}
-            </DialogContent>
+                                ))
+                              )}
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {filteredResults
+                              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                              .map((row, idx) => (
+                                <TableRow key={idx}>
+                                  {(results.column_names || Object.keys(row))?.map((col) => (
+                                    <TableCell key={`${idx}-${col}`}>
+                                      {String(row[col] ?? '')}
+                                    </TableCell>
+                                  ))}
+                                </TableRow>
+                              ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                      <TablePagination
+                        rowsPerPageOptions={[5, 10, 25, 50]}
+                        component="div"
+                        count={filteredResults.length}
+                        rowsPerPage={rowsPerPage}
+                        page={page}
+                        onPageChange={handleChangePage}
+                        onRowsPerPageChange={handleChangeRowsPerPage}
+                      />
+                    </>
+                  ) : results ? (
+                    <Box>
+                      <Alert severity="info" sx={{ mb: 2 }}>
+                        No result_data found in response
+                      </Alert>
+                      <Box sx={{ p: 2, bgcolor: '#f9f9f9', borderRadius: 1 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                          Raw Response Data:
+                        </Typography>
+                        <pre style={{ fontSize: '0.8rem', overflow: 'auto', maxHeight: '200px' }}>
+                          {JSON.stringify(results, null, 2)}
+                        </pre>
+                      </Box>
+                    </Box>
+                  ) : (
+                    <Alert severity="info">No results available</Alert>
+                  );
+                })()}
+              </Box>
+            </Box>
+          )}
+        </DialogContent>
 
             <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid #e5e7eb' }}>
               <Button
@@ -813,101 +1155,370 @@ const DashboardTrendsWidget = ({
             </DialogActions>
           </Dialog>
 
-          {/* Trend Chart Dialog */}
-          <Dialog
-            open={trendChartDialogOpen}
-            onClose={() => setTrendChartDialogOpen(false)}
-            maxWidth="md"
-            fullWidth
-            PaperProps={{
-              sx: {
-                borderRadius: 2,
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)'
+      {/* Trend Chart Dialog */}
+      <Dialog
+        open={trendChartDialogOpen}
+        onClose={() => setTrendChartDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)'
+          }
+        }}
+      >
+        <DialogTitle
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            pb: 2,
+            borderBottom: '1px solid #e5e7eb'
+          }}
+        >
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: '#111827', mb: 0.5 }}>
+              {selectedKPIForChart?.alias_name || selectedKPIForChart?.name || 'KPI'} - Trend Analysis
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem' }}>
+              Last 7 days execution history
+            </Typography>
+          </Box>
+          <IconButton
+            onClick={() => setTrendChartDialogOpen(false)}
+            sx={{
+              color: '#6b7280',
+              '&:hover': {
+                bgcolor: '#f3f4f6'
               }
             }}
           >
-            <DialogTitle
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent sx={{ pt: 3, pb: 2 }}>
+          {detailedTrendData.length > 0 ? (
+            <Box sx={{ width: '100%', height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <VegaEmbed
+                spec={getVegaSpec(detailedTrendData)}
+                actions={false}
+                style={{ width: '100%' }}
+              />
+            </Box>
+          ) : (
+            <Box
               sx={{
                 display: 'flex',
-                justifyContent: 'space-between',
+                flexDirection: 'column',
                 alignItems: 'center',
-                pb: 2,
-                borderBottom: '1px solid #e5e7eb'
+                justifyContent: 'center',
+                height: 300,
+                color: '#9ca3af'
               }}
             >
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 700, color: '#111827', mb: 0.5 }}>
-                  {selectedKPIForChart?.name || 'KPI'} - Trend Analysis
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem' }}>
-                  Last 7 days execution history
-                </Typography>
-              </Box>
-              <IconButton
-                onClick={() => setTrendChartDialogOpen(false)}
+              <ShowChartIcon sx={{ fontSize: 64, mb: 2, opacity: 0.5 }} />
+              <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                No trend data available
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 1, textAlign: 'center' }}>
+                Execute this KPI multiple times to start collecting trend data
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 1, textAlign: 'center', fontSize: '0.875rem', fontStyle: 'italic' }}>
+                Trend charts show execution history over time
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid #e5e7eb' }}>
+          <Button
+            onClick={() => setTrendChartDialogOpen(false)}
+            variant="contained"
+            sx={{
+              bgcolor: '#6366f1',
+              color: 'white',
+              textTransform: 'none',
+              fontWeight: 600,
+              px: 3,
+              '&:hover': {
+                bgcolor: '#4f46e5'
+              }
+            }}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Container>
+      </Box>
+
+      {/* Right Sidebar - Planner Filter */}
+      <Box
+        sx={{
+          width: '200px',
+          minWidth: '200px',
+          display: { xs: 'none', lg: 'block' },
+          position: 'fixed',
+          right: 16,
+          top: 16,
+          zIndex: 1000,
+        }}
+      >
+        <Paper
+          elevation={0}
+          sx={{
+            height: 'fit-content',
+            maxHeight: 'calc(100vh - 32px)',
+            overflowY: 'auto',
+            borderRadius: 2,
+            border: '1px solid #e5e7eb',
+            bgcolor: 'white',
+            position: 'sticky',
+            top: 16,
+          }}
+        >
+          {/* Header */}
+          <Box
+            sx={{
+              p: 2,
+              borderBottom: '1px solid #e5e7eb',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              borderRadius: '8px 8px 0 0',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+              <PersonIcon sx={{ fontSize: 20, color: 'white' }} />
+              <Typography
+                variant="h6"
                 sx={{
-                  color: '#6b7280',
-                  '&:hover': {
-                    bgcolor: '#f3f4f6'
-                  }
+                  color: 'white',
+                  fontWeight: 700,
+                  fontSize: '0.9375rem',
+                  letterSpacing: '-0.01em',
                 }}
               >
-                <CloseIcon />
-              </IconButton>
-            </DialogTitle>
+                Filters
+              </Typography>
+            </Box>
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontSize: '0.75rem',
+              }}
+            >
+              {loadingOwners ? 'Loading...' : `Filter KPIs by planner`}
+            </Typography>
+          </Box>
 
-            <DialogContent sx={{ pt: 3, pb: 2 }}>
-              {detailedTrendData.length > 0 ? (
-                <Box sx={{ width: '100%', height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <VegaEmbed
-                    spec={getVegaSpec(detailedTrendData)}
-                    actions={false}
-                    style={{ width: '100%' }}
-                  />
+          {/* Owner Filter Section */}
+          <Box sx={{ p: 1.5 }}>
+            {loadingOwners ? (
+              // Loading skeleton
+              <>
+                {[1, 2, 3].map((i) => (
+                  <Box key={i} sx={{ mb: 1 }}>
+                    <Skeleton variant="rectangular" width="100%" height={32} sx={{ borderRadius: 1 }} />
+                  </Box>
+                ))}
+              </>
+            ) : availableOwners.length > 0 ? (
+              <>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}>
+                  <PersonIcon sx={{ fontSize: 16, color: '#6b7280' }} />
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      color: '#6b7280',
+                      fontWeight: 600,
+                      fontSize: '0.75rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                    }}
+                  >
+                    Filter by Planner
+                  </Typography>
                 </Box>
-              ) : (
-                <Box
+
+                {/* Search Input */}
+                <TextField
+                  size="small"
+                  placeholder="Search planners..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    height: 300,
-                    color: '#9ca3af'
+                    mb: 1.5,
+                    '& .MuiOutlinedInput-root': {
+                      fontSize: '0.8125rem',
+                      borderRadius: 1,
+                      bgcolor: '#f9fafb',
+                      '&:hover': {
+                        bgcolor: '#f3f4f6',
+                      },
+                      '&.Mui-focused': {
+                        bgcolor: 'white',
+                      },
+                    },
+                    '& .MuiOutlinedInput-input': {
+                      py: 0.75,
+                    },
+                  }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon sx={{ fontSize: 18, color: '#9ca3af' }} />
+                      </InputAdornment>
+                    ),
+                    endAdornment: searchQuery && (
+                      <InputAdornment position="end">
+                        <IconButton
+                          size="small"
+                          onClick={() => setSearchQuery('')}
+                          sx={{
+                            p: 0.5,
+                            '&:hover': {
+                              bgcolor: '#f3f4f6',
+                            },
+                          }}
+                        >
+                          <ClearIcon sx={{ fontSize: 16, color: '#9ca3af' }} />
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+
+                <Box sx={{ maxHeight: '400px', overflowY: 'auto' }}>
+                  {(() => {
+                    const filteredOwners = availableOwners.filter(owner =>
+                      owner.toLowerCase().includes(searchQuery.toLowerCase())
+                    );
+
+                    if (filteredOwners.length === 0) {
+                      return (
+                        <Box
+                          sx={{
+                            textAlign: 'center',
+                            py: 3,
+                            px: 2,
+                          }}
+                        >
+                          <SearchIcon sx={{ fontSize: 40, color: '#d1d5db', mb: 1 }} />
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: '#6b7280',
+                              fontSize: '0.8125rem',
+                            }}
+                          >
+                            No planners found
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: '#9ca3af',
+                              fontSize: '0.75rem',
+                            }}
+                          >
+                            Try a different search term
+                          </Typography>
+                        </Box>
+                      );
+                    }
+
+                    return filteredOwners.map((owner) => (
+                      <FormControlLabel
+                        key={owner}
+                        control={
+                          <Checkbox
+                            checked={selectedOwners.includes(owner)}
+                            onChange={() => handleOwnerToggle(owner)}
+                            size="small"
+                            sx={{
+                              py: 0.25,
+                              '&.Mui-checked': {
+                                color: '#6366f1',
+                              },
+                            }}
+                          />
+                        }
+                        label={
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontSize: '0.8125rem',
+                              color: '#374151',
+                            }}
+                          >
+                            {owner}
+                          </Typography>
+                        }
+                        sx={{
+                          display: 'flex',
+                          ml: 0,
+                          mb: 0.25,
+                          '&:hover': {
+                            bgcolor: '#f9fafb',
+                            borderRadius: 1,
+                          },
+                        }}
+                      />
+                    ));
+                  })()}
+                </Box>
+                {selectedOwners.length > 0 && (
+                  <Box sx={{ mt: 1.5 }}>
+                    <Chip
+                      label={`${selectedOwners.length} selected`}
+                      size="small"
+                      onDelete={() => setSelectedOwners([])}
+                      sx={{
+                        height: 20,
+                        fontSize: '0.6875rem',
+                        bgcolor: '#e0e7ff',
+                        color: '#4f46e5',
+                        fontWeight: 600,
+                        '& .MuiChip-deleteIcon': {
+                          fontSize: '0.875rem',
+                          color: '#4f46e5',
+                          '&:hover': {
+                            color: '#3730a3',
+                          },
+                        },
+                      }}
+                    />
+                  </Box>
+                )}
+              </>
+            ) : (
+              // Empty state
+              <Box
+                sx={{
+                  textAlign: 'center',
+                  py: 4,
+                  px: 2,
+                }}
+              >
+                <PersonIcon sx={{ fontSize: 48, color: '#d1d5db', mb: 1 }} />
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: '#6b7280',
+                    fontSize: '0.8125rem',
                   }}
                 >
-                  <ShowChartIcon sx={{ fontSize: 64, mb: 2, opacity: 0.5 }} />
-                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                    No trend data available
-                  </Typography>
-                  <Typography variant="body2" sx={{ mt: 1 }}>
-                    Execute this KPI to start collecting trend data
-                  </Typography>
-                </Box>
-              )}
-            </DialogContent>
+                  No planners available
+                </Typography>
+              </Box>
+            )}
 
-            <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid #e5e7eb' }}>
-              <Button
-                onClick={() => setTrendChartDialogOpen(false)}
-                variant="contained"
-                sx={{
-                  bgcolor: '#6366f1',
-                  color: 'white',
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  px: 3,
-                  '&:hover': {
-                    bgcolor: '#4f46e5'
-                  }
-                }}
-              >
-                Close
-              </Button>
-            </DialogActions>
-          </Dialog>
-        </Container>
+
+          </Box>
+        </Paper>
       </Box>
+    </Box>
   );
 };
 

@@ -13,11 +13,15 @@ import {
   Select,
   FormControl,
   InputLabel,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { executeKPI, listKGs, listSchemas } from '../services/api';
 import KPIExecutionStatusModal from './KPIExecutionStatusModal';
 
-const KPIExecutionDialog = ({ open, kpi, onClose, onSuccess }) => {
+const KPIExecutionDialog = ({ open, kpi, onClose, onSuccess, fullScreen }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [formData, setFormData] = useState({
     kg_name: '',
     schemas: [],
@@ -60,7 +64,7 @@ const KPIExecutionDialog = ({ open, kpi, onClose, onSuccess }) => {
     try {
       const response = await listKGs();
       // Handle both array of objects and array of strings
-      const kgList = response.data.graphs || [];
+      const kgList = response.data.data || []; // Fixed: changed from 'graphs' to 'data'
       const kgNames = kgList.map((kg) => (typeof kg === 'string' ? kg : kg.name));
       setKgs(kgNames);
     } catch (err) {
@@ -132,9 +136,11 @@ const KPIExecutionDialog = ({ open, kpi, onClose, onSuccess }) => {
   };
 
   const handleExecutionComplete = (execution) => {
+    console.log('KPI execution completed:', execution);
+    console.log('Calling onSuccess handler');
     setStatusModalOpen(false);
     setExecutionId(null);
-    onSuccess(); // Refresh the KPI list
+    onSuccess(); // This will trigger handleExecutionSuccess in LandingKPIManagement
   };
 
   const handleExecutionError = (errorMessage) => {
@@ -143,9 +149,20 @@ const KPIExecutionDialog = ({ open, kpi, onClose, onSuccess }) => {
     setError(errorMessage);
   };
 
+  const handleStatusModalClose = () => {
+    setStatusModalOpen(false);
+    setExecutionId(null);
+  };
+
   return (
     <>
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      fullScreen={fullScreen || isMobile}
+    >
       <DialogTitle>Execute KPI - {kpi?.name}</DialogTitle>
       <DialogContent sx={{ pt: 2 }}>
         {error && (
@@ -203,11 +220,9 @@ const KPIExecutionDialog = ({ open, kpi, onClose, onSuccess }) => {
             fullWidth
             disabled
             multiline
-            rows={3}
+            rows={isMobile ? 2 : 3}
             helperText="Definition from KPI"
           />
-
-
 
           {/* Limit Records */}
           <TextField
@@ -223,8 +238,12 @@ const KPIExecutionDialog = ({ open, kpi, onClose, onSuccess }) => {
           />
         </Box>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={executing}>
+      <DialogActions sx={{ px: isMobile ? 2 : 3, pb: isMobile ? 2 : 1 }}>
+        <Button
+          onClick={onClose}
+          disabled={executing}
+          fullWidth={isMobile}
+        >
           Cancel
         </Button>
         <Button
@@ -232,6 +251,8 @@ const KPIExecutionDialog = ({ open, kpi, onClose, onSuccess }) => {
           variant="contained"
           disabled={executing}
           startIcon={executing ? <CircularProgress size={20} /> : null}
+          fullWidth={isMobile}
+          sx={{ ml: isMobile ? 0 : 1, mt: isMobile ? 1 : 0 }}
         >
           {executing ? 'Executing...' : 'Execute'}
         </Button>
@@ -245,6 +266,7 @@ const KPIExecutionDialog = ({ open, kpi, onClose, onSuccess }) => {
       kpiName={kpi?.name}
       onComplete={handleExecutionComplete}
       onError={handleExecutionError}
+      onClose={handleStatusModalClose}
     />
   </>
   );

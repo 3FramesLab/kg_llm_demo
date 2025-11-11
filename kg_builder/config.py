@@ -83,6 +83,15 @@ TARGET_DB_USERNAME = os.getenv("TARGET_DB_USERNAME", "")
 TARGET_DB_PASSWORD = os.getenv("TARGET_DB_PASSWORD", "")
 TARGET_DB_SERVICE_NAME = os.getenv("TARGET_DB_SERVICE_NAME", "")  # For Oracle
 
+# KPI Database Configuration
+KPI_DB_TYPE = os.getenv("KPI_DB_TYPE", "sqlserver")
+KPI_DB_HOST = os.getenv("KPI_DB_HOST", "localhost")
+KPI_DB_PORT = int(os.getenv("KPI_DB_PORT", "1433"))
+KPI_DB_DATABASE = os.getenv("KPI_DB_DATABASE", "KPI_Analytics")
+KPI_DB_USERNAME = os.getenv("KPI_DB_USERNAME", "")
+KPI_DB_PASSWORD = os.getenv("KPI_DB_PASSWORD", "")
+KPI_DB_SERVICE_NAME = os.getenv("KPI_DB_SERVICE_NAME", "")  # For Oracle
+
 # Execution settings
 USE_ENV_DB_CONFIGS = os.getenv("USE_ENV_DB_CONFIGS", "true").lower() == "true"
 
@@ -237,4 +246,21 @@ def get_database_connection():
     conn.execute("PRAGMA foreign_keys = ON")
 
     return conn
+
+
+def get_mssql_connection_string() -> str:
+    """
+    Build MS SQL Server connection string for KPI database from configuration.
+
+    Returns:
+        ODBC connection string for SQL Server
+    """
+    return (
+        f"DRIVER={{ODBC Driver 17 for SQL Server}};"
+        f"SERVER={KPI_DB_HOST},{KPI_DB_PORT};"
+        f"DATABASE={KPI_DB_DATABASE};"
+        f"UID={KPI_DB_USERNAME};"
+        f"PWD={KPI_DB_PASSWORD};"
+        f"TrustServerCertificate=yes;"
+    )
 

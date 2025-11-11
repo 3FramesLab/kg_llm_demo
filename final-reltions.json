@@ -1,0 +1,142 @@
+[ 
+  {
+    "source_table": "brz_lnd_SKU_LIFNR_Excel",
+    "source_column": "Material",
+    "target_table": "brz_lnd_OPS_EXCEL_GPU",
+    "target_column": "PLANNING_SKU",
+    "relationship_type": "MATCHES",
+    "confidence": 0.8,
+    "bidirectional": true,
+    "_comment": ""
+  },
+  {
+    "source_table": "brz_lnd_RBP_GPU",
+    "source_column": "Material",
+    "target_table": "brz_lnd_OPS_EXCEL_GPU",
+    "target_column": "PLANNING_SKU",
+    "relationship_type": "MATCHES",
+    "confidence": 0.8,
+    "bidirectional": true,
+    "_comment": ""
+  }, 
+  {
+    "source_table": "brz_lnd_SAR_Excel_NBU",
+    "source_column": "Material",
+    "target_table": "hana_material_master",
+    "target_column": "MATERIAL",
+    "relationship_type": "MATCHES",
+    "confidence": 0.95,
+    "bidirectional": true,
+    "_comment": ""
+  },
+  {
+    "source_table": "brz_lnd_SAR_Excel_GPU",
+    "source_column": "Material",
+    "target_table": "hana_material_master",
+    "target_column": "MATERIAL",
+    "relationship_type": "MATCHES",
+    "confidence": 0.95,
+    "bidirectional": true,
+    "_comment": ""
+  },
+  {
+    "source_table": "brz_lnd_RBP_NBU",
+    "source_column": "Material",
+    "target_table": "brz_lnd_OPS_EXCEL_NBU",
+    "target_column": "MATERIAL_PN",
+    "relationship_type": "MATCHES",
+    "confidence": 0.95,
+    "bidirectional": false,
+    "_comment": ""
+  },
+  {
+    "source_table": "brz_lnd_SAR_UNK_GPU",
+    "source_column": "Material",
+    "target_table": "hana_material_master",
+    "target_column": "MATERIAL",
+    "relationship_type": "MATCHES",
+    "confidence": 0.95,
+    "bidirectional": true,
+    "_comment": "The 'Material' column in both tables suggests a common identifier for materials, which is likely a primary or foreign key."
+  },
+  {
+    "source_table": "brz_lnd_SAR_UNK_GPU",
+    "source_column": "Material",
+    "target_table": "brz_lnd_RBP_GPU",
+    "target_column": "Material",
+    "relationship_type": "MATCHES",
+    "confidence": 0.9,
+    "bidirectional": true,
+    "_comment": "The 'Material' column is the same in both tables, indicating a probable direct relationship used across different datasets."
+  },
+  {
+    "source_table": "brz_lnd_SAR_UNK_GPU",
+    "source_column": "Material",
+    "target_table": "brz_lnd_SKU_LIFNR_Excel",
+    "target_column": "Material",
+    "relationship_type": "MATCHES",
+    "confidence": 0.88,
+    "bidirectional": true,
+    "_comment": "A shared 'Material' column suggests that both tables may track similar or related material records."
+  },
+  {
+    "source_table": "brz_lnd_SAR_UNK_GPU",
+    "source_column": "Material",
+    "target_table": "brz_lnd_SAR_Excel_GPU",
+    "target_column": "Material",
+    "relationship_type": "MATCHES",
+    "confidence": 0.87,
+    "bidirectional": true,
+    "_comment": "Both tables, being part of the same domain (GPU SAR), suggest data continuity and potential integration of material records."
+  },
+  {
+    "source_table": "brz_lnd_SAR_UNK_NBU",
+    "source_column": "Material",
+    "target_table": "hana_material_master",
+    "target_column": "MATERIAL",
+    "relationship_type": "MATCHES",
+    "confidence": 0.95,
+    "bidirectional": true,
+    "_comment": "Both tables have a column named 'Material/MATERIAL' which likely serves as a unique identifier for materials, suggesting a strong relationship between the tables."
+  },
+  {
+    "source_table": "brz_lnd_SAR_UNK_NBU",
+    "source_column": "Material",
+    "target_table": "brz_lnd_RBP_GPU",
+    "target_column": "Material",
+    "relationship_type": "MATCHES",
+    "confidence": 0.95,
+    "bidirectional": true,
+    "_comment": "The presence of a 'Material' column in both tables indicates a likely direct match on material identifiers."
+  },
+  {
+    "source_table": "brz_lnd_SAR_UNK_NBU",
+    "source_column": "Material",
+    "target_table": "brz_lnd_SKU_LIFNR_Excel",
+    "target_column": "Material",
+    "relationship_type": "MATCHES",
+    "confidence": 0.95,
+    "bidirectional": true,
+    "_comment": "The shared 'Material' column suggests that the source table and this available table likely contain related material information."
+  },
+  {
+    "source_table": "brz_lnd_SAR_UNK_NBU",
+    "source_column": "Material",
+    "target_table": "brz_lnd_SAR_Excel_NBU",
+    "target_column": "Material",
+    "relationship_type": "MATCHES",
+    "confidence": 0.9,
+    "bidirectional": true,
+    "_comment": "Both tables are in the same 'SAR' context and share a 'Material' column, likely indicating a direct match."
+  },
+  {
+    "source_table": "brz_lnd_SAR_UNK_NBU",
+    "source_column": "Material",
+    "target_table": "brz_lnd_RBP_NBU",
+    "target_column": "Material",
+    "relationship_type": "MATCHES",
+    "confidence": 0.9,
+    "bidirectional": true,
+    "_comment": "As both tables include a 'Material' column, they likely match on material identifiers, supported by the 'NBU' suffix which connects them to a similar business context."
+  }
+]

@@ -22,7 +22,7 @@ import {
   Dashboard as DashboardIcon,
 } from '@mui/icons-material';
 import KPIResultsViewDialog from './KPIResultsViewDialog';
-import { API_BASE_URL } from '../services/api';
+import { getDashboardData, getLatestResults } from '../services/api';
 
 const KPIDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
@@ -39,14 +39,8 @@ const KPIDashboard = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`${API_BASE_URL}/landing-kpi/dashboard`);
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch dashboard data: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      setDashboardData(data);
+      const response = await getDashboardData();
+      setDashboardData(response.data);
     } catch (err) {
       console.error('Error fetching dashboard:', err);
       setError(err.message);

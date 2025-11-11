@@ -3,7 +3,7 @@ FastAPI routes for knowledge graph operations.
 """
 import logging
 import time
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Query
 from typing import List, Optional
 from pydantic import BaseModel
 
@@ -23,9 +23,7 @@ from kg_builder.models import (
     RelationshipPair, KGRelationshipType,
     NLQueryExecutionRequest, NLQueryExecutionResponse,
     KPIDefinition, KPIUpdateRequest as KPIUpdateRequestNew,
-    KPIExecutionResult, DrilldownRequest, DrilldownResponse,
-    TableRelationship, TableRelationshipCreateRequest, TableRelationshipUpdateRequest,
-    TableRelationshipResponse, TableRelationshipListResponse, ColumnMapping
+    KPIExecutionResult, DrilldownRequest, DrilldownResponse
 )
 from kg_builder.services.schema_parser import SchemaParser
 from kg_builder.services.falkordb_backend import get_falkordb_backend
@@ -145,6 +143,34 @@ async def list_schemas():
         }
     except Exception as e:
         logger.error(f"Error listing schemas: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/schemas/{schema_name}/tables")
+async def get_schema_tables(schema_name: str):
+    """Get all tables from a specific schema."""
+    try:
+        schema = SchemaParser.load_schema(schema_name)
+
+        tables = []
+        for table_name, table_info in schema.tables.items():
+            tables.append({
+                "name": table_name,
+                "columns_count": len(table_info.columns),
+                "primary_keys": table_info.primary_keys,
+                "foreign_keys": len(table_info.foreign_keys)
+            })
+
+        return {
+            "success": True,
+            "schema_name": schema_name,
+            "data": tables,
+            "count": len(tables)
+        }
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Schema '{schema_name}' not found")
+    except Exception as e:
+        logger.error(f"Error getting schema tables: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -416,6 +442,197 @@ async def get_kg_metadata(kg_name: str, backend: str = "graphiti"):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# Table Aliases CRUD endpoints
+@router.get("/table-aliases")
+async def get_all_table_aliases():
+    """Get all table aliases from all knowledge graphs."""
+    try:
+        backend_obj = get_graphiti_backend()
+        all_aliases = {}
+
+        # Get all KG names
+        kg_graphs = backend_obj.list_graphs()
+        kg_names = [graph.get('name', graph) if isinstance(graph, dict) else graph for graph in kg_graphs]
+
+        for kg_name in kg_names:
+            try:
+                metadata = backend_obj.get_kg_metadata(kg_name)
+                if metadata and "table_aliases" in metadata:
+                    table_aliases = metadata["table_aliases"]
+                    for table_name, aliases in table_aliases.items():
+                        if table_name not in all_aliases:
+                            all_aliases[table_name] = {
+                                "table_name": table_name,
+                                "aliases": aliases,
+                                "kg_name": kg_name,
+                                "id": f"{kg_name}_{table_name}"
+                            }
+            except Exception as e:
+                logger.warning(f"Error getting aliases from KG {kg_name}: {e}")
+                continue
+
+        return {
+            "success": True,
+            "data": list(all_aliases.values())
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving table aliases: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/kg/{kg_name}/table-aliases")
+async def get_kg_table_aliases(kg_name: str):
+    """Get table aliases for a specific knowledge graph."""
+    try:
+        backend_obj = get_graphiti_backend()
+        metadata = backend_obj.get_kg_metadata(kg_name)
+
+        if not metadata:
+            raise HTTPException(status_code=404, detail=f"KG '{kg_name}' not found")
+
+        table_aliases = metadata.get("table_aliases", {})
+
+        # Format for frontend
+        formatted_aliases = []
+        for table_name, aliases in table_aliases.items():
+            formatted_aliases.append({
+                "id": f"{kg_name}_{table_name}",
+                "table_name": table_name,
+                "aliases": aliases,
+                "kg_name": kg_name
+            })
+
+        return {
+            "success": True,
+            "kg_name": kg_name,
+            "data": formatted_aliases
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving table aliases for KG {kg_name}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/kg/{kg_name}/table-aliases")
+async def create_table_alias(kg_name: str, alias_data: dict):
+    """Create or update table aliases for a specific table in a KG."""
+    try:
+        table_name = alias_data.get("table_name")
+        aliases = alias_data.get("aliases", [])
+
+        if not table_name:
+            raise HTTPException(status_code=400, detail="table_name is required")
+
+        if not isinstance(aliases, list):
+            raise HTTPException(status_code=400, detail="aliases must be a list")
+
+        backend_obj = get_graphiti_backend()
+        metadata = backend_obj.get_kg_metadata(kg_name)
+
+        if not metadata:
+            raise HTTPException(status_code=404, detail=f"KG '{kg_name}' not found")
+
+        # Update table aliases
+        if "table_aliases" not in metadata:
+            metadata["table_aliases"] = {}
+
+        metadata["table_aliases"][table_name] = aliases
+
+        # Save updated metadata
+        backend_obj.save_kg_metadata(kg_name, metadata)
+
+        return {
+            "success": True,
+            "message": f"Table aliases updated for {table_name}",
+            "data": {
+                "id": f"{kg_name}_{table_name}",
+                "table_name": table_name,
+                "aliases": aliases,
+                "kg_name": kg_name
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating table alias: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/kg/{kg_name}/table-aliases/{table_name}")
+async def update_table_alias(kg_name: str, table_name: str, alias_data: dict):
+    """Update table aliases for a specific table."""
+    try:
+        aliases = alias_data.get("aliases", [])
+
+        if not isinstance(aliases, list):
+            raise HTTPException(status_code=400, detail="aliases must be a list")
+
+        backend_obj = get_graphiti_backend()
+        metadata = backend_obj.get_kg_metadata(kg_name)
+
+        if not metadata:
+            raise HTTPException(status_code=404, detail=f"KG '{kg_name}' not found")
+
+        if "table_aliases" not in metadata:
+            metadata["table_aliases"] = {}
+
+        if table_name not in metadata["table_aliases"]:
+            raise HTTPException(status_code=404, detail=f"Table '{table_name}' not found in KG '{kg_name}'")
+
+        # Update aliases
+        metadata["table_aliases"][table_name] = aliases
+
+        # Save updated metadata
+        backend_obj.save_kg_metadata(kg_name, metadata)
+
+        return {
+            "success": True,
+            "message": f"Table aliases updated for {table_name}",
+            "data": {
+                "id": f"{kg_name}_{table_name}",
+                "table_name": table_name,
+                "aliases": aliases,
+                "kg_name": kg_name
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating table alias: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/kg/{kg_name}/table-aliases/{table_name}")
+async def delete_table_alias(kg_name: str, table_name: str):
+    """Delete table aliases for a specific table."""
+    try:
+        backend_obj = get_graphiti_backend()
+        metadata = backend_obj.get_kg_metadata(kg_name)
+
+        if not metadata:
+            raise HTTPException(status_code=404, detail=f"KG '{kg_name}' not found")
+
+        if "table_aliases" not in metadata or table_name not in metadata["table_aliases"]:
+            raise HTTPException(status_code=404, detail=f"Table '{table_name}' not found in KG '{kg_name}'")
+
+        # Remove table aliases
+        del metadata["table_aliases"][table_name]
+
+        # Save updated metadata
+        backend_obj.save_kg_metadata(kg_name, metadata)
+
+        return {
+            "success": True,
+            "message": f"Table aliases deleted for {table_name}"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting table alias: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/kg/{kg_name}/export")
 async def export_graph(kg_name: str, backend: str = "graphiti"):
     """Export a knowledge graph."""
@@ -456,7 +673,7 @@ async def list_graphs():
         
         return {
             "success": True,
-            "graphs": graphs,
+            "data": graphs,  # Changed from "graphs" to "data" for frontend compatibility
             "count": len(graphs)
         }
     except Exception as e:
@@ -2982,192 +3199,5 @@ async def get_kpi_latest_results(kpi_id: int):
         raise
     except Exception as e:
         logger.error(f"Error getting latest results for KPI {kpi_id}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# ==================== Table Relationships Management ====================
-
-# In-memory storage for table relationships (can be replaced with database later)
-_table_relationships = {}
-
-@router.post("/relationships", response_model=TableRelationshipResponse, tags=["Relationships"])
-async def create_table_relationship(request: TableRelationshipCreateRequest):
-    """
-    Create a new table relationship with column mappings.
-
-    This endpoint allows users to define relationships between database tables
-    by mapping columns from a source table to a target table.
-
-    Example request:
-    ```json
-    {
-        "name": "Product to Supplier Relationship",
-        "source_table": "products",
-        "target_table": "suppliers",
-        "column_mappings": [
-            {"source_column": "supplier_id", "target_column": "id"},
-            {"source_column": "supplier_name", "target_column": "name"}
-        ],
-        "relationship_type": "REFERENCES"
-    }
-    ```
-    """
-    try:
-        import uuid
-        from datetime import datetime
-
-        # Generate unique ID
-        relationship_id = str(uuid.uuid4())
-
-        # Create timestamp
-        timestamp = datetime.utcnow().isoformat()
-
-        # Create relationship object
-        relationship = TableRelationship(
-            id=relationship_id,
-            name=request.name,
-            source_table=request.source_table,
-            target_table=request.target_table,
-            column_mappings=request.column_mappings,
-            relationship_type=request.relationship_type,
-            created_at=timestamp,
-            updated_at=timestamp
-        )
-
-        # Store relationship
-        _table_relationships[relationship_id] = relationship
-
-        logger.info(f"Created table relationship: {relationship_id} - {request.name}")
-
-        return TableRelationshipResponse(
-            success=True,
-            relationship=relationship,
-            message=f"Relationship '{request.name}' created successfully"
-        )
-    except Exception as e:
-        logger.error(f"Error creating table relationship: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/relationships", response_model=TableRelationshipListResponse, tags=["Relationships"])
-async def list_table_relationships():
-    """
-    List all table relationships.
-
-    Returns all defined table relationships with their column mappings.
-    """
-    try:
-        relationships = list(_table_relationships.values())
-
-        return TableRelationshipListResponse(
-            success=True,
-            relationships=relationships,
-            count=len(relationships)
-        )
-    except Exception as e:
-        logger.error(f"Error listing table relationships: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/relationships/{relationship_id}", response_model=TableRelationshipResponse, tags=["Relationships"])
-async def get_table_relationship(relationship_id: str):
-    """
-    Get a specific table relationship by ID.
-
-    Args:
-        relationship_id: The unique identifier of the relationship
-    """
-    try:
-        if relationship_id not in _table_relationships:
-            raise HTTPException(status_code=404, detail=f"Relationship {relationship_id} not found")
-
-        relationship = _table_relationships[relationship_id]
-
-        return TableRelationshipResponse(
-            success=True,
-            relationship=relationship,
-            message="Relationship retrieved successfully"
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error getting table relationship: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.put("/relationships/{relationship_id}", response_model=TableRelationshipResponse, tags=["Relationships"])
-async def update_table_relationship(relationship_id: str, request: TableRelationshipUpdateRequest):
-    """
-    Update an existing table relationship.
-
-    Args:
-        relationship_id: The unique identifier of the relationship
-        request: Updated relationship data
-    """
-    try:
-        from datetime import datetime
-
-        if relationship_id not in _table_relationships:
-            raise HTTPException(status_code=404, detail=f"Relationship {relationship_id} not found")
-
-        relationship = _table_relationships[relationship_id]
-
-        # Update fields if provided
-        if request.name is not None:
-            relationship.name = request.name
-        if request.source_table is not None:
-            relationship.source_table = request.source_table
-        if request.target_table is not None:
-            relationship.target_table = request.target_table
-        if request.column_mappings is not None:
-            relationship.column_mappings = request.column_mappings
-        if request.relationship_type is not None:
-            relationship.relationship_type = request.relationship_type
-
-        # Update timestamp
-        relationship.updated_at = datetime.utcnow().isoformat()
-
-        # Store updated relationship
-        _table_relationships[relationship_id] = relationship
-
-        logger.info(f"Updated table relationship: {relationship_id}")
-
-        return TableRelationshipResponse(
-            success=True,
-            relationship=relationship,
-            message=f"Relationship updated successfully"
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error updating table relationship: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.delete("/relationships/{relationship_id}", tags=["Relationships"])
-async def delete_table_relationship(relationship_id: str):
-    """
-    Delete a table relationship.
-
-    Args:
-        relationship_id: The unique identifier of the relationship
-    """
-    try:
-        if relationship_id not in _table_relationships:
-            raise HTTPException(status_code=404, detail=f"Relationship {relationship_id} not found")
-
-        relationship = _table_relationships[relationship_id]
-        del _table_relationships[relationship_id]
-
-        logger.info(f"Deleted table relationship: {relationship_id} - {relationship.name}")
-
-        return {
-            "success": True,
-            "message": f"Relationship '{relationship.name}' deleted successfully"
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error deleting table relationship: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 

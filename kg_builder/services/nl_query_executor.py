@@ -94,7 +94,7 @@ class NLQueryExecutor:
         )
 
         try:
-            # Generate SQL
+            # Generate SQL (enhancement is already applied in the generator)
             sql = self.generator.generate(intent)
             result.sql = sql
 

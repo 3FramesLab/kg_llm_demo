@@ -25,6 +25,8 @@ import {
   ShowChart as ShowChartIcon,
   Label as LabelIcon,
   Link as LinkIcon,
+  Analytics as AnalyticsIcon,
+  TableChart as TableChartIcon,
 } from '@mui/icons-material';
 
 const drawerWidth = 240;
@@ -34,9 +36,11 @@ const menuItems = [
   { text: 'Schemas', icon: <SchemaIcon />, path: '/schemas' },
   { text: 'Relationships', icon: <LinkIcon />, path: '/relationships' },
   { text: 'Knowledge Graph Builder', icon: <GraphIcon />, path: '/knowledge-graph' },
+  { text: 'Table Aliases', icon: <TableChartIcon />, path: '/table-aliases' },
   { text: 'Column Hints', icon: <LabelIcon />, path: '/hints-management' },
-  { text: 'Natural Language', icon: <NLIcon />, path: '/natural-language' },
+  // { text: 'Natural Language', icon: <NLIcon />, path: '/natural-language' }, // Hidden
   { text: 'NL KPI Management', icon: <KPIIcon />, path: '/landing-kpi' },
+  // { text: 'KPI Analytics', icon: <AnalyticsIcon />, path: '/kpi-analytics' }, // Hidden
   { text: 'Dashboard', icon: <ShowChartIcon />, path: '/dashboard-trends' },
 ];
 
@@ -59,7 +63,7 @@ export default function Layout({ children }) {
     <div>
       <Toolbar>
         <Typography variant="h6" noWrap component="div">
-          DQ-Reconciliation
+          Data Quality
         </Typography>
       </Toolbar>
       <Divider />
