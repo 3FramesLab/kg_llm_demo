@@ -47,6 +47,7 @@ import {
 } from '@mui/icons-material';
 import {
   listSchemas,
+  getSchemaDetails,
   createRelationship,
   listRelationships,
   updateRelationship,
@@ -60,6 +61,14 @@ export default function Relationships() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+
+  // Hierarchical selection state
+  const [sourceSchema, setSourceSchema] = useState('');
+  const [targetSchema, setTargetSchema] = useState('');
+  const [sourceTables, setSourceTables] = useState([]);
+  const [targetTables, setTargetTables] = useState([]);
+  const [sourceTable, setSourceTable] = useState('');
+  const [targetTable, setTargetTable] = useState('');
 
   // Form state for creating/editing relationships
   const [formData, setFormData] = useState({
@@ -103,23 +112,82 @@ export default function Relationships() {
     }
   };
 
-  const handleSourceTableChange = async (tableName) => {
-    setFormData({ ...formData, source_table: tableName });
-    // In a real implementation, you would fetch columns from the schema
-    // For now, we'll use mock data
-    setSourceColumns([
-      'id', 'name', 'email', 'created_at', 'updated_at',
-      'product_id', 'supplier_id', 'category_id', 'status'
-    ]);
+  // Handler for source schema selection
+  const handleSourceSchemaChange = async (schemaName) => {
+    setSourceSchema(schemaName);
+    setSourceTable('');
+    setSourceTables([]);
+    setSourceColumns([]);
+    setColumnMappings([]);
+
+    if (!schemaName) return;
+
+    try {
+      const response = await getSchemaDetails(schemaName);
+      const tables = Object.keys(response.data.tables);
+      setSourceTables(tables);
+    } catch (err) {
+      console.error('Error loading source schema details:', err);
+      setError('Failed to load source schema tables');
+    }
   };
 
+  // Handler for target schema selection
+  const handleTargetSchemaChange = async (schemaName) => {
+    setTargetSchema(schemaName);
+    setTargetTable('');
+    setTargetTables([]);
+    setTargetColumns([]);
+    setColumnMappings([]);
+
+    if (!schemaName) return;
+
+    try {
+      const response = await getSchemaDetails(schemaName);
+      const tables = Object.keys(response.data.tables);
+      setTargetTables(tables);
+    } catch (err) {
+      console.error('Error loading target schema details:', err);
+      setError('Failed to load target schema tables');
+    }
+  };
+
+  // Handler for source table selection
+  const handleSourceTableChange = async (tableName) => {
+    setSourceTable(tableName);
+    setFormData({ ...formData, source_table: tableName });
+    setSourceColumns([]);
+    setColumnMappings([]);
+
+    if (!tableName || !sourceSchema) return;
+
+    try {
+      const response = await getSchemaDetails(sourceSchema);
+      const columns = response.data.tables[tableName]?.columns || [];
+      setSourceColumns(columns);
+    } catch (err) {
+      console.error('Error loading source table columns:', err);
+      setError('Failed to load source table columns');
+    }
+  };
+
+  // Handler for target table selection
   const handleTargetTableChange = async (tableName) => {
+    setTargetTable(tableName);
     setFormData({ ...formData, target_table: tableName });
-    // In a real implementation, you would fetch columns from the schema
-    setTargetColumns([
-      'id', 'name', 'description', 'created_at', 'updated_at',
-      'reference_id', 'code', 'type', 'active'
-    ]);
+    setTargetColumns([]);
+    setColumnMappings([]);
+
+    if (!tableName || !targetSchema) return;
+
+    try {
+      const response = await getSchemaDetails(targetSchema);
+      const columns = response.data.tables[tableName]?.columns || [];
+      setTargetColumns(columns);
+    } catch (err) {
+      console.error('Error loading target table columns:', err);
+      setError('Failed to load target table columns');
+    }
   };
 
   const addColumnMapping = () => {
@@ -227,6 +295,12 @@ export default function Relationships() {
         target_table: '',
         relationship_type: 'REFERENCES',
       });
+      setSourceSchema('');
+      setTargetSchema('');
+      setSourceTable('');
+      setTargetTable('');
+      setSourceTables([]);
+      setTargetTables([]);
       setColumnMappings([]);
       setSourceColumns([]);
       setTargetColumns([]);
@@ -245,7 +319,7 @@ export default function Relationships() {
     }
   };
 
-  const handleEditRelationship = (relationship) => {
+  const handleEditRelationship = async (relationship) => {
     setEditingRelationship(relationship);
     setFormData({
       name: relationship.name,
@@ -254,11 +328,39 @@ export default function Relationships() {
       relationship_type: relationship.relationship_type,
     });
     setColumnMappings(relationship.column_mappings);
-    
-    // Load columns for both tables
-    handleSourceTableChange(relationship.source_table);
-    handleTargetTableChange(relationship.target_table);
-    
+
+    // Note: When editing, we need to find which schema contains these tables
+    // For now, we'll try to load from all schemas
+    // In a production app, you might want to store schema info with the relationship
+    try {
+      // Try to find the schemas that contain these tables
+      for (const schema of schemas) {
+        const response = await getSchemaDetails(schema);
+        const tables = Object.keys(response.data.tables);
+
+        // Check if this schema contains the source table
+        if (tables.includes(relationship.source_table)) {
+          setSourceSchema(schema);
+          setSourceTables(tables);
+          setSourceTable(relationship.source_table);
+          const columns = response.data.tables[relationship.source_table]?.columns || [];
+          setSourceColumns(columns);
+        }
+
+        // Check if this schema contains the target table
+        if (tables.includes(relationship.target_table)) {
+          setTargetSchema(schema);
+          setTargetTables(tables);
+          setTargetTable(relationship.target_table);
+          const columns = response.data.tables[relationship.target_table]?.columns || [];
+          setTargetColumns(columns);
+        }
+      }
+    } catch (err) {
+      console.error('Error loading relationship data:', err);
+      setError('Failed to load relationship data for editing');
+    }
+
     // Switch to create tab
     setTabValue(0);
   };
@@ -288,6 +390,12 @@ export default function Relationships() {
       target_table: '',
       relationship_type: 'REFERENCES',
     });
+    setSourceSchema('');
+    setTargetSchema('');
+    setSourceTable('');
+    setTargetTable('');
+    setSourceTables([]);
+    setTargetTables([]);
     setColumnMappings([]);
     setSourceColumns([]);
     setTargetColumns([]);
@@ -358,7 +466,7 @@ export default function Relationships() {
       )}
 
       <Paper sx={{ mb: 1 }}>
-        <Tabs value={tabValue} onChange={(e, v) => setTabValue(v)} sx={{ minHeight: 40 }}>
+        <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)} sx={{ minHeight: 40 }}>
           <Tab label="Create Relationship" icon={<Add />} iconPosition="start" sx={{ minHeight: 40, py: 1 }} />
           <Tab label="View Relationships" icon={<TableChart />} iconPosition="start" sx={{ minHeight: 40, py: 1 }} />
         </Tabs>
@@ -385,22 +493,57 @@ export default function Relationships() {
               />
             </Grid>
 
-            {/* Source Table */}
+            {/* Source Side - Schema, Table, Columns */}
             <Grid item xs={12} md={5}>
-              <FormControl fullWidth required size="small">
-                <InputLabel>Source Table</InputLabel>
-                <Select
-                  value={formData.source_table}
-                  onChange={(e) => handleSourceTableChange(e.target.value)}
-                  label="Source Table"
-                >
-                  {schemas.map((schema) => (
-                    <MenuItem key={schema} value={schema}>
-                      {schema}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                {/* Source Schema */}
+                <FormControl fullWidth required size="small">
+                  <InputLabel>Source Schema</InputLabel>
+                  <Select
+                    value={sourceSchema}
+                    onChange={(e) => handleSourceSchemaChange(e.target.value)}
+                    label="Source Schema"
+                  >
+                    <MenuItem value="">
+                      <em>Select a schema</em>
                     </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+                    {schemas.map((schema) => (
+                      <MenuItem key={schema} value={schema}>
+                        {schema}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                {/* Source Table */}
+                {sourceSchema && (
+                  <FormControl fullWidth required size="small">
+                    <InputLabel>Source Table</InputLabel>
+                    <Select
+                      value={sourceTable}
+                      onChange={(e) => handleSourceTableChange(e.target.value)}
+                      label="Source Table"
+                      disabled={!sourceSchema}
+                    >
+                      <MenuItem value="">
+                        <em>Select a table</em>
+                      </MenuItem>
+                      {sourceTables.map((table) => (
+                        <MenuItem key={table} value={table}>
+                          {table}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
+
+                {/* Source Columns Info */}
+                {sourceTable && sourceColumns.length > 0 && (
+                  <Alert severity="info" sx={{ py: 0.5 }}>
+                    {sourceColumns.length} columns available
+                  </Alert>
+                )}
+              </Box>
             </Grid>
 
             {/* Arrow Icon */}
@@ -408,22 +551,57 @@ export default function Relationships() {
               <ArrowForward sx={{ fontSize: 28, color: 'primary.main' }} />
             </Grid>
 
-            {/* Target Table */}
+            {/* Target Side - Schema, Table, Columns */}
             <Grid item xs={12} md={5}>
-              <FormControl fullWidth required size="small">
-                <InputLabel>Target Table</InputLabel>
-                <Select
-                  value={formData.target_table}
-                  onChange={(e) => handleTargetTableChange(e.target.value)}
-                  label="Target Table"
-                >
-                  {schemas.map((schema) => (
-                    <MenuItem key={schema} value={schema}>
-                      {schema}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                {/* Target Schema */}
+                <FormControl fullWidth required size="small">
+                  <InputLabel>Target Schema</InputLabel>
+                  <Select
+                    value={targetSchema}
+                    onChange={(e) => handleTargetSchemaChange(e.target.value)}
+                    label="Target Schema"
+                  >
+                    <MenuItem value="">
+                      <em>Select a schema</em>
                     </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+                    {schemas.map((schema) => (
+                      <MenuItem key={schema} value={schema}>
+                        {schema}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                {/* Target Table */}
+                {targetSchema && (
+                  <FormControl fullWidth required size="small">
+                    <InputLabel>Target Table</InputLabel>
+                    <Select
+                      value={targetTable}
+                      onChange={(e) => handleTargetTableChange(e.target.value)}
+                      label="Target Table"
+                      disabled={!targetSchema}
+                    >
+                      <MenuItem value="">
+                        <em>Select a table</em>
+                      </MenuItem>
+                      {targetTables.map((table) => (
+                        <MenuItem key={table} value={table}>
+                          {table}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
+
+                {/* Target Columns Info */}
+                {targetTable && targetColumns.length > 0 && (
+                  <Alert severity="info" sx={{ py: 0.5 }}>
+                    {targetColumns.length} columns available
+                  </Alert>
+                )}
+              </Box>
             </Grid>
 
             {/* Relationship Type */}
