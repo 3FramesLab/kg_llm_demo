@@ -8,15 +8,26 @@ import {
   ListItem,
   ListItemText,
   Chip,
-  Button,
   CircularProgress,
   Alert,
   Fade,
   IconButton,
   Tooltip,
 } from '@mui/material';
-import { Refresh, Description, Storage, Info, CheckCircle } from '@mui/icons-material';
+import { Refresh, Description, Storage, Info } from '@mui/icons-material';
 import { listSchemas } from '../services/api';
+
+// Common style constants
+const GRADIENT_BACKGROUND = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+const PRIMARY_COLOR = '#667eea';
+const GRADIENT_LIGHT_BACKGROUND = 'linear-gradient(135deg, rgba(102, 126, 234, 0.03) 0%, rgba(118, 75, 162, 0.03) 100%)';
+
+const CODE_STYLE = {
+  padding: '2px 6px',
+  borderRadius: '4px',
+  background: 'rgba(0,0,0,0.05)',
+  fontWeight: 600,
+};
 
 export default function Schemas() {
   const [schemas, setSchemas] = useState([]);
@@ -55,7 +66,7 @@ export default function Schemas() {
               borderRadius: 1.5,
               '&:hover': {
                 bgcolor: '#f3f4f6',
-                borderColor: '#667eea',
+                borderColor: PRIMARY_COLOR,
               },
               '&:disabled': {
                 bgcolor: '#f9fafb',
@@ -65,7 +76,7 @@ export default function Schemas() {
             <Refresh
               sx={{
                 fontSize: 20,
-                color: loading ? '#9ca3af' : '#667eea',
+                color: loading ? '#9ca3af' : PRIMARY_COLOR,
                 animation: loading ? 'spin 1s linear infinite' : 'none',
                 '@keyframes spin': {
                   '0%': { transform: 'rotate(0deg)' },
@@ -106,7 +117,7 @@ export default function Schemas() {
 
       {/* Empty State */}
       {!loading && schemas.length === 0 && !error && (
-        <Fade in={!loading && schemas.length === 0}>
+        <Fade in>
           <Paper
             elevation={0}
             sx={{
@@ -115,7 +126,7 @@ export default function Schemas() {
               border: '2px dashed',
               borderColor: 'divider',
               textAlign: 'center',
-              background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.03) 0%, rgba(118, 75, 162, 0.03) 100%)',
+              background: GRADIENT_LIGHT_BACKGROUND,
             }}
           >
             <Storage sx={{ fontSize: 64, color: 'text.secondary', mb: 2, opacity: 0.5 }} />
@@ -123,12 +134,7 @@ export default function Schemas() {
               No Schemas Found
             </Typography>
             <Typography variant="body2" fontSize="0.8rem" color="text.secondary">
-              Place JSON schema files in the <code style={{
-                padding: '2px 6px',
-                borderRadius: '4px',
-                background: 'rgba(0,0,0,0.05)',
-                fontWeight: 600,
-              }}>schemas/</code> directory to get started.
+              Place JSON schema files in the <code style={CODE_STYLE}>schemas/</code> directory to get started.
             </Typography>
           </Paper>
         </Fade>
@@ -136,7 +142,7 @@ export default function Schemas() {
 
       {/* Schemas List */}
       {!loading && schemas.length > 0 && (
-        <Fade in={!loading && schemas.length > 0}>
+        <Fade in>
           <Paper
             elevation={0}
             sx={{
@@ -180,7 +186,7 @@ export default function Schemas() {
                       sx={{
                         p: 1.5,
                         borderRadius: 1.5,
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        background: GRADIENT_BACKGROUND,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -197,13 +203,7 @@ export default function Schemas() {
                       }
                       secondary={
                         <Typography variant="body2" fontSize="0.8rem" color="text.secondary" sx={{ mt: 0.5 }}>
-                          Location: <code style={{
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            background: 'rgba(0,0,0,0.05)',
-                            fontWeight: 600,
-                            fontSize: '0.75rem',
-                          }}>schemas/{schema}.json</code>
+                          Location: <code style={{ ...CODE_STYLE, fontSize: '0.75rem' }}>schemas/{schema}.json</code>
                         </Typography>
                       }
                     />
@@ -224,7 +224,7 @@ export default function Schemas() {
           borderRadius: 2,
           border: '1px solid',
           borderColor: 'divider',
-          background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.03) 0%, rgba(118, 75, 162, 0.03) 100%)',
+          background: GRADIENT_LIGHT_BACKGROUND,
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
@@ -232,7 +232,7 @@ export default function Schemas() {
             sx={{
               p: 1,
               borderRadius: 1.5,
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              background: GRADIENT_BACKGROUND,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -245,7 +245,7 @@ export default function Schemas() {
           </Typography>
         </Box>
 
-        <Typography variant="body2" fontSize="0.8rem" paragraph sx={{ mb: 2, lineHeight: 1.6 }}>
+        <Typography variant="body2" fontSize="0.8rem" sx={{ mb: 2, lineHeight: 1.6 }}>
           Database schemas define the structure of your databases including tables, columns, and
           relationships. These schemas are used to generate knowledge graphs and reconciliation
           rules.
@@ -272,11 +272,9 @@ export default function Schemas() {
             <Box component="li" sx={{ mb: 1.5 }}>
               <Typography variant="body2" fontSize="0.8rem" sx={{ lineHeight: 1.6 }}>
                 Place the file in the <code style={{
-                  padding: '2px 6px',
-                  borderRadius: '4px',
+                  ...CODE_STYLE,
                   background: 'rgba(102, 126, 234, 0.1)',
-                  fontWeight: 600,
-                  color: '#667eea',
+                  color: PRIMARY_COLOR,
                 }}>schemas/</code> directory
               </Typography>
             </Box>
@@ -287,7 +285,7 @@ export default function Schemas() {
             </Box>
             <Box component="li">
               <Typography variant="body2" fontSize="0.8rem" sx={{ lineHeight: 1.6 }}>
-                Navigate to <strong style={{ color: '#667eea' }}>Knowledge Graph</strong> to generate a graph from the schema
+                Navigate to <strong style={{ color: PRIMARY_COLOR }}>Knowledge Graph</strong> to generate a graph from the schema
               </Typography>
             </Box>
           </Box>

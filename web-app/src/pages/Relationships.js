@@ -36,7 +36,6 @@ import {
   Edit,
   Save,
   Cancel,
-  Link as LinkIcon,
   ArrowForward,
   Refresh,
   TableChart,
@@ -47,7 +46,7 @@ import {
 } from '@mui/icons-material';
 import {
   listSchemas,
-  getSchemaDetails,
+  getSchemaTable,
   createRelationship,
   listRelationships,
   updateRelationship,
@@ -82,6 +81,58 @@ export default function Relationships() {
   const [targetColumns, setTargetColumns] = useState([]);
   const [columnMappings, setColumnMappings] = useState([]);
   const [editingRelationship, setEditingRelationship] = useState(null);
+
+  // Helper function to check for duplicate columns in mappings
+  const findDuplicateColumn = (mappings, columnType) => {
+    const columns = mappings.map(m => columnType === 'source' ? m.source_column : m.target_column);
+    return columns.find((col, idx) => col && columns.indexOf(col) !== idx);
+  };
+
+  // Helper function to reset form to initial state
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      source_table: '',
+      target_table: '',
+      relationship_type: 'REFERENCES',
+    });
+    setSourceSchema('');
+    setTargetSchema('');
+    setSourceTable('');
+    setTargetTable('');
+    setSourceTables([]);
+    setTargetTables([]);
+    setColumnMappings([]);
+    setSourceColumns([]);
+    setTargetColumns([]);
+    setEditingRelationship(null);
+    setError(null);
+  };
+
+  // Helper function to render column menu items with mapped status
+  const renderColumnMenuItem = (col, currentIndex, columnType) => {
+    const isAlreadyMapped = columnMappings.some(
+      (m, idx) => idx !== currentIndex &&
+        (columnType === 'source' ? m.source_column === col : m.target_column === col)
+    );
+
+    return (
+      <MenuItem key={col} value={col} disabled={isAlreadyMapped}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <DragIndicator sx={{ fontSize: 14, color: 'text.secondary' }} />
+          <Typography variant="body2">{col}</Typography>
+          {isAlreadyMapped && (
+            <Chip
+              label="Mapped"
+              size="small"
+              color="warning"
+              sx={{ height: 16, fontSize: '0.6rem', ml: 0.5 }}
+            />
+          )}
+        </Box>
+      </MenuItem>
+    );
+  };
 
   // Load schemas and relationships on mount
   useEffect(() => {
@@ -123,7 +174,7 @@ export default function Relationships() {
     if (!schemaName) return;
 
     try {
-      const response = await getSchemaDetails(schemaName);
+      const response = await getSchemaTable(schemaName);
       const tables = Object.keys(response.data.tables);
       setSourceTables(tables);
     } catch (err) {
@@ -143,7 +194,7 @@ export default function Relationships() {
     if (!schemaName) return;
 
     try {
-      const response = await getSchemaDetails(schemaName);
+      const response = await getSchemaTable(schemaName);
       const tables = Object.keys(response.data.tables);
       setTargetTables(tables);
     } catch (err) {
@@ -162,7 +213,7 @@ export default function Relationships() {
     if (!tableName || !sourceSchema) return;
 
     try {
-      const response = await getSchemaDetails(sourceSchema);
+      const response = await getSchemaTable(sourceSchema);
       const columns = response.data.tables[tableName]?.columns || [];
       setSourceColumns(columns);
     } catch (err) {
@@ -181,7 +232,7 @@ export default function Relationships() {
     if (!tableName || !targetSchema) return;
 
     try {
-      const response = await getSchemaDetails(targetSchema);
+      const response = await getSchemaTable(targetSchema);
       const columns = response.data.tables[tableName]?.columns || [];
       setTargetColumns(columns);
     } catch (err) {
@@ -203,15 +254,22 @@ export default function Relationships() {
   };
 
   const updateColumnMapping = (index, field, value) => {
+    // Skip validation if value is empty
+    if (!value) {
+      const updated = [...columnMappings];
+      updated[index][field] = value;
+      setColumnMappings(updated);
+      return;
+    }
+
     // Check for duplicate mappings (one-to-one validation)
     const isDuplicate = columnMappings.some((mapping, idx) => {
       if (idx === index) return false; // Skip current mapping
-      if (field === 'source_column') {
-        return mapping.source_column === value && value !== '';
-      } else if (field === 'target_column') {
-        return mapping.target_column === value && value !== '';
-      }
-      return false;
+      return field === 'source_column'
+        ? mapping.source_column === value
+        : field === 'target_column'
+        ? mapping.target_column === value
+        : false;
     });
 
     if (isDuplicate) {
@@ -236,7 +294,7 @@ export default function Relationships() {
       setLoading(true);
       setError(null);
 
-      // Validate
+      // Validate required fields
       if (!formData.name || !formData.source_table || !formData.target_table) {
         setError('Please fill in all required fields');
         return;
@@ -256,19 +314,16 @@ export default function Relationships() {
         return;
       }
 
-      // Validate one-to-one mapping (no duplicate source columns)
-      const sourceColumns = columnMappings.map(m => m.source_column);
-      const duplicateSources = sourceColumns.filter((col, idx) => sourceColumns.indexOf(col) !== idx);
-      if (duplicateSources.length > 0) {
-        setError(`Duplicate source column mapping detected: "${duplicateSources[0]}". Each column can only be mapped once (one-to-one mapping).`);
+      // Validate one-to-one mapping using helper function
+      const duplicateSource = findDuplicateColumn(columnMappings, 'source');
+      if (duplicateSource) {
+        setError(`Duplicate source column mapping detected: "${duplicateSource}". Each column can only be mapped once (one-to-one mapping).`);
         return;
       }
 
-      // Validate one-to-one mapping (no duplicate target columns)
-      const targetColumns = columnMappings.map(m => m.target_column);
-      const duplicateTargets = targetColumns.filter((col, idx) => targetColumns.indexOf(col) !== idx);
-      if (duplicateTargets.length > 0) {
-        setError(`Duplicate target column mapping detected: "${duplicateTargets[0]}". Each column can only be mapped once (one-to-one mapping).`);
+      const duplicateTarget = findDuplicateColumn(columnMappings, 'target');
+      if (duplicateTarget) {
+        setError(`Duplicate target column mapping detected: "${duplicateTarget}". Each column can only be mapped once (one-to-one mapping).`);
         return;
       }
 
@@ -288,23 +343,8 @@ export default function Relationships() {
         setSuccess('Relationship created successfully');
       }
 
-      // Reset form
-      setFormData({
-        name: '',
-        source_table: '',
-        target_table: '',
-        relationship_type: 'REFERENCES',
-      });
-      setSourceSchema('');
-      setTargetSchema('');
-      setSourceTable('');
-      setTargetTable('');
-      setSourceTables([]);
-      setTargetTables([]);
-      setColumnMappings([]);
-      setSourceColumns([]);
-      setTargetColumns([]);
-      setEditingRelationship(null);
+      // Reset form using helper function
+      resetForm();
 
       // Reload relationships
       await loadRelationships();
@@ -329,32 +369,41 @@ export default function Relationships() {
     });
     setColumnMappings(relationship.column_mappings);
 
-    // Note: When editing, we need to find which schema contains these tables
-    // For now, we'll try to load from all schemas
-    // In a production app, you might want to store schema info with the relationship
+    // Find schemas that contain the source and target tables
     try {
-      // Try to find the schemas that contain these tables
+      let sourceSchemaFound = false;
+      let targetSchemaFound = false;
+
+      // Iterate through schemas and stop early when both tables are found
       for (const schema of schemas) {
-        const response = await getSchemaDetails(schema);
+        if (sourceSchemaFound && targetSchemaFound) break;
+
+        const response = await getSchemaTable(schema);
         const tables = Object.keys(response.data.tables);
 
         // Check if this schema contains the source table
-        if (tables.includes(relationship.source_table)) {
+        if (!sourceSchemaFound && tables.includes(relationship.source_table)) {
           setSourceSchema(schema);
           setSourceTables(tables);
           setSourceTable(relationship.source_table);
           const columns = response.data.tables[relationship.source_table]?.columns || [];
           setSourceColumns(columns);
+          sourceSchemaFound = true;
         }
 
         // Check if this schema contains the target table
-        if (tables.includes(relationship.target_table)) {
+        if (!targetSchemaFound && tables.includes(relationship.target_table)) {
           setTargetSchema(schema);
           setTargetTables(tables);
           setTargetTable(relationship.target_table);
           const columns = response.data.tables[relationship.target_table]?.columns || [];
           setTargetColumns(columns);
+          targetSchemaFound = true;
         }
+      }
+
+      if (!sourceSchemaFound || !targetSchemaFound) {
+        setError('Could not find schema information for one or more tables');
       }
     } catch (err) {
       console.error('Error loading relationship data:', err);
@@ -384,23 +433,7 @@ export default function Relationships() {
   };
 
   const handleClearForm = () => {
-    setFormData({
-      name: '',
-      source_table: '',
-      target_table: '',
-      relationship_type: 'REFERENCES',
-    });
-    setSourceSchema('');
-    setTargetSchema('');
-    setSourceTable('');
-    setTargetTable('');
-    setSourceTables([]);
-    setTargetTables([]);
-    setColumnMappings([]);
-    setSourceColumns([]);
-    setTargetColumns([]);
-    setEditingRelationship(null);
-    setError(null);
+    resetForm();
   };
 
   const handleDownloadJSON = () => {
@@ -719,31 +752,7 @@ export default function Relationships() {
                                   <MenuItem value="" disabled>
                                     <em>Select source column</em>
                                   </MenuItem>
-                                  {sourceColumns.map((col) => {
-                                    const isAlreadyMapped = columnMappings.some(
-                                      (m, idx) => idx !== index && m.source_column === col
-                                    );
-                                    return (
-                                      <MenuItem
-                                        key={col}
-                                        value={col}
-                                        disabled={isAlreadyMapped}
-                                      >
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                          <DragIndicator sx={{ fontSize: 14, color: 'text.secondary' }} />
-                                          <Typography variant="body2">{col}</Typography>
-                                          {isAlreadyMapped && (
-                                            <Chip
-                                              label="Mapped"
-                                              size="small"
-                                              color="warning"
-                                              sx={{ height: 16, fontSize: '0.6rem', ml: 0.5 }}
-                                            />
-                                          )}
-                                        </Box>
-                                      </MenuItem>
-                                    );
-                                  })}
+                                  {sourceColumns.map((col) => renderColumnMenuItem(col, index, 'source'))}
                                 </Select>
                               </FormControl>
                             </Grid>
@@ -784,31 +793,7 @@ export default function Relationships() {
                                   <MenuItem value="" disabled>
                                     <em>Select target column</em>
                                   </MenuItem>
-                                  {targetColumns.map((col) => {
-                                    const isAlreadyMapped = columnMappings.some(
-                                      (m, idx) => idx !== index && m.target_column === col
-                                    );
-                                    return (
-                                      <MenuItem
-                                        key={col}
-                                        value={col}
-                                        disabled={isAlreadyMapped}
-                                      >
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                          <DragIndicator sx={{ fontSize: 14, color: 'text.secondary' }} />
-                                          <Typography variant="body2">{col}</Typography>
-                                          {isAlreadyMapped && (
-                                            <Chip
-                                              label="Mapped"
-                                              size="small"
-                                              color="warning"
-                                              sx={{ height: 16, fontSize: '0.6rem', ml: 0.5 }}
-                                            />
-                                          )}
-                                        </Box>
-                                      </MenuItem>
-                                    );
-                                  })}
+                                  {targetColumns.map((col) => renderColumnMenuItem(col, index, 'target'))}
                                 </Select>
                               </FormControl>
                             </Grid>

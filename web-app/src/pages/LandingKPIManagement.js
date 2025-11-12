@@ -14,8 +14,6 @@ import {
   Grid,
   Fade,
   Slide,
-  useTheme,
-  useMediaQuery,
   Divider,
   IconButton,
   Tooltip,
@@ -43,9 +41,6 @@ import ScheduleMonitoringDashboard from '../components/ScheduleMonitoringDashboa
 
 const LandingKPIManagement = () => {
   const navigate = useNavigate();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
 
   const [formOpen, setFormOpen] = useState(false);
   const [selectedKPI, setSelectedKPI] = useState(null);
@@ -59,73 +54,52 @@ const LandingKPIManagement = () => {
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [monitoringDialogOpen, setMonitoringDialogOpen] = useState(false);
 
-  const handleCreateKPI = () => {
-    setSelectedKPI(null);
-    setFormOpen(true);
+  const openDialog = (dialogSetter, kpiOrExecution = null, isExecution = false) => {
+    if (isExecution) {
+      setSelectedExecution(kpiOrExecution);
+    } else {
+      setSelectedKPI(kpiOrExecution);
+    }
+    dialogSetter(true);
   };
 
-  const handleEditKPI = (kpi) => {
-    setSelectedKPI(kpi);
-    setFormOpen(true);
-  };
+  const handleCreateKPI = () => openDialog(setFormOpen);
+  const handleEditKPI = (kpi) => openDialog(setFormOpen, kpi);
+  const handleExecuteKPI = (kpi) => openDialog(setExecutionDialogOpen, kpi);
+  const handleViewHistory = (kpi) => openDialog(setHistoryDialogOpen, kpi);
+  const handleViewDrilldown = (execution) => openDialog(setDrilldownDialogOpen, execution, true);
+  const handleManageSchedule = (kpi) => openDialog(setScheduleDialogOpen, kpi);
 
-  const handleExecuteKPI = (kpi) => {
-    setSelectedKPI(kpi);
-    setExecutionDialogOpen(true);
-  };
-
-  const handleViewHistory = (kpi) => {
-    setSelectedKPI(kpi);
-    setHistoryDialogOpen(true);
-  };
-
-  const handleViewDrilldown = (execution) => {
-    setSelectedExecution(execution);
-    setDrilldownDialogOpen(true);
-  };
-
-  const handleManageSchedule = (kpi) => {
-    setSelectedKPI(kpi);
-    setScheduleDialogOpen(true);
+  const showSuccessMessage = (message, duration = 3000, callback) => {
+    setSuccessMessage(message);
+    setRefreshTrigger((prev) => prev + 1);
+    setTimeout(() => {
+      setSuccessMessage('');
+      if (callback) callback();
+    }, duration);
   };
 
   const handleFormSuccess = () => {
-    setSuccessMessage(selectedKPI ? 'KPI updated successfully!' : 'KPI created successfully!');
-    setRefreshTrigger((prev) => prev + 1);
-    setTimeout(() => setSuccessMessage(''), 3000);
+    showSuccessMessage(selectedKPI ? 'KPI updated successfully!' : 'KPI created successfully!');
   };
 
   const handleExecutionSuccess = () => {
-    console.log('KPI execution completed successfully');
-    console.log('Selected KPI for navigation:', selectedKPI);
+    const message = 'KPI execution completed successfully!';
 
-    setSuccessMessage('KPI execution completed successfully!');
-    setRefreshTrigger((prev) => prev + 1);
-
-    // Navigate to execution history page after successful execution
     if (selectedKPI) {
-      console.log('Navigating to execution history for KPI:', selectedKPI.id);
       const historyPath = `/landing-kpi/${selectedKPI.id}/history`;
-      console.log('Navigation path:', historyPath);
-
-      // Small delay to show success message briefly, then navigate
-      setTimeout(() => {
-        navigate(historyPath);
-      }, 1500);
+      showSuccessMessage(message, 1500, () => navigate(historyPath));
     } else {
-      console.warn('No selectedKPI available for navigation');
-      setTimeout(() => setSuccessMessage(''), 3000);
+      showSuccessMessage(message);
     }
   };
 
-  const handleTabChange = (event, newValue) => {
+  const handleTabChange = (_event, newValue) => {
     setActiveTab(newValue);
   };
 
   const handleRefresh = () => {
-    setRefreshTrigger((prev) => prev + 1);
-    setSuccessMessage('Data refreshed successfully!');
-    setTimeout(() => setSuccessMessage(''), 2000);
+    showSuccessMessage('Data refreshed successfully!', 2000);
   };
 
   return (

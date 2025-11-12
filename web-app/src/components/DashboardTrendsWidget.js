@@ -27,6 +27,9 @@ import {
   TextField,
   InputAdornment,
   MenuItem,
+  Chip,
+  Checkbox,
+  FormControlLabel,
 } from '@mui/material';
 import {
   Assessment as AssessmentIcon,
@@ -34,6 +37,8 @@ import {
   Close as CloseIcon,
   Download as DownloadIcon,
   Search as SearchIcon,
+  Clear as ClearIcon,
+  Person as PersonIcon,
 } from '@mui/icons-material';
 import { VegaEmbed } from 'react-vega';
 
@@ -92,6 +97,7 @@ const DashboardTrendsWidget = ({
   maxWidth = "xl",
   containerSx = {},
   onKPIClick,
+  onRefresh,
   emptyStateRedirectUrl = "/landing-kpi",
 }) => {
   const [dashboardData, setDashboardData] = useState(null);
@@ -1526,6 +1532,7 @@ DashboardTrendsWidget.propTypes = {
   maxWidth: PropTypes.string,
   containerSx: PropTypes.object,
   onKPIClick: PropTypes.func,
+  onRefresh: PropTypes.func,
   emptyStateRedirectUrl: PropTypes.string,
 };
 

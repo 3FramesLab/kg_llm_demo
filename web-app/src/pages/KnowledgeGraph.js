@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Container,
   Typography,
@@ -11,8 +11,6 @@ import {
   Checkbox,
   CircularProgress,
   Alert,
-  Card,
-  CardContent,
   Chip,
   Tabs,
   Tab,
@@ -23,10 +21,11 @@ import {
   ListItem,
   ListItemText,
   Fade,
-  Skeleton,
   Tooltip,
   IconButton,
   Badge,
+  Card,
+  CardContent,
   Backdrop,
 } from '@mui/material';
 import {
@@ -42,16 +41,10 @@ import {
   Warning,
   AutoAwesome,
   Visibility,
-  Person,
-  Business,
-  LocationOn,
-  Category,
-  Link,
   Search,
   FilterList,
   ArrowForward,
 } from '@mui/icons-material';
-import { Radio, RadioGroup } from '@mui/material';
 import {
   generateKG,
   listKGs,
@@ -65,6 +58,32 @@ import {
 } from '../services/api';
 import KnowledgeGraphEditor from '../components/KnowledgeGraphEditor';
 
+// Constants
+const ENTITY_TYPE_COLORS = {
+  'Person': '#764ba2',
+  'Company': '#667eea',
+  'Organization': '#f093fb',
+  'Location': '#4facfe',
+  'Product': '#43e97b',
+  'Project': '#43e97b',
+  'Skill': '#fa709a',
+  'Order': '#fa709a',
+  'Supplier': '#30cfd0',
+  'Warehouse': '#a8edea',
+  'Category': '#fed6e3',
+};
+
+const DEFAULT_TYPE_COLOR = '#999999';
+
+const RELATIONSHIP_TYPE_COLORS = {
+  'WORKS_AT': '#667eea',
+  'LEADS': '#764ba2',
+  'CONTRIBUTES_TO': '#43e97b',
+  'HAS_SKILL': '#fa709a',
+  'SPONSORS': '#30cfd0',
+  'MANAGES': '#f093fb',
+  'REPORTS_TO': '#4facfe',
+};
 
 export default function KnowledgeGraph() {
   const [tabValue, setTabValue] = useState(0);
@@ -76,12 +95,10 @@ export default function KnowledgeGraph() {
 
   // Form state
   const [formData, setFormData] = useState({
-    schema_name: '',
     schema_names: [],
     kg_name: '',
     use_llm_enhancement: true,
     backends: ['graphiti'],
-    field_preferences: null,
   });
 
   // Relationship pairs input (JSON string)
@@ -110,6 +127,44 @@ export default function KnowledgeGraph() {
   const [suggestingRelationships, setSuggestingRelationships] = useState(false);
   const [suggestionSourceTable, setSuggestionSourceTable] = useState('');
 
+  // Memoized filtered entities
+  const filteredEntities = useMemo(() => {
+    return kgEntities.filter(entity => {
+      const matchesSearch = !entitySearchTerm ||
+        (entity.label || entity.id).toLowerCase().includes(entitySearchTerm.toLowerCase()) ||
+        (entity.type || '').toLowerCase().includes(entitySearchTerm.toLowerCase());
+      const matchesType = selectedEntityType === 'all' || entity.type === selectedEntityType;
+      return matchesSearch && matchesType;
+    });
+  }, [kgEntities, entitySearchTerm, selectedEntityType]);
+
+  // Memoized filtered relationships
+  const filteredRelationships = useMemo(() => {
+    return kgRelationships.filter(rel => {
+      const sourceEntity = kgEntities.find(e => e.id === rel.source_id);
+      const targetEntity = kgEntities.find(e => e.id === rel.target_id);
+      const sourceName = sourceEntity?.label || rel.source_id;
+      const targetName = targetEntity?.label || rel.target_id;
+
+      const matchesSearch = !relationshipSearchTerm ||
+        sourceName.toLowerCase().includes(relationshipSearchTerm.toLowerCase()) ||
+        targetName.toLowerCase().includes(relationshipSearchTerm.toLowerCase()) ||
+        rel.relationship_type.toLowerCase().includes(relationshipSearchTerm.toLowerCase());
+      const matchesType = selectedRelationType === 'all' || rel.relationship_type === selectedRelationType;
+      return matchesSearch && matchesType;
+    });
+  }, [kgRelationships, kgEntities, relationshipSearchTerm, selectedRelationType]);
+
+  // Memoized unique entity types
+  const uniqueEntityTypes = useMemo(() => {
+    return [...new Set(kgEntities.map(e => e.type).filter(Boolean))];
+  }, [kgEntities]);
+
+  // Memoized unique relationship types
+  const uniqueRelationshipTypes = useMemo(() => {
+    return [...new Set(kgRelationships.map(r => r.type).filter(Boolean))];
+  }, [kgRelationships]);
+
   useEffect(() => {
     loadInitialData();
   }, []);
@@ -122,19 +177,15 @@ export default function KnowledgeGraph() {
         checkLLMStatus(),
       ]);
 
-      console.log('KGs Response:', kgsRes.data); // Debug log
-      console.log('Schemas Response:', schemasRes.data); // Debug log
-
       setSchemas(schemasRes.data.schemas || []);
-      setKnowledgeGraphs(kgsRes.data.data || []); // Fixed: changed from 'graphs' to 'data'
+      setKnowledgeGraphs(kgsRes.data.data || []);
       setLlmStatus(llmStatusRes.data);
     } catch (err) {
       console.error('Error loading data:', err);
-      console.error('Full error details:', err.response || err);
     }
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = useCallback(async () => {
     setLoading(true);
     setError(null);
     setSuccess(null);
@@ -144,21 +195,15 @@ export default function KnowledgeGraph() {
         kg_name: formData.kg_name,
         backends: formData.backends,
         use_llm_enhancement: formData.use_llm_enhancement,
+        schema_names: formData.schema_names,
       };
 
-      if (formData.schema_names.length > 0) {
-        payload.schema_names = formData.schema_names;
-      } else {
-        payload.schema_name = formData.schema_name;
-      }
-
-      // V2: Add relationship_pairs
+      // Add relationship_pairs if provided
       if (relationshipPairsInput.trim()) {
         try {
           payload.relationship_pairs = JSON.parse(relationshipPairsInput);
-          console.log('✅ Relationship pairs parsed:', payload.relationship_pairs);
         } catch (err) {
-          setError('Invalid JSON in relationship pairs: ' + err.message);
+          setError(`Invalid JSON in relationship pairs: ${err.message}`);
           setLoading(false);
           return;
         }
@@ -168,9 +213,8 @@ export default function KnowledgeGraph() {
       if (excludedFieldsInput.trim()) {
         try {
           payload.excluded_fields = JSON.parse(excludedFieldsInput);
-          console.log('✅ Excluded fields parsed:', payload.excluded_fields);
         } catch (err) {
-          setError('Invalid JSON in excluded fields: ' + err.message);
+          setError(`Invalid JSON in excluded fields: ${err.message}`);
           setLoading(false);
           return;
         }
@@ -178,30 +222,39 @@ export default function KnowledgeGraph() {
 
       const response = await generateKG(payload);
       const llmUsed = formData.schema_names.length > 1 && formData.use_llm_enhancement;
-      const successMsg = `Knowledge graph "${response.data.kg_name}" created successfully!${llmUsed ? ' (LLM enhancement applied)' : ''
-        }`;
+      const successMsg = `Knowledge graph "${response.data.kg_name}" created successfully!${llmUsed ? ' (LLM enhancement applied)' : ''}`;
       setSuccess(successMsg);
 
       // Reset form
       setFormData({
         ...formData,
         kg_name: '',
-        schema_name: '',
         schema_names: [],
       });
 
       // Reload KGs list
       loadInitialData();
     } catch (err) {
-      const errorMsg = err.response?.data?.detail || err.message || 'Unknown error occurred';
-      setError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
+      let errorMsg;
+
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        errorMsg = 'Knowledge graph generation timed out. This can happen with large schemas or when LLM enhancement is enabled. Try: (1) Disabling LLM enhancement, (2) Reducing the number of schemas, or (3) Simplifying your schema.';
+      } else if (err.response?.status === 408) {
+        errorMsg = err.response?.data?.detail || 'Request timed out. Please try again with fewer schemas or disable LLM enhancement.';
+      } else if (err.name === 'AbortError') {
+        errorMsg = 'Request was cancelled due to timeout. Please try again.';
+      } else {
+        errorMsg = err.response?.data?.detail || err.message || 'Unknown error occurred';
+      }
+
+      setError(errorMsg);
       console.error('KG Generation Error:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [formData, relationshipPairsInput, excludedFieldsInput]);
 
-  const handleLoadKG = async (kgName) => {
+  const handleLoadKG = useCallback(async (kgName) => {
     setLoading(true);
     try {
       const [entitiesRes, relationshipsRes] = await Promise.all([
@@ -215,14 +268,14 @@ export default function KnowledgeGraph() {
       setTabValue(1);
     } catch (err) {
       const errorMsg = err.response?.data?.detail || err.message || 'Failed to load KG';
-      setError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
+      setError(errorMsg);
       console.error('Load KG Error:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleExport = async (kgName) => {
+  const handleExport = useCallback(async (kgName) => {
     try {
       const response = await exportKG(kgName);
       const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' });
@@ -231,13 +284,14 @@ export default function KnowledgeGraph() {
       a.href = url;
       a.download = `${kgName}_export.json`;
       a.click();
+      window.URL.revokeObjectURL(url); // Clean up memory
       setSuccess(`Knowledge graph "${kgName}" exported successfully!`);
     } catch (err) {
       setError(err.response?.data?.detail || err.message);
     }
-  };
+  }, []);
 
-  const handleDelete = async (kgName) => {
+  const handleDelete = useCallback(async (kgName) => {
     if (!window.confirm(`Are you sure you want to delete "${kgName}"?`)) {
       return;
     }
@@ -253,12 +307,12 @@ export default function KnowledgeGraph() {
       }
     } catch (err) {
       const errorMsg = err.response?.data?.detail || err.message || 'Failed to delete KG';
-      setError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
+      setError(errorMsg);
       console.error('Delete KG Error:', err);
     }
-  };
+  }, [selectedKG]);
 
-  const handleSuggestRelationships = async () => {
+  const handleSuggestRelationships = useCallback(async () => {
     if (!suggestionSourceTable.trim()) {
       setError('Please enter a source table name');
       return;
@@ -279,7 +333,6 @@ export default function KnowledgeGraph() {
       });
 
       if (response.data.success && response.data.suggestions && response.data.suggestions.length > 0) {
-        // Format suggestions as relationship pairs
         const suggestions = response.data.suggestions.map(sug => ({
           source_table: suggestionSourceTable.trim(),
           source_column: sug.source_column,
@@ -288,11 +341,9 @@ export default function KnowledgeGraph() {
           relationship_type: sug.relationship_type || 'MATCHES',
           confidence: sug.confidence || 0.9,
           bidirectional: true,
-          // Add reasoning as a comment
           _comment: sug.reasoning
         }));
 
-        // Update the relationship pairs input with suggestions
         const currentPairs = relationshipPairsInput.trim() ? JSON.parse(relationshipPairsInput) : [];
         const updatedPairs = [...currentPairs, ...suggestions];
         setRelationshipPairsInput(JSON.stringify(updatedPairs, null, 2));
@@ -303,25 +354,27 @@ export default function KnowledgeGraph() {
       }
     } catch (err) {
       const errorMsg = err.response?.data?.detail || err.message || 'Failed to get suggestions';
-      setError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
+      setError(errorMsg);
       console.error('Suggest Relationships Error:', err);
     } finally {
       setSuggestingRelationships(false);
     }
-  };
+  }, [suggestionSourceTable, formData.schema_names, relationshipPairsInput]);
 
-  const handleSchemaToggle = (schema) => {
-    const currentIndex = formData.schema_names.indexOf(schema);
-    const newSchemas = [...formData.schema_names];
+  const handleSchemaToggle = useCallback((schema) => {
+    setFormData(prev => {
+      const currentIndex = prev.schema_names.indexOf(schema);
+      const newSchemas = [...prev.schema_names];
 
-    if (currentIndex === -1) {
-      newSchemas.push(schema);
-    } else {
-      newSchemas.splice(currentIndex, 1);
-    }
+      if (currentIndex === -1) {
+        newSchemas.push(schema);
+      } else {
+        newSchemas.splice(currentIndex, 1);
+      }
 
-    setFormData({ ...formData, schema_names: newSchemas });
-  };
+      return { ...prev, schema_names: newSchemas };
+    });
+  }, []);
 
   return (
     <Container sx={{ p: 0 }}>
@@ -374,7 +427,7 @@ export default function KnowledgeGraph() {
             }}
             icon={<Warning />}
           >
-            {typeof error === 'string' ? error : JSON.stringify(error)}
+            {error}
           </Alert>
         </Fade>
       )}
@@ -410,7 +463,7 @@ export default function KnowledgeGraph() {
       >
         <Tabs
           value={tabValue}
-          onChange={(e, newValue) => setTabValue(newValue)}
+          onChange={(_, newValue) => setTabValue(newValue)}
           aria-label="Knowledge graph management tabs"
           sx={{
             minHeight: 42,
@@ -981,7 +1034,7 @@ export default function KnowledgeGraph() {
                     <Grid item xs={12} md={6}>
                       <Accordion
                         expanded={entitiesExpanded}
-                        onChange={(e, isExpanded) => setEntitiesExpanded(isExpanded)}
+                        onChange={(_, isExpanded) => setEntitiesExpanded(isExpanded)}
                         elevation={0}
                         sx={{
                           border: '2px solid',
@@ -1066,7 +1119,7 @@ export default function KnowledgeGraph() {
                                 color={selectedEntityType === 'all' ? 'primary' : 'default'}
                                 sx={{ fontSize: '0.7rem', height: 22, fontWeight: 600 }}
                               />
-                              {[...new Set(kgEntities.map(e => e.type || 'Unknown'))].sort().map(type => (
+                              {uniqueEntityTypes.sort().map(type => (
                                 <Chip
                                   key={type}
                                   label={type}
@@ -1081,29 +1134,23 @@ export default function KnowledgeGraph() {
 
                           {/* Entities List */}
                           <List dense sx={{ maxHeight: 400, overflow: 'auto', p: 0 }}>
-                            {kgEntities
-                              .filter(entity => {
-                                const matchesSearch = !entitySearchTerm ||
-                                  (entity.label || entity.id).toLowerCase().includes(entitySearchTerm.toLowerCase()) ||
-                                  (entity.type || '').toLowerCase().includes(entitySearchTerm.toLowerCase());
-                                const matchesType = selectedEntityType === 'all' || entity.type === selectedEntityType;
-                                return matchesSearch && matchesType;
-                              })
-                              .map((entity, index) => {
-                                const typeColors = {
-                                  'Person': '#764ba2',
-                                  'Company': '#667eea',
-                                  'Organization': '#f093fb',
-                                  'Location': '#4facfe',
-                                  'Product': '#43e97b',
-                                  'Project': '#43e97b',
-                                  'Skill': '#fa709a',
-                                  'Order': '#fa709a',
-                                  'Supplier': '#30cfd0',
-                                  'Warehouse': '#a8edea',
-                                  'Category': '#fed6e3',
-                                };
-                                const typeColor = typeColors[entity.type] || '#999999';
+                            {(() => {
+                              if (filteredEntities.length === 0) {
+                                return (
+                                  <ListItem>
+                                    <ListItemText
+                                      primary={
+                                        <Typography variant="body2" color="text.secondary" textAlign="center" fontSize="0.8rem">
+                                          No entities found
+                                        </Typography>
+                                      }
+                                    />
+                                  </ListItem>
+                                );
+                              }
+
+                              return filteredEntities.map((entity, index) => {
+                                const typeColor = ENTITY_TYPE_COLORS[entity.type] || DEFAULT_TYPE_COLOR;
 
                                 return (
                                   <ListItem
@@ -1162,24 +1209,8 @@ export default function KnowledgeGraph() {
                                     />
                                   </ListItem>
                                 );
-                              })}
-                            {kgEntities.filter(entity => {
-                              const matchesSearch = !entitySearchTerm ||
-                                (entity.label || entity.id).toLowerCase().includes(entitySearchTerm.toLowerCase()) ||
-                                (entity.type || '').toLowerCase().includes(entitySearchTerm.toLowerCase());
-                              const matchesType = selectedEntityType === 'all' || entity.type === selectedEntityType;
-                              return matchesSearch && matchesType;
-                            }).length === 0 && (
-                                <ListItem>
-                                  <ListItemText
-                                    primary={
-                                      <Typography variant="body2" color="text.secondary" textAlign="center" fontSize="0.8rem">
-                                        No entities found
-                                      </Typography>
-                                    }
-                                  />
-                                </ListItem>
-                              )}
+                              });
+                            })()}
                           </List>
                         </AccordionDetails>
                       </Accordion>
@@ -1189,7 +1220,7 @@ export default function KnowledgeGraph() {
                     <Grid item xs={12} md={6}>
                       <Accordion
                         expanded={relationshipsExpanded}
-                        onChange={(e, isExpanded) => setRelationshipsExpanded(isExpanded)}
+                        onChange={(_, isExpanded) => setRelationshipsExpanded(isExpanded)}
                         elevation={0}
                         sx={{
                           border: '2px solid',
@@ -1274,7 +1305,7 @@ export default function KnowledgeGraph() {
                                 color={selectedRelationType === 'all' ? 'success' : 'default'}
                                 sx={{ fontSize: '0.7rem', height: 22, fontWeight: 600 }}
                               />
-                              {[...new Set(kgRelationships.map(r => r.relationship_type))].sort().map(type => (
+                              {uniqueRelationshipTypes.sort().map(type => (
                                 <Chip
                                   key={type}
                                   label={type}
@@ -1289,36 +1320,27 @@ export default function KnowledgeGraph() {
 
                           {/* Relationships List */}
                           <List dense sx={{ maxHeight: 400, overflow: 'auto', p: 0 }}>
-                            {kgRelationships
-                              .filter(rel => {
+                            {(() => {
+                              if (filteredRelationships.length === 0) {
+                                return (
+                                  <ListItem>
+                                    <ListItemText
+                                      primary={
+                                        <Typography variant="body2" color="text.secondary" textAlign="center" fontSize="0.8rem">
+                                          No relationships found
+                                        </Typography>
+                                      }
+                                    />
+                                  </ListItem>
+                                );
+                              }
+
+                              return filteredRelationships.map((rel, index) => {
                                 const sourceEntity = kgEntities.find(e => e.id === rel.source_id);
                                 const targetEntity = kgEntities.find(e => e.id === rel.target_id);
                                 const sourceName = sourceEntity?.label || rel.source_id;
                                 const targetName = targetEntity?.label || rel.target_id;
-
-                                const matchesSearch = !relationshipSearchTerm ||
-                                  sourceName.toLowerCase().includes(relationshipSearchTerm.toLowerCase()) ||
-                                  targetName.toLowerCase().includes(relationshipSearchTerm.toLowerCase()) ||
-                                  rel.relationship_type.toLowerCase().includes(relationshipSearchTerm.toLowerCase());
-                                const matchesType = selectedRelationType === 'all' || rel.relationship_type === selectedRelationType;
-                                return matchesSearch && matchesType;
-                              })
-                              .map((rel, index) => {
-                                const sourceEntity = kgEntities.find(e => e.id === rel.source_id);
-                                const targetEntity = kgEntities.find(e => e.id === rel.target_id);
-                                const sourceName = sourceEntity?.label || rel.source_id;
-                                const targetName = targetEntity?.label || rel.target_id;
-
-                                const relationshipColors = {
-                                  'WORKS_AT': '#667eea',
-                                  'LEADS': '#764ba2',
-                                  'CONTRIBUTES_TO': '#43e97b',
-                                  'HAS_SKILL': '#fa709a',
-                                  'SPONSORS': '#30cfd0',
-                                  'MANAGES': '#f093fb',
-                                  'REPORTS_TO': '#4facfe',
-                                };
-                                const relColor = relationshipColors[rel.relationship_type] || '#999999';
+                                const relColor = RELATIONSHIP_TYPE_COLORS[rel.relationship_type] || DEFAULT_TYPE_COLOR;
 
                                 return (
                                   <ListItem
@@ -1394,30 +1416,8 @@ export default function KnowledgeGraph() {
                                     />
                                   </ListItem>
                                 );
-                              })}
-                            {kgRelationships.filter(rel => {
-                              const sourceEntity = kgEntities.find(e => e.id === rel.source_id);
-                              const targetEntity = kgEntities.find(e => e.id === rel.target_id);
-                              const sourceName = sourceEntity?.label || rel.source_id;
-                              const targetName = targetEntity?.label || rel.target_id;
-
-                              const matchesSearch = !relationshipSearchTerm ||
-                                sourceName.toLowerCase().includes(relationshipSearchTerm.toLowerCase()) ||
-                                targetName.toLowerCase().includes(relationshipSearchTerm.toLowerCase()) ||
-                                rel.relationship_type.toLowerCase().includes(relationshipSearchTerm.toLowerCase());
-                              const matchesType = selectedRelationType === 'all' || rel.relationship_type === selectedRelationType;
-                              return matchesSearch && matchesType;
-                            }).length === 0 && (
-                                <ListItem>
-                                  <ListItemText
-                                    primary={
-                                      <Typography variant="body2" color="text.secondary" textAlign="center" fontSize="0.8rem">
-                                        No relationships found
-                                      </Typography>
-                                    }
-                                  />
-                                </ListItem>
-                              )}
+                              });
+                            })()}
                           </List>
                         </AccordionDetails>
                       </Accordion>
@@ -1568,7 +1568,6 @@ export default function KnowledgeGraph() {
                     onClick={() => setTabValue(0)}
                     sx={{
                       borderRadius: 1,
-                      fontSize: '0.8rem',
                       textTransform: 'none',
                       fontWeight: 600,
                       fontSize: '0.9rem',

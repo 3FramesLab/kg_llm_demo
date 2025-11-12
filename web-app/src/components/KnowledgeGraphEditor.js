@@ -1,7 +1,26 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState, useMemo, useCallback } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
-import { Box, Paper, Typography, Button, IconButton, Chip, Tooltip, Zoom, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
-import { Close, Edit, Delete, ZoomIn, ZoomOut, CenterFocusStrong } from '@mui/icons-material';
+import { Box, Paper, Typography, IconButton, Chip, Tooltip, Zoom } from '@mui/material';
+import { Close, ZoomIn, ZoomOut, CenterFocusStrong } from '@mui/icons-material';
+
+// Color palette for unique entity colors
+const COLOR_PALETTE = [
+  '#667eea', // Blue
+  '#764ba2', // Purple
+  '#f093fb', // Pink
+  '#4facfe', // Light Blue
+  '#43e97b', // Green
+  '#fa709a', // Red
+  '#30cfd0', // Cyan
+  '#a8edea', // Light Cyan
+  '#fed6e3', // Light Pink
+  '#ffa502', // Orange
+  '#ff6b6b', // Coral
+  '#845ef7', // Violet
+  '#748ffc', // Indigo
+  '#15aabf', // Teal
+  '#20c997', // Mint
+];
 
 /**
  * KnowledgeGraphEditor Component
@@ -10,63 +29,33 @@ import { Close, Edit, Delete, ZoomIn, ZoomOut, CenterFocusStrong } from '@mui/ic
  * Props:
  * - entities: Array of entity objects with id, label, type
  * - relationships: Array of relationship objects with source_id, target_id, relationship_type
- * - onNodeClick: Callback when a node is clicked
- * - onLinkClick: Callback when a link is clicked
- * - onDeleteEntity: Callback to delete an entity
- * - onDeleteRelationship: Callback to delete a relationship
  */
 export default function KnowledgeGraphEditor({
   entities = [],
   relationships = [],
-  onNodeClick,
-  onLinkClick,
-  onDeleteEntity,
-  onDeleteRelationship,
 }) {
   const fgRef = useRef();
   const [selectedNode, setSelectedNode] = useState(null);
   const [selectedLink, setSelectedLink] = useState(null);
-  const [graphData, setGraphData] = useState({ nodes: [], links: [] });
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editFormData, setEditFormData] = useState({ label: '', type: '' });
-
-  // Color palette for unique entity colors
-  const colorPalette = [
-    '#667eea', // Blue
-    '#764ba2', // Purple
-    '#f093fb', // Pink
-    '#4facfe', // Light Blue
-    '#43e97b', // Green
-    '#fa709a', // Red
-    '#30cfd0', // Cyan
-    '#a8edea', // Light Cyan
-    '#fed6e3', // Light Pink
-    '#ffa502', // Orange
-    '#ff6b6b', // Coral
-    '#845ef7', // Violet
-    '#748ffc', // Indigo
-    '#15aabf', // Teal
-    '#20c997', // Mint
-  ];
 
   // Function to generate a consistent color for an entity based on its ID
-  const getEntityColor = (entityId) => {
+  const getEntityColor = useCallback((entityId) => {
     let hash = 0;
     for (let i = 0; i < entityId.length; i++) {
       const char = entityId.charCodeAt(i);
       hash = ((hash << 5) - hash) + char;
       hash = hash & hash; // Convert to 32bit integer
     }
-    const index = Math.abs(hash) % colorPalette.length;
-    return colorPalette[index];
-  };
+    const index = Math.abs(hash) % COLOR_PALETTE.length;
+    return COLOR_PALETTE[index];
+  }, []);
 
-  // Convert entities and relationships to graph format
-  useEffect(() => {
+  // Convert entities and relationships to graph format using useMemo
+  const graphData = useMemo(() => {
     const nodes = entities.map((entity) => {
       // Handle both direct type and nested properties.type
       const entityType = entity.type || entity.properties?.type || 'Unknown';
-      // Use unique color based on entity ID, with fallback to index-based color
+      // Use unique color based on entity ID
       const uniqueColor = getEntityColor(entity.id);
       return {
         id: entity.id,
@@ -115,55 +104,42 @@ export default function KnowledgeGraphEditor({
     });
 
     console.log(`Graph data: ${nodes.length} nodes, ${links.length} links`);
-    setGraphData({ nodes, links });
-  }, [entities, relationships]);
+    return { nodes, links };
+  }, [entities, relationships, getEntityColor]);
 
-  const handleNodeClick = (node) => {
+  const handleNodeClick = useCallback((node) => {
     setSelectedNode(node);
     setSelectedLink(null);
-    onNodeClick?.(node);
-  };
+  }, []);
 
-  const handleLinkClick = (link) => {
+  const handleLinkClick = useCallback((link) => {
     setSelectedLink(link);
     setSelectedNode(null);
-    onLinkClick?.(link);
-  };
+  }, []);
 
-  const handleNodeHover = (node) => {
+  const handleNodeHover = useCallback((node) => {
     if (fgRef.current) {
       fgRef.current.d3Force('charge').strength(node ? -30 : -5);
     }
-  };
+  }, []);
 
-  const handleEditClick = () => {
-    if (selectedNode) {
-      setEditFormData({
-        label: selectedNode.name || '',
-        type: selectedNode.type || '',
-      });
-      setEditDialogOpen(true);
+  const handleZoomIn = useCallback(() => {
+    if (fgRef.current) {
+      fgRef.current.zoom(fgRef.current.zoom() * 1.2, 400);
     }
-  };
+  }, []);
 
-  const handleEditSave = () => {
-    if (selectedNode) {
-      // Update the selected node with new values
-      const updatedNode = {
-        ...selectedNode,
-        name: editFormData.label,
-        label: editFormData.label,
-        type: editFormData.type,
-      };
-      setSelectedNode(updatedNode);
-      setEditDialogOpen(false);
+  const handleZoomOut = useCallback(() => {
+    if (fgRef.current) {
+      fgRef.current.zoom(fgRef.current.zoom() / 1.2, 400);
     }
-  };
+  }, []);
 
-  const handleEditCancel = () => {
-    setEditDialogOpen(false);
-    setEditFormData({ label: '', type: '' });
-  };
+  const handleCenterView = useCallback(() => {
+    if (fgRef.current) {
+      fgRef.current.zoomToFit(400, 50);
+    }
+  }, []);
 
   return (
     <Box sx={{ display: 'flex', gap: 2, width: '100%', flexDirection: { xs: 'column', lg: 'row' } }}>
@@ -199,7 +175,7 @@ export default function KnowledgeGraphEditor({
                 <Tooltip title="Zoom In" placement="left">
                   <IconButton
                     size="small"
-                    onClick={() => fgRef.current?.zoom(fgRef.current.zoom() * 1.2, 400)}
+                    onClick={handleZoomIn}
                     sx={{
                       bgcolor: 'white',
                       boxShadow: 1,
@@ -216,7 +192,7 @@ export default function KnowledgeGraphEditor({
                 <Tooltip title="Zoom Out" placement="left">
                   <IconButton
                     size="small"
-                    onClick={() => fgRef.current?.zoom(fgRef.current.zoom() / 1.2, 400)}
+                    onClick={handleZoomOut}
                     sx={{
                       bgcolor: 'white',
                       boxShadow: 1,
@@ -233,7 +209,7 @@ export default function KnowledgeGraphEditor({
                 <Tooltip title="Center View" placement="left">
                   <IconButton
                     size="small"
-                    onClick={() => fgRef.current?.zoomToFit(400)}
+                    onClick={handleCenterView}
                     sx={{
                       bgcolor: 'white',
                       boxShadow: 1,
@@ -295,7 +271,7 @@ export default function KnowledgeGraphEditor({
                 linkLabel={(link) => link.type}
                 onNodeClick={handleNodeClick}
                 onNodeHover={handleNodeHover}
-               // onLinkClick={handleLinkClick}
+                onLinkClick={handleLinkClick}
                 cooldownTicks={100}
                 onEngineStop={() => fgRef.current?.zoomToFit(400)}
                 width={typeof window !== 'undefined' ? window.innerWidth * 0.55 : 600}
@@ -472,53 +448,6 @@ export default function KnowledgeGraphEditor({
                       }}
                     />
                   </Box>
-                  {/* Edit and Delete buttons hidden */}
-                  {/* <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, mt: 2 }}>
-                    <Button
-                      variant="outlined"
-                      startIcon={<Edit sx={{ fontSize: 16 }} />}
-                      fullWidth
-                      size="small"
-                      onClick={handleEditClick}
-                      sx={{
-                        borderRadius: 1,
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        fontSize: '0.75rem',
-                        py: 0.5,
-                        borderWidth: 2,
-                        '&:hover': {
-                          borderWidth: 2,
-                        },
-                      }}
-                    >
-                      Edit Entity
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      startIcon={<Delete sx={{ fontSize: 16 }} />}
-                      fullWidth
-                      size="small"
-                      onClick={() => {
-                        onDeleteEntity?.(selectedNode.id);
-                        setSelectedNode(null);
-                      }}
-                      sx={{
-                        borderRadius: 1,
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        fontSize: '0.75rem',
-                        py: 0.5,
-                        borderWidth: 2,
-                        '&:hover': {
-                          borderWidth: 2,
-                        },
-                      }}
-                    >
-                      Delete Entity
-                    </Button>
-                  </Box> */}
                 </Box>
               </Box>
             </Zoom>
@@ -606,31 +535,6 @@ export default function KnowledgeGraphEditor({
                       }}
                     />
                   </Box>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    startIcon={<Delete sx={{ fontSize: 16 }} />}
-                    fullWidth
-                    size="small"
-                    onClick={() => {
-                      onDeleteRelationship?.(selectedLink);
-                      setSelectedLink(null);
-                    }}
-                    sx={{
-                      borderRadius: 1,
-                      textTransform: 'none',
-                      fontWeight: 600,
-                      fontSize: '0.75rem',
-                      py: 0.5,
-                      mt: 2,
-                      borderWidth: 2,
-                      '&:hover': {
-                        borderWidth: 2,
-                      },
-                    }}
-                  >
-                    Delete Relationship
-                  </Button>
                 </Box>
               </Box>
             </Zoom>
@@ -655,55 +559,6 @@ export default function KnowledgeGraphEditor({
           )}
         </Paper>
       </Box>
-
-      {/* Edit Entity Dialog */}
-      <Dialog open={editDialogOpen} onClose={handleEditCancel} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '1rem' }}>
-          Edit Entity
-        </DialogTitle>
-        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <TextField
-            label="Label"
-            fullWidth
-            size="small"
-            value={editFormData.label}
-            onChange={(e) => setEditFormData({ ...editFormData, label: e.target.value })}
-            placeholder="Enter entity label"
-          />
-          <TextField
-            label="Type"
-            fullWidth
-            size="small"
-            value={editFormData.type}
-            onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value })}
-            placeholder="Enter entity type"
-          />
-        </Box>
-        <Box sx={{ p: 2, display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-          <Button
-            variant="outlined"
-            onClick={handleEditCancel}
-            sx={{
-              borderRadius: 1,
-              textTransform: 'none',
-              fontWeight: 600,
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleEditSave}
-            sx={{
-              borderRadius: 1,
-              textTransform: 'none',
-              fontWeight: 600,
-            }}
-          >
-            Save Changes
-          </Button>
-        </Box>
-      </Dialog>
     </Box>
   );
 }
