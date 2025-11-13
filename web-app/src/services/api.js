@@ -40,15 +40,8 @@ export const extractEntities = (schemaName) => api.post(`/llm/extract/${schemaNa
 export const analyzeSchema = (schemaName) => api.post(`/llm/analyze/${schemaName}`);
 export const suggestRelationships = (data) => api.post('/llm/suggest-relationships', data);
 
-// Reconciliation - Rules
-export const generateRules = (data) => api.post('/reconciliation/generate', data);
-export const listRulesets = () => api.get('/reconciliation/rulesets');
-export const getRuleset = (rulesetId) => api.get(`/reconciliation/rulesets/${rulesetId}`);
-export const deleteRuleset = (rulesetId) => api.delete(`/reconciliation/rulesets/${rulesetId}`);
-export const exportRulesetSQL = (rulesetId) => api.get(`/reconciliation/rulesets/${rulesetId}/export/sql`);
-
 // Reconciliation - Execution
-export const validateRule = (data) => api.post('/reconciliation/validate', data);
+export const listRulesets = () => api.get('/reconciliation/rulesets');
 export const executeReconciliation = (data) => api.post('/reconciliation/execute', data);
 
 // Natural Language Relationships
