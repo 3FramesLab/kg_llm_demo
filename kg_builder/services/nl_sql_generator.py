@@ -59,29 +59,87 @@ class NLSQLGenerator:
         Returns:
             str: Generated SQL query
         """
-        logger.info(f"🔧 Generating SQL for: {intent.definition}")
-        logger.info(f"   Query Type: {intent.query_type}, Operation: {intent.operation}")
-        logger.info(f"   Using: {'LLM' if self.use_llm else 'Python'} generator")
-        if intent.filters:
-            logger.info(f"   Filters: {intent.filters}")
+        import time
+        gen_start_time = time.time()
+
+        logger.info("="*120)
+        logger.info(f"🔧 SQL GENERATOR: STARTING SQL GENERATION")
+        logger.info(f"   Definition: '{intent.definition}'")
+        logger.info(f"   Query Type: {intent.query_type}")
+        logger.info(f"   Operation: {intent.operation}")
+        logger.info(f"   Source Table: {intent.source_table}")
+        logger.info(f"   Target Table: {intent.target_table}")
+        logger.info(f"   Join Columns: {intent.join_columns}")
+        logger.info(f"   Filters: {intent.filters}")
+        logger.info(f"   Confidence: {intent.confidence}")
+        logger.info(f"   Use LLM: {self.use_llm}")
+        logger.info(f"   LLM Generator Available: {self.llm_generator is not None}")
+        logger.info(f"   DB Type: {self.db_type}")
         if intent.additional_columns:
             logger.info(f"   Additional Columns: {len(intent.additional_columns)}")
+        logger.info("="*120)
 
-        # Try LLM generation first if enabled
+        # OPTION 1: Try LLM generation first if enabled
         if self.use_llm and self.llm_generator:
+            logger.info(f"🤖 OPTION 1: ATTEMPTING LLM SQL GENERATION")
+            llm_start = time.time()
+
             try:
+                logger.info(f"   LLM Generator Type: {type(self.llm_generator).__name__}")
+                logger.info(f"   Sending intent to LLM generator...")
+
                 sql = self.llm_generator.generate(intent)
-                logger.info(f"✅ SQL Generated Successfully (via LLM)")
+                llm_time = (time.time() - llm_start) * 1000
+                total_time = (time.time() - gen_start_time) * 1000
+
+                logger.info(f"✅ LLM SQL generation successful in {llm_time:.2f}ms")
+                logger.info(f"   Generated SQL Length: {len(sql) if sql else 0} characters")
+                if sql:
+                    sql_preview = sql[:200] + "..." if len(sql) > 200 else sql
+                    logger.info(f"   SQL Preview: {sql_preview}")
+
+                logger.info("="*120)
+                logger.info(f"🎉 SQL GENERATOR: GENERATION COMPLETED (LLM)")
+                logger.info(f"   Total Time: {total_time:.2f}ms")
+                logger.info(f"   Method: LLM Generation")
+                logger.info(f"   Success: True")
+                logger.info("="*120)
+
                 return sql
+
             except Exception as e:
-                logger.warning(f"⚠️ LLM generation failed, falling back to Python: {e}")
-                logger.info(f"   Fallback reason: {str(e)[:100]}")
+                llm_time = (time.time() - llm_start) * 1000
+                error_type = type(e).__name__
+                error_message = str(e)
+
+                logger.warning(f"⚠️ LLM generation failed in {llm_time:.2f}ms")
+                logger.warning(f"   Error Type: {error_type}")
+                logger.warning(f"   Error Message: {error_message[:200]}...")
+                logger.warning(f"   Falling back to Python generation...")
                 # Fall through to Python generation
 
-        # Python-based generation (original implementation)
-        sql = self._generate_python(intent)
+        # OPTION 2: Python-based generation (original implementation)
+        logger.info(f"🐍 OPTION 2: USING PYTHON-BASED SQL GENERATION")
+        python_start = time.time()
 
-        logger.info(f"✅ SQL Generated Successfully (via Python)")
+        logger.info(f"   Starting Python-based SQL generation...")
+        sql = self._generate_python(intent)
+        python_time = (time.time() - python_start) * 1000
+        total_time = (time.time() - gen_start_time) * 1000
+
+        logger.info(f"✅ Python SQL generation successful in {python_time:.2f}ms")
+        logger.info(f"   Generated SQL Length: {len(sql) if sql else 0} characters")
+        if sql:
+            sql_preview = sql[:200] + "..." if len(sql) > 200 else sql
+            logger.info(f"   SQL Preview: {sql_preview}")
+
+        logger.info("="*120)
+        logger.info(f"🎉 SQL GENERATOR: GENERATION COMPLETED (Python)")
+        logger.info(f"   Total Time: {total_time:.2f}ms")
+        logger.info(f"   Method: Python Generation")
+        logger.info(f"   Success: True")
+        logger.info("="*120)
+
         return sql
 
     def _generate_python(self, intent: QueryIntent) -> str:
@@ -94,20 +152,47 @@ class NLSQLGenerator:
         Returns:
             str: Generated SQL query
         """
+        import time
+
+        logger.info(f"🐍 PYTHON SQL GENERATION: Starting template-based generation")
+        logger.info(f"   Query Type: {intent.query_type}")
+        logger.info(f"   Available Templates: comparison_query, filter_query, aggregation_query, data_query")
+
+        template_start = time.time()
+
+        # Route to appropriate template based on query type
         if intent.query_type == "comparison_query":
+            logger.info(f"   Using comparison_query template...")
             sql = self._generate_comparison_query(intent)
         elif intent.query_type == "filter_query":
+            logger.info(f"   Using filter_query template...")
             sql = self._generate_filter_query(intent)
         elif intent.query_type == "aggregation_query":
+            logger.info(f"   Using aggregation_query template...")
             sql = self._generate_aggregation_query(intent)
         elif intent.query_type == "data_query":
+            logger.info(f"   Using data_query template...")
             sql = self._generate_data_query(intent)
         else:
+            logger.error(f"   ❌ Unsupported query type: {intent.query_type}")
             raise ValueError(f"Unsupported query type: {intent.query_type}")
+
+        template_time = (time.time() - template_start) * 1000
+        logger.info(f"✅ Template SQL generated in {template_time:.2f}ms")
+        logger.info(f"   Base SQL Length: {len(sql) if sql else 0} characters")
 
         # Add additional columns if present
         if intent.additional_columns:
+            logger.info(f"🔧 Adding {len(intent.additional_columns)} additional columns...")
+            additional_start = time.time()
+
             sql = self._add_additional_columns_to_sql(sql, intent)
+
+            additional_time = (time.time() - additional_start) * 1000
+            logger.info(f"✅ Additional columns added in {additional_time:.2f}ms")
+            logger.info(f"   Final SQL Length: {len(sql) if sql else 0} characters")
+        else:
+            logger.info(f"   No additional columns to add")
 
         return sql
 
@@ -441,10 +526,10 @@ INNER JOIN {target} t ON s.{source_col} = t.{target_col}
 
     def _get_join_condition(self, table1: str, table2: str, alias1: str, alias2: str) -> str:
         """
-        Get actual join condition from KG relationships.
+        Get actual join condition from KG relationships, strictly respecting is_excluded flags.
 
-        Extracts source_column and target_column from KG relationships
-        and constructs a proper JOIN condition.
+        Only uses explicit KG relationships that are not marked as excluded.
+        Does NOT fall back to column name inference or placeholders.
 
         Args:
             table1: First table name
@@ -454,45 +539,92 @@ INNER JOIN {target} t ON s.{source_col} = t.{target_col}
 
         Returns:
             str: Join condition like "alias1.col1 = alias2.col2"
+
+        Raises:
+            ValueError: If no valid (non-excluded) KG relationships found
         """
         if not self.kg:
-            # Fallback to placeholder if KG not available
-            logger.warning(f"No KG available for join condition between {table1} and {table2}, using placeholder")
-            return f"{alias1}.id = {alias2}.id"
+            raise ValueError(f"No Knowledge Graph available - cannot generate joins between {table1} and {table2}")
 
         table1_lower = table1.lower()
         table2_lower = table2.lower()
 
-        # Find relationship between table1 and table2
+        # Collect all relationships between the tables, checking exclusion status
+        valid_relationships = []
+        excluded_relationships = []
+
         for rel in self.kg.relationships:
             source_id = rel.source_id.lower() if rel.source_id else ""
             target_id = rel.target_id.lower() if rel.target_id else ""
 
-            # Check forward direction: table1 → table2
-            if (source_id == table1_lower or source_id == f"table_{table1_lower}") and \
-               (target_id == table2_lower or target_id == f"table_{table2_lower}"):
+            # Check if this relationship connects our tables
+            forward_match = ((source_id == table1_lower or source_id == f"table_{table1_lower}") and
+                           (target_id == table2_lower or target_id == f"table_{table2_lower}"))
+            reverse_match = ((source_id == table2_lower or source_id == f"table_{table2_lower}") and
+                           (target_id == table1_lower or target_id == f"table_{table1_lower}"))
+
+            if forward_match or reverse_match:
                 source_col = rel.source_column or (rel.properties.get("source_column") if rel.properties else None)
                 target_col = rel.target_column or (rel.properties.get("target_column") if rel.properties else None)
-                if source_col and target_col:
-                    source_col_quoted = self._quote_identifier(source_col)
-                    target_col_quoted = self._quote_identifier(target_col)
-                    logger.debug(f"Found forward relationship: {table1}.{source_col} = {table2}.{target_col}")
-                    return f"{alias1}.{source_col_quoted} = {alias2}.{target_col_quoted}"
 
-            # Check reverse direction: table2 → table1
-            if (source_id == table2_lower or source_id == f"table_{table2_lower}") and \
-               (target_id == table1_lower or target_id == f"table_{table1_lower}"):
-                source_col = rel.source_column or (rel.properties.get("source_column") if rel.properties else None)
-                target_col = rel.target_column or (rel.properties.get("target_column") if rel.properties else None)
                 if source_col and target_col:
-                    source_col_quoted = self._quote_identifier(source_col)
-                    target_col_quoted = self._quote_identifier(target_col)
-                    logger.debug(f"Found reverse relationship: {table1}.{target_col} = {table2}.{source_col}")
-                    return f"{alias1}.{target_col_quoted} = {alias2}.{source_col_quoted}"
+                    # Check if relationship is excluded
+                    is_excluded = rel.properties.get('is_excluded', False) if rel.properties else False
+                    priority = rel.properties.get('priority', 0) if rel.properties else 0
 
-        # Fallback if no relationship found
-        logger.warning(f"No relationship found between {table1} and {table2}, using placeholder")
-        return f"{alias1}.id = {alias2}.id"
+                    relationship_info = {
+                        'relationship': rel,
+                        'forward_match': forward_match,
+                        'source_col': source_col,
+                        'target_col': target_col,
+                        'is_excluded': is_excluded,
+                        'priority': priority
+                    }
+
+                    if is_excluded:
+                        excluded_relationships.append(relationship_info)
+                        logger.debug(f"⚠️ Skipping excluded relationship: {source_col} ←→ {target_col} (priority: {priority})")
+                    else:
+                        valid_relationships.append(relationship_info)
+                        logger.debug(f"✅ Found valid relationship: {source_col} ←→ {target_col} (priority: {priority})")
+
+        # If no valid relationships found, fail with detailed error
+        if not valid_relationships:
+            error_msg = f"No valid KG relationships found between '{table1}' and '{table2}'"
+
+            if excluded_relationships:
+                error_msg += f"\n   All {len(excluded_relationships)} relationships are marked as excluded:"
+                for rel_info in excluded_relationships:
+                    error_msg += f"\n   - {rel_info['source_col']} ←→ {rel_info['target_col']} (priority: {rel_info['priority']}, excluded: true)"
+                error_msg += f"\n\n   To fix this:"
+                error_msg += f"\n   1. Mark an existing relationship as non-excluded (is_excluded: false), OR"
+                error_msg += f"\n   2. Add a new non-excluded relationship to the KG"
+            else:
+                error_msg += f"\n   No relationships exist between these tables in the KG"
+                error_msg += f"\n\n   To fix this:"
+                error_msg += f"\n   1. Add a relationship between '{table1}' and '{table2}' to the KG"
+
+            logger.error(f"❌ {error_msg}")
+            raise ValueError(error_msg)
+
+        # Select the best valid relationship (highest priority)
+        best_relationship = max(valid_relationships, key=lambda r: r['priority'])
+
+        # Generate join condition based on table direction
+        if best_relationship['forward_match']:
+            # table1 → table2
+            source_col_quoted = self._quote_identifier(best_relationship['source_col'])
+            target_col_quoted = self._quote_identifier(best_relationship['target_col'])
+            join_condition = f"{alias1}.{source_col_quoted} = {alias2}.{target_col_quoted}"
+            logger.info(f"✅ Using KG relationship: {table1}.{best_relationship['source_col']} = {table2}.{best_relationship['target_col']}")
+        else:
+            # table2 → table1 (reverse)
+            source_col_quoted = self._quote_identifier(best_relationship['target_col'])
+            target_col_quoted = self._quote_identifier(best_relationship['source_col'])
+            join_condition = f"{alias1}.{source_col_quoted} = {alias2}.{target_col_quoted}"
+            logger.info(f"✅ Using KG relationship (reverse): {table1}.{best_relationship['target_col']} = {table2}.{best_relationship['source_col']}")
+
+        return join_condition
 
     def _get_table_alias(self, table_name: str) -> str:
         """

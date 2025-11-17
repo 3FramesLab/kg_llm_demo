@@ -146,10 +146,26 @@ def execute_kpi(**context):
             logger.warning(f"Failed to create execution record: {{response.status_code}}")
             execution_id = None
         
-        # Execute the KPI
+        # Execute the KPI with proper execution parameters
+        execution_params = {{
+            'kg_name': 'airflow_scheduled',
+            'schemas': ['newdqschemanov'],
+            'select_schema': 'newdqschemanov',  # Ensure both formats are provided
+            'definitions': [],
+            'db_type': 'sqlserver',
+            'limit_records': 1000,
+            'limit': 1000,
+            'use_llm': True,
+            'min_confidence': 0.7,
+            'user_id': 'airflow_scheduler',
+            'session_id': f'airflow_{{context["run_id"]}}'
+        }}
+
+        logger.info(f"Executing KPI {{KPI_ID}} with parameters: {{execution_params}}")
+
         kpi_execution_response = requests.post(
             f'{{API_BASE_URL}}/landing-kpi-mssql/kpis/{{KPI_ID}}/execute',
-            json={{}},
+            json=execution_params,
             timeout={timeout}
         )
         

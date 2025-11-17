@@ -162,8 +162,16 @@ class LandingKPIService:
             # New structure: kg_name, schemas (list), definitions (list), use_llm, min_confidence, limit, db_type
             # Old structure: kg_name, select_schema, ruleset_name, db_type, limit_records, use_llm, excluded_fields
 
-            # Extract parameters - support both old and new formats
+            # Extract and validate parameters - support both old and new formats
             kg_name = execution_params.get('kg_name')
+
+            # Validate kg_name is provided and not default
+            if not kg_name or kg_name.strip() == '' or kg_name.lower() == 'default':
+                raise ValueError(
+                    "kg_name is required and cannot be empty or 'default'. "
+                    "Please provide a valid Knowledge Graph name (e.g., 'New_KG_101', 'KG_102')."
+                )
+
             schemas = execution_params.get('schemas', [])
             select_schema = execution_params.get('select_schema') or (schemas[0] if schemas else None)
             definitions = execution_params.get('definitions', [])

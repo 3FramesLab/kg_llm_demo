@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mssql-loadbalancer
+  namespace: cognito-ai-dq-dev
+  labels:
+    app: mssql
+spec:
+  type: LoadBalancer
+  selector:
+    app: mssql
+  ports:
+    - name: mssql
+      protocol: TCP
+      port: 1433
+      targetPort: 1433

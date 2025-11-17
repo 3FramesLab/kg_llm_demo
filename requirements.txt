@@ -1,48 +1,48 @@
 # FastAPI and web framework
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-pydantic==2.5.0
-pydantic-settings==2.1.0
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
 
 # Graph databases
-falkordb>=1.0.1
-# graphiti-core is optional - install separately if needed
-# graphiti-core>=0.1.0
+falkordb
+graphiti-core
 
 # Database drivers
-mysql-connector-python==8.2.0
-pymysql==1.1.0  # For landing database (MySQL)
-jaydebeapi==1.2.3  # For JDBC connections to source/target DBs
-pyodbc>=5.0.1  # For ODBC connections (Airflow/MSSQL)
-sqlalchemy==2.0.23
-pymongo==4.6.1
+mysql-connector-python
+pymysql
+JPype1
+jaydebeapi
+pyodbc
+sqlalchemy
+pymongo
 
 # LLM Integration
-openai==1.3.9
+openai
 
 # HTTP and API clients
-requests>=2.31.0  # For HTTP requests and API calls
-httpx==0.25.2  # For async HTTP requests
+requests
+httpx
 
 # Utilities
-python-dotenv==1.0.0
-python-multipart==0.0.6
-filelock==3.13.1  # For file-based KPI storage concurrency
-croniter==2.0.1  # For cron expression parsing in KPI scheduling
-python-dateutil>=2.8.2  # Date/time utilities
-tenacity>=8.2.0  # Retry utilities
-orjson>=3.9.0  # Fast JSON handling
-jinja2>=3.1.2  # Template engine for email notifications
+python-dotenv
+python-multipart
+filelock
+croniter
+python-dateutil
+tenacity
+orjson
+jinja2
 
 # Logging and monitoring
-structlog>=23.1.0  # Enhanced logging
-prometheus-client>=0.17.0  # Metrics and monitoring (optional)
+structlog
+prometheus-client
+psutil
 
 # Development dependencies (optional)
-pytest==7.4.3
-pytest-asyncio==0.21.1
-pytest-airflow>=0.1.0  # Airflow DAG testing
-black==23.12.0
-flake8==6.1.0
-mypy==1.7.1
+pytest
+pytest-asyncio
+black
+flake8
+mypy
 

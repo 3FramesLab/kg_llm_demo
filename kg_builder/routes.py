@@ -34,6 +34,8 @@ from kg_builder.services.reconciliation_service import get_reconciliation_servic
 from kg_builder.services.rule_storage import get_rule_storage
 from kg_builder.services.rule_validator import get_rule_validator
 from kg_builder.services.nl_relationship_parser import get_nl_relationship_parser
+from kg_builder.services.landing_kpi_executor import get_landing_kpi_executor
+from kg_builder.utils.java_response_decorator import java_safe_response
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -3018,11 +3020,50 @@ async def execute_kpi(kpi_id: int, request: KPIExecutionRequest):
         if not kpi:
             raise HTTPException(status_code=404, detail=f"KPI ID {kpi_id} not found")
 
-        # Create execution record (status: pending)
-        execution = service.execute_kpi(kpi_id, request.dict())
+        # Log the incoming request for debugging
+        request_dict = request.dict()
+        route_start_time = time.time()
+
+        logger.info("="*120)
+        logger.info(f"🌐 API ROUTE: KPI EXECUTION REQUEST RECEIVED")
+        logger.info(f"   Endpoint: POST /landing-kpi/kpis/{kpi_id}/execute")
+        logger.info(f"   KPI ID: {kpi_id}")
+        logger.info(f"   Request Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+        logger.info(f"   Request Parameters: {request_dict}")
+        logger.info(f"   Request Size: {len(str(request_dict))} characters")
+        logger.info("="*120)
+
+        # Step 1: Validate KPI exists
+        logger.info(f"🔍 STEP 1: Validating KPI Existence")
+        kpi_check_start = time.time()
+
+        service = get_landing_kpi_service()
+        kpi = service.get_kpi(kpi_id)
+        if not kpi:
+            logger.error(f"❌ KPI ID {kpi_id} not found")
+            raise HTTPException(status_code=404, detail=f"KPI ID {kpi_id} not found")
+
+        kpi_check_time = (time.time() - kpi_check_start) * 1000
+        logger.info(f"✅ KPI validation completed in {kpi_check_time:.2f}ms")
+        logger.info(f"   KPI Name: {kpi.get('name', 'Unknown')}")
+        logger.info(f"   KPI Description: {kpi.get('description', 'No description')}")
+
+        # Step 2: Create execution record (status: pending)
+        logger.info(f"📋 STEP 2: Creating Execution Record")
+        execution_start = time.time()
+
+        execution = service.execute_kpi(kpi_id, request_dict)
         execution_id = execution['id']
 
-        # Start async execution in background thread
+        execution_time = (time.time() - execution_start) * 1000
+        logger.info(f"✅ Execution record created in {execution_time:.2f}ms")
+        logger.info(f"   Execution ID: {execution_id}")
+        logger.info(f"   Initial Status: {execution.get('execution_status', 'unknown')}")
+
+        # Step 3: Start async execution in background thread
+        logger.info(f"🚀 STEP 3: Starting Background Execution Thread")
+        thread_start = time.time()
+
         executor = get_landing_kpi_executor()
         thread = threading.Thread(
             target=executor.execute_kpi_async,
@@ -3030,19 +3071,177 @@ async def execute_kpi(kpi_id: int, request: KPIExecutionRequest):
             daemon=True
         )
         thread.start()
-        logger.info(f"Started background execution thread for KPI {kpi_id}, Execution {execution_id}")
 
-        return {
+        thread_time = (time.time() - thread_start) * 1000
+        logger.info(f"✅ Background thread started in {thread_time:.2f}ms")
+        logger.info(f"   Thread Name: {thread.name}")
+        logger.info(f"   Thread ID: {thread.ident}")
+        logger.info(f"   Thread Daemon: {thread.daemon}")
+        logger.info(f"   Executor Type: {type(executor).__name__}")
+
+        # Step 4: Prepare and return response
+        total_route_time = (time.time() - route_start_time) * 1000
+
+        response = {
             "success": True,
             "message": f"KPI execution started (ID: {execution_id})",
             "execution_id": execution_id,
             "execution_result": execution
         }
-    except HTTPException:
+
+        logger.info("="*120)
+        logger.info(f"🎉 API ROUTE: KPI EXECUTION REQUEST COMPLETED")
+        logger.info(f"   KPI ID: {kpi_id}")
+        logger.info(f"   Execution ID: {execution_id}")
+        logger.info(f"   Total Route Time: {total_route_time:.2f}ms")
+        logger.info(f"   Performance Breakdown:")
+        logger.info(f"      KPI Validation: {kpi_check_time:.2f}ms")
+        logger.info(f"      Execution Record: {execution_time:.2f}ms")
+        logger.info(f"      Thread Start: {thread_time:.2f}ms")
+        logger.info(f"   Response: {response}")
+        logger.info(f"   Status: Execution initiated successfully")
+        logger.info("="*120)
+
+        return response
+
+    except HTTPException as he:
+        total_route_time = (time.time() - route_start_time) * 1000
+        logger.error("="*120)
+        logger.error(f"❌ API ROUTE: HTTP EXCEPTION")
+        logger.error(f"   KPI ID: {kpi_id}")
+        logger.error(f"   Total Route Time: {total_route_time:.2f}ms")
+        logger.error(f"   HTTP Status: {he.status_code}")
+        logger.error(f"   HTTP Detail: {he.detail}")
+        logger.error("="*120)
         raise
     except Exception as e:
-        logger.error(f"Error executing KPI: {e}", exc_info=True)
+        total_route_time = (time.time() - route_start_time) * 1000
+        error_type = type(e).__name__
+        error_message = str(e)
+
+        logger.error("="*120)
+        logger.error(f"❌ API ROUTE: UNEXPECTED ERROR")
+        logger.error(f"   KPI ID: {kpi_id}")
+        logger.error(f"   Total Route Time: {total_route_time:.2f}ms")
+        logger.error(f"   Error Type: {error_type}")
+        logger.error(f"   Error Message: {error_message}")
+        logger.error(f"   Request Parameters: {request_dict}")
+        logger.error("="*120)
+        logger.error(f"Full route error details:", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/landing-kpi/kpis/{kpi_id}/execute-cached", tags=["Landing KPI"], response_model=dict)
+@java_safe_response
+async def execute_cached_kpi(kpi_id: int, request: KPIExecutionRequest):
+    """Execute cached/accepted SQL directly without LLM processing.
+
+    This endpoint bypasses LLM generation and executes the cached SQL directly
+    against the target database. Only works for KPIs with isAccept=true and isSQLCached=true.
+
+    Returns immediately with execution_id for polling results.
+    """
+    try:
+        from kg_builder.services.landing_kpi_service_jdbc import get_landing_kpi_service_jdbc
+
+        service = get_landing_kpi_service_jdbc()
+
+        # Validate KPI exists and has cached SQL
+        kpi = service.get_kpi(kpi_id)
+        if not kpi:
+            raise HTTPException(status_code=404, detail=f"KPI ID {kpi_id} not found")
+
+        if not kpi.get('isAccept', False):
+            raise HTTPException(
+                status_code=400,
+                detail=f"KPI {kpi_id} SQL is not accepted. Please accept the SQL first."
+            )
+
+        if not kpi.get('isSQLCached', False):
+            raise HTTPException(
+                status_code=400,
+                detail=f"KPI {kpi_id} SQL is not cached. Please enable SQL caching first."
+            )
+
+        cached_sql = kpi.get('cached_sql', '').strip()
+        if not cached_sql:
+            raise HTTPException(
+                status_code=400,
+                detail=f"KPI {kpi_id} has no cached SQL available."
+            )
+
+        logger.info(f"🚀 CACHED SQL EXECUTION REQUEST for KPI {kpi_id}")
+        logger.info(f"   KPI Name: {kpi['name']}")
+        logger.info(f"   Cached SQL Length: {len(cached_sql)} characters")
+
+        # Execute cached SQL directly
+        execution_result = service.execute_cached_sql(kpi_id, request.dict())
+
+        logger.info(f"✅ Cached SQL execution completed for KPI {kpi_id}")
+        logger.info(f"   Execution ID: {execution_result.get('id')}")
+        logger.info(f"   Status: {execution_result.get('execution_status')}")
+        logger.info(f"   Records: {execution_result.get('number_of_records', 0)}")
+
+        # Manual Java object conversion to ensure no Java objects remain
+        from kg_builder.utils.java_response_decorator import convert_java_objects_deep
+        from fastapi.responses import JSONResponse
+
+        # Check if execution actually succeeded or failed
+        execution_status = execution_result.get('execution_status', 'failed')
+
+        if execution_status == 'failed':
+            # FAILED - Return error response with 500 status
+            error_message = execution_result.get('error_message', 'Cached SQL execution failed')
+
+            response_data = {
+                "success": False,
+                "message": f"Cached SQL execution failed: {error_message}",
+                "execution_id": execution_result.get('id'),
+                "kpi_id": kpi_id,
+                "kpi_name": kpi['name'],
+                "execution_status": "failed",
+                "number_of_records": 0,
+                "execution_time_ms": execution_result.get('execution_time_ms', 0),
+                "cached_sql_length": len(cached_sql),
+                "error_message": error_message
+            }
+
+            logger.error(f"❌ Returning failure response for KPI {kpi_id}")
+            logger.info(f"🔄 Converting Java objects in error response...")
+            converted_response = convert_java_objects_deep(response_data)
+            logger.info(f"✅ Java object conversion completed")
+
+            return JSONResponse(content=converted_response, status_code=500)
+
+        else:
+            # SUCCESS - Return success response with 200 status
+            response_data = {
+                "success": True,
+                "message": "Cached SQL executed successfully",
+                "execution_id": execution_result.get('id'),
+                "kpi_id": kpi_id,
+                "kpi_name": kpi['name'],
+                "execution_status": "success",
+                "number_of_records": execution_result.get('number_of_records', 0),
+                "execution_time_ms": execution_result.get('execution_time_ms', 0),
+                "cached_sql_length": len(cached_sql)
+            }
+
+            logger.info(f"✅ Returning success response for KPI {kpi_id}")
+            logger.info(f"🔄 Converting Java objects in success response...")
+            converted_response = convert_java_objects_deep(response_data)
+            logger.info(f"✅ Java object conversion completed")
+
+            return JSONResponse(content=converted_response, status_code=200)
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        logger.error(f"Validation error executing cached KPI {kpi_id}: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error executing cached KPI {kpi_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to execute cached SQL: {str(e)}")
 
 
 @router.get("/landing-kpi/kpis/{kpi_id}/executions", tags=["Landing KPI"], response_model=dict)
@@ -3208,12 +3407,13 @@ async def get_kpi_latest_results(kpi_id: int):
 # =============================================================================
 
 def get_kpi_analytics_service():
-    """Get KPI Analytics service instance using JDBC (like the rest of the system)."""
+    """Get KPI Analytics service instance using MSSQL with JDBC (with complete execute_kpi implementation)."""
     from kg_builder.services.landing_kpi_service_jdbc import LandingKPIServiceJDBC
     return LandingKPIServiceJDBC()
 
 
 @router.get("/landing-kpi-mssql/kpis", tags=["KPI Analytics"], response_model=dict)
+@java_safe_response
 async def get_all_kpis_mssql(
     include_inactive: Optional[bool] = Query(False, description="Include inactive KPIs")
 ):
@@ -3234,6 +3434,7 @@ async def get_all_kpis_mssql(
 
 
 @router.post("/landing-kpi-mssql/kpis", tags=["KPI Analytics"], response_model=dict)
+@java_safe_response
 async def create_kpi_mssql(request: KPICreateRequest):
     """Create a new KPI definition in MS SQL Server."""
     try:
@@ -3253,6 +3454,7 @@ async def create_kpi_mssql(request: KPICreateRequest):
 
 
 @router.get("/landing-kpi-mssql/kpis/{kpi_id}", tags=["KPI Analytics"], response_model=dict)
+@java_safe_response
 async def get_kpi_mssql(kpi_id: int):
     """Get a specific KPI by ID from MS SQL Server."""
     try:
@@ -3275,6 +3477,7 @@ async def get_kpi_mssql(kpi_id: int):
 
 
 @router.put("/landing-kpi-mssql/kpis/{kpi_id}", tags=["KPI Analytics"], response_model=dict)
+@java_safe_response
 async def update_kpi_mssql(kpi_id: int, request: KPIUpdateRequest):
     """Update a KPI definition in MS SQL Server."""
     try:
@@ -3299,6 +3502,7 @@ async def update_kpi_mssql(kpi_id: int, request: KPIUpdateRequest):
 
 
 @router.patch("/landing-kpi-mssql/kpis/{kpi_id}/cache-flags", tags=["KPI Analytics"], response_model=dict)
+@java_safe_response
 async def update_kpi_cache_flags(kpi_id: int, request: KPICacheFlagsRequest):
     """Update KPI cache flags (isAccept, isSQLCached, cached_sql)."""
     try:
@@ -3324,6 +3528,7 @@ async def update_kpi_cache_flags(kpi_id: int, request: KPICacheFlagsRequest):
 
 
 @router.post("/landing-kpi-mssql/kpis/{kpi_id}/clear-cache", tags=["KPI Analytics"], response_model=dict)
+@java_safe_response
 async def clear_kpi_cache_flags(kpi_id: int, request: KPIClearCacheRequest):
     """Clear both isAccept and isSQLCached flags for a KPI."""
     try:
@@ -3349,6 +3554,7 @@ async def clear_kpi_cache_flags(kpi_id: int, request: KPIClearCacheRequest):
 
 
 @router.get("/landing-kpi-mssql/kpis/{kpi_id}/debug-cache", tags=["KPI Analytics"], response_model=dict)
+@java_safe_response
 async def debug_kpi_cache_status(kpi_id: int):
     """Debug endpoint to check KPI cache status."""
     try:
@@ -3379,6 +3585,7 @@ async def debug_kpi_cache_status(kpi_id: int):
 
 
 @router.post("/landing-kpi-mssql/kpis/{kpi_id}/test-sql-storage", tags=["KPI Analytics"], response_model=dict)
+@java_safe_response
 async def test_sql_storage(kpi_id: int):
     """Test endpoint to verify SQL storage works."""
     try:
@@ -3421,6 +3628,7 @@ async def test_sql_storage(kpi_id: int):
 
 
 @router.delete("/landing-kpi-mssql/kpis/{kpi_id}", tags=["KPI Analytics"], response_model=dict)
+@java_safe_response
 async def delete_kpi_mssql(kpi_id: int):
     """Delete (deactivate) a KPI in MS SQL Server."""
     try:
@@ -3443,33 +3651,53 @@ async def delete_kpi_mssql(kpi_id: int):
 
 
 @router.post("/landing-kpi-mssql/kpis/{kpi_id}/execute", tags=["KPI Analytics"], response_model=dict)
+@java_safe_response
 async def execute_kpi_mssql(kpi_id: int, request: KPIExecutionRequest):
     """Execute a KPI and return results with enhanced SQL."""
     try:
         service = get_kpi_analytics_service()
-        result = service.execute_kpi(kpi_id, request.dict())
+
+        # Step 1: Create execution record
+        execution_record = service.create_execution_record(kpi_id, request.dict())
+        execution_id = execution_record.get('id')
+
+        # Step 2: Get KPI definition
+        kpi = service.get_kpi(kpi_id)
+        if not kpi:
+            raise HTTPException(status_code=404, detail=f"KPI ID {kpi_id} not found")
+
+        # Step 3: Execute KPI using executor
+        executor = get_landing_kpi_executor()
+        executor.execute_kpi_async(
+            kpi_id=kpi_id,
+            execution_id=execution_id,
+            execution_params=request.dict()
+        )
+
+        # Step 4: Get updated results
+        final_result = service.get_execution_result(execution_id)
 
         # Format response to match what frontend expects
         return {
-            "success": result.get('success', True),
-            "execution_id": result.get('execution_id'),
+            "success": True,
+            "execution_id": execution_id,
             "data": {
-                "execution_id": result.get('execution_id'),
-                "kpi_id": result.get('kpi_id'),
-                "kpi_name": result.get('kpi_name'),
-                "execution_status": result.get('execution_status'),
-                "number_of_records": result.get('record_count', 0),
-                "execution_time_ms": result.get('execution_time_ms'),
-                "generated_sql": result.get('generated_sql'),
-                "enhanced_sql": result.get('enhanced_sql'),
-                "enhancement_applied": result.get('enhancement_applied', False),
-                "material_master_added": result.get('material_master_added', False),
-                "ops_planner_added": result.get('ops_planner_added', False),
-                "confidence_score": result.get('confidence_score'),
-                "error_message": result.get('error_message'),
-                "data": result.get('data', [])
+                "execution_id": final_result.get('execution_id', execution_id),
+                "kpi_id": final_result.get('kpi_id', kpi_id),
+                "kpi_name": final_result.get('kpi_name', kpi.get('name')),
+                "execution_status": final_result.get('execution_status', 'pending'),
+                "number_of_records": final_result.get('record_count', 0),
+                "execution_time_ms": final_result.get('execution_time_ms', 0),
+                "generated_sql": final_result.get('generated_sql'),
+                "enhanced_sql": final_result.get('enhanced_sql'),
+                "enhancement_applied": final_result.get('enhancement_applied', False),
+                "material_master_added": final_result.get('material_master_added', False),
+                "ops_planner_added": final_result.get('ops_planner_added', False),
+                "confidence_score": final_result.get('confidence_score'),
+                "error_message": final_result.get('error_message'),
+                "data": final_result.get('data', [])
             },
-            "storage_type": "mssql_jdbc"
+            "storage_type": "mssql"
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -3521,6 +3749,7 @@ async def get_dashboard_data_mssql():
 
 
 @router.get("/landing-kpi-mssql/kpis/{kpi_id}/latest-results", tags=["KPI Analytics"], response_model=dict)
+@java_safe_response
 async def get_latest_results_mssql(kpi_id: int):
     """Get the latest execution results for a specific KPI."""
     try:
@@ -3546,6 +3775,7 @@ async def get_latest_results_mssql(kpi_id: int):
 
 
 @router.get("/landing-kpi-mssql/executions/{execution_id}", tags=["KPI Analytics"], response_model=dict)
+@java_safe_response
 async def get_execution_result_mssql(execution_id: int):
     """Get execution result by execution ID."""
     try:
@@ -3614,7 +3844,61 @@ async def get_execution_result_mssql(execution_id: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/debug/database-config", tags=["Debug"], response_model=dict)
+async def get_database_config():
+    """Debug endpoint to show current database configuration."""
+    try:
+        from kg_builder.config import (
+            get_source_db_config, get_target_db_config,
+            SOURCE_DB_TYPE, SOURCE_DB_HOST, SOURCE_DB_PORT, SOURCE_DB_DATABASE,
+            SOURCE_DB_USERNAME, SOURCE_DB_SERVICE_NAME,
+            TARGET_DB_TYPE, TARGET_DB_HOST, TARGET_DB_PORT, TARGET_DB_DATABASE,
+            TARGET_DB_USERNAME, TARGET_DB_SERVICE_NAME,
+            KPI_DB_TYPE, KPI_DB_HOST, KPI_DB_PORT, KPI_DB_DATABASE,
+            KPI_DB_USERNAME
+        )
+
+        source_config = get_source_db_config()
+        target_config = get_target_db_config()
+
+        return {
+            "source_database": {
+                "configured": source_config is not None,
+                "type": SOURCE_DB_TYPE,
+                "host": SOURCE_DB_HOST,
+                "port": SOURCE_DB_PORT,
+                "database": SOURCE_DB_DATABASE,
+                "username": SOURCE_DB_USERNAME,
+                "service_name": SOURCE_DB_SERVICE_NAME,
+                "password_set": bool(source_config.password if source_config else False)
+            },
+            "target_database": {
+                "configured": target_config is not None,
+                "type": TARGET_DB_TYPE,
+                "host": TARGET_DB_HOST,
+                "port": TARGET_DB_PORT,
+                "database": TARGET_DB_DATABASE,
+                "username": TARGET_DB_USERNAME,
+                "service_name": TARGET_DB_SERVICE_NAME,
+                "password_set": bool(target_config.password if target_config else False)
+            },
+            "kpi_analytics_database": {
+                "type": KPI_DB_TYPE,
+                "host": KPI_DB_HOST,
+                "port": KPI_DB_PORT,
+                "database": KPI_DB_DATABASE,
+                "username": KPI_DB_USERNAME
+            },
+            "cached_execution_uses": "target_database"
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting database config: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/landing-kpi-mssql/kpis/{kpi_id}/executions", tags=["KPI Analytics"], response_model=dict)
+@java_safe_response
 async def get_kpi_executions_mssql(kpi_id: int, status: Optional[str] = None):
     """Get execution history for a KPI."""
     try:
@@ -3845,10 +4129,45 @@ async def preview_sql_mssql(request: SQLPreviewRequest):
         parser = NLQueryParser()
         intent = parser.parse(request.nl_definition)
 
+        # Load Knowledge Graph if specified
+        kg = None
+        if request.kg_name and request.kg_name != "default":
+            try:
+                from kg_builder.services.graphiti_backend import get_graphiti_backend
+                from kg_builder.models import KnowledgeGraph, GraphNode, GraphRelationship
+
+                graphiti = get_graphiti_backend()
+                entities_data = graphiti.get_entities(request.kg_name)
+                relationships_data = graphiti.get_relationships(request.kg_name)
+
+                if entities_data and relationships_data:
+                    nodes = [GraphNode(**entity) for entity in entities_data]
+                    relationships = [GraphRelationship(**rel) for rel in relationships_data]
+
+                    # Load table aliases
+                    table_aliases = {}
+                    try:
+                        kg_metadata = graphiti.get_kg_metadata(request.kg_name)
+                        if kg_metadata:
+                            table_aliases = kg_metadata.get('table_aliases', {})
+                    except Exception:
+                        pass
+
+                    kg = KnowledgeGraph(
+                        name=request.kg_name,
+                        nodes=nodes,
+                        relationships=relationships,
+                        schema_file=request.select_schema,
+                        table_aliases=table_aliases
+                    )
+                    logger.info(f"Loaded KG '{request.kg_name}' with {len(nodes)} nodes")
+            except Exception as e:
+                logger.warning(f"Could not load KG '{request.kg_name}': {e}")
+
         # Generate SQL without executing
         executor = NLQueryExecutor(
-            kg_name=request.kg_name,
-            select_schema=request.select_schema,
+            db_type="sqlserver",
+            kg=kg,
             use_llm=request.use_llm
         )
 

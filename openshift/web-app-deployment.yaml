@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kg-builder-frontend
+  namespace: cognito-ai-dq-dev
+  labels:
+    app: kg-builder-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kg-builder-frontend
+  template:
+    metadata:
+      labels:
+        app: kg-builder-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: image-registry.openshift-image-registry.svc:5000/cognito-ai-dq-dev/kg-builder-frontend:latest
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5

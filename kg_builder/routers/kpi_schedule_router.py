@@ -11,7 +11,7 @@ import logging
 
 from kg_builder.services.kpi_schedule_service import KPIScheduleService
 from kg_builder.services.schedule_execution_service import ScheduleExecutionService
-from kg_builder.config import get_mssql_connection_string
+from kg_builder.utils.java_response_decorator import java_safe_response
 
 logger = logging.getLogger(__name__)
 
@@ -71,8 +71,8 @@ class ScheduleResponse(BaseModel):
     is_active: bool
     start_date: str
     end_date: Optional[str]
-    created_at: str
-    updated_at: str
+    created_at: Optional[str]
+    updated_at: Optional[str]
     created_by: Optional[str]
     schedule_config: Dict[str, Any]
     airflow_dag_id: str
@@ -101,8 +101,7 @@ router = APIRouter(prefix="/kpi-schedules", tags=["KPI Schedules"])
 
 def get_schedule_service() -> KPIScheduleService:
     """Dependency to get KPI schedule service"""
-    connection_string = get_mssql_connection_string()
-    return KPIScheduleService(connection_string)
+    return KPIScheduleService()
 
 def get_execution_service() -> ScheduleExecutionService:
     """Dependency to get schedule execution service"""
@@ -180,6 +179,7 @@ async def get_schedule(
         )
 
 @router.get("/kpi/{kpi_id}", response_model=List[ScheduleListResponse])
+@java_safe_response
 async def get_schedules_by_kpi(
     kpi_id: int,
     service: KPIScheduleService = Depends(get_schedule_service)

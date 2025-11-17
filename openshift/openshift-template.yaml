@@ -1,0 +1,408 @@
+# OpenShift Template for Knowledge Graph Builder
+# Usage:
+#   1. Create project: oc new-project kg-builder
+#   2. Process template: oc process -f openshift-template.yaml -p OPENAI_API_KEY=your-key | oc apply -f -
+#   3. Or create directly: oc apply -f openshift-template.yaml
+
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: kg-builder-template
+  annotations:
+    description: "Knowledge Graph Builder with FalkorDB"
+    tags: "python,fastapi,graph-database,ai"
+    openshift.io/display-name: "Knowledge Graph Builder"
+    openshift.io/provider-display-name: "DQ POC"
+    iconClass: "icon-python"
+parameters:
+  - name: APPLICATION_NAME
+    description: "Name of the application"
+    value: "kg-builder"
+    required: true
+  - name: NAMESPACE
+    description: "OpenShift project namespace"
+    value: "kg-builder"
+    required: true
+  - name: OPENAI_API_KEY
+    description: "OpenAI API Key for LLM integration"
+    required: true
+  - name: SOURCE_REPOSITORY_URL
+    description: "Git repository URL"
+    value: "https://github.com/your-org/dq-poc.git"
+    required: false
+  - name: SOURCE_REPOSITORY_REF
+    description: "Git branch/tag reference"
+    value: "master"
+    required: false
+  - name: REPLICAS
+    description: "Number of application replicas"
+    value: "2"
+    required: true
+  - name: MEMORY_LIMIT
+    description: "Maximum amount of memory the container can use"
+    value: "1Gi"
+    required: true
+  - name: CPU_LIMIT
+    description: "Maximum amount of CPU the container can use"
+    value: "1000m"
+    required: true
+
+objects:
+  # ============================================================================
+  # ConfigMap for application configuration
+  # ============================================================================
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: ${APPLICATION_NAME}-config
+      namespace: ${NAMESPACE}
+      labels:
+        app: ${APPLICATION_NAME}
+    data:
+      LOG_LEVEL: "INFO"
+      FALKORDB_HOST: "falkordb-service"
+      FALKORDB_PORT: "6379"
+      OPENAI_MODEL: "gpt-3.5-turbo"
+      OPENAI_TEMPERATURE: "0.7"
+      OPENAI_MAX_TOKENS: "2000"
+      ENABLE_LLM_EXTRACTION: "true"
+      ENABLE_LLM_ANALYSIS: "true"
+
+  # ============================================================================
+  # Secret for sensitive data
+  # ============================================================================
+  - apiVersion: v1
+    kind: Secret
+    metadata:
+      name: ${APPLICATION_NAME}-secrets
+      namespace: ${NAMESPACE}
+      labels:
+        app: ${APPLICATION_NAME}
+    type: Opaque
+    stringData:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      FALKORDB_PASSWORD: ""
+
+  # ============================================================================
+  # PersistentVolumeClaim for FalkorDB
+  # ============================================================================
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: falkordb-pvc
+      namespace: ${NAMESPACE}
+      labels:
+        app: falkordb
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi
+
+  # ============================================================================
+  # FalkorDB DeploymentConfig
+  # ============================================================================
+  - apiVersion: apps.openshift.io/v1
+    kind: DeploymentConfig
+    metadata:
+      name: falkordb
+      namespace: ${NAMESPACE}
+      labels:
+        app: falkordb
+    spec:
+      replicas: 1
+      selector:
+        app: falkordb
+      strategy:
+        type: Recreate
+      template:
+        metadata:
+          labels:
+            app: falkordb
+        spec:
+          containers:
+            - name: falkordb
+              image: docker.io/falkordb/falkordb:latest
+              ports:
+                - containerPort: 6379
+                  protocol: TCP
+              resources:
+                requests:
+                  memory: "256Mi"
+                  cpu: "250m"
+                limits:
+                  memory: "512Mi"
+                  cpu: "500m"
+              volumeMounts:
+                - name: falkordb-storage
+                  mountPath: /data
+              livenessProbe:
+                exec:
+                  command:
+                    - redis-cli
+                    - ping
+                initialDelaySeconds: 30
+                periodSeconds: 10
+                timeoutSeconds: 5
+              readinessProbe:
+                exec:
+                  command:
+                    - redis-cli
+                    - ping
+                initialDelaySeconds: 5
+                periodSeconds: 5
+                timeoutSeconds: 3
+          volumes:
+            - name: falkordb-storage
+              persistentVolumeClaim:
+                claimName: falkordb-pvc
+
+  # ============================================================================
+  # FalkorDB Service
+  # ============================================================================
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: falkordb-service
+      namespace: ${NAMESPACE}
+      labels:
+        app: falkordb
+    spec:
+      selector:
+        app: falkordb
+      ports:
+        - protocol: TCP
+          port: 6379
+          targetPort: 6379
+      type: ClusterIP
+
+  # ============================================================================
+  # BuildConfig for building the application image
+  # ============================================================================
+  - apiVersion: build.openshift.io/v1
+    kind: BuildConfig
+    metadata:
+      name: ${APPLICATION_NAME}
+      namespace: ${NAMESPACE}
+      labels:
+        app: ${APPLICATION_NAME}
+    spec:
+      output:
+        to:
+          kind: ImageStreamTag
+          name: ${APPLICATION_NAME}:latest
+      source:
+        type: Git
+        git:
+          uri: ${SOURCE_REPOSITORY_URL}
+          ref: ${SOURCE_REPOSITORY_REF}
+        contextDir: /
+      strategy:
+        type: Docker
+        dockerStrategy:
+          dockerfilePath: Dockerfile
+      triggers:
+        - type: ConfigChange
+        - type: ImageChange
+
+  # ============================================================================
+  # ImageStream for the application
+  # ============================================================================
+  - apiVersion: image.openshift.io/v1
+    kind: ImageStream
+    metadata:
+      name: ${APPLICATION_NAME}
+      namespace: ${NAMESPACE}
+      labels:
+        app: ${APPLICATION_NAME}
+    spec:
+      lookupPolicy:
+        local: false
+
+  # ============================================================================
+  # Application DeploymentConfig
+  # ============================================================================
+  - apiVersion: apps.openshift.io/v1
+    kind: DeploymentConfig
+    metadata:
+      name: ${APPLICATION_NAME}-app
+      namespace: ${NAMESPACE}
+      labels:
+        app: ${APPLICATION_NAME}
+    spec:
+      replicas: ${{REPLICAS}}
+      selector:
+        app: ${APPLICATION_NAME}
+      strategy:
+        type: Rolling
+        rollingParams:
+          updatePeriodSeconds: 1
+          intervalSeconds: 1
+          timeoutSeconds: 600
+          maxUnavailable: 25%
+          maxSurge: 25%
+      template:
+        metadata:
+          labels:
+            app: ${APPLICATION_NAME}
+        spec:
+          # OpenShift Security Context - runs as arbitrary UID with root group
+          securityContext:
+            fsGroup: 0
+          containers:
+            - name: kg-builder
+              image: ${APPLICATION_NAME}:latest
+              imagePullPolicy: Always
+              ports:
+                - containerPort: 8000
+                  protocol: TCP
+              envFrom:
+                - configMapRef:
+                    name: ${APPLICATION_NAME}-config
+                - secretRef:
+                    name: ${APPLICATION_NAME}-secrets
+              resources:
+                requests:
+                  memory: "512Mi"
+                  cpu: "500m"
+                limits:
+                  memory: ${MEMORY_LIMIT}
+                  cpu: ${CPU_LIMIT}
+              livenessProbe:
+                httpGet:
+                  path: /health
+                  port: 8000
+                  scheme: HTTP
+                initialDelaySeconds: 40
+                periodSeconds: 10
+                timeoutSeconds: 5
+                failureThreshold: 3
+              readinessProbe:
+                httpGet:
+                  path: /health
+                  port: 8000
+                  scheme: HTTP
+                initialDelaySeconds: 10
+                periodSeconds: 5
+                timeoutSeconds: 3
+                failureThreshold: 3
+              volumeMounts:
+                - name: app-data
+                  mountPath: /app/data
+                - name: app-logs
+                  mountPath: /app/logs
+              # OpenShift will override this with a random UID from its range
+              securityContext:
+                allowPrivilegeEscalation: false
+                runAsNonRoot: true
+                capabilities:
+                  drop:
+                    - ALL
+          volumes:
+            - name: app-data
+              emptyDir: {}
+            - name: app-logs
+              emptyDir: {}
+      triggers:
+        - type: ConfigChange
+        - type: ImageChange
+          imageChangeParams:
+            automatic: true
+            containerNames:
+              - kg-builder
+            from:
+              kind: ImageStreamTag
+              name: ${APPLICATION_NAME}:latest
+
+  # ============================================================================
+  # Application Service
+  # ============================================================================
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: ${APPLICATION_NAME}-service
+      namespace: ${NAMESPACE}
+      labels:
+        app: ${APPLICATION_NAME}
+    spec:
+      selector:
+        app: ${APPLICATION_NAME}
+      ports:
+        - name: http
+          protocol: TCP
+          port: 8000
+          targetPort: 8000
+      type: ClusterIP
+
+  # ============================================================================
+  # Route for external access (OpenShift-specific, replaces Ingress)
+  # ============================================================================
+  - apiVersion: route.openshift.io/v1
+    kind: Route
+    metadata:
+      name: ${APPLICATION_NAME}
+      namespace: ${NAMESPACE}
+      labels:
+        app: ${APPLICATION_NAME}
+      annotations:
+        haproxy.router.openshift.io/timeout: 60s
+    spec:
+      to:
+        kind: Service
+        name: ${APPLICATION_NAME}-service
+        weight: 100
+      port:
+        targetPort: http
+      tls:
+        termination: edge
+        insecureEdgeTerminationPolicy: Redirect
+      wildcardPolicy: None
+
+  # ============================================================================
+  # HorizontalPodAutoscaler for automatic scaling
+  # ============================================================================
+  - apiVersion: autoscaling/v2
+    kind: HorizontalPodAutoscaler
+    metadata:
+      name: ${APPLICATION_NAME}-hpa
+      namespace: ${NAMESPACE}
+      labels:
+        app: ${APPLICATION_NAME}
+    spec:
+      scaleTargetRef:
+        apiVersion: apps.openshift.io/v1
+        kind: DeploymentConfig
+        name: ${APPLICATION_NAME}-app
+      minReplicas: ${{REPLICAS}}
+      maxReplicas: 5
+      metrics:
+        - type: Resource
+          resource:
+            name: cpu
+            target:
+              type: Utilization
+              averageUtilization: 70
+        - type: Resource
+          resource:
+            name: memory
+            target:
+              type: Utilization
+              averageUtilization: 80
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 300
+          policies:
+            - type: Percent
+              value: 50
+              periodSeconds: 15
+        scaleUp:
+          stabilizationWindowSeconds: 0
+          policies:
+            - type: Percent
+              value: 100
+              periodSeconds: 15
+            - type: Pods
+              value: 2
+              periodSeconds: 15
+          selectPolicy: Max

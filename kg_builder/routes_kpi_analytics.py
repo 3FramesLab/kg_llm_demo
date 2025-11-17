@@ -177,7 +177,8 @@ async def execute_kpi(kpi_id: int, request: KPIExecuteRequest):
         
         return KPIExecutionResponse(
             success=True,
-            data=result
+            data=result,
+            storage_type="mssql_jdbc"
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -276,10 +277,45 @@ async def preview_sql(request: SQLPreviewRequest):
         parser = NLQueryParser()
         intent = parser.parse(request.nl_definition)
 
+        # Load Knowledge Graph if specified
+        kg = None
+        if request.kg_name and request.kg_name != "default":
+            try:
+                from kg_builder.services.graphiti_backend import get_graphiti_backend
+                from kg_builder.models import KnowledgeGraph, GraphNode, GraphRelationship
+
+                graphiti = get_graphiti_backend()
+                entities_data = graphiti.get_entities(request.kg_name)
+                relationships_data = graphiti.get_relationships(request.kg_name)
+
+                if entities_data and relationships_data:
+                    nodes = [GraphNode(**entity) for entity in entities_data]
+                    relationships = [GraphRelationship(**rel) for rel in relationships_data]
+
+                    # Load table aliases
+                    table_aliases = {}
+                    try:
+                        kg_metadata = graphiti.get_kg_metadata(request.kg_name)
+                        if kg_metadata:
+                            table_aliases = kg_metadata.get('table_aliases', {})
+                    except Exception:
+                        pass
+
+                    kg = KnowledgeGraph(
+                        name=request.kg_name,
+                        nodes=nodes,
+                        relationships=relationships,
+                        schema_file=request.select_schema,
+                        table_aliases=table_aliases
+                    )
+                    logger.info(f"Loaded KG '{request.kg_name}' with {len(nodes)} nodes")
+            except Exception as e:
+                logger.warning(f"Could not load KG '{request.kg_name}': {e}")
+
         # Generate SQL without executing
         executor = NLQueryExecutor(
-            kg_name=request.kg_name,
-            select_schema=request.select_schema,
+            db_type="sqlserver",
+            kg=kg,
             use_llm=request.use_llm
         )
 

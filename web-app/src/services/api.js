@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/v1';
+// Use relative path so requests go through nginx proxy to backend
+export const API_BASE_URL = process.env.REACT_APP_API_URL || '/v1';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -79,6 +80,7 @@ export const clearKPICacheFlags = (kpiId) => api.post(`/landing-kpi-mssql/kpis/$
 
 // Landing KPI Execution (Enhanced Analytics API)
 export const executeKPI = (kpiId, data) => api.post(`/landing-kpi-mssql/kpis/${kpiId}/execute`, data);
+export const executeCachedKPI = (kpiId, data) => api.post(`/landing-kpi/kpis/${kpiId}/execute-cached`, data);
 export const getKPIExecutions = async (kpiId, params) => {
   try {
     const response = await api.get(`/landing-kpi-mssql/kpis/${kpiId}/executions`, { params });
@@ -161,6 +163,6 @@ export const exportHints = (outputPath) => api.get('/hints/export', { params: { 
 export const importHints = (data) => api.post('/hints/import', data);
 
 // Material Master Operations
-export const getUniqueOpsPlanner = () => api.get('/material-master/ops-planners');
+// export const getUniqueOpsPlanner = () => api.get('/material-master/ops-planners'); // Disabled due to Java serialization issues
 
 export default api;

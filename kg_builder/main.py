@@ -6,6 +6,8 @@ import logging.config
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from fastapi.openapi.utils import get_openapi
 
 # Load environment variables from .env file
@@ -20,6 +22,7 @@ from kg_builder.routes import router
 from kg_builder.routes_hints import router as hints_router
 from kg_builder.routers.kpi_schedule_router import router as schedule_router
 from kg_builder.logging_config import LOGGING_CONFIG
+from kg_builder.middleware import DetailedLoggingMiddleware
 
 # Configure logging with console handler
 import sys
@@ -38,6 +41,75 @@ def setup_logging():
     print(f"[STARTUP] Logging configured at {LOG_LEVEL} level - Console handler active", flush=True)
     return logger
 
+async def initialize_jvm_with_jdbc_drivers():
+    """Initialize JVM with all JDBC drivers in classpath."""
+    try:
+        import jpype
+        import glob
+        import os
+        from kg_builder.config import JDBC_DRIVERS_PATH
+
+        # Check if JVM is already started
+        if jpype.isJVMStarted():
+            logger.info("JVM already started - skipping JDBC driver initialization")
+            return
+
+        logger.info("🚀 Initializing JVM with all JDBC drivers...")
+
+        # Find all JDBC driver JAR files
+        jdbc_patterns = [
+            "mssql-jdbc*.jar",      # SQL Server
+            "mysql-connector-j*.jar", # MySQL
+            "postgresql-*.jar",     # PostgreSQL
+            "ojdbc*.jar"           # Oracle
+        ]
+
+        all_jars = []
+        for pattern in jdbc_patterns:
+            jar_pattern = os.path.join(JDBC_DRIVERS_PATH, pattern)
+            jars = glob.glob(jar_pattern)
+            all_jars.extend(jars)
+
+        if not all_jars:
+            logger.warning(f"No JDBC drivers found in {JDBC_DRIVERS_PATH}")
+            return
+
+        logger.info(f"Found {len(all_jars)} JDBC drivers:")
+        for jar in all_jars:
+            logger.info(f"  - {os.path.basename(jar)}")
+
+        # Start JVM with all JDBC drivers in classpath
+        classpath = os.pathsep.join(all_jars)
+        jpype.startJVM(jpype.getDefaultJVMPath(), f"-Djava.class.path={classpath}")
+
+        logger.info("✅ JVM initialized successfully with all JDBC drivers")
+
+    except ImportError:
+        logger.warning("JPype not available - JDBC functionality will be limited")
+    except Exception as e:
+        logger.error(f"Failed to initialize JVM with JDBC drivers: {e}")
+
+
+class JavaAwareJSONResponse(JSONResponse):
+    """Custom JSON response that handles Java objects."""
+
+    def render(self, content) -> bytes:
+        from kg_builder.utils.java_json_encoder import convert_java_objects_recursive
+        import json
+
+        # Convert all Java objects to Python objects
+        converted_content = convert_java_objects_recursive(content)
+
+        # Use standard JSON encoding
+        return json.dumps(
+            converted_content,
+            ensure_ascii=False,
+            allow_nan=False,
+            indent=None,
+            separators=(",", ":"),
+        ).encode("utf-8")
+
+
 # Setup logging before creating the app
 logger = setup_logging()
 
@@ -49,6 +121,13 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json"
+)
+
+# Add detailed logging middleware (must be first to capture all requests)
+app.add_middleware(
+    DetailedLoggingMiddleware,
+    log_request_body=True,
+    log_response_body=True
 )
 
 # Add CORS middleware
@@ -85,14 +164,14 @@ async def root():
 async def startup_event():
     """Initialize on startup."""
     logger.info(f"Starting {API_TITLE} v{API_VERSION}")
-    
+
     # Initialize backends
     from kg_builder.services.falkordb_backend import get_falkordb_backend
     from kg_builder.services.graphiti_backend import get_graphiti_backend
-    
+
     falkordb = get_falkordb_backend()
     graphiti = get_graphiti_backend()
-    
+
     logger.info(f"FalkorDB connected: {falkordb.is_connected()}")
     logger.info(f"Graphiti available: {graphiti.is_available()}")
 

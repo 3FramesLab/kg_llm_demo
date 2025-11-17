@@ -5,25 +5,174 @@ Handles CRUD operations for KPI schedules and integrates with Airflow
 
 import json
 import logging
+import time
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 from croniter import croniter
-import pyodbc
 
 from .airflow_dag_generator import AirflowDAGGenerator
+from kg_builder.services.jdbc_connection_manager import get_jdbc_connection
 
 logger = logging.getLogger(__name__)
 
 class KPIScheduleService:
     """Service for managing KPI schedules"""
-    
-    def __init__(self, connection_string: str, airflow_dags_folder: str = None):
-        self.connection_string = connection_string
+
+    def __init__(self, airflow_dags_folder: str = None):
+        from kg_builder.config import KPI_DB_HOST, KPI_DB_PORT, KPI_DB_DATABASE, KPI_DB_USERNAME, KPI_DB_PASSWORD
+
+        self.host = KPI_DB_HOST
+        self.port = KPI_DB_PORT
+        self.database = KPI_DB_DATABASE
+        self.username = KPI_DB_USERNAME
+        self.password = KPI_DB_PASSWORD
         self.dag_generator = AirflowDAGGenerator(airflow_dags_folder)
-    
+
     def _get_connection(self):
-        """Get database connection"""
-        return pyodbc.connect(self.connection_string)
+        """Get JDBC database connection to MySQL KPI Analytics database"""
+        # MySQL JDBC connection
+        driver_class = "com.mysql.cj.jdbc.Driver"
+        jdbc_url = f"jdbc:mysql://{self.host}:{self.port}/{self.database}?useSSL=false&allowPublicKeyRetrieval=true"
+
+        return get_jdbc_connection(driver_class, jdbc_url, self.username, self.password)
+
+    def _safe_datetime_to_string(self, value, allow_none=True):
+        """Safely convert datetime object or string to string format"""
+        if value is None:
+            return None if allow_none else "1970-01-01T00:00:00"
+
+        # If it's already a string, return as-is
+        if isinstance(value, str):
+            return value
+
+        # If it's a datetime object, convert to ISO format
+        if hasattr(value, 'isoformat'):
+            return value.isoformat()
+
+        # Fallback: convert to string
+        return str(value)
+
+    def _safe_string_convert(self, value):
+        """Safely convert Java String or any value to Python string"""
+        if value is None:
+            return None
+
+        # Convert Java objects to Python strings
+        if hasattr(value, '__class__') and 'java' in str(value.__class__):
+            return str(value)
+
+        # Already a Python string or other type
+        return value
+
+    def _safe_json_loads(self, value):
+        """Safely parse JSON from Java String or Python string"""
+        if value is None:
+            return {}
+
+        # Convert Java String to Python string if needed
+        if hasattr(value, '__class__') and 'java' in str(value.__class__):
+            value = str(value)
+
+        try:
+            return json.loads(value)
+        except (json.JSONDecodeError, TypeError) as e:
+            logger.warning(f"Failed to parse JSON: {e}, returning empty dict")
+            return {}
+
+    def _ensure_tables_exist(self):
+        """Ensure KPI scheduling tables exist in MySQL database"""
+        conn = self._get_connection()
+        if not conn:
+            logger.error("❌ Failed to get database connection for table creation")
+            return False
+
+        # Disable autocommit for transaction management
+        conn.jconn.setAutoCommit(False)
+
+        cursor = conn.cursor()
+
+        try:
+            # Check if kpi_schedules table exists
+            cursor.execute("SHOW TABLES LIKE 'kpi_schedules'")
+            table_exists = cursor.fetchone()
+
+            if not table_exists:
+                logger.info("📋 Creating kpi_schedules table...")
+                cursor.execute("""
+                    CREATE TABLE kpi_schedules (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        kpi_id INT NOT NULL,
+                        schedule_name VARCHAR(255) NOT NULL,
+                        schedule_type VARCHAR(50) NOT NULL,
+                        cron_expression VARCHAR(100),
+                        timezone VARCHAR(50) DEFAULT 'UTC',
+                        is_active BOOLEAN DEFAULT TRUE,
+                        start_date DATETIME NOT NULL,
+                        end_date DATETIME,
+                        schedule_config JSON,
+                        airflow_dag_id VARCHAR(255),
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        created_by VARCHAR(100) DEFAULT 'system',
+                        last_sync_at DATETIME,
+                        INDEX idx_kpi_id (kpi_id),
+                        INDEX idx_active (is_active),
+                        INDEX idx_schedule_type (schedule_type)
+                    )
+                """)
+                logger.info("✅ Created kpi_schedules table")
+            else:
+                # Table exists, check if it has the correct columns
+                logger.info("📋 Checking existing kpi_schedules table structure...")
+                cursor.execute("DESCRIBE kpi_schedules")
+                columns = {row[0]: row for row in cursor.fetchall()}
+
+                # Add missing columns if needed
+                if 'created_at' not in columns:
+                    logger.info("📋 Adding created_at column...")
+                    cursor.execute("ALTER TABLE kpi_schedules ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP")
+
+                if 'updated_at' not in columns:
+                    logger.info("📋 Adding updated_at column...")
+                    cursor.execute("ALTER TABLE kpi_schedules ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
+
+                logger.info("✅ Table structure verified")
+
+            # Fix existing records with null created_at
+            cursor.execute("SELECT COUNT(*) FROM kpi_schedules WHERE created_at IS NULL")
+            null_count = cursor.fetchone()[0]
+
+            if null_count > 0:
+                logger.info(f"📋 Fixing {null_count} records with null created_at...")
+                # Set created_at to the earliest reasonable time for existing records
+                cursor.execute("""
+                    UPDATE kpi_schedules
+                    SET created_at = COALESCE(last_sync_at, start_date, CURRENT_TIMESTAMP)
+                    WHERE created_at IS NULL
+                """)
+                logger.info(f"✅ Fixed {null_count} records with null created_at")
+
+            # Fix existing records that are inactive (set them to active by default)
+            cursor.execute("SELECT COUNT(*) FROM kpi_schedules WHERE is_active = FALSE OR is_active IS NULL")
+            inactive_count = cursor.fetchone()[0]
+
+            if inactive_count > 0:
+                logger.info(f"📋 Activating {inactive_count} inactive schedules...")
+                cursor.execute("UPDATE kpi_schedules SET is_active = TRUE WHERE is_active = FALSE OR is_active IS NULL")
+                logger.info(f"✅ Activated {inactive_count} schedules")
+
+            conn.commit()
+            return True
+
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"❌ Failed to ensure tables exist: {e}")
+            return False
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
     
     def create_schedule(self, schedule_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -44,6 +193,15 @@ class KPIScheduleService:
                         "retry_delay": 300,
                         "timeout": 3600,
                         "email_notifications": ["user@example.com"]
+                    },
+                    "execution_params": {  # Optional: KPI execution parameters
+                        "kg_name": "default_kg",
+                        "schemas": ["newdqschemanov"],
+                        "select_schema": "newdqschemanov",
+                        "db_type": "sqlserver",
+                        "limit_records": 1000,
+                        "use_llm": true,
+                        "min_confidence": 0.7
                     }
                 }
         
@@ -51,41 +209,57 @@ class KPIScheduleService:
             Created schedule with generated ID and Airflow DAG ID
         """
         conn = self._get_connection()
+
+        # Disable autocommit for transaction management
+        conn.jconn.setAutoCommit(False)
+
         cursor = conn.cursor()
-        
+
         try:
             # Validate schedule data
             self._validate_schedule_data(schedule_data)
-            
-            # Generate Airflow DAG ID
-            airflow_dag_id = f"kpi_schedule_{schedule_data['kpi_id']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-            
+
+            # Get current timestamp in UTC
+            from datetime import timezone
+            current_time = datetime.now(timezone.utc)
+
+            # Generate Airflow DAG ID using UTC time
+            airflow_dag_id = f"kpi_schedule_{schedule_data['kpi_id']}_{current_time.strftime('%Y%m%d_%H%M%S')}"
+
             # Convert schedule_config to JSON string
             schedule_config_json = json.dumps(schedule_data.get('schedule_config', {}))
-            
-            # Insert schedule
+
+            # Insert schedule (JDBC syntax) - explicitly set all fields including is_active
             insert_query = """
                 INSERT INTO kpi_schedules (
                     kpi_id, schedule_name, schedule_type, cron_expression, timezone,
-                    start_date, end_date, schedule_config, airflow_dag_id, created_by
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    is_active, start_date, end_date, schedule_config, airflow_dag_id, created_by,
+                    created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """
             
+            # Debug: Log the timestamp values
+            created_at_str = current_time.strftime('%Y-%m-%d %H:%M:%S')
+            logger.debug(f"🕐 Inserting schedule with timestamps: created_at={created_at_str}, updated_at={created_at_str}")
+
             cursor.execute(insert_query, (
                 schedule_data['kpi_id'],
                 schedule_data['schedule_name'],
                 schedule_data['schedule_type'],
                 schedule_data.get('cron_expression'),
                 schedule_data.get('timezone', 'UTC'),
+                schedule_data.get('is_active', True),  # Default to active
                 schedule_data['start_date'],
                 schedule_data.get('end_date'),
                 schedule_config_json,
                 airflow_dag_id,
-                schedule_data.get('created_by', 'system')
+                schedule_data.get('created_by', 'system'),
+                created_at_str,  # created_at as string
+                created_at_str   # updated_at as string
             ))
             
-            # Get the created schedule ID
-            cursor.execute("SELECT @@IDENTITY")
+            # Get the created schedule ID (MySQL syntax)
+            cursor.execute("SELECT LAST_INSERT_ID()")
             schedule_id = cursor.fetchone()[0]
             
             conn.commit()
@@ -101,7 +275,7 @@ class KPIScheduleService:
             try:
                 self.dag_generator.sync_schedule_to_airflow(created_schedule)
                 # Update last_sync_at
-                cursor.execute("UPDATE kpi_schedules SET last_sync_at = GETDATE() WHERE id = ?", (schedule_id,))
+                cursor.execute("UPDATE kpi_schedules SET last_sync_at = ? WHERE id = ?", (current_time.strftime('%Y-%m-%d %H:%M:%S'), schedule_id))
                 conn.commit()
             except Exception as e:
                 logger.warning(f"Failed to sync schedule {schedule_id} to Airflow: {e}")
@@ -145,21 +319,21 @@ class KPIScheduleService:
             schedule = {
                 'id': row[0],
                 'kpi_id': row[1],
-                'schedule_name': row[2],
-                'schedule_type': row[3],
-                'cron_expression': row[4],
-                'timezone': row[5],
+                'schedule_name': self._safe_string_convert(row[2]),
+                'schedule_type': self._safe_string_convert(row[3]),
+                'cron_expression': self._safe_string_convert(row[4]),
+                'timezone': self._safe_string_convert(row[5]),
                 'is_active': bool(row[6]),
-                'start_date': row[7].isoformat() if row[7] else None,
-                'end_date': row[8].isoformat() if row[8] else None,
-                'created_at': row[9].isoformat() if row[9] else None,
-                'updated_at': row[10].isoformat() if row[10] else None,
-                'created_by': row[11],
-                'schedule_config': json.loads(row[12]) if row[12] else {},
-                'airflow_dag_id': row[13],
-                'last_sync_at': row[14].isoformat() if row[14] else None,
-                'kpi_name': row[15],
-                'kpi_alias': row[16]
+                'start_date': self._safe_datetime_to_string(row[7]),
+                'end_date': self._safe_datetime_to_string(row[8]),
+                'created_at': self._safe_datetime_to_string(row[9]),
+                'updated_at': self._safe_datetime_to_string(row[10]),
+                'created_by': self._safe_string_convert(row[11]),
+                'schedule_config': self._safe_json_loads(row[12]),
+                'airflow_dag_id': self._safe_string_convert(row[13]),
+                'last_sync_at': self._safe_datetime_to_string(row[14]),
+                'kpi_name': self._safe_string_convert(row[15]),
+                'kpi_alias': self._safe_string_convert(row[16])
             }
             
             # Add next execution time
@@ -179,10 +353,21 @@ class KPIScheduleService:
 
     def get_schedules_by_kpi(self, kpi_id: int) -> List[Dict[str, Any]]:
         """Get all schedules for a specific KPI"""
+        # Ensure tables exist first
+        if not self._ensure_tables_exist():
+            logger.error("❌ Failed to ensure database tables exist")
+            return []
+
         conn = self._get_connection()
+
+        if not conn:
+            logger.error("❌ Failed to get database connection")
+            raise Exception("Failed to get database connection")
+
         cursor = conn.cursor()
 
         try:
+
             query = """
                 SELECT
                     s.id, s.schedule_name, s.schedule_type, s.cron_expression,
@@ -193,45 +378,54 @@ class KPIScheduleService:
                 ORDER BY s.created_at DESC
             """
 
+            logger.debug(f"🔍 Executing query for KPI {kpi_id}: {query}")
             cursor.execute(query, (kpi_id,))
             rows = cursor.fetchall()
 
             schedules = []
             for row in rows:
-                schedule = {
-                    'id': row[0],
-                    'schedule_name': row[1],
-                    'schedule_type': row[2],
-                    'cron_expression': row[3],
-                    'timezone': row[4],
-                    'is_active': bool(row[5]),
-                    'start_date': row[6].isoformat() if row[6] else None,
-                    'end_date': row[7].isoformat() if row[7] else None,
-                    'created_at': row[8].isoformat() if row[8] else None,
-                    'airflow_dag_id': row[9],
-                    'last_sync_at': row[10].isoformat() if row[10] else None
-                }
+                try:
+                    schedule = {
+                        'id': row[0],
+                        'schedule_name': self._safe_string_convert(row[1]),
+                        'schedule_type': self._safe_string_convert(row[2]),
+                        'cron_expression': self._safe_string_convert(row[3]),
+                        'timezone': self._safe_string_convert(row[4]),
+                        'is_active': bool(row[5]),
+                        'start_date': self._safe_datetime_to_string(row[6]),
+                        'end_date': self._safe_datetime_to_string(row[7]),
+                        'created_at': self._safe_datetime_to_string(row[8]),
+                        'airflow_dag_id': self._safe_string_convert(row[9]),
+                        'last_sync_at': self._safe_datetime_to_string(row[10])
+                    }
 
-                # Add next execution time
-                schedule['next_execution'] = self._calculate_next_execution(schedule)
+                    # Add calculated fields
+                    schedule['next_execution'] = self._calculate_next_execution(schedule)
+                    schedule['last_execution_status'] = self._get_last_execution_status(schedule['id'])
+                    schedules.append(schedule)
+                except Exception as e:
+                    logger.warning(f"⚠️ Failed to process schedule row: {e}")
+                    continue
 
-                # Add execution status
-                schedule['last_execution_status'] = self._get_last_execution_status(schedule['id'])
-
-                schedules.append(schedule)
-
+            logger.info(f"✅ Found {len(schedules)} schedules for KPI {kpi_id}")
             return schedules
 
         except Exception as e:
             logger.error(f"❌ Failed to get schedules for KPI {kpi_id}: {e}")
             raise
         finally:
-            cursor.close()
-            conn.close()
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
 
     def update_schedule(self, schedule_id: int, update_data: Dict[str, Any]) -> Dict[str, Any]:
         """Update an existing schedule"""
         conn = self._get_connection()
+
+        # Disable autocommit for transaction management
+        conn.jconn.setAutoCommit(False)
+
         cursor = conn.cursor()
 
         try:
@@ -256,8 +450,11 @@ class KPIScheduleService:
             if not update_fields:
                 raise ValueError("No valid fields to update")
 
-            # Add updated_at
-            update_fields.append("updated_at = GETDATE()")
+            # Add updated_at with explicit UTC timestamp
+            update_fields.append("updated_at = ?")
+            from datetime import timezone
+            update_time = datetime.now(timezone.utc)
+            params.append(update_time.strftime('%Y-%m-%d %H:%M:%S'))
             params.append(schedule_id)
 
             query = f"UPDATE kpi_schedules SET {', '.join(update_fields)} WHERE id = ?"
@@ -276,7 +473,8 @@ class KPIScheduleService:
             try:
                 self.dag_generator.sync_schedule_to_airflow(updated_schedule)
                 # Update last_sync_at
-                cursor.execute("UPDATE kpi_schedules SET last_sync_at = GETDATE() WHERE id = ?", (schedule_id,))
+                sync_time = datetime.now(timezone.utc)
+                cursor.execute("UPDATE kpi_schedules SET last_sync_at = ? WHERE id = ?", (sync_time.strftime('%Y-%m-%d %H:%M:%S'), schedule_id))
                 conn.commit()
             except Exception as e:
                 logger.warning(f"Failed to sync updated schedule {schedule_id} to Airflow: {e}")
@@ -297,6 +495,10 @@ class KPIScheduleService:
     def delete_schedule(self, schedule_id: int) -> bool:
         """Delete a schedule"""
         conn = self._get_connection()
+
+        # Disable autocommit for transaction management
+        conn.jconn.setAutoCommit(False)
+
         cursor = conn.cursor()
 
         try:
@@ -357,7 +559,7 @@ class KPIScheduleService:
     def _calculate_next_execution(self, schedule: Dict[str, Any]) -> Optional[str]:
         """Calculate the next execution time for a schedule"""
         if not schedule['is_active']:
-            return None
+            return "Not scheduled (inactive)"
 
         try:
             now = datetime.now()
@@ -414,12 +616,13 @@ class KPIScheduleService:
 
         try:
             query = f"""
-                SELECT TOP {limit}
+                SELECT
                     id, scheduled_time, actual_start_time, actual_end_time,
                     execution_status, error_message, retry_count
                 FROM kpi_schedule_executions
                 WHERE schedule_id = ?
                 ORDER BY scheduled_time DESC
+                LIMIT {limit}
             """
 
             cursor.execute(query, (schedule_id,))
@@ -454,10 +657,11 @@ class KPIScheduleService:
 
         try:
             query = """
-                SELECT TOP 1 execution_status
+                SELECT execution_status
                 FROM kpi_schedule_executions
                 WHERE schedule_id = ?
                 ORDER BY scheduled_time DESC
+                LIMIT 1
             """
 
             cursor.execute(query, (schedule_id,))
@@ -478,6 +682,10 @@ class KPIScheduleService:
             return
 
         conn = self._get_connection()
+
+        # Disable autocommit for transaction management
+        conn.jconn.setAutoCommit(False)
+
         cursor = conn.cursor()
 
         try:
@@ -508,6 +716,10 @@ class KPIScheduleService:
     def sync_all_schedules_to_airflow(self) -> Dict[str, Any]:
         """Sync all active schedules to Airflow"""
         conn = self._get_connection()
+
+        # Disable autocommit for transaction management
+        conn.jconn.setAutoCommit(False)
+
         cursor = conn.cursor()
 
         try:
@@ -530,7 +742,8 @@ class KPIScheduleService:
                         if success:
                             results['synced_successfully'] += 1
                             # Update last_sync_at
-                            cursor.execute("UPDATE kpi_schedules SET last_sync_at = GETDATE() WHERE id = ?", (schedule_id,))
+                            sync_time = datetime.now(timezone.utc)
+                            cursor.execute("UPDATE kpi_schedules SET last_sync_at = ? WHERE id = ?", (sync_time.strftime('%Y-%m-%d %H:%M:%S'), schedule_id))
                         else:
                             results['sync_failures'] += 1
                             results['errors'].append(f"Failed to sync schedule {schedule_id}")
@@ -545,6 +758,7 @@ class KPIScheduleService:
             return results
 
         except Exception as e:
+            conn.rollback()
             logger.error(f"❌ Failed to sync schedules to Airflow: {e}")
             raise
         finally:
@@ -598,12 +812,37 @@ class KPIScheduleService:
             # Execute the KPI in background thread
             def execute_kpi_background():
                 try:
-                    # Get KPI service and executor (for cached SQL support)
+                    schedule_execution_start = time.time()
+                    logger.info("="*100)
+                    logger.info(f"🚀 MANUAL KPI SCHEDULE EXECUTION STARTED")
+                    logger.info(f"   Schedule ID: {schedule_id}")
+                    logger.info(f"   KPI ID: {schedule['kpi_id']}")
+                    logger.info(f"   Execution ID: {execution_id}")
+                    logger.info(f"   Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+                    logger.info("="*100)
+
+                    # Step 1: Initialize services and executor
+                    logger.info(f"🔧 STEP 1: Initializing Services and Executor")
+
+                    service_init_start = time.time()
                     kpi_service = get_landing_kpi_service_jdbc()
                     from kg_builder.services.landing_kpi_executor import get_landing_kpi_executor
+                    service_init_time = (time.time() - service_init_start) * 1000
 
-                    # Create execution record first
-                    execution_params = {
+                    logger.info(f"✅ Services initialized in {service_init_time:.2f}ms")
+                    logger.info(f"   KPI Service: {type(kpi_service).__name__}")
+
+                    # Step 2: Prepare execution parameters
+                    logger.info(f"📋 STEP 2: Preparing Execution Parameters")
+
+                    params_start = time.time()
+
+                    # Use schedule-specific execution params if available, otherwise use defaults
+                    schedule_config = schedule.get('schedule_config', {})
+                    custom_execution_params = schedule_config.get('execution_params', {})
+
+                    # Default execution parameters
+                    default_params = {
                         'kg_name': 'manual_trigger',
                         'schemas': ['newdqschemanov'],  # Required: list of schemas
                         'select_schema': 'newdqschemanov',  # Default schema
@@ -617,37 +856,119 @@ class KPIScheduleService:
                         'session_id': f"schedule_{schedule_id}"
                     }
 
-                    # Create KPI execution record
+                    # Merge custom params with defaults (custom params take precedence)
+                    execution_params = {**default_params, **custom_execution_params}
+
+                    # Ensure both schemas and select_schema are set for compatibility
+                    if 'schemas' in execution_params and 'select_schema' not in execution_params:
+                        execution_params['select_schema'] = execution_params['schemas'][0] if execution_params['schemas'] else 'newdqschemanov'
+                    elif 'select_schema' in execution_params and 'schemas' not in execution_params:
+                        execution_params['schemas'] = [execution_params['select_schema']]
+
+                    # Always ensure these system fields are set
+                    execution_params['user_id'] = 'schedule_trigger'
+                    execution_params['session_id'] = f"schedule_{schedule_id}"
+
+                    params_time = (time.time() - params_start) * 1000
+
+                    logger.info(f"✅ Execution parameters prepared in {params_time:.2f}ms")
+                    logger.info(f"   Parameters: {execution_params}")
+
+                    # Step 3: Create KPI execution record
+                    logger.info(f"💾 STEP 3: Creating KPI Execution Record")
+                    logger.info(f"   KPI ID: {schedule['kpi_id']}")
+                    logger.info(f"   Execution Params Keys: {list(execution_params.keys())}")
+
+                    record_creation_start = time.time()
                     kpi_execution_record = kpi_service.create_execution_record(schedule['kpi_id'], execution_params)
                     kpi_execution_id = kpi_execution_record.get('id')
+                    record_creation_time = (time.time() - record_creation_start) * 1000
 
-                    logger.info(f"🔄 Created KPI execution record {kpi_execution_id} for schedule {schedule_id}")
+                    logger.info(f"✅ KPI execution record created in {record_creation_time:.2f}ms")
+                    logger.info(f"   KPI Execution ID: {kpi_execution_id}")
+                    logger.info(f"   Record Details: {kpi_execution_record}")
 
-                    # Use LandingKPIExecutor for cached SQL support
+                    # Step 4: Initialize and configure executor
+                    logger.info(f"⚙️ STEP 4: Initializing KPI Executor")
+
+                    executor_init_start = time.time()
                     executor = get_landing_kpi_executor()
+                    executor_init_time = (time.time() - executor_init_start) * 1000
 
-                    # Execute using the executor (which supports cached SQL)
-                    logger.info(f"🚀 Executing KPI {schedule['kpi_id']} using LandingKPIExecutor (supports cached SQL)")
+                    logger.info(f"✅ KPI executor initialized in {executor_init_time:.2f}ms")
+                    logger.info(f"   Executor Type: {type(executor).__name__}")
+                    logger.info(f"   Supports Cached SQL: True")
+
+                    # Step 5: Execute KPI asynchronously
+                    logger.info(f"🚀 STEP 5: Executing KPI Asynchronously")
+                    logger.info(f"   KPI ID: {schedule['kpi_id']}")
+                    logger.info(f"   Execution ID: {kpi_execution_id}")
+                    logger.info(f"   Using LandingKPIExecutor with cached SQL support")
+
+                    kpi_execution_start = time.time()
                     executor.execute_kpi_async(
                         kpi_id=schedule['kpi_id'],
                         execution_id=kpi_execution_id,
                         execution_params=execution_params
                     )
+                    kpi_execution_time = (time.time() - kpi_execution_start) * 1000
 
-                    # The LandingKPIExecutor will handle updating the KPI execution record
-                    # We just need to update the schedule execution record
+                    logger.info(f"✅ KPI execution initiated in {kpi_execution_time:.2f}ms")
+                    logger.info(f"   Note: Actual KPI processing continues asynchronously")
+
+                    # Step 6: Update schedule execution record
+                    logger.info(f"📝 STEP 6: Updating Schedule Execution Record")
+
+                    update_start = time.time()
                     update_data = {
                         'execution_status': 'success',
                         'actual_end_time': datetime.now().isoformat(),
-                        'execution_id': kpi_execution_id
+                        'execution_id': kpi_execution_id,
+                        'execution_time_ms': kpi_execution_time,
+                        'schedule_id': schedule_id
                     }
-                    execution_service.update_execution_record(execution_id, update_data)
 
-                    logger.info(f"✓ Manual execution completed successfully: schedule_execution_id={execution_id}, kpi_execution_id={kpi_execution_id}")
-                    logger.info(f"✓ Used LandingKPIExecutor which supports cached SQL execution")
+                    logger.info(f"   Update Data: {update_data}")
+                    execution_service.update_execution_record(execution_id, update_data)
+                    update_time = (time.time() - update_start) * 1000
+
+                    logger.info(f"✅ Schedule execution record updated in {update_time:.2f}ms")
+
+                    # Step 7: Final success summary
+                    total_schedule_time = (time.time() - schedule_execution_start) * 1000
+
+                    logger.info("="*100)
+                    logger.info(f"🎉 MANUAL KPI SCHEDULE EXECUTION COMPLETED SUCCESSFULLY")
+                    logger.info(f"   Schedule ID: {schedule_id}")
+                    logger.info(f"   KPI ID: {schedule['kpi_id']}")
+                    logger.info(f"   Schedule Execution ID: {execution_id}")
+                    logger.info(f"   KPI Execution ID: {kpi_execution_id}")
+                    logger.info(f"   Total Schedule Time: {total_schedule_time:.2f}ms")
+                    logger.info(f"   Performance Breakdown:")
+                    logger.info(f"      Service Initialization: {service_init_time:.2f}ms")
+                    logger.info(f"      Parameter Preparation: {params_time:.2f}ms")
+                    logger.info(f"      Record Creation: {record_creation_time:.2f}ms")
+                    logger.info(f"      Executor Initialization: {executor_init_time:.2f}ms")
+                    logger.info(f"      KPI Execution Initiation: {kpi_execution_time:.2f}ms")
+                    logger.info(f"      Record Update: {update_time:.2f}ms")
+                    logger.info(f"   Used LandingKPIExecutor with cached SQL support")
+                    logger.info("="*100)
 
                 except Exception as e:
-                    logger.error(f"❌ Manual execution failed for schedule {schedule_id}: {e}")
+                    total_schedule_time = (time.time() - schedule_execution_start) * 1000 if 'schedule_execution_start' in locals() else 0
+                    error_type = type(e).__name__
+                    error_message = str(e)
+
+                    logger.error("="*100)
+                    logger.error(f"❌ MANUAL KPI SCHEDULE EXECUTION FAILED")
+                    logger.error(f"   Schedule ID: {schedule_id}")
+                    logger.error(f"   KPI ID: {schedule.get('kpi_id', 'UNKNOWN')}")
+                    logger.error(f"   Execution ID: {execution_id}")
+                    logger.error(f"   Total Schedule Time: {total_schedule_time:.2f}ms")
+                    logger.error(f"   Error Type: {error_type}")
+                    logger.error(f"   Error Message: {error_message}")
+                    logger.error("="*100)
+                    logger.error(f"Full schedule execution error details:", exc_info=True)
 
                     # Update execution record with failure
                     try:

@@ -1,0 +1,67 @@
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: kg-builder-backend
+  namespace: cognito-ai-dq-dev
+  labels:
+    app: kg-builder-backend
+spec:
+  lookupPolicy:
+    local: false
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: kg-builder-backend
+  namespace: cognito-ai-dq-dev
+  labels:
+    app: kg-builder-backend
+spec:
+  output:
+    to:
+      kind: ImageStreamTag
+      name: kg-builder-backend:latest
+  source:
+    type: Binary
+    binary: {}
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+  triggers:
+    - type: ConfigChange
+    - type: ImageChange
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: kg-builder-web
+  namespace: cognito-ai-dq-dev
+  labels:
+    app: kg-builder-web
+spec:
+  lookupPolicy:
+    local: false
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: kg-builder-web
+  namespace: cognito-ai-dq-dev
+  labels:
+    app: kg-builder-web
+spec:
+  output:
+    to:
+      kind: ImageStreamTag
+      name: kg-builder-web:latest
+  source:
+    type: Binary
+    binary: {}
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+  triggers:
+    - type: ConfigChange
+    - type: ImageChange

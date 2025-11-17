@@ -1,0 +1,229 @@
+2025-11-09 10:00:58,182 - __main__ - INFO - ============================================================
+2025-11-09 10:00:58,183 - __main__ - INFO - Landing KPI Database Initialization
+2025-11-09 10:00:58,183 - __main__ - INFO - ============================================================
+2025-11-09 10:00:58,183 - __main__ - INFO - ✓ Created table: kpi_definitions
+2025-11-09 10:00:58,183 - __main__ - INFO - ✓ Created table: kpi_execution_results
+2025-11-09 10:00:58,183 - __main__ - INFO - ✓ Created index: idx_kpi_name
+2025-11-09 10:00:58,183 - __main__ - INFO - ✓ Created index: idx_kpi_active
+2025-11-09 10:00:58,184 - __main__ - INFO - ✓ Created index: idx_execution_kpi_id
+2025-11-09 10:00:58,184 - __main__ - INFO - ✓ Created index: idx_execution_timestamp
+2025-11-09 10:00:58,184 - __main__ - INFO - ✓ Created index: idx_execution_status
+2025-11-09 10:00:58,184 - __main__ - INFO - ✅ Database initialization completed successfully!
+2025-11-09 10:00:58,184 - __main__ - INFO - Database location: /app/data/landing_kpi.db
+2025-11-09 10:00:58,184 - __main__ - INFO - 
+============================================================
+2025-11-09 10:00:58,184 - __main__ - INFO - Verifying Database Schema
+2025-11-09 10:00:58,184 - __main__ - INFO - ============================================================
+2025-11-09 10:00:58,184 - __main__ - INFO - ✅ All required tables exist
+2025-11-09 10:00:58,184 - __main__ - INFO - kpi_definitions columns: id, name, alias_name, group_name, description, nl_definition, created_at, updated_at, created_by, is_active
+2025-11-09 10:00:58,184 - __main__ - INFO - kpi_execution_results columns: id, kpi_id, kg_name, select_schema, ruleset_name, db_type, limit_records, use_llm, excluded_fields, generated_sql, number_of_records, joined_columns, sql_query_type, operation, execution_status, execution_timestamp, execution_time_ms, confidence_score, error_message, result_data, source_table, target_table
+/app/kg_builder/models.py:535: UserWarning: Field name "schema" in "DatabaseConnectionInfo" shadows an attribute in parent "BaseModel"
+  class DatabaseConnectionInfo(BaseModel):
+2025-11-09 10:01:00 - kg_builder.main - INFO - Logging configured at INFO level
+[STARTUP] Logging configured at INFO level - Console handler active
+2025-11-09 10:01:00 - uvicorn.error - INFO - Started server process [3]
+2025-11-09 10:01:00 - uvicorn.error - INFO - Waiting for application startup.
+2025-11-09 10:01:00 - kg_builder.main - INFO - Starting Knowledge Graph Builder v1.0.0
+2025-11-09 10:01:00 - kg_builder.services.falkordb_backend - ERROR - Failed to connect to FalkorDB: Authentication required.
+2025-11-09 10:01:00 - kg_builder.services.graphiti_backend - INFO - Graphiti backend initialized
+2025-11-09 10:01:00 - kg_builder.main - INFO - FalkorDB connected: False
+2025-11-09 10:01:00 - kg_builder.main - INFO - Graphiti available: True
+2025-11-09 10:01:00 - uvicorn.error - INFO - Application startup complete.
+2025-11-09 10:01:00 - uvicorn.error - INFO - Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-11-09 10:01:29 - INFO - 10.128.0.2:47676 - "GET / HTTP/1.1" 200
+2025-11-09 10:01:34 - INFO - 10.128.0.2:60130 - "GET / HTTP/1.1" 200
+2025-11-09 10:01:39 - INFO - 10.128.0.2:60138 - "GET / HTTP/1.1" 200
+2025-11-09 10:01:44 - INFO - 10.128.0.2:37540 - "GET / HTTP/1.1" 200
+2025-11-09 10:01:49 - INFO - 10.128.0.2:37552 - "GET / HTTP/1.1" 200
+2025-11-09 10:01:54 - INFO - 10.128.0.2:57062 - "GET / HTTP/1.1" 200
+2025-11-09 10:01:59 - INFO - 10.128.0.2:57072 - "GET / HTTP/1.1" 200
+2025-11-09 10:02:02 - INFO - 10.128.0.2:46124 - "GET / HTTP/1.1" 200
+2025-11-09 10:02:03 - kg_builder.services.schema_parser - INFO - Loaded schema: newdqnov7
+2025-11-09 10:02:03 - kg_builder.services.multi_schema_llm_service - INFO - MultiSchemaLLMService initialized with model: gpt-3.5-turbo, enhanced_prompts: True
+2025-11-09 10:02:03 - kg_builder.services.schema_parser - INFO - Starting LLM relationship enhancement...
+2025-11-09 10:02:03 - kg_builder.services.schema_parser - INFO - Step 1: Inferring additional relationships...
+2025-11-09 10:02:10 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-09 10:02:10 - kg_builder.services.multi_schema_llm_service - INFO - LLM inferred 5 additional relationships
+2025-11-09 10:02:10 - kg_builder.services.schema_parser - INFO - Step 2: Enhancing relationship descriptions...
+2025-11-09 10:02:17 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-09 10:02:17 - kg_builder.services.multi_schema_llm_service - INFO - LLM enhanced 5 relationships with descriptions
+2025-11-09 10:02:17 - kg_builder.services.schema_parser - INFO - Step 3: Scoring relationships with confidence...
+2025-11-09 10:02:24 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-09 10:02:24 - kg_builder.services.multi_schema_llm_service - INFO - LLM scored 5 relationships with confidence
+2025-11-09 10:02:24 - relationship_direction_normalizer - INFO - Swapping relationship direction: hana_material_master → brz_lnd_RBP_GPU becomes brz_lnd_RBP_GPU → hana_material_master
+2025-11-09 10:02:24 - relationship_direction_normalizer - INFO - Swapping relationship direction: hana_material_master → brz_lnd_SKU_LIFNR_Excel becomes brz_lnd_SKU_LIFNR_Excel → hana_material_master
+2025-11-09 10:02:24 - relationship_direction_normalizer - INFO - Swapping relationship direction: hana_material_master → brz_lnd_OPS_EXCEL_GPU becomes brz_lnd_OPS_EXCEL_GPU → hana_material_master
+2025-11-09 10:02:24 - kg_builder.services.schema_parser - INFO - LLM enhancement complete: 5 relationships (5 inferred)
+2025-11-09 10:02:24 - kg_builder.services.schema_parser - INFO - 🔍 Attempting to extract table aliases (use_llm=True)
+2025-11-09 10:02:24 - kg_builder.services.llm_service - INFO - LLM Service initialized with model: gpt-3.5-turbo
+2025-11-09 10:02:24 - kg_builder.services.schema_parser - INFO - 🔍 LLM Service enabled: True
+2025-11-09 10:02:24 - kg_builder.services.schema_parser - INFO - 🚀 Extracting table aliases using LLM...
+2025-11-09 10:02:24 - kg_builder.services.schema_parser - INFO - Processing schema: newdqnov7 with 10 tables
+2025-11-09 10:02:24 - kg_builder.services.schema_parser - INFO -   Extracting aliases for table: hana_material_master with 18 columns
+2025-11-09 10:02:24 - kg_builder.services.llm_service - INFO - Extracting aliases for table: hana_material_master
+2025-11-09 10:02:24 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-09 10:02:24 - kg_builder.services.llm_service - INFO - 📝 LLM Raw Response for table 'hana_material_master':
+{
+    "table_name": "hana_material_master",
+    "aliases": ["Material Master", "Product Information", "Inventory Details"],
+    "reasoning": "These aliases encompass the key information stored in the table, making it easy for users to identify the table's contents at a glance."
+}
+2025-11-09 10:02:24 - kg_builder.services.llm_service - INFO - ✅ Successfully extracted aliases for hana_material_master: ['Material Master', 'Product Information', 'Inventory Details']
+2025-11-09 10:02:24 - kg_builder.services.llm_service - INFO -    Reasoning: These aliases encompass the key information stored in the table, making it easy for users to identify the table's contents at a glance.
+2025-11-09 10:02:24 - kg_builder.services.schema_parser - INFO - ✓ Extracted aliases for hana_material_master: ['Material Master', 'Product Information', 'Inventory Details']
+2025-11-09 10:02:24 - kg_builder.services.schema_parser - INFO -   Extracting aliases for table: brz_lnd_RBP_GPU with 7 columns
+2025-11-09 10:02:24 - kg_builder.services.llm_service - INFO - Extracting aliases for table: brz_lnd_RBP_GPU
+2025-11-09 10:02:28 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-09 10:02:28 - kg_builder.services.llm_service - INFO - 📝 LLM Raw Response for table 'brz_lnd_RBP_GPU':
+{
+    "table_name": "brz_lnd_RBP_GPU",
+    "aliases": ["Product Line", "Fiscal Year", "Overall Result"],
+    "reasoning": "These aliases focus on key information stored in the table such as products, fiscal year, and results for better understanding and quick reference."
+}
+2025-11-09 10:02:28 - kg_builder.services.llm_service - INFO - ✅ Successfully extracted aliases for brz_lnd_RBP_GPU: ['Product Line', 'Fiscal Year', 'Overall Result']
+2025-11-09 10:02:28 - kg_builder.services.llm_service - INFO -    Reasoning: These aliases focus on key information stored in the table such as products, fiscal year, and results for better understanding and quick reference.
+2025-11-09 10:02:28 - kg_builder.services.schema_parser - INFO - ✓ Extracted aliases for brz_lnd_RBP_GPU: ['Product Line', 'Fiscal Year', 'Overall Result']
+2025-11-09 10:02:28 - kg_builder.services.schema_parser - INFO -   Extracting aliases for table: brz_lnd_SKU_LIFNR_Excel with 25 columns
+2025-11-09 10:02:28 - kg_builder.services.llm_service - INFO - Extracting aliases for table: brz_lnd_SKU_LIFNR_Excel
+2025-11-09 10:02:29 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-09 10:02:29 - kg_builder.services.llm_service - INFO - 📝 LLM Raw Response for table 'brz_lnd_SKU_LIFNR_Excel':
+{
+    "table_name": "brz_lnd_SKU_LIFNR_Excel",
+    "aliases": ["SKU Supplier Excel", "Material Supplier Excel", "Production BOM Supplier", "Lead Time Locations"],
+    "reasoning": "The aliases capture key elements such as SKU, Material, Supplier, Production BOM, and Lead Time, making them user-friendly and descriptive for business users."
+}
+2025-11-09 10:02:29 - kg_builder.services.llm_service - INFO - ✅ Successfully extracted aliases for brz_lnd_SKU_LIFNR_Excel: ['SKU Supplier Excel', 'Material Supplier Excel', 'Production BOM Supplier', 'Lead Time Locations']
+2025-11-09 10:02:29 - kg_builder.services.llm_service - INFO -    Reasoning: The aliases capture key elements such as SKU, Material, Supplier, Production BOM, and Lead Time, making them user-friendly and descriptive for business users.
+2025-11-09 10:02:29 - kg_builder.services.schema_parser - INFO - ✓ Extracted aliases for brz_lnd_SKU_LIFNR_Excel: ['SKU Supplier Excel', 'Material Supplier Excel', 'Production BOM Supplier', 'Lead Time Locations']
+2025-11-09 10:02:29 - kg_builder.services.schema_parser - INFO -   Extracting aliases for table: brz_lnd_OPS_EXCEL_GPU with 50 columns
+2025-11-09 10:02:29 - kg_builder.services.llm_service - INFO - Extracting aliases for table: brz_lnd_OPS_EXCEL_GPU
+2025-11-09 10:02:30 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-09 10:02:30 - kg_builder.services.llm_service - INFO - 📝 LLM Raw Response for table 'brz_lnd_OPS_EXCEL_GPU':
+{
+    "table_name": "brz_lnd_OPS_EXCEL_GPU",
+    "aliases": ["OPS", "Excel GPU", "Operations Excel"],
+    "reasoning": "These aliases encompass key aspects of the table including operations, Excel usage, and GPU information. 'Excel GPU' highlights the GPU aspect which might be significant for users."
+}
+2025-11-09 10:02:30 - kg_builder.services.llm_service - INFO - ✅ Successfully extracted aliases for brz_lnd_OPS_EXCEL_GPU: ['OPS', 'Excel GPU', 'Operations Excel']
+2025-11-09 10:02:30 - kg_builder.services.llm_service - INFO -    Reasoning: These aliases encompass key aspects of the table including operations, Excel usage, and GPU information. 'Excel GPU' highlights the GPU aspect which might be significant for users.
+2025-11-09 10:02:30 - kg_builder.services.schema_parser - INFO - ✓ Extracted aliases for brz_lnd_OPS_EXCEL_GPU: ['OPS', 'Excel GPU', 'Operations Excel']
+2025-11-09 10:02:30 - kg_builder.services.schema_parser - INFO -   Extracting aliases for table: brz_lnd_SAR_Excel_GPU with 3 columns
+2025-11-09 10:02:30 - kg_builder.services.llm_service - INFO - Extracting aliases for table: brz_lnd_SAR_Excel_GPU
+2025-11-09 10:02:31 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-09 10:02:31 - kg_builder.services.llm_service - INFO - 📝 LLM Raw Response for table 'brz_lnd_SAR_Excel_GPU':
+{
+    "table_name": "brz_lnd_SAR_Excel_GPU",
+    "aliases": ["SAR Excel GPU", "Financial Results", "Material Analysis"],
+    "reasoning": "The suggested aliases capture the essence of the table by highlighting its content related to financial results (SAR), Excel data, and material analysis."
+}
+2025-11-09 10:02:31 - kg_builder.services.llm_service - INFO - ✅ Successfully extracted aliases for brz_lnd_SAR_Excel_GPU: ['SAR Excel GPU', 'Financial Results', 'Material Analysis']
+2025-11-09 10:02:31 - kg_builder.services.llm_service - INFO -    Reasoning: The suggested aliases capture the essence of the table by highlighting its content related to financial results (SAR), Excel data, and material analysis.
+2025-11-09 10:02:31 - kg_builder.services.schema_parser - INFO - ✓ Extracted aliases for brz_lnd_SAR_Excel_GPU: ['SAR Excel GPU', 'Financial Results', 'Material Analysis']
+2025-11-09 10:02:31 - kg_builder.services.schema_parser - INFO -   Extracting aliases for table: brz_lnd_SAR_Excel_NBU with 3 columns
+2025-11-09 10:02:31 - kg_builder.services.llm_service - INFO - Extracting aliases for table: brz_lnd_SAR_Excel_NBU
+2025-11-09 10:02:33 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-09 10:02:33 - kg_builder.services.llm_service - INFO - 📝 LLM Raw Response for table 'brz_lnd_SAR_Excel_NBU':
+{
+    "table_name": "brz_lnd_SAR_Excel_NBU",
+    "aliases": ["SAR Excel NBU", "Fiscal Results", "Material Analysis"],
+    "reasoning": "The aliases reflect the focus of the table on SAR, Excel data for NBU in terms of fiscal year results and material analysis."
+}
+2025-11-09 10:02:33 - kg_builder.services.llm_service - INFO - ✅ Successfully extracted aliases for brz_lnd_SAR_Excel_NBU: ['SAR Excel NBU', 'Fiscal Results', 'Material Analysis']
+2025-11-09 10:02:33 - kg_builder.services.llm_service - INFO -    Reasoning: The aliases reflect the focus of the table on SAR, Excel data for NBU in terms of fiscal year results and material analysis.
+2025-11-09 10:02:33 - kg_builder.services.schema_parser - INFO - ✓ Extracted aliases for brz_lnd_SAR_Excel_NBU: ['SAR Excel NBU', 'Fiscal Results', 'Material Analysis']
+2025-11-09 10:02:33 - kg_builder.services.schema_parser - INFO -   Extracting aliases for table: brz_lnd_OPS_EXCEL_NBU with 70 columns
+2025-11-09 10:02:33 - kg_builder.services.llm_service - INFO - Extracting aliases for table: brz_lnd_OPS_EXCEL_NBU
+2025-11-09 10:02:34 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-09 10:02:34 - kg_builder.services.llm_service - INFO - 📝 LLM Raw Response for table 'brz_lnd_OPS_EXCEL_NBU':
+{
+    "table_name": "brz_lnd_OPS_EXCEL_NBU",
+    "aliases": ["Operations Excel NBU", "Inventory Control", "Product Mapping"],
+    "reasoning": "These aliases represent the core aspects of the table - operations, Excel-based data, and management of non-business units."
+}
+2025-11-09 10:02:34 - kg_builder.services.llm_service - INFO - ✅ Successfully extracted aliases for brz_lnd_OPS_EXCEL_NBU: ['Operations Excel NBU', 'Inventory Control', 'Product Mapping']
+2025-11-09 10:02:34 - kg_builder.services.llm_service - INFO -    Reasoning: These aliases represent the core aspects of the table - operations, Excel-based data, and management of non-business units.
+2025-11-09 10:02:34 - kg_builder.services.schema_parser - INFO - ✓ Extracted aliases for brz_lnd_OPS_EXCEL_NBU: ['Operations Excel NBU', 'Inventory Control', 'Product Mapping']
+2025-11-09 10:02:34 - kg_builder.services.schema_parser - INFO -   Extracting aliases for table: brz_lnd_RBP_NBU with 7 columns
+2025-11-09 10:02:34 - kg_builder.services.llm_service - INFO - Extracting aliases for table: brz_lnd_RBP_NBU
+2025-11-09 10:02:36 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-09 10:02:37 - kg_builder.services.llm_service - INFO - 📝 LLM Raw Response for table 'brz_lnd_RBP_NBU':
+{
+    "table_name": "brz_lnd_RBP_NBU",
+    "aliases": ["Product Analysis", "Business Unit Performance", "Overall Results"],
+    "reasoning": "These aliases highlight key aspects of the table including product line analysis, business unit performance, and overall results, making them user-friendly and easy to understand."
+}
+2025-11-09 10:02:37 - kg_builder.services.llm_service - INFO - ✅ Successfully extracted aliases for brz_lnd_RBP_NBU: ['Product Analysis', 'Business Unit Performance', 'Overall Results']
+2025-11-09 10:02:37 - kg_builder.services.llm_service - INFO -    Reasoning: These aliases highlight key aspects of the table including product line analysis, business unit performance, and overall results, making them user-friendly and easy to understand.
+2025-11-09 10:02:37 - kg_builder.services.schema_parser - INFO - ✓ Extracted aliases for brz_lnd_RBP_NBU: ['Product Analysis', 'Business Unit Performance', 'Overall Results']
+2025-11-09 10:02:37 - kg_builder.services.schema_parser - INFO -   Extracting aliases for table: brz_lnd_SAR_UNK_GPU with 1 columns
+2025-11-09 10:02:37 - kg_builder.services.llm_service - INFO - Extracting aliases for table: brz_lnd_SAR_UNK_GPU
+2025-11-09 10:02:38 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-09 10:02:38 - kg_builder.services.llm_service - INFO - 📝 LLM Raw Response for table 'brz_lnd_SAR_UNK_GPU':
+{
+    "table_name": "brz_lnd_SAR_UNK_GPU",
+    "aliases": ["Unknown Material", "SAR Material", "GPU Material"],
+    "reasoning": "These aliases highlight that the table contains materials categorized as 'unknown', 'SAR', and 'GPU', providing a clear indication of the content within the table."
+}
+2025-11-09 10:02:38 - kg_builder.services.llm_service - INFO - ✅ Successfully extracted aliases for brz_lnd_SAR_UNK_GPU: ['Unknown Material', 'SAR Material', 'GPU Material']
+2025-11-09 10:02:38 - kg_builder.services.llm_service - INFO -    Reasoning: These aliases highlight that the table contains materials categorized as 'unknown', 'SAR', and 'GPU', providing a clear indication of the content within the table.
+2025-11-09 10:02:38 - kg_builder.services.schema_parser - INFO - ✓ Extracted aliases for brz_lnd_SAR_UNK_GPU: ['Unknown Material', 'SAR Material', 'GPU Material']
+2025-11-09 10:02:38 - kg_builder.services.schema_parser - INFO -   Extracting aliases for table: brz_lnd_SAR_UNK_NBU with 1 columns
+2025-11-09 10:02:38 - kg_builder.services.llm_service - INFO - Extracting aliases for table: brz_lnd_SAR_UNK_NBU
+2025-11-09 10:02:39 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-09 10:02:39 - kg_builder.services.llm_service - INFO - 📝 LLM Raw Response for table 'brz_lnd_SAR_UNK_NBU':
+{
+    "table_name": "brz_lnd_SAR_UNK_NBU",
+    "aliases": ["SAR Material", "Unknown Material", "NBU Material"],
+    "reasoning": "These aliases reflect the focus on different types of materials present in the table, helping users quickly identify the content."
+}
+2025-11-09 10:02:39 - kg_builder.services.llm_service - INFO - ✅ Successfully extracted aliases for brz_lnd_SAR_UNK_NBU: ['SAR Material', 'Unknown Material', 'NBU Material']
+2025-11-09 10:02:39 - kg_builder.services.llm_service - INFO -    Reasoning: These aliases reflect the focus on different types of materials present in the table, helping users quickly identify the content.
+2025-11-09 10:02:39 - kg_builder.services.schema_parser - INFO - ✓ Extracted aliases for brz_lnd_SAR_UNK_NBU: ['SAR Material', 'Unknown Material', 'NBU Material']
+2025-11-09 10:02:39 - kg_builder.services.schema_parser - INFO - Extracted aliases for 10 tables
+2025-11-09 10:02:39 - kg_builder.services.schema_parser - INFO - ✅ Table aliases extraction complete: 10 tables with aliases
+2025-11-09 10:02:39 - kg_builder.services.schema_parser - INFO - 📋 Table aliases extracted: {'hana_material_master': ['Material Master', 'Product Information', 'Inventory Details'], 'brz_lnd_RBP_GPU': ['Product Line', 'Fiscal Year', 'Overall Result'], 'brz_lnd_SKU_LIFNR_Excel': ['SKU Supplier Excel', 'Material Supplier Excel', 'Production BOM Supplier', 'Lead Time Locations'], 'brz_lnd_OPS_EXCEL_GPU': ['OPS', 'Excel GPU', 'Operations Excel'], 'brz_lnd_SAR_Excel_GPU': ['SAR Excel GPU', 'Financial Results', 'Material Analysis'], 'brz_lnd_SAR_Excel_NBU': ['SAR Excel NBU', 'Fiscal Results', 'Material Analysis'], 'brz_lnd_OPS_EXCEL_NBU': ['Operations Excel NBU', 'Inventory Control', 'Product Mapping'], 'brz_lnd_RBP_NBU': ['Product Analysis', 'Business Unit Performance', 'Overall Results'], 'brz_lnd_SAR_UNK_GPU': ['Unknown Material', 'SAR Material', 'GPU Material'], 'brz_lnd_SAR_UNK_NBU': ['SAR Material', 'Unknown Material', 'NBU Material']}
+2025-11-09 10:02:39 - kg_builder.services.schema_parser - INFO - 🏗️  Creating merged KnowledgeGraph with:
+2025-11-09 10:02:39 - kg_builder.services.schema_parser - INFO -    - Name: Demo_KG_100
+2025-11-09 10:02:39 - kg_builder.services.schema_parser - INFO -    - Schemas: ['newdqnov7']
+2025-11-09 10:02:39 - kg_builder.services.schema_parser - INFO -    - Nodes: 10
+2025-11-09 10:02:39 - kg_builder.services.schema_parser - INFO -    - Relationships: 5
+2025-11-09 10:02:39 - kg_builder.services.schema_parser - INFO -    - Table aliases: {'hana_material_master': ['Material Master', 'Product Information', 'Inventory Details'], 'brz_lnd_RBP_GPU': ['Product Line', 'Fiscal Year', 'Overall Result'], 'brz_lnd_SKU_LIFNR_Excel': ['SKU Supplier Excel', 'Material Supplier Excel', 'Production BOM Supplier', 'Lead Time Locations'], 'brz_lnd_OPS_EXCEL_GPU': ['OPS', 'Excel GPU', 'Operations Excel'], 'brz_lnd_SAR_Excel_GPU': ['SAR Excel GPU', 'Financial Results', 'Material Analysis'], 'brz_lnd_SAR_Excel_NBU': ['SAR Excel NBU', 'Fiscal Results', 'Material Analysis'], 'brz_lnd_OPS_EXCEL_NBU': ['Operations Excel NBU', 'Inventory Control', 'Product Mapping'], 'brz_lnd_RBP_NBU': ['Product Analysis', 'Business Unit Performance', 'Overall Results'], 'brz_lnd_SAR_UNK_GPU': ['Unknown Material', 'SAR Material', 'GPU Material'], 'brz_lnd_SAR_UNK_NBU': ['SAR Material', 'Unknown Material', 'NBU Material']}
+2025-11-09 10:02:39 - kg_builder.services.schema_parser - INFO -    - Metadata: {}
+2025-11-09 10:02:39 - kg_builder.services.schema_parser - INFO - ✅ Built merged KG 'Demo_KG_100' from 1 schemas with 10 nodes and 5 relationships
+2025-11-09 10:02:39 - kg_builder.routes - INFO - Adding 14 explicit relationship pairs to KG
+2025-11-09 10:02:39 - kg_builder.services.kg_relationship_service - INFO - ✅ Relationship normalizer initialized in kg_relationship_service
+2025-11-09 10:02:39 - kg_builder.routes - INFO - Using default excluded fields
+2025-11-09 10:02:39 - kg_builder.routes - INFO - Filtered pairs: 14 → 14
+2025-11-09 10:02:39 - relationship_direction_normalizer - INFO - Swapping relationship direction: hana_material_master → brz_lnd_SAR_Excel_NBU becomes brz_lnd_SAR_Excel_NBU → hana_material_master
+2025-11-09 10:02:39 - relationship_direction_normalizer - INFO - Swapping relationship direction: hana_material_master → brz_lnd_SAR_Excel_GPU becomes brz_lnd_SAR_Excel_GPU → hana_material_master
+2025-11-09 10:02:39 - relationship_direction_normalizer - INFO - Swapping relationship direction: hana_material_master → brz_lnd_SAR_UNK_GPU becomes brz_lnd_SAR_UNK_GPU → hana_material_master
+2025-11-09 10:02:39 - relationship_direction_normalizer - INFO - Swapping relationship direction: hana_material_master → brz_lnd_SAR_UNK_NBU becomes brz_lnd_SAR_UNK_NBU → hana_material_master
+2025-11-09 10:02:39 - kg_builder.services.kg_relationship_service - INFO - Added 27 explicit relationship(s) to KG
+2025-11-09 10:02:39 - kg_builder.routes - INFO - Added 27 explicit relationship pairs to KG
+2025-11-09 10:02:39 - kg_builder.services.graphiti_backend - ERROR - Error creating graph in Graphiti: uri must be provided when graph_driver is None
+2025-11-09 10:02:39 - kg_builder.services.graphiti_backend - INFO - 💾 Storing metadata for KG 'Demo_KG_100':
+2025-11-09 10:02:39 - kg_builder.services.graphiti_backend - INFO -    - table_aliases from kg: {'hana_material_master': ['Material Master', 'Product Information', 'Inventory Details'], 'brz_lnd_RBP_GPU': ['Product Line', 'Fiscal Year', 'Overall Result'], 'brz_lnd_SKU_LIFNR_Excel': ['SKU Supplier Excel', 'Material Supplier Excel', 'Production BOM Supplier', 'Lead Time Locations'], 'brz_lnd_OPS_EXCEL_GPU': ['OPS', 'Excel GPU', 'Operations Excel'], 'brz_lnd_SAR_Excel_GPU': ['SAR Excel GPU', 'Financial Results', 'Material Analysis'], 'brz_lnd_SAR_Excel_NBU': ['SAR Excel NBU', 'Fiscal Results', 'Material Analysis'], 'brz_lnd_OPS_EXCEL_NBU': ['Operations Excel NBU', 'Inventory Control', 'Product Mapping'], 'brz_lnd_RBP_NBU': ['Product Analysis', 'Business Unit Performance', 'Overall Results'], 'brz_lnd_SAR_UNK_GPU': ['Unknown Material', 'SAR Material', 'GPU Material'], 'brz_lnd_SAR_UNK_NBU': ['SAR Material', 'Unknown Material', 'NBU Material']}
+2025-11-09 10:02:39 - kg_builder.services.graphiti_backend - INFO -    - kg.metadata: {}
+2025-11-09 10:02:39 - kg_builder.services.graphiti_backend - INFO -    - Final metadata to store: {'name': 'Demo_KG_100', 'schema_file': 'newdqnov7', 'created_at': '2025-11-09T10:02:39.032768', 'nodes_count': 10, 'relationships_count': 32, 'table_aliases': {'hana_material_master': ['Material Master', 'Product Information', 'Inventory Details'], 'brz_lnd_RBP_GPU': ['Product Line', 'Fiscal Year', 'Overall Result'], 'brz_lnd_SKU_LIFNR_Excel': ['SKU Supplier Excel', 'Material Supplier Excel', 'Production BOM Supplier', 'Lead Time Locations'], 'brz_lnd_OPS_EXCEL_GPU': ['OPS', 'Excel GPU', 'Operations Excel'], 'brz_lnd_SAR_Excel_GPU': ['SAR Excel GPU', 'Financial Results', 'Material Analysis'], 'brz_lnd_SAR_Excel_NBU': ['SAR Excel NBU', 'Fiscal Results', 'Material Analysis'], 'brz_lnd_OPS_EXCEL_NBU': ['Operations Excel NBU', 'Inventory Control', 'Product Mapping'], 'brz_lnd_RBP_NBU': ['Product Analysis', 'Business Unit Performance', 'Overall Results'], 'brz_lnd_SAR_UNK_GPU': ['Unknown Material', 'SAR Material', 'GPU Material'], 'brz_lnd_SAR_UNK_NBU': ['SAR Material', 'Unknown Material', 'NBU Material']}}
+2025-11-09 10:02:39 - kg_builder.services.graphiti_backend - INFO - ✅ Stored graph 'Demo_KG_100' locally at /app/data/graphiti_storage/Demo_KG_100
+2025-11-09 10:02:39 - INFO - 10.129.0.36:45914 - "POST /v1/kg/generate HTTP/1.1" 200
+2025-11-09 10:02:39 - INFO - 10.128.0.2:46126 - "GET / HTTP/1.1" 200
+2025-11-09 10:02:39 - INFO - 10.128.0.2:46140 - "GET / HTTP/1.1" 200
+2025-11-09 10:02:39 - INFO - 10.128.0.2:44076 - "GET / HTTP/1.1" 200
+2025-11-09 10:02:39 - INFO - 10.128.0.2:44082 - "GET / HTTP/1.1" 200
+2025-11-09 10:02:39 - INFO - 10.128.0.2:44090 - "GET / HTTP/1.1" 200
+2025-11-09 10:02:39 - INFO - 10.128.0.2:38038 - "GET / HTTP/1.1" 200
+2025-11-09 10:02:39 - INFO - 10.128.0.2:38048 - "GET / HTTP/1.1" 200
+2025-11-09 10:02:39 - INFO - 10.128.0.2:38062 - "GET / HTTP/1.1" 200
+2025-11-09 10:02:39 - INFO - 10.128.0.2:60364 - "GET / HTTP/1.1" 200
+2025-11-09 10:02:39 - INFO - 10.128.0.2:60372 - "GET / HTTP/1.1" 200
+2025-11-09 10:02:39 - INFO - 10.128.0.2:60374 - "GET / HTTP/1.1" 200
+2025-11-09 10:02:40 - INFO - 10.129.0.36:35992 - "GET /v1/schemas HTTP/1.1" 200
+2025-11-09 10:02:40 - INFO - 10.129.0.36:35996 - "GET /v1/llm/status HTTP/1.1" 200
+2025-11-09 10:02:40 - INFO - 10.129.0.36:35998 - "GET /v1/kg HTTP/1.1" 200
+2025-11-09 10:02:42 - INFO - 10.128.0.2:32912 - "GET / HTTP/1.1" 200
+2025-11-09 10:02:47 - INFO - 10.128.0.2:32922 - "GET / HTTP/1.1" 200
+2025-11-09 10:02:52 - INFO - 10.128.0.2:43246 - "GET / HTTP/1.1" 200
+2025-11-09 10:02:57 - INFO - 10.128.0.2:43260 - "GET / HTTP/1.1" 200
+2025-11-09 10:03:02 - INFO - 10.128.0.2:42734 - "GET / HTTP/1.1" 200
+2025-11-09 10:03:07 - INFO - 10.128.0.2:42748 - "GET / HTTP/1.1" 200

@@ -135,6 +135,17 @@ export default function KnowledgeGraph() {
   };
 
   const handleGenerate = async () => {
+    // Validate kg_name before submission
+    if (!formData.kg_name || formData.kg_name.trim() === '') {
+      setError('Please enter a Knowledge Graph name');
+      return;
+    }
+
+    if (formData.kg_name.toLowerCase() === 'default') {
+      setError('Please enter a valid Knowledge Graph name (not "default")');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setSuccess(null);
@@ -693,7 +704,13 @@ export default function KnowledgeGraph() {
                     size="small"
                     startIcon={loading ? <CircularProgress size={16} color="inherit" /> : <Add sx={{ fontSize: 18 }} />}
                     onClick={handleGenerate}
-                    disabled={loading || !formData.kg_name || formData.schema_names.length === 0}
+                    disabled={
+                      loading ||
+                      !formData.kg_name ||
+                      formData.kg_name.trim() === '' ||
+                      formData.kg_name.toLowerCase() === 'default' ||
+                      formData.schema_names.length === 0
+                    }
                     fullWidth
                     aria-label={loading ? 'Generating knowledge graph' : 'Generate knowledge graph'}
                     sx={{

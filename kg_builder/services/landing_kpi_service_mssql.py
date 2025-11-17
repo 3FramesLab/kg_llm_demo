@@ -6,14 +6,18 @@ Manages KPI definitions and execution results in MS SQL Server instead of SQLite
 import logging
 import json
 import pyodbc
+import time
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 from datetime import datetime
 
 from kg_builder.config import (
-    SOURCE_DB_HOST, SOURCE_DB_PORT, SOURCE_DB_DATABASE, 
+    SOURCE_DB_HOST, SOURCE_DB_PORT, SOURCE_DB_DATABASE,
     SOURCE_DB_USERNAME, SOURCE_DB_PASSWORD
 )
+from kg_builder.services.enhanced_sql_generator import EnhancedSQLGenerator
+from kg_builder.services.nl_query_executor import NLQueryExecutor
+from kg_builder.services.llm_sql_generator import LLMSQLGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -311,9 +315,151 @@ class LandingKPIServiceMSSQL:
 
     def execute_kpi(self, kpi_id: int, execution_params: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a KPI and return results with enhanced SQL."""
-        # For now, just create an execution record
-        # The actual execution will be handled by the executor service
-        return self.create_execution_record(kpi_id, execution_params)
+        logger.info(f"🚀 Starting KPI execution for KPI ID: {kpi_id}")
+
+        # Get KPI definition
+        kpi = self.get_kpi(kpi_id)
+        if not kpi:
+            raise ValueError(f"KPI with ID {kpi_id} not found")
+
+        # Get KG name from execution params or use default
+        kg_name = execution_params.get('kg_name', 'default_kg')
+
+        # Create execution record
+        execution_record = self.create_execution_record(kpi_id, execution_params)
+        execution_id = execution_record['id']
+
+        start_time = time.time()
+
+        try:
+            logger.info(f"🔧 Initializing SQL generators and executor")
+
+            # Get excluded fields from KG metadata if available
+            excluded_fields = None
+            if hasattr(kg, 'metadata') and kg.metadata:
+                excluded_fields = kg.metadata.get('excluded_fields', [])
+                if excluded_fields:
+                    logger.info(f"📋 Using {len(excluded_fields)} excluded fields from KG metadata")
+                    logger.debug(f"Excluded fields: {excluded_fields}")
+                else:
+                    logger.info("📋 No excluded fields found in KG metadata")
+
+            # Initialize enhanced SQL generator
+            original_generator = LLMSQLGenerator()
+            enhanced_generator = EnhancedSQLGenerator(original_generator)
+
+            # Initialize query executor with enhanced generator and excluded fields awareness
+            executor = NLQueryExecutor()
+            executor.sql_generator = enhanced_generator  # Use enhanced generator
+
+            # Set excluded fields on the query parser if available
+            if hasattr(executor, 'query_parser') and executor.query_parser and excluded_fields:
+                executor.query_parser.excluded_fields = set(excluded_fields)
+                logger.info(f"✅ Applied {len(excluded_fields)} excluded fields to query parser")
+
+            logger.info(f"⚡ Executing KPI query: {kpi['nl_definition']}")
+
+            # Execute the KPI query
+            result = executor.execute_query(
+                query=kpi['nl_definition'],
+                kg_name=kg_name,
+                select_schema=execution_params.get('select_schema', 'newdqnov7'),
+                limit_records=execution_params.get('limit_records', 1000)
+            )
+
+            execution_time_ms = (time.time() - start_time) * 1000
+
+            logger.info(f"✅ Query execution completed in {execution_time_ms:.2f}ms")
+
+            # Prepare result data for storage (with both original and enhanced SQL)
+            generated_sql = result.get('generated_sql')
+
+            # Check if SQL was enhanced with material master and ops_planner
+            try:
+                from kg_builder.services.material_master_enhancer import material_master_enhancer
+                enhancement_result = material_master_enhancer.enhance_sql_with_material_master(generated_sql) if generated_sql else None
+            except ImportError:
+                logger.warning("Material master enhancer not available, skipping enhancement")
+                enhancement_result = None
+
+            result_data = {
+                'generated_sql': generated_sql,  # Original SQL
+                'enhanced_sql': enhancement_result['enhanced_sql'] if enhancement_result and enhancement_result['enhancement_applied'] else generated_sql,  # Enhanced SQL
+                'number_of_records': len(result.get('data', [])),
+                'joined_columns': result.get('joined_columns', []),
+                'sql_query_type': result.get('query_type'),
+                'operation': result.get('operation'),
+                'execution_status': 'success' if result.get('success') else 'error',
+                'execution_time_ms': execution_time_ms,
+                'confidence_score': result.get('confidence_score'),
+                'error_message': result.get('error'),
+                'result_data': result.get('data', []),
+                'evidence_data': result.get('evidence_data', []),
+                'source_table': result.get('source_table'),
+                'target_table': result.get('target_table'),
+                'enhancement_applied': enhancement_result['enhancement_applied'] if enhancement_result else False,
+                'material_master_added': enhancement_result['material_master_added'] if enhancement_result else False,
+                'ops_planner_added': enhancement_result['ops_planner_added'] if enhancement_result else False
+            }
+
+            # Update execution record with results
+            logger.info(f"💾 Updating execution record {execution_id} with results")
+            updated_execution = self.update_execution_result(execution_id, result_data)
+
+            # Return the complete execution data
+            return {
+                'execution_id': execution_id,
+                'kpi_id': kpi_id,
+                'kpi_name': kpi['name'],
+                'kpi_alias_name': kpi.get('alias_name'),
+                'execution_status': result_data['execution_status'],
+                'number_of_records': result_data['number_of_records'],
+                'execution_time_ms': execution_time_ms,
+                'generated_sql': result_data['generated_sql'],
+                'enhanced_sql': result_data['enhanced_sql'],
+                'enhancement_applied': result_data['enhancement_applied'],
+                'material_master_added': result_data['material_master_added'],
+                'ops_planner_added': result_data['ops_planner_added'],
+                'confidence_score': result_data['confidence_score'],
+                'error_message': result_data.get('error_message'),
+                'data': result_data['result_data']
+            }
+
+        except Exception as exec_error:
+            # Store execution error but still include generated SQL if available
+            execution_time_ms = (time.time() - start_time) * 1000
+
+            logger.error(f"❌ KPI execution failed: {exec_error}")
+
+            error_data = {
+                'execution_status': 'error',
+                'execution_time_ms': execution_time_ms,
+                'error_message': str(exec_error),
+                'number_of_records': 0,
+                'result_data': []
+            }
+
+            # Update execution record with error
+            self.update_execution_result(execution_id, error_data)
+
+            # Return error response
+            return {
+                'execution_id': execution_id,
+                'kpi_id': kpi_id,
+                'kpi_name': kpi['name'],
+                'kpi_alias_name': kpi.get('alias_name'),
+                'execution_status': 'error',
+                'number_of_records': 0,
+                'execution_time_ms': execution_time_ms,
+                'generated_sql': None,
+                'enhanced_sql': None,
+                'enhancement_applied': False,
+                'material_master_added': False,
+                'ops_planner_added': False,
+                'confidence_score': None,
+                'error_message': str(exec_error),
+                'data': []
+            }
 
     def create_execution_record(self, kpi_id: int, execution_params: Dict[str, Any]) -> Dict[str, Any]:
         """Create a new execution record for a KPI."""

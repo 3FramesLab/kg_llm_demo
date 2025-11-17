@@ -40,6 +40,7 @@ import KPIExecutionHistory from '../components/KPIExecutionHistory';
 import KPIDrilldown from '../components/KPIDrilldown';
 import ScheduleManagement from '../components/ScheduleManagement';
 import ScheduleMonitoringDashboard from '../components/ScheduleMonitoringDashboard';
+import { executeCachedKPI } from '../services/api';
 
 const LandingKPIManagement = () => {
   const navigate = useNavigate();
@@ -55,6 +56,7 @@ const LandingKPIManagement = () => {
   const [selectedExecution, setSelectedExecution] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const [activeTab, setActiveTab] = useState(0);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [monitoringDialogOpen, setMonitoringDialogOpen] = useState(false);
@@ -72,6 +74,80 @@ const LandingKPIManagement = () => {
   const handleExecuteKPI = (kpi) => {
     setSelectedKPI(kpi);
     setExecutionDialogOpen(true);
+  };
+
+  const handleExecuteCachedKPI = (kpi) => {
+    setSelectedKPI(kpi);
+    // Execute cached SQL directly without dialog
+    executeCachedSQL(kpi);
+  };
+
+  const executeCachedSQL = async (kpi) => {
+    try {
+      console.log('🚀 Executing cached SQL for KPI:', kpi.id, kpi.name);
+
+      // Show loading message and clear any previous error
+      setErrorMessage('');
+      setSuccessMessage('Executing cached SQL...');
+
+      // Default execution parameters for cached SQL
+      const executionParams = {
+        kg_name: 'default_kg',
+        select_schema: 'newdqschemanov',
+        db_type: 'sqlserver',
+        limit_records: 1000,
+        use_llm: false,
+        definitions: [],
+        schemas: [],
+        min_confidence: 0.7
+      };
+
+      // Execute cached SQL
+      const response = await executeCachedKPI(kpi.id, executionParams);
+
+      console.log('✅ Cached SQL execution response:', response);
+
+      if (response.data && response.data.success) {
+        console.log('Cached SQL execution completed successfully');
+        console.log('Execution ID:', response.data.execution_id);
+        console.log('Records:', response.data.number_of_records);
+
+        setSuccessMessage(`Cached SQL executed successfully! ${response.data.number_of_records} records returned.`);
+        setRefreshTrigger((prev) => prev + 1);
+
+        // Navigate to execution history page after successful execution
+        console.log('Navigating to execution history for KPI:', kpi.id);
+        const historyPath = `/landing-kpi/${kpi.id}/history`;
+        console.log('Navigation path:', historyPath);
+
+        // Small delay to show success message briefly, then navigate
+        setTimeout(() => {
+          navigate(historyPath);
+        }, 1500);
+
+      } else {
+        throw new Error(response.data?.message || 'Cached SQL execution failed');
+      }
+
+    } catch (error) {
+      console.error('❌ Cached SQL execution failed:', error);
+
+      let errorMsg = 'Failed to execute cached SQL';
+      if (error.response?.data?.message) {
+        errorMsg = error.response.data.message;
+      } else if (error.response?.data?.detail) {
+        errorMsg = error.response.data.detail;
+      } else if (error.message) {
+        errorMsg = error.message;
+      }
+
+      // Clear any success message and show error message
+      setSuccessMessage('');
+      setErrorMessage(errorMsg);
+
+      // Clear error message after 5 seconds
+      setTimeout(() => setErrorMessage(''), 5000);
+    }
   };
 
   const handleViewHistory = (kpi) => {
@@ -201,6 +277,25 @@ const LandingKPIManagement = () => {
         </Box>
       </Slide>
 
+      {/* Animated Error Message */}
+      <Slide direction="down" in={!!errorMessage} mountOnEnter unmountOnExit>
+        <Box sx={{ mb: 1.5 }}>
+          <Alert
+            severity="error"
+            onClose={() => setErrorMessage('')}
+            sx={{
+              borderRadius: 2,
+              boxShadow: 2,
+              '& .MuiAlert-message': {
+                fontWeight: 500,
+              },
+            }}
+          >
+            {errorMessage}
+          </Alert>
+        </Box>
+      </Slide>
+
       {/* Main Content with Enhanced Styling */}
       <Paper
         elevation={0}
@@ -307,6 +402,7 @@ const LandingKPIManagement = () => {
                 <KPIList
                   onEdit={handleEditKPI}
                   onExecute={handleExecuteKPI}
+                  onExecuteCached={handleExecuteCachedKPI}
                   onViewHistory={handleViewHistory}
                   onManageSchedule={handleManageSchedule}
                   refreshTrigger={refreshTrigger}

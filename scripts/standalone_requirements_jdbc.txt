@@ -1,0 +1,40 @@
+# Requirements for standalone_sql_preview_jdbc.py
+# Install with: pip install -r standalone_requirements_jdbc.txt
+
+# Core dependencies for JDBC version
+jaydebeapi>=1.2.3
+openai>=1.0.0
+
+# Java/JDBC dependencies
+# Note: You also need Java installed and JDBC drivers for your database
+
+# Optional dependencies for enhanced functionality
+requests>=2.25.0
+urllib3>=1.26.0
+
+# Development dependencies (optional)
+pytest>=6.0.0
+black>=21.0.0
+flake8>=3.8.0
+
+# JDBC Driver Notes:
+# ===================
+# You need to download the appropriate JDBC drivers for your database:
+#
+# SQL Server:
+#   Download: mssql-jdbc-*.jar from Microsoft
+#   URL: https://docs.microsoft.com/en-us/sql/connect/jdbc/download-microsoft-jdbc-driver-for-sql-server
+#
+# MySQL:
+#   Download: mysql-connector-j-*.jar from MySQL
+#   URL: https://dev.mysql.com/downloads/connector/j/
+#
+# PostgreSQL:
+#   Download: postgresql-*.jar from PostgreSQL
+#   URL: https://jdbc.postgresql.org/download.html
+#
+# Oracle:
+#   Download: ojdbc*.jar from Oracle
+#   URL: https://www.oracle.com/database/technologies/appdev/jdbc-downloads.html
+#
+# Place the JAR files in a directory and specify the path with --jdbc-drivers-path

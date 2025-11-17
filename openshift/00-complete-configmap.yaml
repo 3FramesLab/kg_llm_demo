@@ -1,0 +1,117 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kg-builder-app-config
+  namespace: cognito-ai-dq-dev
+  labels:
+    app: kg-builder-backend
+    component: config
+data:
+  # ======================
+  # LOGGING CONFIGURATION
+  # ======================
+  LOG_LEVEL: "DEBUG"
+
+  # ======================
+  # FALKORDB CONFIGURATION
+  # ======================
+  FALKORDB_HOST: "redis-cluster-service.cognito-ai-redis-dev.svc.cluster.local"
+  FALKORDB_PORT: "6379"
+  FALKORDB_DB: "0"
+  FALKORDB_PASSWORD: "devredis123!"
+
+  # ======================
+  # OPENAI CONFIGURATION
+  # ======================
+  OPENAI_MODEL: "gpt-4o"
+  OPENAI_TEMPERATURE: "0.0"
+  OPENAI_MAX_TOKENS: "2000"
+  ENABLE_LLM_EXTRACTION: "true"
+  ENABLE_LLM_ANALYSIS: "true"
+
+  # ======================
+  # RECONCILIATION SETTINGS
+  # ======================
+  RECON_STORAGE_PATH: "reconciliation_rules"
+  RECON_MIN_CONFIDENCE: "0.7"
+  RECON_ENABLE_LLM: "true"
+  RECON_SAMPLE_SIZE: "100"
+
+  # ======================
+  # SOURCE DATABASE (MSSQL)
+  # ======================
+  SOURCE_DB_TYPE: "mssql"
+  SOURCE_DB_HOST: "mssql.cognito-ai-dq-dev.svc.cluster.local"
+  SOURCE_DB_PORT: "1433"
+  SOURCE_DB_DATABASE: "reconciliation_db"
+  SOURCE_DB_SCHEMA: "orderMgmt-catalog"
+  SOURCE_DB_USERNAME: "SA"
+  SOURCE_DB_SERVICE_NAME: ""
+
+  # ======================
+  # TARGET DATABASE (MSSQL)
+  # ======================
+  TARGET_DB_TYPE: "mssql"
+  TARGET_DB_HOST: "mssql.cognito-ai-dq-dev.svc.cluster.local"
+  TARGET_DB_PORT: "1433"
+  TARGET_DB_DATABASE: "reconciliation_db"
+  TARGET_DB_SCHEMA: "qinspect-designcode"
+  TARGET_DB_USERNAME: "SA"
+  TARGET_DB_SERVICE_NAME: ""
+
+  # ======================
+  # KPI DATABASE (SQL Server)
+  # ======================
+  KPI_DB_TYPE: "sqlserver"
+  KPI_DB_HOST: "mssql.cognito-ai-dq-dev.svc.cluster.local"
+  KPI_DB_PORT: "1433"
+  KPI_DB_DATABASE: "KPI_Analytics"
+  KPI_DB_USERNAME: "sa"
+  KPI_DB_SERVICE_NAME: ""
+
+  # ======================
+  # KPI STORAGE SETTINGS
+  # ======================
+  KPI_STORAGE_TYPE: "file"
+  KPI_RESULTS_RETENTION_DAYS: "90"
+  KPI_ENABLE_CACHING: "true"
+
+  # ======================
+  # MONGODB CONFIGURATION
+  # ======================
+  MONGODB_HOST: "localhost"
+  MONGODB_PORT: "27017"
+  MONGODB_USERNAME: "admin"
+  MONGODB_DATABASE: "reconciliation"
+  MONGODB_AUTH_SOURCE: "admin"
+  MONGODB_RESULTS_COLLECTION: "reconciliation_results"
+
+  # ======================
+  # LANDING DATABASE (MySQL)
+  # ======================
+  LANDING_DB_ENABLED: "false"
+  LANDING_DB_TYPE: "mysql"
+  LANDING_DB_HOST: "localhost"
+  LANDING_DB_PORT: "3306"
+  LANDING_DB_DATABASE: "reconciliation_landing"
+  LANDING_DB_USERNAME: ""
+  LANDING_DB_SCHEMA: "staging"
+  LANDING_KEEP_STAGING: "true"
+  LANDING_STAGING_TTL_HOURS: "24"
+  LANDING_BATCH_SIZE: "10000"
+  LANDING_USE_BULK_COPY: "true"
+
+  # ======================
+  # EXECUTION SETTINGS
+  # ======================
+  USE_ENV_DB_CONFIGS: "true"
+
+  # ======================
+  # JDBC SETTINGS
+  # ======================
+  JDBC_DRIVERS_PATH: "/app/jdbc_drivers"
+
+  # ======================
+  # RESULTS DATABASE
+  # ======================
+  RESULTS_DB_PATH: "reconciliation_results.db"

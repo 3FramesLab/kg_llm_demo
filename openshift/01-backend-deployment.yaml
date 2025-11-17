@@ -1,0 +1,191 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kg-builder-backend
+  namespace: cognito-ai-dq-dev
+  labels:
+    app: kg-builder-backend
+    component: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kg-builder-backend
+  template:
+    metadata:
+      labels:
+        app: kg-builder-backend
+        deployment: kg-builder-backend
+        component: backend
+    spec:
+      containers:
+        - name: backend
+          image: image-registry.openshift-image-registry.svc:5000/cognito-ai-dq-dev/kg-builder-backend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+              protocol: TCP
+          env:
+            - name: LOG_LEVEL
+              value: "DEBUG"
+            - name: FALKORDB_HOST
+              value: "redis-cluster-service.cognito-ai-redis-dev.svc.cluster.local"
+            - name: FALKORDB_PORT
+              value: "6379"
+            - name: FALKORDB_PASSWORD
+              value: ""
+            - name: OPENAI_MODEL
+              value: "gpt-4o"
+            - name: OPENAI_TEMPERATURE
+              value: "0.0"
+            - name: OPENAI_MAX_TOKENS
+              value: "2000"
+            - name: ENABLE_LLM_EXTRACTION
+              value: "true"
+            - name: ENABLE_LLM_ANALYSIS
+              value: "true"
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openai-secret
+                  key: OPENAI_API_KEY
+                  optional: true
+            # MSSQL Database Configuration
+            - name: MSSQL_HOST
+              value: "mssql.cognito-ai-dq-dev.svc.cluster.local"
+            - name: MSSQL_PORT
+              value: "1433"
+            - name: MSSQL_DATABASE
+              value: "reconciliation_db"
+            - name: MSSQL_USERNAME
+              value: "SA"
+            - name: MSSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mssql-secret
+                  key: SA_PASSWORD
+            # Source Database (MSSQL) - Used by landing_kpi_service_mssql
+            - name: SOURCE_DB_TYPE
+              value: "mssql"
+            - name: SOURCE_DB_HOST
+              value: "mssql.cognito-ai-dq-dev.svc.cluster.local"
+            - name: SOURCE_DB_PORT
+              value: "1433"
+            - name: SOURCE_DB_NAME
+              value: "NewDQ"
+            - name: SOURCE_DB_DATABASE
+              value: "NewDQ"
+            - name: SOURCE_DB_SCHEMA
+              value: "dbo"
+            - name: SOURCE_DB_USERNAME
+              value: "sa"
+            - name: SOURCE_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mssql-secret
+                  key: SA_PASSWORD
+            # Target Database (MSSQL)
+            - name: TARGET_DB_TYPE
+              value: "mssql"
+            - name: TARGET_DB_HOST
+              value: "mssql.cognito-ai-dq-dev.svc.cluster.local"
+            - name: TARGET_DB_PORT
+              value: "1433"
+            - name: TARGET_DB_NAME
+              value: "NewDQ"
+            - name: TARGET_DB_DATABASE
+              value: "NewDQ"
+            - name: TARGET_DB_SCHEMA
+              value: "dbo"
+            - name: TARGET_DB_USERNAME
+              value: "sa"
+            - name: TARGET_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mssql-secret
+                  key: SA_PASSWORD
+            # KPI Database Configuration
+            - name: KPI_DB_TYPE
+              value: "sqlserver"
+            - name: KPI_DB_HOST
+              value: "mssql.cognito-ai-dq-dev.svc.cluster.local"
+            - name: KPI_DB_PORT
+              value: "1433"
+            - name: KPI_DB_DATABASE
+              value: "KPI_Analytics"
+            - name: KPI_DB_USERNAME
+              value: "sa"
+            - name: KPI_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mssql-secret
+                  key: SA_PASSWORD
+            # JDBC Configuration
+            - name: JDBC_DRIVERS_PATH
+              value: "/app/jdbc_drivers"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8000
+              scheme: HTTP
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8000
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          volumeMounts:
+            - name: app-data
+              mountPath: /app/data
+            - name: app-logs
+              mountPath: /app/logs
+            - name: graphiti-storage
+              mountPath: /app/data/graphiti_storage
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: app-data
+          persistentVolumeClaim:
+            claimName: kg-builder-data-storage
+        - name: app-logs
+          emptyDir: {}
+        - name: graphiti-storage
+          persistentVolumeClaim:
+            claimName: kg-builder-graphiti-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kg-builder-backend-service
+  namespace: cognito-ai-dq-dev
+  labels:
+    app: kg-builder-backend
+spec:
+  selector:
+    app: kg-builder-backend
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8000
+      targetPort: 8000
+  type: ClusterIP

@@ -38,10 +38,23 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 
-# Install runtime dependencies
+# Install runtime dependencies (JRE for JDBC, unixodbc for pyodbc)
 RUN apt-get update && apt-get install -y \
     default-jre \
+    wget \
     curl \
+    unixodbc \
+    unixodbc-dev \
+    gnupg2 \
+    apt-transport-https \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Microsoft ODBC Driver 17 for SQL Server
+RUN wget -qO /usr/share/keyrings/microsoft-prod.asc https://packages.microsoft.com/keys/microsoft.asc \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft-prod.asc] https://packages.microsoft.com/debian/11/prod bullseye main" > /etc/apt/sources.list.d/mssql-release.list \
+    && apt-get update \
+    && ACCEPT_EULA=Y apt-get install -y msodbcsql17 \
     && rm -rf /var/lib/apt/lists/*
 
 # Create app user (non-root for security)
@@ -49,6 +62,12 @@ RUN apt-get update && apt-get install -y \
 RUN useradd -m -u 1001 -g 0 appuser && \
     mkdir -p /app /app/data /app/schemas /app/jdbc_drivers && \
     chown -R appuser:0 /app
+
+# Download MSSQL JDBC driver
+RUN wget -q https://repo1.maven.org/maven2/com/microsoft/sqlserver/mssql-jdbc/12.4.2.jre11/mssql-jdbc-12.4.2.jre11.jar \
+    -O /app/jdbc_drivers/mssql-jdbc-12.4.2.jre11.jar && \
+    chown appuser:0 /app/jdbc_drivers/mssql-jdbc-12.4.2.jre11.jar && \
+    chmod 664 /app/jdbc_drivers/mssql-jdbc-12.4.2.jre11.jar
 
 # Set working directory
 WORKDIR /app

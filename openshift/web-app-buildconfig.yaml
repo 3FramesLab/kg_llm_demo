@@ -1,0 +1,20 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: kg-builder-frontend
+  namespace: cognito-ai-dq-dev
+  labels:
+    app: kg-builder-frontend
+spec:
+  output:
+    to:
+      kind: ImageStreamTag
+      name: kg-builder-frontend:latest
+  source:
+    type: Binary
+    binary: {}
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+  triggers: []

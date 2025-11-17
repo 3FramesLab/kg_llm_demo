@@ -1,0 +1,28 @@
+2025-11-10 16:31:10,860 - __main__ - INFO - execute_kpi_strict:622 - ================================================================================
+2025-11-10 16:31:10,864 - __main__ - INFO - execute_kpi_strict:626 - ================================================================================
+2025-11-10 16:31:10,985 - __main__ - ERROR - create_execution_record:327 - Failed to create execution record for KPI 19: ('42S22', "[42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'created_at'. (207) (SQLExecDirectW); [42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Statement(s) could not be prepared. (8180)")
+2025-11-10 16:31:10,986 - __main__ - ERROR - main:798 - Fatal error during execution
+Traceback (most recent call last):
+  File "D:\learning\repos\cognito_ai_dq_api\standalone_kpi_executor_robust.py", line 294, in create_execution_record
+    cursor.execute("""
+pyodbc.ProgrammingError: ('42S22', "[42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'created_at'. (207) (SQLExecDirectW); [42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Statement(s) could not be prepared. (8180)")
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\learning\repos\cognito_ai_dq_api\standalone_kpi_executor_robust.py", line 646, in execute_kpi_strict
+    execution_id = create_execution_record(kpi_id, execution_params)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\learning\repos\cognito_ai_dq_api\standalone_kpi_executor_robust.py", line 328, in create_execution_record
+    raise RuntimeError(error_msg) from e
+RuntimeError: Failed to create execution record for KPI 19: ('42S22', "[42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'created_at'. (207) (SQLExecDirectW); [42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Statement(s) could not be prepared. (8180)")
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\learning\repos\cognito_ai_dq_api\standalone_kpi_executor_robust.py", line 777, in main
+    result = execute_kpi_strict(KPI_ID, EXECUTION_PARAMS)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\learning\repos\cognito_ai_dq_api\standalone_kpi_executor_robust.py", line 750, in execute_kpi_strict
+    raise RuntimeError(error_msg) from e
+RuntimeError: KPI execution failed: Failed to create execution record for KPI 19: ('42S22', "[42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'created_at'. (207) (SQLExecDirectW); [42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Statement(s) could not be prepared. (8180)")

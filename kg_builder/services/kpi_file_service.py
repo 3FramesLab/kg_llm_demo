@@ -8,6 +8,7 @@ Provides CRUD operations for KPIs, execution logic, and evidence drill-down.
 import json
 import os
 import logging
+import time
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 from pathlib import Path
@@ -242,54 +243,172 @@ class KPIFileService:
 
     def execute_kpi(self, kpi_id: str, ruleset_id: Optional[str] = None) -> Dict[str, Any]:
         """Execute a KPI and save the result."""
+        execution_start_time = time.time()
+        logger.info("="*100)
+        logger.info(f"🚀 KPI FILE SERVICE EXECUTION STARTED")
+        logger.info(f"   KPI ID: '{kpi_id}'")
+        logger.info(f"   Ruleset ID: '{ruleset_id}'")
+        logger.info(f"   Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+        logger.info("="*100)
+
         try:
-            # Get KPI definition
+            # Step 1: Load KPI definition
+            logger.info(f"📖 STEP 1: Loading KPI Definition")
+            logger.info(f"   Target KPI ID: '{kpi_id}'")
+
+            definition_start = time.time()
             kpi = self.get_kpi_definition(kpi_id)
+            definition_time = (time.time() - definition_start) * 1000
+
             if not kpi:
+                logger.error(f"❌ KPI definition not found in {definition_time:.2f}ms")
                 raise Exception(f"KPI not found: {kpi_id}")
 
-            # Use provided ruleset_id or default from KPI
+            logger.info(f"✅ KPI definition loaded in {definition_time:.2f}ms")
+            logger.info(f"   KPI Name: '{kpi.get('kpi_name', 'UNNAMED')}'")
+            logger.info(f"   KPI Type: '{kpi.get('kpi_type', 'UNKNOWN')}'")
+            logger.info(f"   Description: '{kpi.get('description', 'NOT_SET')}'")
+            logger.info(f"   Default Ruleset: '{kpi.get('ruleset_id', 'NOT_SET')}'")
+            logger.info(f"   Has Thresholds: {bool(kpi.get('thresholds'))}")
+            logger.info(f"   Definition Keys: {list(kpi.keys())}")
+
+            # Step 2: Determine target ruleset
+            logger.info(f"🎯 STEP 2: Determining Target Ruleset")
+
             target_ruleset_id = ruleset_id or kpi.get('ruleset_id')
+            logger.info(f"   Provided Ruleset ID: '{ruleset_id}'")
+            logger.info(f"   KPI Default Ruleset: '{kpi.get('ruleset_id')}'")
+            logger.info(f"   Final Target Ruleset: '{target_ruleset_id}'")
 
-            # Execute query based on KPI type
+            if not target_ruleset_id:
+                logger.error(f"❌ No ruleset ID available")
+                raise Exception(f"No ruleset ID provided or configured for KPI {kpi_id}")
+
+            logger.info(f"✅ Target ruleset determined: '{target_ruleset_id}'")
+
+            # Step 3: Execute KPI query
+            logger.info(f"⚡ STEP 3: Executing KPI Query")
             kpi_type = kpi.get('kpi_type')
+            logger.info(f"   KPI Type: '{kpi_type}'")
+            logger.info(f"   Target Ruleset: '{target_ruleset_id}'")
+
+            query_start = time.time()
             query_result = self._execute_kpi_query(kpi_type, target_ruleset_id)
+            query_time = (time.time() - query_start) * 1000
 
-            # Calculate value
+            logger.info(f"✅ KPI query executed in {query_time:.2f}ms")
+            logger.info(f"   Query Result Type: {type(query_result).__name__}")
+            logger.info(f"   Query Result Keys: {list(query_result.keys()) if isinstance(query_result, dict) else 'N/A'}")
+            logger.info(f"   Query Result: {query_result}")
+
+            # Step 4: Calculate KPI value
+            logger.info(f"🧮 STEP 4: Calculating KPI Value")
+            logger.info(f"   KPI Type: '{kpi_type}'")
+            logger.info(f"   Input Metrics: {query_result}")
+
+            calculation_start = time.time()
             calculated_value = self._calculate_kpi_value(kpi_type, query_result)
+            calculation_time = (time.time() - calculation_start) * 1000
 
-            # Determine status
+            logger.info(f"✅ KPI value calculated in {calculation_time:.2f}ms")
+            logger.info(f"   Calculated Value: {calculated_value}")
+            logger.info(f"   Value Type: {type(calculated_value).__name__}")
+
+            # Step 5: Determine status based on thresholds
+            logger.info(f"📊 STEP 5: Determining Status")
             thresholds = kpi.get('thresholds', {})
-            status = self._determine_status(calculated_value, thresholds)
+            logger.info(f"   Thresholds: {thresholds}")
+            logger.info(f"   Calculated Value: {calculated_value}")
 
-            # Create result document
+            status_start = time.time()
+            status = self._determine_status(calculated_value, thresholds)
+            status_time = (time.time() - status_start) * 1000
+
+            logger.info(f"✅ Status determined in {status_time:.2f}ms")
+            logger.info(f"   Final Status: '{status}'")
+
+            # Step 6: Create result document
+            logger.info(f"📋 STEP 6: Creating Result Document")
+
+            result_creation_start = time.time()
+            result_id = str(uuid.uuid4())
+            execution_timestamp = datetime.utcnow().isoformat()
+
             result = {
-                "result_id": str(uuid.uuid4()),
+                "result_id": result_id,
                 "kpi_id": kpi_id,
                 "kpi_name": kpi.get('kpi_name'),
                 "kpi_type": kpi_type,
                 "ruleset_id": target_ruleset_id,
-                "execution_timestamp": datetime.utcnow().isoformat(),
+                "execution_timestamp": execution_timestamp,
                 "calculated_value": calculated_value,
                 "status": status,
                 "metrics": query_result,
                 "thresholds": thresholds,
                 "execution_details": {
                     "kpi_type": kpi_type,
-                    "data_source": "reconciliation_results"
+                    "data_source": "reconciliation_results",
+                    "execution_time_ms": 0,  # Will be updated below
+                    "query_time_ms": query_time,
+                    "calculation_time_ms": calculation_time,
+                    "status_time_ms": status_time
                 }
             }
 
-            # Save result
-            result_id = self.save_kpi_result(result)
-            result['result_id'] = result_id
+            result_creation_time = (time.time() - result_creation_start) * 1000
+            logger.info(f"✅ Result document created in {result_creation_time:.2f}ms")
+            logger.info(f"   Result ID: '{result_id}'")
+            logger.info(f"   Document Size: {len(str(result))} characters")
 
-            logger.info(f"Executed KPI {kpi_id}: value={calculated_value}, status={status}")
+            # Step 7: Save result to file
+            logger.info(f"💾 STEP 7: Saving Result to File")
+
+            save_start = time.time()
+            saved_result_id = self.save_kpi_result(result)
+            save_time = (time.time() - save_start) * 1000
+
+            result['result_id'] = saved_result_id
+            total_execution_time = (time.time() - execution_start_time) * 1000
+            result['execution_details']['execution_time_ms'] = total_execution_time
+
+            logger.info(f"✅ Result saved in {save_time:.2f}ms")
+            logger.info(f"   Saved Result ID: '{saved_result_id}'")
+
+            # Step 8: Log final success summary
+            logger.info("="*100)
+            logger.info(f"🎉 KPI FILE SERVICE EXECUTION COMPLETED SUCCESSFULLY")
+            logger.info(f"   KPI ID: '{kpi_id}'")
+            logger.info(f"   KPI Name: '{kpi.get('kpi_name')}'")
+            logger.info(f"   Ruleset ID: '{target_ruleset_id}'")
+            logger.info(f"   Calculated Value: {calculated_value}")
+            logger.info(f"   Status: '{status}'")
+            logger.info(f"   Result ID: '{saved_result_id}'")
+            logger.info(f"   Total Execution Time: {total_execution_time:.2f}ms")
+            logger.info(f"   Performance Breakdown:")
+            logger.info(f"      Definition Loading: {definition_time:.2f}ms")
+            logger.info(f"      Query Execution: {query_time:.2f}ms")
+            logger.info(f"      Value Calculation: {calculation_time:.2f}ms")
+            logger.info(f"      Status Determination: {status_time:.2f}ms")
+            logger.info(f"      Result Creation: {result_creation_time:.2f}ms")
+            logger.info(f"      File Saving: {save_time:.2f}ms")
+            logger.info("="*100)
 
             return result
 
         except Exception as e:
-            logger.error(f"Error executing KPI {kpi_id}: {e}")
+            total_execution_time = (time.time() - execution_start_time) * 1000
+            error_type = type(e).__name__
+            error_message = str(e)
+
+            logger.error("="*100)
+            logger.error(f"❌ KPI FILE SERVICE EXECUTION FAILED")
+            logger.error(f"   KPI ID: '{kpi_id}'")
+            logger.error(f"   Ruleset ID: '{ruleset_id}'")
+            logger.error(f"   Total Execution Time: {total_execution_time:.2f}ms")
+            logger.error(f"   Error Type: {error_type}")
+            logger.error(f"   Error Message: {error_message}")
+            logger.error("="*100)
+            logger.error(f"Full error details:", exc_info=True)
             raise
 
     def save_kpi_result(self, result_dict: Dict[str, Any]) -> str:
@@ -477,9 +596,33 @@ class KPIFileService:
 
     def _execute_kpi_query(self, kpi_type: str, ruleset_id: str) -> Dict[str, Any]:
         """Execute KPI calculation query based on type."""
+        query_start_time = time.time()
+        logger.info(f"⚡ KPI QUERY EXECUTION STARTED")
+        logger.info(f"   KPI Type: '{kpi_type}'")
+        logger.info(f"   Ruleset ID: '{ruleset_id}'")
+
         try:
+            # Step 1: Establish database connection
+            logger.info(f"🔌 STEP 1: Establishing Database Connection")
+
+            connection_start = time.time()
             conn = get_database_connection()
+            connection_time = (time.time() - connection_start) * 1000
+
+            if not conn:
+                logger.error(f"❌ Database connection failed in {connection_time:.2f}ms")
+                raise Exception("Could not establish database connection")
+
+            logger.info(f"✅ Database connected in {connection_time:.2f}ms")
+
             cursor = conn.cursor()
+            logger.info(f"   Cursor created: {type(cursor).__name__}")
+
+            # Step 2: Determine query based on KPI type
+            logger.info(f"📝 STEP 2: Determining Query for KPI Type")
+            logger.info(f"   KPI Type: '{kpi_type}'")
+
+            query_determination_start = time.time()
 
             if kpi_type == "match_rate" or kpi_type == "match_percentage":
                 query = """
@@ -489,75 +632,159 @@ class KPIFileService:
                     FROM reconciliation_results
                     WHERE ruleset_id = ?
                 """
-                cursor.execute(query, (ruleset_id,))
-                row = cursor.fetchone()
-
-                return {
-                    "matched_count": row[0] if row else 0,
-                    "total_count": row[1] if row else 0
-                }
+                expected_columns = ["matched_count", "total_count"]
+                logger.info(f"   Selected: Match Rate/Percentage Query")
 
             elif kpi_type == "unmatched_source_count":
                 query = """
-                    SELECT COUNT(*) as unmatched_count
+                    SELECT COUNT(*) as unmatched_source_count
                     FROM reconciliation_results
                     WHERE ruleset_id = ? AND match_status = 'unmatched_source'
                 """
-                cursor.execute(query, (ruleset_id,))
-                row = cursor.fetchone()
-
-                return {"unmatched_count": row[0] if row else 0}
+                expected_columns = ["unmatched_source_count"]
+                logger.info(f"   Selected: Unmatched Source Count Query")
 
             elif kpi_type == "unmatched_target_count":
                 query = """
-                    SELECT COUNT(*) as unmatched_count
+                    SELECT COUNT(*) as unmatched_target_count
                     FROM reconciliation_results
                     WHERE ruleset_id = ? AND match_status = 'unmatched_target'
                 """
-                cursor.execute(query, (ruleset_id,))
-                row = cursor.fetchone()
+                expected_columns = ["unmatched_target_count"]
+                logger.info(f"   Selected: Unmatched Target Count Query")
 
-                return {"unmatched_count": row[0] if row else 0}
-
-            elif kpi_type == "inactive_record_count":
+            elif kpi_type == "total_records":
                 query = """
-                    SELECT COUNT(*) as inactive_count
+                    SELECT COUNT(*) as total_records
                     FROM reconciliation_results
-                    WHERE ruleset_id = ? AND match_status = 'inactive'
+                    WHERE ruleset_id = ?
                 """
-                cursor.execute(query, (ruleset_id,))
-                row = cursor.fetchone()
-
-                return {"inactive_count": row[0] if row else 0}
-
-            elif kpi_type == "data_quality_score":
-                query = """
-                    SELECT
-                        AVG(CAST(match_confidence AS REAL)) as avg_confidence,
-                        COUNT(*) as total_records
-                    FROM reconciliation_results
-                    WHERE ruleset_id = ? AND match_status = 'matched'
-                """
-                cursor.execute(query, (ruleset_id,))
-                row = cursor.fetchone()
-
-                return {
-                    "avg_confidence": row[0] if row and row[0] else 0.0,
-                    "total_records": row[1] if row else 0
-                }
+                expected_columns = ["total_records"]
+                logger.info(f"   Selected: Total Records Query")
 
             else:
-                logger.warning(f"Unknown KPI type: {kpi_type}")
-                return {}
+                query_determination_time = (time.time() - query_determination_start) * 1000
+                logger.error(f"❌ Unsupported KPI type '{kpi_type}' in {query_determination_time:.2f}ms")
+                raise ValueError(f"Unsupported KPI type: {kpi_type}")
+
+            query_determination_time = (time.time() - query_determination_start) * 1000
+            logger.info(f"✅ Query determined in {query_determination_time:.2f}ms")
+            logger.info(f"   Expected Columns: {expected_columns}")
+            logger.info(f"   Query Preview: {query.strip()[:100]}...")
+
+            # Step 3: Execute the query
+            logger.info(f"🔄 STEP 3: Executing SQL Query")
+            logger.info(f"   Parameters: ['{ruleset_id}']")
+
+            execution_start = time.time()
+            cursor.execute(query, (ruleset_id,))
+            execution_time = (time.time() - execution_start) * 1000
+
+            logger.info(f"✅ Query executed in {execution_time:.2f}ms")
+
+            # Step 4: Fetch and process results
+            logger.info(f"📊 STEP 4: Fetching Results")
+
+            fetch_start = time.time()
+            row = cursor.fetchone()
+            fetch_time = (time.time() - fetch_start) * 1000
+
+            logger.info(f"✅ Results fetched in {fetch_time:.2f}ms")
+            logger.info(f"   Raw Result: {row}")
+            logger.info(f"   Result Type: {type(row).__name__}")
+
+            # Step 5: Process results based on KPI type
+            logger.info(f"🔄 STEP 5: Processing Results")
+
+            processing_start = time.time()
+
+            if kpi_type == "match_rate" or kpi_type == "match_percentage":
+                result = {
+                    "matched_count": row[0] if row else 0,
+                    "total_count": row[1] if row else 0
+                }
+                logger.info(f"   Match Rate/Percentage Result:")
+                logger.info(f"      Matched Count: {result['matched_count']}")
+                logger.info(f"      Total Count: {result['total_count']}")
+
+            elif kpi_type == "unmatched_source_count":
+                result = {
+                    "unmatched_source_count": row[0] if row else 0
+                }
+                logger.info(f"   Unmatched Source Count: {result['unmatched_source_count']}")
+
+            elif kpi_type == "unmatched_target_count":
+                result = {
+                    "unmatched_target_count": row[0] if row else 0
+                }
+                logger.info(f"   Unmatched Target Count: {result['unmatched_target_count']}")
+
+            elif kpi_type == "total_records":
+                result = {
+                    "total_records": row[0] if row else 0
+                }
+                logger.info(f"   Total Records: {result['total_records']}")
+
+            processing_time = (time.time() - processing_start) * 1000
+            total_query_time = (time.time() - query_start_time) * 1000
+
+            logger.info(f"✅ Results processed in {processing_time:.2f}ms")
+
+            # Step 6: Close database resources
+            logger.info(f"🔒 STEP 6: Closing Database Resources")
+
+            cleanup_start = time.time()
+            cursor.close()
+            conn.close()
+            cleanup_time = (time.time() - cleanup_start) * 1000
+
+            logger.info(f"✅ Database resources closed in {cleanup_time:.2f}ms")
+
+            # Final summary
+            logger.info("="*80)
+            logger.info(f"🎉 KPI QUERY EXECUTION COMPLETED SUCCESSFULLY")
+            logger.info(f"   KPI Type: '{kpi_type}'")
+            logger.info(f"   Ruleset ID: '{ruleset_id}'")
+            logger.info(f"   Total Query Time: {total_query_time:.2f}ms")
+            logger.info(f"   Result: {result}")
+            logger.info(f"   Performance Breakdown:")
+            logger.info(f"      Connection: {connection_time:.2f}ms")
+            logger.info(f"      Query Determination: {query_determination_time:.2f}ms")
+            logger.info(f"      SQL Execution: {execution_time:.2f}ms")
+            logger.info(f"      Result Fetching: {fetch_time:.2f}ms")
+            logger.info(f"      Result Processing: {processing_time:.2f}ms")
+            logger.info(f"      Cleanup: {cleanup_time:.2f}ms")
+            logger.info("="*80)
+
+            return result
 
         except Exception as e:
-            logger.error(f"Error executing KPI query: {e}")
-            return {}
-        finally:
-            if 'cursor' in locals():
-                cursor.close()
-            if 'conn' in locals():
-                conn.close()
+            total_query_time = (time.time() - query_start_time) * 1000
+            error_type = type(e).__name__
+            error_message = str(e)
+
+            logger.error("="*80)
+            logger.error(f"❌ KPI QUERY EXECUTION FAILED")
+            logger.error(f"   KPI Type: '{kpi_type}'")
+            logger.error(f"   Ruleset ID: '{ruleset_id}'")
+            logger.error(f"   Total Query Time: {total_query_time:.2f}ms")
+            logger.error(f"   Error Type: {error_type}")
+            logger.error(f"   Error Message: {error_message}")
+            logger.error("="*80)
+            logger.error(f"Full query error details:", exc_info=True)
+
+            # Attempt to close database resources if they exist
+            try:
+                if 'cursor' in locals() and cursor:
+                    cursor.close()
+                    logger.info(f"   Cursor closed during error cleanup")
+                if 'conn' in locals() and conn:
+                    conn.close()
+                    logger.info(f"   Connection closed during error cleanup")
+            except Exception as cleanup_error:
+                logger.error(f"   Error during cleanup: {cleanup_error}")
+
+            raise Exception(f"KPI query execution failed for {kpi_type}: {error_message}") from e
 
     def _calculate_kpi_value(self, kpi_type: str, query_result: Dict[str, Any]) -> float:
         """Calculate KPI value from query results."""

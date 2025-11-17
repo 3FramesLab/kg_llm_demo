@@ -144,9 +144,17 @@ FEATURE_FLAGS = {
 
 def get_kpi_connection_string() -> str:
     """Get KPI Analytics database connection string."""
+    # Handle named SQL Server instances (contains backslash)
+    if '\\' in KPI_DB_HOST:
+        # Named instance - don't include port
+        server_part = KPI_DB_HOST
+    else:
+        # Default instance or IP - include port
+        server_part = f"{KPI_DB_HOST},{KPI_DB_PORT}"
+
     return (
         f"DRIVER={{ODBC Driver 17 for SQL Server}};"
-        f"SERVER={KPI_DB_HOST},{KPI_DB_PORT};"
+        f"SERVER={server_part};"
         f"DATABASE={KPI_DB_DATABASE};"
         f"UID={KPI_DB_USERNAME};"
         f"PWD={KPI_DB_PASSWORD};"

@@ -11,6 +11,7 @@ This service handles:
 
 import logging
 import json
+import time
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -110,69 +111,179 @@ class KPIExecutor:
         Returns:
             KPIResult with calculated value and status
         """
+        calculation_start_time = time.time()
+        logger.info("="*100)
+        logger.info(f"🧮 KPI CALCULATION STARTED")
+        logger.info(f"   KPI ID: '{kpi_config.kpi_id}'")
+        logger.info(f"   KPI Name: '{kpi_config.kpi_name}'")
+        logger.info(f"   KPI Type: '{kpi_config.kpi_type}'")
+        logger.info(f"   Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+        logger.info("="*100)
+
         try:
+            # Step 1: Validate input parameters
+            logger.info(f"📋 STEP 1: Validating Input Parameters")
+            logger.info(f"   Matched Count: {matched_count}")
+            logger.info(f"   Unmatched Source Count: {unmatched_source_count}")
+            logger.info(f"   Unmatched Target Count: {unmatched_target_count}")
+            logger.info(f"   Total Source Count: {total_source_count}")
+            logger.info(f"   Inactive Count: {inactive_count}")
+            logger.info(f"   Execution Time: {execution_time_ms}ms")
+
+            # Validate counts are non-negative
+            if any(count < 0 for count in [matched_count, unmatched_source_count, unmatched_target_count, total_source_count, inactive_count]):
+                raise ValueError("All count parameters must be non-negative")
+
+            # Validate total consistency
+            calculated_total = matched_count + unmatched_source_count
+            if calculated_total > total_source_count:
+                logger.warning(f"   ⚠️ Inconsistent counts: matched({matched_count}) + unmatched_source({unmatched_source_count}) = {calculated_total} > total({total_source_count})")
+
+            logger.info(f"✅ Input parameters validated")
+
+            # Step 2: Initialize calculation variables
+            logger.info(f"🔧 STEP 2: Initializing Calculation")
             calculated_value = 0.0
             calculation_details = {}
 
-            # Calculate based on KPI type
+            logger.info(f"   Initial calculated value: {calculated_value}")
+            logger.info(f"   KPI Type to process: '{kpi_config.kpi_type}'")
+
+            # Step 3: Calculate based on KPI type
+            logger.info(f"⚡ STEP 3: Performing KPI Type-Specific Calculation")
+
             if kpi_config.kpi_type == KPIType.MATCH_RATE:
+                logger.info(f"   Processing MATCH_RATE calculation")
+                logger.info(f"      Matched Count: {matched_count}")
+                logger.info(f"      Total Source Count: {total_source_count}")
+
                 if total_source_count > 0:
                     calculated_value = (matched_count / total_source_count) * 100
+                    logger.info(f"      Formula: ({matched_count} / {total_source_count}) * 100 = {calculated_value}")
+                else:
+                    calculated_value = 0.0
+                    logger.warning(f"      Total source count is 0, setting value to 0")
+
                 calculation_details = {
                     "matched_count": matched_count,
                     "total_source_count": total_source_count,
-                    "formula": "(matched_count / total_source_count) * 100"
+                    "formula": "(matched_count / total_source_count) * 100",
+                    "division_by_zero": total_source_count == 0
                 }
 
             elif kpi_config.kpi_type == KPIType.MATCH_PERCENTAGE:
+                logger.info(f"   Processing MATCH_PERCENTAGE calculation")
+                logger.info(f"      Matched Count: {matched_count}")
+                logger.info(f"      Total Source Count: {total_source_count}")
+
                 if total_source_count > 0:
                     calculated_value = (matched_count / total_source_count) * 100
+                    logger.info(f"      Formula: ({matched_count} / {total_source_count}) * 100 = {calculated_value}")
+                else:
+                    calculated_value = 0.0
+                    logger.warning(f"      Total source count is 0, setting value to 0")
+
                 calculation_details = {
                     "matched_count": matched_count,
                     "total_source_count": total_source_count,
-                    "formula": "(matched_count / total_source_count) * 100"
+                    "formula": "(matched_count / total_source_count) * 100",
+                    "division_by_zero": total_source_count == 0
                 }
 
             elif kpi_config.kpi_type == KPIType.UNMATCHED_SOURCE_COUNT:
+                logger.info(f"   Processing UNMATCHED_SOURCE_COUNT calculation")
+                logger.info(f"      Unmatched Source Count: {unmatched_source_count}")
+
                 calculated_value = float(unmatched_source_count)
+                logger.info(f"      Formula: unmatched_source_count = {calculated_value}")
+
                 calculation_details = {
                     "unmatched_source_count": unmatched_source_count,
                     "formula": "unmatched_source_count"
                 }
 
             elif kpi_config.kpi_type == KPIType.UNMATCHED_TARGET_COUNT:
+                logger.info(f"   Processing UNMATCHED_TARGET_COUNT calculation")
+                logger.info(f"      Unmatched Target Count: {unmatched_target_count}")
+
                 calculated_value = float(unmatched_target_count)
+                logger.info(f"      Formula: unmatched_target_count = {calculated_value}")
+
                 calculation_details = {
                     "unmatched_target_count": unmatched_target_count,
                     "formula": "unmatched_target_count"
                 }
 
             elif kpi_config.kpi_type == KPIType.INACTIVE_RECORD_COUNT:
+                logger.info(f"   Processing INACTIVE_RECORD_COUNT calculation")
+                logger.info(f"      Inactive Count: {inactive_count}")
+
                 calculated_value = float(inactive_count)
+                logger.info(f"      Formula: inactive_count = {calculated_value}")
+
                 calculation_details = {
                     "inactive_count": inactive_count,
                     "formula": "inactive_count"
                 }
 
             elif kpi_config.kpi_type == KPIType.DATA_QUALITY_SCORE:
-                # Data quality score: (matched + (total - unmatched_target)) / total * 100
+                logger.info(f"   Processing DATA_QUALITY_SCORE calculation")
+                logger.info(f"      Matched Count: {matched_count}")
+                logger.info(f"      Unmatched Source Count: {unmatched_source_count}")
+                logger.info(f"      Total Source Count: {total_source_count}")
+
                 if total_source_count > 0:
                     quality_records = matched_count + (total_source_count - unmatched_source_count)
                     calculated_value = (quality_records / total_source_count) * 100
+                    logger.info(f"      Quality Records: {matched_count} + ({total_source_count} - {unmatched_source_count}) = {quality_records}")
+                    logger.info(f"      Formula: ({quality_records} / {total_source_count}) * 100 = {calculated_value}")
+                else:
+                    calculated_value = 0.0
+                    logger.warning(f"      Total source count is 0, setting value to 0")
+
                 calculation_details = {
                     "matched_count": matched_count,
                     "unmatched_source_count": unmatched_source_count,
                     "total_source_count": total_source_count,
-                    "formula": "((matched + (total - unmatched_source)) / total) * 100"
+                    "quality_records": quality_records if total_source_count > 0 else 0,
+                    "formula": "((matched + (total - unmatched_source)) / total) * 100",
+                    "division_by_zero": total_source_count == 0
                 }
 
-            # Determine status based on thresholds
+            else:
+                logger.error(f"   ❌ Unsupported KPI type: '{kpi_config.kpi_type}'")
+                raise ValueError(f"Unsupported KPI type: {kpi_config.kpi_type}")
+
+            logger.info(f"✅ STEP 3 COMPLETED: Calculation finished")
+            logger.info(f"   Final Calculated Value: {calculated_value}")
+            logger.info(f"   Calculation Details: {calculation_details}")
+
+            # Step 4: Determine status based on thresholds
+            logger.info(f"📊 STEP 4: Determining Status Based on Thresholds")
+            logger.info(f"   Calculated Value: {calculated_value}")
+            logger.info(f"   Thresholds Configuration: {kpi_config.thresholds}")
+
+            if kpi_config.thresholds:
+                logger.info(f"   Warning Threshold: {kpi_config.thresholds.warning_threshold}")
+                logger.info(f"   Critical Threshold: {kpi_config.thresholds.critical_threshold}")
+                logger.info(f"   Comparison Operator: {kpi_config.thresholds.comparison_operator}")
+            else:
+                logger.info(f"   No thresholds configured")
+
+            status_start = time.time()
             status = self._determine_status(
                 calculated_value,
                 kpi_config.thresholds
             )
+            status_time = (time.time() - status_start) * 1000
 
-            # Create result
+            logger.info(f"✅ STEP 4 COMPLETED: Status determined in {status_time:.2f}ms")
+            logger.info(f"   Final Status: '{status}'")
+
+            # Step 5: Create KPI result object
+            logger.info(f"📋 STEP 5: Creating KPI Result Object")
+
+            result_creation_start = time.time()
             result = KPIResult(
                 kpi_id=kpi_config.kpi_id,
                 kpi_name=kpi_config.kpi_name,
@@ -184,13 +295,47 @@ class KPIExecutor:
                 calculation_details=calculation_details
             )
 
-            logger.info(
-                f"Calculated KPI {kpi_config.kpi_id}: value={calculated_value:.2f}, status={status}"
-            )
+            result_creation_time = (time.time() - result_creation_start) * 1000
+            total_calculation_time = (time.time() - calculation_start_time) * 1000
+
+            logger.info(f"✅ STEP 5 COMPLETED: Result object created in {result_creation_time:.2f}ms")
+            logger.info(f"   Result Object Type: {type(result).__name__}")
+            logger.info(f"   Result KPI ID: '{result.kpi_id}'")
+            logger.info(f"   Result Status: '{result.status}'")
+            logger.info(f"   Result Value: {result.calculated_value}")
+
+            # Step 6: Final success summary
+            logger.info("="*100)
+            logger.info(f"🎉 KPI CALCULATION COMPLETED SUCCESSFULLY")
+            logger.info(f"   KPI ID: '{kpi_config.kpi_id}'")
+            logger.info(f"   KPI Name: '{kpi_config.kpi_name}'")
+            logger.info(f"   KPI Type: '{kpi_config.kpi_type}'")
+            logger.info(f"   Calculated Value: {calculated_value}")
+            logger.info(f"   Final Status: '{status}'")
+            logger.info(f"   Total Calculation Time: {total_calculation_time:.2f}ms")
+            logger.info(f"   Performance Breakdown:")
+            logger.info(f"      Status Determination: {status_time:.2f}ms")
+            logger.info(f"      Result Creation: {result_creation_time:.2f}ms")
+            logger.info(f"   Calculation Details: {calculation_details}")
+            logger.info("="*100)
+
             return result
 
         except Exception as e:
-            logger.error(f"Error calculating KPI: {e}")
+            total_calculation_time = (time.time() - calculation_start_time) * 1000
+            error_type = type(e).__name__
+            error_message = str(e)
+
+            logger.error("="*100)
+            logger.error(f"❌ KPI CALCULATION FAILED")
+            logger.error(f"   KPI ID: '{kpi_config.kpi_id}'")
+            logger.error(f"   KPI Name: '{kpi_config.kpi_name}'")
+            logger.error(f"   KPI Type: '{kpi_config.kpi_type}'")
+            logger.error(f"   Total Calculation Time: {total_calculation_time:.2f}ms")
+            logger.error(f"   Error Type: {error_type}")
+            logger.error(f"   Error Message: {error_message}")
+            logger.error("="*100)
+            logger.error(f"Full calculation error details:", exc_info=True)
             raise
 
     def _determine_status(self, value: float, thresholds: KPIThresholds) -> str:
@@ -204,33 +349,73 @@ class KPIExecutor:
         Returns:
             Status: "pass", "warning", or "critical"
         """
+        logger.info(f"🔍 STATUS DETERMINATION STARTED")
+        logger.info(f"   Input Value: {value}")
+        logger.info(f"   Thresholds: {thresholds}")
+
+        if not thresholds:
+            logger.info(f"   No thresholds provided, defaulting to 'pass'")
+            return "pass"
+
+        logger.info(f"   Warning Threshold: {thresholds.warning_threshold}")
+        logger.info(f"   Critical Threshold: {thresholds.critical_threshold}")
+        logger.info(f"   Comparison Operator: '{thresholds.comparison_operator}'")
+
         operator = thresholds.comparison_operator.lower()
+        logger.info(f"   Normalized Operator: '{operator}'")
 
         if operator == "less_than":
+            logger.info(f"   Using LESS_THAN logic")
+            logger.info(f"   Checking: {value} < {thresholds.critical_threshold} (critical)")
+
             if value < thresholds.critical_threshold:
+                logger.info(f"   ❌ CRITICAL: {value} < {thresholds.critical_threshold}")
                 return "critical"
-            elif value < thresholds.warning_threshold:
+
+            logger.info(f"   Checking: {value} < {thresholds.warning_threshold} (warning)")
+            if value < thresholds.warning_threshold:
+                logger.info(f"   ⚠️ WARNING: {value} < {thresholds.warning_threshold}")
                 return "warning"
             else:
+                logger.info(f"   ✅ PASS: {value} >= {thresholds.warning_threshold}")
                 return "pass"
 
         elif operator == "greater_than":
+            logger.info(f"   Using GREATER_THAN logic")
+            logger.info(f"   Checking: {value} > {thresholds.critical_threshold} (critical)")
+
             if value > thresholds.critical_threshold:
+                logger.info(f"   ❌ CRITICAL: {value} > {thresholds.critical_threshold}")
                 return "critical"
-            elif value > thresholds.warning_threshold:
+
+            logger.info(f"   Checking: {value} > {thresholds.warning_threshold} (warning)")
+            if value > thresholds.warning_threshold:
+                logger.info(f"   ⚠️ WARNING: {value} > {thresholds.warning_threshold}")
                 return "warning"
             else:
+                logger.info(f"   ✅ PASS: {value} <= {thresholds.warning_threshold}")
                 return "pass"
 
         elif operator == "equal_to":
+            logger.info(f"   Using EQUAL_TO logic")
+            logger.info(f"   Checking: {value} == {thresholds.critical_threshold} (critical)")
+
             if value == thresholds.critical_threshold:
+                logger.info(f"   ❌ CRITICAL: {value} == {thresholds.critical_threshold}")
                 return "critical"
-            elif value == thresholds.warning_threshold:
+
+            logger.info(f"   Checking: {value} == {thresholds.warning_threshold} (warning)")
+            if value == thresholds.warning_threshold:
+                logger.info(f"   ⚠️ WARNING: {value} == {thresholds.warning_threshold}")
                 return "warning"
             else:
+                logger.info(f"   ✅ PASS: {value} != thresholds")
                 return "pass"
 
-        return "pass"
+        else:
+            logger.warning(f"   ⚠️ Unknown comparison operator: '{operator}', defaulting to 'pass'")
+            logger.warning(f"   Supported operators: 'less_than', 'greater_than', 'equal_to'")
+            return "pass"
 
     def store_kpi_result(
         self,

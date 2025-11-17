@@ -1,0 +1,15 @@
+# Requirements for standalone_sql_preview.py
+# Install with: pip install -r standalone_requirements.txt
+
+# Core dependencies
+openai>=1.0.0
+pyodbc>=4.0.0
+
+# Optional dependencies for enhanced functionality
+requests>=2.25.0
+urllib3>=1.26.0
+
+# Development dependencies (optional)
+pytest>=6.0.0
+black>=21.0.0
+flake8>=3.8.0

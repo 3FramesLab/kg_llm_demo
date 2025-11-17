@@ -25,6 +25,7 @@ const KPIExecutionDialog = ({ open, kpi, onClose, onSuccess, fullScreen }) => {
   const [formData, setFormData] = useState({
     kg_name: '',
     schemas: [],
+    select_schema: '', // Add explicit select_schema field
     definitions: [],
     use_llm: true,
     min_confidence: 0.8, // Hardcoded value
@@ -95,7 +96,8 @@ const KPIExecutionDialog = ({ open, kpi, onClose, onSuccess, fullScreen }) => {
     const { value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      schemas: [value], // Single schema selection
+      schemas: [value], // Keep for backward compatibility
+      select_schema: value, // Add explicit select_schema
     }));
   };
 
@@ -105,7 +107,11 @@ const KPIExecutionDialog = ({ open, kpi, onClose, onSuccess, fullScreen }) => {
       setError('Knowledge Graph name is required');
       return;
     }
-    if (!formData.schemas || formData.schemas.length === 0) {
+    if (formData.kg_name.toLowerCase() === 'default') {
+      setError('Please select a valid Knowledge Graph (not "default")');
+      return;
+    }
+    if (!formData.select_schema || formData.select_schema.trim() === '') {
       setError('Schema is required');
       return;
     }
@@ -249,7 +255,14 @@ const KPIExecutionDialog = ({ open, kpi, onClose, onSuccess, fullScreen }) => {
         <Button
           onClick={handleExecute}
           variant="contained"
-          disabled={executing}
+          disabled={
+            executing ||
+            !formData.kg_name ||
+            formData.kg_name.trim() === '' ||
+            formData.kg_name.toLowerCase() === 'default' ||
+            !formData.select_schema ||
+            formData.select_schema.trim() === ''
+          }
           startIcon={executing ? <CircularProgress size={20} /> : null}
           fullWidth={isMobile}
           sx={{ ml: isMobile ? 0 : 1, mt: isMobile ? 1 : 0 }}

@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kg-builder-logging-config
+  namespace: cognito-ai-dq-dev
+  labels:
+    app: kg-builder-backend
+    component: config
+data:
+  LOG_LEVEL: "DEBUG"
+  LOG_FORMAT: "detailed"
+  ENABLE_REQUEST_LOGGING: "true"
+  ENABLE_RESPONSE_LOGGING: "true"
+  ENABLE_SQL_LOGGING: "true"
+  ENABLE_FUNCTION_TIMING: "true"
+  LOG_REQUEST_BODY: "true"
+  LOG_RESPONSE_BODY: "true"
+  LOG_MAX_BODY_SIZE: "2000"
+  LOG_TRUNCATE_THRESHOLD: "1000"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kg-builder-app-config
+  namespace: cognito-ai-dq-dev
+  labels:
+    app: kg-builder-backend
+    component: config
+data:
+  # Logging Configuration
+  LOG_LEVEL: "DEBUG"
+
+  # FalkorDB Configuration
+  FALKORDB_HOST: "redis-cluster-service.cognito-ai-redis-dev.svc.cluster.local"
+  FALKORDB_PORT: "6379"
+  FALKORDB_PASSWORD: ""
+
+  # OpenAI Configuration
+  OPENAI_MODEL: "gpt-4o"
+  OPENAI_TEMPERATURE: "0.0"
+  OPENAI_MAX_TOKENS: "2000"
+  ENABLE_LLM_EXTRACTION: "true"
+  ENABLE_LLM_ANALYSIS: "true"
+
+  # MSSQL Database Configuration
+  MSSQL_HOST: "mssql.cognito-ai-dq-dev.svc.cluster.local"
+  MSSQL_PORT: "1433"
+  MSSQL_DATABASE: "reconciliation_db"
+  MSSQL_USERNAME: "SA"
+
+  # Source Database (MSSQL)
+  SOURCE_DB_TYPE: "mssql"
+  SOURCE_DB_HOST: "mssql.cognito-ai-dq-dev.svc.cluster.local"
+  SOURCE_DB_PORT: "1433"
+  SOURCE_DB_NAME: "reconciliation_db"
+  SOURCE_DB_SCHEMA: "orderMgmt-catalog"
+  SOURCE_DB_USERNAME: "SA"
+
+  # Target Database (MSSQL)
+  TARGET_DB_TYPE: "mssql"
+  TARGET_DB_HOST: "mssql.cognito-ai-dq-dev.svc.cluster.local"
+  TARGET_DB_PORT: "1433"
+  TARGET_DB_NAME: "reconciliation_db"
+  TARGET_DB_SCHEMA: "qinspect-designcode"
+  TARGET_DB_USERNAME: "SA"
+
+  # KPI Database Configuration
+  KPI_DB_TYPE: "sqlserver"
+  KPI_DB_HOST: "mssql.cognito-ai-dq-dev.svc.cluster.local"
+  KPI_DB_PORT: "1433"
+  KPI_DB_DATABASE: "KPI_Analytics"
+  KPI_DB_USERNAME: "sa"

@@ -109,24 +109,84 @@ class NLQueryParser:
         Returns:
             QueryIntent: Parsed query intent
         """
-        logger.info(f"Parsing definition: {definition}")
+        import time
+        parse_start_time = time.time()
 
-        # Step 1: Classify
+        logger.info("="*120)
+        logger.info(f"📝 NL QUERY PARSER: STARTING DEFINITION PARSING")
+        logger.info(f"   Definition: '{definition}'")
+        logger.info(f"   Use LLM: {use_llm}")
+        logger.info(f"   LLM Service Enabled: {self.llm_service.is_enabled() if hasattr(self, 'llm_service') else 'Unknown'}")
+        logger.info(f"   KG Available: {self.kg is not None}")
+        if self.kg:
+            logger.info(f"   KG Name: {self.kg.name}")
+            logger.info(f"   KG Tables: {len(self.kg.nodes)} nodes")
+        logger.info(f"   Schemas Available: {list(self.schemas_info.keys()) if self.schemas_info else 'None'}")
+        logger.info("="*120)
+
+        # STEP 1: Classify the definition
+        logger.info(f"🔍 STEP 1: CLASSIFYING DEFINITION")
+        classify_start = time.time()
+
+        logger.info(f"   Classifier Type: {type(self.classifier).__name__}")
+        logger.info(f"   Classifying definition...")
+
         def_type = self.classifier.classify(definition)
         operation = self.classifier.get_operation_type(definition)
 
-        # Step 2: Extract tables and details
-        if use_llm and self.llm_service.is_enabled():
-            intent = self._parse_with_llm(definition, def_type, operation)
-        else:
-            intent = self._parse_rule_based(definition, def_type, operation)
+        classify_time = (time.time() - classify_start) * 1000
+        logger.info(f"✅ Definition classified in {classify_time:.2f}ms")
+        logger.info(f"   Definition Type: {def_type}")
+        logger.info(f"   Operation Type: {operation}")
 
-        # Step 2.5: Resolve table names using mapper (business terms → actual table names)
+        # STEP 2: Extract tables and details
+        logger.info(f"🤖 STEP 2: EXTRACTING TABLES AND DETAILS")
+        extract_start = time.time()
+
+        if use_llm and self.llm_service.is_enabled():
+            logger.info(f"   Using LLM-based parsing...")
+            logger.info(f"   LLM Service: {type(self.llm_service).__name__}")
+            intent = self._parse_with_llm(definition, def_type, operation)
+            parsing_method = "LLM"
+        else:
+            logger.info(f"   Using rule-based parsing...")
+            logger.info(f"   Reason: use_llm={use_llm}, llm_enabled={self.llm_service.is_enabled()}")
+            intent = self._parse_rule_based(definition, def_type, operation)
+            parsing_method = "Rule-based"
+
+        extract_time = (time.time() - extract_start) * 1000
+        logger.info(f"✅ Tables extracted in {extract_time:.2f}ms using {parsing_method}")
+        logger.info(f"   Source Table: {intent.source_table}")
+        logger.info(f"   Target Table: {intent.target_table}")
+        logger.info(f"   Operation: {intent.operation}")
+        logger.info(f"   Confidence: {intent.confidence}")
+        logger.info(f"   Filters: {intent.filters}")
+
+        # STEP 2.5: Resolve table names using mapper
+        logger.info(f"🔄 STEP 2.5: RESOLVING TABLE NAMES")
+        resolve_start = time.time()
+
+        logger.info(f"   Table Mapper Type: {type(self.table_mapper).__name__}")
+        logger.info(f"   Original Source: {intent.source_table}")
+        logger.info(f"   Original Target: {intent.target_table}")
+
         intent = self._resolve_table_names(intent)
 
-        # Step 3: Use KG and schemas to find join columns
+        resolve_time = (time.time() - resolve_start) * 1000
+        logger.info(f"✅ Table names resolved in {resolve_time:.2f}ms")
+        logger.info(f"   Resolved Source: {intent.source_table}")
+        logger.info(f"   Resolved Target: {intent.target_table}")
+
+        # STEP 3: Find join columns from Knowledge Graph
+        logger.info(f"🔗 STEP 3: FINDING JOIN COLUMNS FROM KNOWLEDGE GRAPH")
+        join_start = time.time()
+
         if intent.source_table and intent.target_table:
+            logger.info(f"   Both source and target tables available")
+            logger.info(f"   Current join columns: {intent.join_columns}")
+
             if not intent.join_columns or len(intent.join_columns) == 0:
+                logger.info(f"   No join columns found, searching in KG...")
                 join_cols = self._find_join_columns_from_kg(
                     intent.source_table,
                     intent.target_table
@@ -134,18 +194,26 @@ class NLQueryParser:
                 if join_cols:
                     intent.join_columns = join_cols
                     intent.confidence = min(0.95, intent.confidence + 0.1)
-                    logger.info(f"✓ Successfully found join columns: {join_cols}")
+                    logger.info(f"✅ Successfully found join columns: {join_cols}")
                 else:
-                    logger.warning(f"⚠ No join columns found for {intent.source_table} ←→ {intent.target_table}")
+                    error_msg = f"No valid KG relationships found for {intent.source_table} ←→ {intent.target_table}"
+                    logger.error(f"❌ {error_msg}")
 
-                    # For comparison queries, this is critical
+                    # For comparison queries, this is critical - FAIL immediately
                     if intent.query_type == "comparison_query":
-                        logger.error(
-                            f"CRITICAL: Comparison query requires join columns but none were found. "
-                            f"Please ensure the KG has relationships between '{intent.source_table}' and '{intent.target_table}' "
-                            f"with 'source_column' and 'target_column' properties."
+                        detailed_error = (
+                            f"Cannot execute comparison query: {error_msg}. "
+                            f"All relationships may be marked as excluded (is_excluded: true). "
+                            f"Please add non-excluded relationships to the KG between "
+                            f"'{intent.source_table}' and '{intent.target_table}' with "
+                            f"'source_column' and 'target_column' properties."
                         )
-                        intent.confidence = 0.3  # Very low confidence
+                        logger.error(f"CRITICAL: {detailed_error}")
+                        raise ValueError(detailed_error)
+                    else:
+                        # For other query types, set very low confidence but continue
+                        logger.warning(f"⚠️ Proceeding with very low confidence due to missing join columns")
+                        intent.confidence = 0.1  # Very low confidence
 
         # Step 4: NEW - Extract and resolve additional columns from related tables
         if use_llm and self.llm_service.is_enabled() and intent.source_table:
@@ -451,24 +519,27 @@ class NLQueryParser:
 
     def _find_join_columns_from_kg(self, source: str, target: str) -> Optional[List[Tuple[str, str]]]:
         """
-        Find join columns using KG relationships.
+        Find join columns using KG relationships, strictly respecting is_excluded flags.
 
         Args:
             source: Source table name
             target: Target table name
 
         Returns:
-            List of (source_col, target_col) tuples
+            List of (source_col, target_col) tuples for valid (non-excluded) relationships
         """
         if not self.kg:
-            logger.warning("No KG available for join column inference")
+            logger.error("No KG available for join column inference")
             return None
 
         try:
-            logger.info(f"Searching KG for join columns between '{source}' and '{target}'")
+            logger.info(f"🔍 Searching KG for valid join columns between '{source}' and '{target}'")
             logger.info(f"KG has {len(self.kg.relationships)} relationships")
 
-            # Query KG for relationships between tables
+            # Collect all relationships between tables, checking exclusion status
+            valid_relationships = []
+            excluded_relationships = []
+
             for rel in self.kg.relationships:
                 source_id = rel.source_id.lower() if rel.source_id else ""
                 target_id = rel.target_id.lower() if rel.target_id else ""
@@ -485,24 +556,65 @@ class NLQueryParser:
                     logger.debug(f"Found matching relationship: {rel.source_id} → {rel.target_id} (type: {rel.relationship_type})")
                     logger.debug(f"Relationship properties: {rel.properties}")
 
-                    # Extract column names from relationship properties
-                    source_col = rel.properties.get("source_column") if rel.properties else None
-                    target_col = rel.properties.get("target_column") if rel.properties else None
+                    # Extract column names from relationship
+                    source_col = rel.source_column or (rel.properties.get("source_column") if rel.properties else None)
+                    target_col = rel.target_column or (rel.properties.get("target_column") if rel.properties else None)
+                    logger.debug(f"Resolved columns: source_col={source_col}, target_col={target_col}")
 
                     if source_col and target_col:
-                        # If relationship is in reverse direction, swap the columns
-                        if is_reverse:
-                            logger.info(f"✓ Found join columns from KG (reversed): {target_col} ←→ {source_col}")
-                            return [(target_col, source_col)]  # Swap columns for reverse direction
+                        # Check if relationship is excluded
+                        is_excluded = rel.properties.get('is_excluded', False) if rel.properties else False
+                        priority = rel.properties.get('priority', 0) if rel.properties else 0
+
+                        relationship_info = {
+                            'relationship': rel,
+                            'is_forward': is_forward,
+                            'is_reverse': is_reverse,
+                            'source_col': source_col,
+                            'target_col': target_col,
+                            'is_excluded': is_excluded,
+                            'priority': priority
+                        }
+
+                        if is_excluded:
+                            excluded_relationships.append(relationship_info)
+                            logger.debug(f"⚠️ Skipping excluded relationship: {source_col} ←→ {target_col} (priority: {priority})")
                         else:
-                            logger.info(f"✓ Found join columns from KG: {source_col} ←→ {target_col}")
-                            return [(source_col, target_col)]
+                            valid_relationships.append(relationship_info)
+                            logger.debug(f"✅ Found valid relationship: {source_col} ←→ {target_col} (priority: {priority})")
                     else:
                         logger.warning(f"Relationship found but missing columns: source_column={source_col}, target_column={target_col}")
 
-            logger.warning(f"No join columns found in KG for {source} ←→ {target}")
-            logger.warning("⚠️  KG is the single source of truth - no schema fallback. Ensure KG has complete relationships.")
-            return None
+            # If no valid relationships found, provide detailed error
+            if not valid_relationships:
+                if excluded_relationships:
+                    logger.error(f"❌ No valid join columns found for {source} ←→ {target}")
+                    logger.error(f"   All {len(excluded_relationships)} relationships are marked as excluded:")
+                    for rel_info in excluded_relationships:
+                        logger.error(f"   - {rel_info['source_col']} ←→ {rel_info['target_col']} (priority: {rel_info['priority']}, excluded: true)")
+                    logger.error(f"")
+                    logger.error(f"   To fix this:")
+                    logger.error(f"   1. Mark an existing relationship as non-excluded (is_excluded: false)")
+                    logger.error(f"   2. Add a new non-excluded relationship to the KG")
+                else:
+                    logger.error(f"❌ No relationships found in KG between '{source}' and '{target}'")
+                    logger.error(f"   To fix this: Add a relationship between these tables to the KG")
+
+                return None
+
+            # Select the best valid relationship (highest priority)
+            best_relationship = max(valid_relationships, key=lambda r: r['priority'])
+
+            # Return columns in correct order based on direction
+            if best_relationship['is_reverse']:
+                result = [(best_relationship['target_col'], best_relationship['source_col'])]
+                logger.info(f"✅ Found join columns from KG (reversed): {best_relationship['target_col']} ←→ {best_relationship['source_col']}")
+            else:
+                result = [(best_relationship['source_col'], best_relationship['target_col'])]
+                logger.info(f"✅ Found join columns from KG: {best_relationship['source_col']} ←→ {best_relationship['target_col']}")
+
+            logger.info(f"   Priority: {best_relationship['priority']}, Excluded: {best_relationship['is_excluded']}")
+            return result
 
         except Exception as e:
             logger.error(f"Error finding join columns from KG: {e}")
@@ -997,13 +1109,17 @@ Extract and return ONLY valid JSON with this structure (no other text):
                 logger.debug(f"BFS: Depth limit reached for path={path}")
                 continue
 
-            # Find relationships from current table
+            # Find relationships from current table, prioritizing non-excluded ones
+            relationships_from_current = []
+
             for rel in self.kg.relationships:
                 source_id = rel.source_id.lower() if rel.source_id else ""
                 target_id = rel.target_id.lower() if rel.target_id else ""
 
                 next_table = None
                 rel_conf = rel.properties.get("confidence", 0.75) if rel.properties else 0.75
+                is_excluded = rel.properties.get('is_excluded', False) if rel.properties else False
+                priority = rel.properties.get('priority', 0) if rel.properties else 0
 
                 # Handle both formats: "table_tablename" and "tablename"
                 current_lower = current.lower()
@@ -1030,21 +1146,44 @@ Extract and return ONLY valid JSON with this structure (no other text):
                             break
 
                 if next_table and next_table.lower() not in [t.lower() for t in path]:
-                    new_path = path + [next_table]
-                    new_conf = conf * rel_conf  # Multiply confidences
-                    queue.append((next_table, new_path, new_conf))
-                    logger.debug(f"BFS: Added {current} → {next_table} (conf={rel_conf})")
+                    # Calculate effective priority (non-excluded gets bonus)
+                    effective_priority = priority + (100 if not is_excluded else 0)
+
+                    relationships_from_current.append({
+                        'next_table': next_table,
+                        'path': path + [next_table],
+                        'confidence': conf * rel_conf,
+                        'is_excluded': is_excluded,
+                        'priority': priority,
+                        'effective_priority': effective_priority,
+                        'relationship': rel
+                    })
+
+            # Sort relationships by effective priority (non-excluded first, then by priority)
+            relationships_from_current.sort(key=lambda x: (-x['effective_priority'], -x['confidence']))
+
+            # Add relationships to queue, prioritizing non-excluded ones
+            for rel_info in relationships_from_current:
+                queue.append((rel_info['next_table'], rel_info['path'], rel_info['confidence']))
+
+                if rel_info['is_excluded']:
+                    logger.debug(f"BFS: Added {current} → {rel_info['next_table']} (conf={rel_info['confidence']:.2f}, EXCLUDED)")
+                else:
+                    logger.debug(f"BFS: Added {current} → {rel_info['next_table']} (conf={rel_info['confidence']:.2f}, non-excluded)")
 
         if not all_paths:
-            logger.warning(f"No join path found in KG between {source} and {target}")
+            logger.error(f"❌ No valid join path found in KG between {source} and {target}")
+            logger.error(f"   This may be because:")
+            logger.error(f"   1. No relationships exist between these tables in the KG")
+            logger.error(f"   2. All relationships are marked as excluded (is_excluded: true)")
+            logger.error(f"   3. Tables are not connected through valid intermediate tables")
+            logger.error(f"")
+            logger.error(f"   To fix this:")
+            logger.error(f"   1. Add non-excluded relationships to the KG between '{source}' and '{target}'")
+            logger.error(f"   2. Mark existing relationships as non-excluded (is_excluded: false)")
+            logger.error(f"   3. Ensure table names in KG match exactly: '{source}', '{target}'")
 
-            # Fallback: Try to infer join based on common column names
-            inferred_path = self._infer_join_from_column_names(source, target)
-            if inferred_path:
-                logger.info(f"✓ Inferred join path from column names: {source} ←→ {target}")
-                return inferred_path
-
-            logger.warning(f"❌ No join path found between {source} and {target}")
+            # DO NOT fall back to column name inference - strict KG adherence
             return None
 
         # Score and select best path
@@ -1111,17 +1250,22 @@ Extract and return ONLY valid JSON with this structure (no other text):
         logger.debug(f"Source columns: {source_cols[:10]}...")
         logger.debug(f"Target columns: {target_cols[:10]}...")
 
-        # Find common columns (case-insensitive)
-        common_columns = []
+        # Find common columns (case-insensitive) and categorize by exclusion status
+        non_excluded_columns = []
+        excluded_columns = []
+
         for s_col in source_cols:
             for t_col in target_cols:
                 if s_col.lower() == t_col.lower():
-                    common_columns.append((s_col, t_col))
-                    logger.debug(f"Found common column: {s_col} ←→ {t_col}")
+                    # Check if either column is excluded
+                    is_excluded = self._is_column_excluded(s_col) or self._is_column_excluded(t_col)
 
-        if not common_columns:
-            logger.debug("No common columns found")
-            return None
+                    if is_excluded:
+                        excluded_columns.append((s_col, t_col))
+                        logger.debug(f"Found excluded common column: {s_col} ←→ {t_col}")
+                    else:
+                        non_excluded_columns.append((s_col, t_col))
+                        logger.debug(f"Found non-excluded common column: {s_col} ←→ {t_col}")
 
         # Prioritize columns (prefer ID-like columns, avoid generic names)
         def column_priority(col_pair):
@@ -1138,14 +1282,27 @@ Extract and return ONLY valid JSON with this structure (no other text):
             # Low priority: generic columns
             return 0
 
-        # Sort by priority
-        common_columns.sort(key=column_priority, reverse=True)
-        best_match = common_columns[0]
+        # Prefer non-excluded columns
+        if non_excluded_columns:
+            # Sort non-excluded columns by priority
+            non_excluded_columns.sort(key=column_priority, reverse=True)
+            best_match = non_excluded_columns[0]
+            confidence = 0.65  # Standard confidence for non-excluded inferred joins
+            logger.info(f"✅ Using non-excluded inferred join: {source}.{best_match[0]} ←→ {target}.{best_match[1]}")
+
+        elif excluded_columns:
+            # Fall back to excluded columns if no alternatives
+            excluded_columns.sort(key=column_priority, reverse=True)
+            best_match = excluded_columns[0]
+            confidence = 0.35  # Lower confidence for excluded field joins
+            logger.warning(f"⚠️ Using excluded field join (no alternatives): {source}.{best_match[0]} ←→ {target}.{best_match[1]}")
+
+        else:
+            logger.debug("No common columns found")
+            return None
 
         source_col, target_col = best_match
-        confidence = 0.65  # Lower than explicit KG relationships but acceptable
 
-        logger.info(f"✓ Inferred join column: {source}.{source_col} ←→ {target}.{target_col}")
         logger.info(f"  Confidence: {confidence:.2f} (inferred from column names)")
 
         # Create a synthetic join path
@@ -1156,6 +1313,18 @@ Extract and return ONLY valid JSON with this structure (no other text):
             confidence=confidence,
             length=1
         )
+
+    def _is_column_excluded(self, column_name: str) -> bool:
+        """Check if a column name is in the excluded fields list."""
+        if not hasattr(self, 'excluded_fields') or not self.excluded_fields:
+            # Fall back to default excluded fields
+            from kg_builder.services.schema_parser import DEFAULT_EXCLUDED_FIELDS
+            excluded_set = DEFAULT_EXCLUDED_FIELDS
+        else:
+            excluded_set = self.excluded_fields
+
+        from kg_builder.services.schema_parser import is_excluded_field
+        return is_excluded_field(column_name, excluded_set)
 
     def _build_additional_columns_prompt(self, definition: str) -> str:
         """Build LLM prompt to extract 'include' clauses."""

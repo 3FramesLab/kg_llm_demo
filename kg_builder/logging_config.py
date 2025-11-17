@@ -119,12 +119,17 @@ LOGGING_CONFIG = {
         },
         "kg_builder": {
             "handlers": ["console", "file_app", "file_error"],
-            "level": "INFO",
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        "kg_builder.middleware": {
+            "handlers": ["console", "file_app"],
+            "level": "DEBUG",
             "propagate": False,
         },
         "kg_builder.services": {
             "handlers": ["console", "file_app", "file_error"],
-            "level": "INFO",
+            "level": "DEBUG",
             "propagate": False,
         },
         "kg_builder.services.nl_query_executor": {

@@ -1,0 +1,662 @@
+#!/usr/bin/env python3
+"""
+Simple SQL Preview Script - LLM-Only Mode
+
+This script uses OpenAI LLM exclusively for natural language parsing and SQL generation.
+No rule-based fallbacks - pure AI-powered SQL generation.
+
+Just update the configuration below and run: python sql_preview_simple.py
+No command line arguments needed!
+"""
+
+import logging
+import sys
+import time
+import json
+from typing import Dict, Any, Optional, List
+
+# Check for required dependencies
+try:
+    import pyodbc
+    PYODBC_AVAILABLE = True
+except ImportError:
+    PYODBC_AVAILABLE = False
+    print("❌ ERROR: pyodbc is not installed")
+    print("   Install with: pip install pyodbc")
+    print("   Also ensure ODBC Driver 17 for SQL Server is installed")
+
+try:
+    from openai import OpenAI
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+    print("❌ ERROR: openai is not installed")
+    print("   Install with: pip install openai")
+
+# Exit if dependencies are missing
+if not PYODBC_AVAILABLE or not OPENAI_AVAILABLE:
+    print("\n💡 To install all dependencies, run:")
+    print("   pip install -r requirements_sql_preview.txt")
+    print("\nOr install individually:")
+    if not PYODBC_AVAILABLE:
+        print("   pip install pyodbc")
+    if not OPENAI_AVAILABLE:
+        print("   pip install openai")
+    sys.exit(1)
+
+# =============================================================================
+# CONFIGURATION - UPDATE THESE VALUES AND RUN THE SCRIPT
+# =============================================================================
+
+# Natural Language Definition
+NL_DEFINITION = "get products from hana_material_master where OPS_PLANNER is missing"
+
+# Knowledge Graph Settings
+KG_NAME = "Test100KG"
+SELECT_SCHEMA = "newdqnov7"
+
+# OpenAI Settings
+OPENAI_KEY = "Test"
+TEMPERATURE = 0.0
+
+# Database Settings
+DB_HOST = "aeff4d31f23824ce3aabfc6f7b06d2b5-1383506485.us-west-2.elb.amazonaws.com"
+DB_PORT = 1433
+DB_NAME = "NewDQ"
+DB_USER = "sa"
+DB_PASSWORD = "YourStrong!Passw0rd"
+
+# Script Settings
+VERBOSE = True
+OUTPUT_FILE = None  # Set to filename to save results, e.g., "sql_preview.json"
+
+# Note: This script uses LLM-only mode - no rule-based fallbacks
+
+# =============================================================================
+# CONFIGURATION VALIDATION
+# =============================================================================
+
+def validate_configuration():
+    """Validate the configuration values."""
+    errors = []
+
+    if not NL_DEFINITION or NL_DEFINITION.strip() == "":
+        errors.append("NL_DEFINITION cannot be empty")
+
+    if not KG_NAME or KG_NAME.strip() == "":
+        errors.append("KG_NAME cannot be empty")
+
+    if not SELECT_SCHEMA or SELECT_SCHEMA.strip() == "":
+        errors.append("SELECT_SCHEMA cannot be empty")
+
+    if not OPENAI_KEY or OPENAI_KEY.strip() == "" or OPENAI_KEY == "your-openai-key-here":
+        errors.append("OPENAI_KEY must be set to a valid OpenAI API key")
+
+    if not DB_HOST or DB_HOST.strip() == "":
+        errors.append("DB_HOST cannot be empty")
+
+    if not DB_USER or DB_USER.strip() == "":
+        errors.append("DB_USER cannot be empty")
+
+    if not DB_PASSWORD or DB_PASSWORD.strip() == "":
+        errors.append("DB_PASSWORD cannot be empty")
+
+    if not isinstance(DB_PORT, int) or DB_PORT <= 0:
+        errors.append("DB_PORT must be a positive integer")
+
+    if not isinstance(TEMPERATURE, (int, float)) or TEMPERATURE < 0 or TEMPERATURE > 2:
+        errors.append("TEMPERATURE must be a number between 0 and 2")
+
+    if errors:
+        print("❌ CONFIGURATION ERRORS:")
+        for error in errors:
+            print(f"   - {error}")
+        print("\n💡 Please update the configuration at the top of this script and try again.")
+        return False
+
+    return True
+
+# =============================================================================
+# SCRIPT IMPLEMENTATION - DO NOT MODIFY BELOW THIS LINE
+# =============================================================================
+
+# Configure logging
+log_level = logging.DEBUG if VERBOSE else logging.INFO
+logging.basicConfig(
+    level=log_level,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler('sql_preview.log')
+    ]
+)
+logger = logging.getLogger(__name__)
+
+
+class QueryIntent:
+    """Simple QueryIntent class to hold parsed query information."""
+    
+    def __init__(self, definition: str, query_type: str = "data", operation: str = "select"):
+        self.definition = definition
+        self.query_type = query_type
+        self.operation = operation
+        self.source_table = None
+        self.target_table = None
+        self.join_columns = []
+        self.confidence = 0.8
+        self.additional_columns = []
+
+
+class SimpleSQLPreview:
+    """Simple SQL Preview generator."""
+    
+    def __init__(self, openai_key: str, temperature: float = 0.0):
+        """Initialize the SQL preview generator."""
+        self.openai_client = OpenAI(api_key=openai_key)
+        self.temperature = temperature
+        logger.info(f"✅ Initialized OpenAI client with temperature: {temperature}")
+    
+    def get_database_schema(self, db_config: Dict[str, Any], select_schema: str) -> Dict[str, Any]:
+        """Retrieve database schema information."""
+        logger.info(f"🔍 STEP 1: Retrieving database schema information")
+        logger.info(f"   Database: {db_config['host']}\\{db_config['database']}")
+        logger.info(f"   Schema: {select_schema}")
+        
+        try:
+            # Build connection string
+            conn_str = (
+                f"DRIVER={{ODBC Driver 17 for SQL Server}};"
+                f"SERVER={db_config['host']};"
+                f"DATABASE={db_config['database']};"
+                f"UID={db_config['username']};"
+                f"PWD={db_config['password']};"
+                f"TrustServerCertificate=yes;"
+            )
+
+            logger.info(f"   Connecting to database...")
+            conn = pyodbc.connect(conn_str)
+            cursor = conn.cursor()
+            logger.info(f"   ✅ Database connection established")
+            
+            # Get table and column information
+            schema_info = {
+                "schema_name": select_schema,
+                "tables": {}
+            }
+            
+            # Query to get tables and columns
+            cursor.execute("""
+                SELECT 
+                    t.TABLE_NAME,
+                    c.COLUMN_NAME,
+                    c.DATA_TYPE,
+                    c.IS_NULLABLE,
+                    c.COLUMN_DEFAULT
+                FROM INFORMATION_SCHEMA.TABLES t
+                LEFT JOIN INFORMATION_SCHEMA.COLUMNS c ON t.TABLE_NAME = c.TABLE_NAME
+                WHERE t.TABLE_SCHEMA = ? OR t.TABLE_SCHEMA = 'dbo'
+                ORDER BY t.TABLE_NAME, c.ORDINAL_POSITION
+            """, (select_schema,))
+            
+            rows = cursor.fetchall()
+            
+            for row in rows:
+                table_name = row[0]
+                column_name = row[1]
+                data_type = row[2]
+                is_nullable = row[3]
+                column_default = row[4]
+                
+                if table_name not in schema_info["tables"]:
+                    schema_info["tables"][table_name] = {
+                        "columns": []
+                    }
+                
+                if column_name:  # Some tables might not have columns in the result
+                    schema_info["tables"][table_name]["columns"].append({
+                        "name": column_name,
+                        "type": data_type,
+                        "nullable": is_nullable == "YES",
+                        "default": column_default
+                    })
+            
+            logger.info(f"✅ Retrieved schema information")
+            logger.info(f"   Tables found: {len(schema_info['tables'])}")
+            
+            # Log table information
+            for table_name, table_info in schema_info["tables"].items():
+                logger.info(f"   Table: {table_name} ({len(table_info['columns'])} columns)")
+            
+            return schema_info
+            
+        except Exception as e:
+            logger.error(f"❌ Error retrieving database schema: {e}")
+            logger.error(f"   This could be due to:")
+            logger.error(f"   - Database server not running or not accessible")
+            logger.error(f"   - Incorrect connection details (host, port, database, credentials)")
+            logger.error(f"   - ODBC Driver 17 for SQL Server not installed")
+            logger.error(f"   - Network connectivity issues")
+            logger.error(f"   - Firewall blocking the connection")
+            return {"schema_name": select_schema, "tables": {}}
+        finally:
+            if 'conn' in locals():
+                conn.close()
+
+    def parse_nl_definition(self, nl_definition: str, schema_info: Dict[str, Any], use_llm: bool = True) -> QueryIntent:
+        """Parse natural language definition into QueryIntent using LLM only."""
+        logger.info(f"🧠 STEP 2: Parsing natural language definition with LLM")
+        logger.info(f"   Definition: {nl_definition}")
+        logger.info(f"   LLM-Only Mode: Always using OpenAI for parsing")
+
+        # Always use LLM - no fallback to rule-based parsing
+        return self._parse_with_llm(nl_definition, schema_info)
+
+    def _parse_with_llm(self, definition: str, schema_info: Dict[str, Any]) -> QueryIntent:
+        """Parse using LLM with schema context."""
+        try:
+            # Build schema context for the prompt
+            schema_context = f"Schema: {schema_info['schema_name']}\n"
+            schema_context += "Available tables and columns:\n"
+
+            for table_name, table_info in schema_info["tables"].items():
+                schema_context += f"- {table_name}: "
+                column_names = [col["name"] for col in table_info["columns"]]
+                schema_context += ", ".join(column_names[:10])  # Limit to first 10 columns
+                if len(column_names) > 10:
+                    schema_context += f" (and {len(column_names) - 10} more)"
+                schema_context += "\n"
+
+            prompt = f"""
+You are an expert SQL analyst. Parse the following natural language query and extract structured information.
+
+{schema_context}
+
+Natural Language Query: {definition}
+
+Analyze the query and return a JSON object with the following structure:
+{{
+    "query_type": "comparison|filter|aggregation|data",
+    "operation": "select|count|sum|avg|join",
+    "source_table": "primary table name",
+    "target_table": "secondary table name if join needed",
+    "confidence": 0.0-1.0,
+    "explanation": "brief explanation of the query intent"
+}}
+
+Focus on identifying:
+1. The main table(s) involved
+2. The type of operation (SELECT, COUNT, etc.)
+3. Whether it's a comparison between tables or a filter on one table
+4. Your confidence in the interpretation
+
+Return only valid JSON.
+"""
+
+            logger.info(f"   Sending request to OpenAI...")
+            response = self.openai_client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert SQL analyst. Parse natural language queries and return structured JSON information."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                temperature=self.temperature,
+                max_tokens=500
+            )
+
+            response_text = response.choices[0].message.content.strip()
+
+            # Clean up JSON response
+            if response_text.startswith('```json'):
+                response_text = response_text[7:]
+            if response_text.endswith('```'):
+                response_text = response_text[:-3]
+            response_text = response_text.strip()
+
+            # Parse JSON response
+            parsed_data = json.loads(response_text)
+
+            # Create QueryIntent object
+            intent = QueryIntent(definition, parsed_data.get("query_type", "data"), parsed_data.get("operation", "select"))
+            intent.source_table = parsed_data.get("source_table")
+            intent.target_table = parsed_data.get("target_table")
+            intent.confidence = parsed_data.get("confidence", 0.8)
+
+            logger.info(f"✅ Parsed with LLM successfully")
+            logger.info(f"   Query Type: {intent.query_type}")
+            logger.info(f"   Operation: {intent.operation}")
+            logger.info(f"   Source Table: {intent.source_table}")
+            logger.info(f"   Target Table: {intent.target_table}")
+            logger.info(f"   Confidence: {intent.confidence}")
+            logger.info(f"   Explanation: {parsed_data.get('explanation', 'N/A')}")
+
+            return intent
+
+        except Exception as e:
+            logger.error(f"❌ Error parsing with LLM: {e}")
+            logger.error(f"   This could be due to:")
+            logger.error(f"   - Invalid OpenAI API key")
+            logger.error(f"   - Insufficient OpenAI credits")
+            logger.error(f"   - Network connectivity issues")
+            logger.error(f"   - OpenAI API service issues")
+            logger.error(f"   LLM-Only Mode: Cannot proceed without LLM parsing")
+            # No fallback - raise the error since we're LLM-only
+            raise Exception(f"LLM parsing failed and no fallback available in LLM-only mode: {e}")
+
+    # Rule-based parsing removed - LLM-only mode
+
+    def generate_sql_with_llm(self, intent: QueryIntent, schema_info: Dict[str, Any], db_type: str = "sqlserver") -> str:
+        """Generate SQL from QueryIntent using OpenAI."""
+        logger.info(f"🤖 STEP 3: Generating SQL using LLM")
+        logger.info(f"   Intent: {intent.definition}")
+        logger.info(f"   Source Table: {intent.source_table}")
+        logger.info(f"   Database Type: {db_type}")
+
+        try:
+            # Build comprehensive schema context
+            schema_context = f"Database: {db_type.upper()}\n"
+            schema_context += f"Schema: {schema_info['schema_name']}\n\n"
+            schema_context += "Available tables and their columns:\n"
+
+            for table_name, table_info in schema_info["tables"].items():
+                schema_context += f"\nTable: {table_name}\n"
+                for col in table_info["columns"]:
+                    schema_context += f"  - {col['name']} ({col['type']})\n"
+
+            # Create specialized prompt based on query type
+            if intent.query_type == "filter" and ("missing" in intent.definition.lower() or "null" in intent.definition.lower()):
+                prompt_type = "Generate a SQL query to find records where specific columns are NULL or missing."
+            elif intent.query_type == "aggregation":
+                prompt_type = f"Generate a SQL query to perform {intent.operation.upper()} aggregation."
+            else:
+                prompt_type = "Generate a SQL query to retrieve data."
+
+            prompt = f"""
+You are an expert SQL generator for {db_type.upper()} database.
+
+{schema_context}
+
+Task: {prompt_type}
+Natural Language Request: {intent.definition}
+
+Requirements:
+1. Generate valid {db_type.upper()} syntax
+2. Use proper table and column names from the schema above
+3. Handle NULL/missing values appropriately (use IS NULL for missing values)
+4. Use appropriate WHERE clauses for filtering
+5. Include proper JOIN conditions if multiple tables are involved
+6. For SQL Server, use TOP clause for limiting results
+7. Return only the SQL query without explanations or markdown formatting
+
+SQL Query:
+"""
+
+            logger.info(f"   Sending SQL generation request to OpenAI...")
+            response = self.openai_client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": f"You are an expert {db_type.upper()} SQL generator. Generate only valid SQL queries without explanations."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                temperature=self.temperature,
+                max_tokens=1000
+            )
+
+            generated_sql = response.choices[0].message.content.strip()
+
+            # Clean up the SQL (remove markdown formatting if present)
+            if generated_sql.startswith('```sql'):
+                generated_sql = generated_sql[6:]
+            elif generated_sql.startswith('```'):
+                generated_sql = generated_sql[3:]
+            if generated_sql.endswith('```'):
+                generated_sql = generated_sql[:-3]
+            generated_sql = generated_sql.strip()
+
+            logger.info(f"✅ Generated SQL successfully")
+            logger.info(f"   SQL Length: {len(generated_sql)} characters")
+            logger.info(f"   SQL Preview: {generated_sql[:200]}...")
+
+            return generated_sql
+
+        except Exception as e:
+            logger.error(f"❌ Error generating SQL with LLM: {e}")
+            logger.error(f"   This could be due to:")
+            logger.error(f"   - Invalid OpenAI API key")
+            logger.error(f"   - Insufficient OpenAI credits")
+            logger.error(f"   - Network connectivity issues")
+            logger.error(f"   - OpenAI API service issues")
+            logger.error(f"   - Model not available (gpt-4o)")
+            raise
+
+    def enhance_sql(self, sql: str, intent: QueryIntent) -> Dict[str, Any]:
+        """Apply enhancements to the generated SQL."""
+        logger.info(f"🔧 STEP 4: Applying SQL enhancements")
+
+        enhanced_sql = sql
+        enhancements_applied = []
+
+        # Check for material master enhancement
+        if "hana_material_master" in sql.lower():
+            logger.info(f"   Detected hana_material_master table usage")
+
+            # Check if OPS_PLANNER column is missing and should be added
+            if "ops_planner" not in sql.lower() and ("missing" in intent.definition.lower() or "planner" in intent.definition.lower()):
+                logger.info(f"   Adding OPS_PLANNER column enhancement")
+
+                # Simple enhancement: ensure OPS_PLANNER is in SELECT if not present
+                if "SELECT" in enhanced_sql.upper() and "ops_planner" not in enhanced_sql.lower():
+                    # Find the SELECT clause and add OPS_PLANNER
+                    select_pos = enhanced_sql.upper().find("SELECT")
+                    from_pos = enhanced_sql.upper().find("FROM")
+
+                    if select_pos != -1 and from_pos != -1:
+                        select_clause = enhanced_sql[select_pos:from_pos].strip()
+                        if not select_clause.endswith("*"):
+                            # Add OPS_PLANNER to the select list
+                            enhanced_sql = enhanced_sql[:from_pos] + ", OPS_PLANNER " + enhanced_sql[from_pos:]
+                            enhancements_applied.append("Added OPS_PLANNER column to SELECT")
+
+            enhancements_applied.append("Material master table detected")
+
+        # Check for ops_planner enhancement
+        if "ops_planner" in enhanced_sql.lower():
+            enhancements_applied.append("OPS_PLANNER column included")
+
+        logger.info(f"✅ SQL enhancements completed")
+        if enhancements_applied:
+            for enhancement in enhancements_applied:
+                logger.info(f"   - {enhancement}")
+        else:
+            logger.info(f"   - No enhancements applied")
+
+        return {
+            "original_sql": sql,
+            "enhanced_sql": enhanced_sql,
+            "enhancements_applied": enhancements_applied,
+            "material_master_detected": "hana_material_master" in sql.lower(),
+            "ops_planner_included": "ops_planner" in enhanced_sql.lower()
+        }
+
+    def generate_sql_preview(self, nl_definition: str, kg_name: str, select_schema: str,
+                           db_config: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate SQL preview from natural language definition using LLM only."""
+        logger.info(f"🚀 Starting SQL preview generation (LLM-Only Mode)")
+        logger.info(f"   NL Definition: {nl_definition}")
+        logger.info(f"   KG Name: {kg_name}")
+        logger.info(f"   Schema: {select_schema}")
+        logger.info(f"   Mode: LLM-Only (OpenAI GPT-4)")
+
+        overall_start_time = time.time()
+
+        try:
+            # Step 1: Get database schema
+            schema_info = self.get_database_schema(db_config, select_schema)
+
+            # Step 2: Parse natural language definition with LLM
+            intent = self.parse_nl_definition(nl_definition, schema_info, True)
+
+            # Step 3: Generate SQL with LLM
+            generated_sql = self.generate_sql_with_llm(intent, schema_info, "sqlserver")
+
+            # Step 4: Apply enhancements
+            enhancement_result = self.enhance_sql(generated_sql, intent)
+
+            overall_execution_time = (time.time() - overall_start_time) * 1000
+
+            # Prepare final result
+            result = {
+                'success': True,
+                'nl_definition': nl_definition,
+                'kg_name': kg_name,
+                'select_schema': select_schema,
+                'llm_only_mode': True,
+                'query_intent': {
+                    'definition': intent.definition,
+                    'query_type': intent.query_type,
+                    'operation': intent.operation,
+                    'source_table': intent.source_table,
+                    'target_table': intent.target_table,
+                    'confidence': intent.confidence
+                },
+                'generated_sql': enhancement_result['enhanced_sql'],
+                'original_sql': enhancement_result['original_sql'],
+                'enhancements': {
+                    'applied': enhancement_result['enhancements_applied'],
+                    'material_master_detected': enhancement_result['material_master_detected'],
+                    'ops_planner_included': enhancement_result['ops_planner_included']
+                },
+                'schema_info': {
+                    'schema_name': schema_info['schema_name'],
+                    'tables_count': len(schema_info['tables']),
+                    'tables': list(schema_info['tables'].keys())
+                },
+                'execution_time_ms': overall_execution_time
+            }
+
+            logger.info(f"🎉 SQL preview generation completed!")
+            logger.info(f"   Success: {result['success']}")
+            logger.info(f"   Query Type: {intent.query_type}")
+            logger.info(f"   Source Table: {intent.source_table}")
+            logger.info(f"   Confidence: {intent.confidence}")
+            logger.info(f"   Total time: {overall_execution_time:.2f}ms")
+
+            return result
+
+        except Exception as e:
+            logger.error(f"❌ SQL preview generation failed: {e}")
+            return {
+                'success': False,
+                'error': str(e),
+                'nl_definition': nl_definition,
+                'kg_name': kg_name,
+                'select_schema': select_schema,
+                'llm_only_mode': True
+            }
+
+
+def main():
+    """Main function - no arguments needed, just run the script!"""
+
+    # Validate configuration
+    if not validate_configuration():
+        sys.exit(1)
+
+    # Prepare database configuration
+    db_config = {
+        'host': DB_HOST,
+        'port': DB_PORT,
+        'database': DB_NAME,
+        'username': DB_USER,
+        'password': DB_PASSWORD
+    }
+
+    logger.info("="*80)
+    logger.info("🚀 SIMPLE SQL PREVIEW GENERATOR STARTED (LLM-ONLY MODE)")
+    logger.info("="*80)
+    logger.info(f"NL Definition: {NL_DEFINITION}")
+    logger.info(f"KG Name: {KG_NAME}")
+    logger.info(f"Schema: {SELECT_SCHEMA}")
+    logger.info(f"Mode: LLM-Only (OpenAI GPT-4)")
+    logger.info(f"Temperature: {TEMPERATURE}")
+    logger.info(f"Database: {db_config['host']}:{db_config['port']}/{db_config['database']}")
+    logger.info("="*80)
+
+    try:
+        # Initialize SQL preview generator
+        generator = SimpleSQLPreview(OPENAI_KEY, TEMPERATURE)
+
+        # Generate SQL preview using LLM only
+        result = generator.generate_sql_preview(
+            NL_DEFINITION,
+            KG_NAME,
+            SELECT_SCHEMA,
+            db_config
+        )
+
+        # Print results
+        logger.info("="*80)
+        logger.info("📊 SQL PREVIEW RESULTS")
+        logger.info("="*80)
+        logger.info(f"Success: {result['success']}")
+
+        if result['success']:
+            logger.info(f"Query Type: {result['query_intent']['query_type']}")
+            logger.info(f"Operation: {result['query_intent']['operation']}")
+            logger.info(f"Source Table: {result['query_intent']['source_table']}")
+            logger.info(f"Confidence: {result['query_intent']['confidence']}")
+            logger.info(f"Execution Time: {result['execution_time_ms']:.2f}ms")
+
+            logger.info(f"\n📝 GENERATED SQL:")
+            logger.info("-" * 60)
+            logger.info(result['generated_sql'])
+            logger.info("-" * 60)
+
+            if result['enhancements']['applied']:
+                logger.info(f"\n🔧 ENHANCEMENTS APPLIED:")
+                for enhancement in result['enhancements']['applied']:
+                    logger.info(f"  - {enhancement}")
+
+            logger.info(f"\n📊 SCHEMA INFO:")
+            logger.info(f"  Schema: {result['schema_info']['schema_name']}")
+            logger.info(f"  Tables: {result['schema_info']['tables_count']}")
+            logger.info(f"  Available tables: {', '.join(result['schema_info']['tables'][:5])}")
+            if len(result['schema_info']['tables']) > 5:
+                logger.info(f"    (and {len(result['schema_info']['tables']) - 5} more)")
+        else:
+            logger.error(f"Error: {result.get('error', 'Unknown error')}")
+
+        # Save to file if requested
+        if OUTPUT_FILE:
+            with open(OUTPUT_FILE, 'w') as f:
+                json.dump(result, f, indent=2, default=str)
+            logger.info(f"💾 Results saved to: {OUTPUT_FILE}")
+
+        logger.info("="*80)
+        logger.info("✅ SQL PREVIEW GENERATION COMPLETED")
+        logger.info("="*80)
+
+        # Exit with appropriate code
+        sys.exit(0 if result['success'] else 1)
+
+    except KeyboardInterrupt:
+        logger.info("❌ Generation interrupted by user")
+        sys.exit(1)
+    except Exception as e:
+        logger.error(f"❌ Unexpected error: {e}")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

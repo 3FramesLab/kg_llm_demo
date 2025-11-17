@@ -35,10 +35,14 @@ import {
   Cached as CacheIcon,
   Clear as ClearIcon,
   Schedule as ScheduleIcon,
+  FlashOn as FlashOnIcon,
+  MoreVert as MoreVertIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
 } from '@mui/icons-material';
 import { listKPIs, deleteKPI, updateKPICacheFlags, clearKPICacheFlags, getKPIExecutions } from '../services/api';
 
-const KPIList = ({ onEdit, onExecute, onViewHistory, onManageSchedule, refreshTrigger }) => {
+const KPIList = ({ onEdit, onExecute, onExecuteCached, onViewHistory, onManageSchedule, refreshTrigger }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isTablet = useMediaQuery(theme.breakpoints.down('lg'));
@@ -50,6 +54,7 @@ const KPIList = ({ onEdit, onExecute, onViewHistory, onManageSchedule, refreshTr
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [selectedKPI, setSelectedKPI] = useState(null);
   const [updatingCache, setUpdatingCache] = useState({});
+  const [expandedActions, setExpandedActions] = useState({});
 
   // Fetch KPIs
   useEffect(() => {
@@ -79,6 +84,13 @@ const KPIList = ({ onEdit, onExecute, onViewHistory, onManageSchedule, refreshTr
   const handleDeleteClick = (kpi) => {
     setSelectedKPI(kpi);
     setDeleteConfirmOpen(true);
+  };
+
+  const toggleActions = (kpiId) => {
+    setExpandedActions(prev => ({
+      ...prev,
+      [kpiId]: !prev[kpiId]
+    }));
   };
 
   const handleDeleteConfirm = async () => {
@@ -220,6 +232,8 @@ const KPIList = ({ onEdit, onExecute, onViewHistory, onManageSchedule, refreshTr
   if (isMobile || isTablet) {
     return (
       <Box>
+
+
         {/* Error Alert */}
         {error && (
           <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
@@ -305,6 +319,35 @@ const KPIList = ({ onEdit, onExecute, onViewHistory, onManageSchedule, refreshTr
                         <PlayArrowIcon />
                       </IconButton>
                     </Tooltip>
+
+                    {/* DEBUG: Log KPI data */}
+                    {console.log(`🔍 KPI ${kpi.id} (${kpi.name}):`, {
+                      isAccept: kpi.isAccept,
+                      isSQLCached: kpi.isSQLCached,
+                      cached_sql: kpi.cached_sql ? `${kpi.cached_sql.substring(0, 50)}...` : 'null',
+                      onExecuteCached: typeof onExecuteCached
+                    })}
+
+                    {/* SUPER OBVIOUS TEST BUTTON */}
+                    <Button
+                      variant="contained"
+                      color="error"
+                      size="small"
+                      startIcon={<FlashOnIcon />}
+                      onClick={() => {
+                        console.log('🚨 TEST BUTTON CLICKED for KPI:', kpi.id, kpi.name);
+                        alert(`Cached execution for KPI: ${kpi.name}\nisAccept: ${kpi.isAccept}\nisSQLCached: ${kpi.isSQLCached}`);
+                        onExecuteCached && onExecuteCached(kpi);
+                      }}
+                      sx={{
+                        backgroundColor: 'red',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        '&:hover': { backgroundColor: 'darkred' }
+                      }}
+                    >
+                      CACHED EXEC
+                    </Button>
                     <Tooltip title="Edit">
                       <IconButton size="small" color="primary" onClick={() => onEdit(kpi)}>
                         <EditIcon />
@@ -423,64 +466,119 @@ const KPIList = ({ onEdit, onExecute, onViewHistory, onManageSchedule, refreshTr
                   </TableCell>
 
                   <TableCell align="center">
-                    <Tooltip title="Execute">
-                      <IconButton
-                        size="small"
-                        color="primary"
-                        onClick={() => onExecute(kpi)}
-                      >
-                        <PlayArrowIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="History">
-                      <IconButton
-                        size="small"
-                        color="info"
-                        onClick={() => onViewHistory(kpi)}
-                      >
-                        <HistoryIcon />
-                      </IconButton>
-                    </Tooltip>
-
-                    {onManageSchedule && (
-                      <Tooltip title="Manage Schedule">
+                    <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center', alignItems: 'center' }}>
+                      {/* Primary Actions - Always Visible */}
+                      <Tooltip title="Execute">
                         <IconButton
                           size="small"
-                          color="warning"
-                          onClick={() => onManageSchedule(kpi)}
+                          color="success"
+                          onClick={() => onExecute(kpi)}
                         >
-                          <ScheduleIcon />
+                          <PlayArrowIcon />
                         </IconButton>
                       </Tooltip>
+
+                      {/* Cached Execution - Show if available */}
+                      {kpi.isAccept && kpi.isSQLCached && (
+                        <Tooltip title="Execute Cached SQL (Fast - No LLM)">
+                          <IconButton
+                            size="small"
+                            color="warning"
+                            onClick={() => {
+                              console.log('⚡ Cached execution clicked for KPI:', kpi.id, kpi.name);
+                              onExecuteCached && onExecuteCached(kpi);
+                            }}
+                            sx={{
+                              backgroundColor: 'warning.light',
+                              color: 'warning.dark',
+                              '&:hover': {
+                                backgroundColor: 'warning.main',
+                                color: 'white'
+                              }
+                            }}
+                          >
+                            <FlashOnIcon />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+
+                      {/* Expand/Collapse More Actions */}
+                      <Tooltip title={expandedActions[kpi.id] ? "Hide actions" : "More actions"}>
+                        <IconButton
+                          size="small"
+                          onClick={() => toggleActions(kpi.id)}
+                          sx={{
+                            color: 'grey.600',
+                            '&:hover': { backgroundColor: 'grey.100' }
+                          }}
+                        >
+                          {expandedActions[kpi.id] ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+
+                    {/* Expanded Actions */}
+                    {expandedActions[kpi.id] && (
+                      <Box sx={{
+                        display: 'flex',
+                        gap: 0.5,
+                        justifyContent: 'center',
+                        mt: 1,
+                        pt: 1,
+                        borderTop: '1px solid #e0e0e0'
+                      }}>
+                        <Tooltip title="View History">
+                          <IconButton
+                            size="small"
+                            color="info"
+                            onClick={() => onViewHistory(kpi)}
+                          >
+                            <HistoryIcon />
+                          </IconButton>
+                        </Tooltip>
+
+                        <Tooltip title="Manage Schedule">
+                          <IconButton
+                            size="small"
+                            color="secondary"
+                            onClick={() => onManageSchedule(kpi)}
+                          >
+                            <ScheduleIcon />
+                          </IconButton>
+                        </Tooltip>
+
+                        <Tooltip title="Edit">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => onEdit(kpi)}
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </Tooltip>
+
+                        <Tooltip title="Clear Cache Flags">
+                          <IconButton
+                            size="small"
+                            color="default"
+                            onClick={() => handleClearCache(kpi)}
+                            disabled={updatingCache[`${kpi.id}_clear`]}
+                          >
+                            <ClearIcon />
+                          </IconButton>
+                        </Tooltip>
+
+                        <Tooltip title="Delete">
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleDeleteClick(kpi)}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
                     )}
-                    <Tooltip title="Edit">
-                      <IconButton
-                        size="small"
-                        color="warning"
-                        onClick={() => onEdit(kpi)}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Clear Cache Flags">
-                      <IconButton
-                        size="small"
-                        color="secondary"
-                        onClick={() => handleClearCache(kpi)}
-                        disabled={updatingCache[`${kpi.id}_clear`]}
-                      >
-                        <ClearIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => handleDeleteClick(kpi)}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Tooltip>
                   </TableCell>
                 </TableRow>
               ))

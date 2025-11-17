@@ -133,11 +133,20 @@ def execute_kpi(kpi_id):
         
         # Get execution parameters
         execution_params = request.get_json() or {}
+
+        # Validate kg_name is provided
+        kg_name = execution_params.get('kg_name')
+        if not kg_name or kg_name.strip() == '' or kg_name.lower() == 'default':
+            return jsonify({
+                'success': False,
+                'error': 'kg_name is required and cannot be empty or "default". Please provide a valid Knowledge Graph name (e.g., "New_KG_101", "KG_102").'
+            }), 400
+
         execution_params.update({
             'user_id': request.headers.get('X-User-ID', 'api_user'),
             'session_id': request.headers.get('X-Session-ID')
         })
-        
+
         # Create execution record
         execution_record = kpi_service.create_execution_record(kpi_id, execution_params)
         execution_id = execution_record['id']
@@ -156,7 +165,7 @@ def execute_kpi(kpi_id):
             # Execute the KPI query
             result = executor.execute_query(
                 query=kpi['nl_definition'],
-                kg_name=execution_params.get('kg_name', 'default'),
+                kg_name=kg_name,
                 select_schema=execution_params.get('select_schema', 'newdqschemanov'),
                 limit_records=execution_params.get('limit_records', 1000)
             )
@@ -276,9 +285,18 @@ def preview_sql():
     try:
         request_data = request.get_json()
         query = request_data.get('query')
+        logger.info(f"KG Name -- {request_data}")
 
         if not query:
             return jsonify({'success': False, 'error': 'Query is required'}), 400
+
+        # Validate kg_name is provided
+        kg_name = request_data.get('kg_name')
+        if not kg_name or kg_name.strip() == '' or kg_name.lower() == 'default':
+            return jsonify({
+                'success': False,
+                'error': 'kg_name is required and cannot be empty or "default". Please provide a valid Knowledge Graph name (e.g., "New_KG_101", "KG_102").'
+            }), 400
 
         # Initialize enhanced SQL generator
         original_generator = LLMSQLGenerator()
@@ -295,7 +313,7 @@ def preview_sql():
 
             # Get KG data
             kg_data = executor.kg_service.get_kg_data(
-                request_data.get('kg_name', 'default'),
+                kg_name,
                 request_data.get('select_schema', 'newdqschemanov')
             )
 

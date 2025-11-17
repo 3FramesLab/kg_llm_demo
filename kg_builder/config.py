@@ -75,18 +75,18 @@ SOURCE_DB_PASSWORD = os.getenv("SOURCE_DB_PASSWORD", "")
 SOURCE_DB_SERVICE_NAME = os.getenv("SOURCE_DB_SERVICE_NAME", "")  # For Oracle
 
 # Target Database Configuration
-TARGET_DB_TYPE = os.getenv("TARGET_DB_TYPE", "oracle")
+TARGET_DB_TYPE = os.getenv("TARGET_DB_TYPE", "sqlserver")
 TARGET_DB_HOST = os.getenv("TARGET_DB_HOST", "localhost")
-TARGET_DB_PORT = int(os.getenv("TARGET_DB_PORT", "1521"))
-TARGET_DB_DATABASE = os.getenv("TARGET_DB_DATABASE", "ORCL")
+TARGET_DB_PORT = int(os.getenv("TARGET_DB_PORT", "1433"))
+TARGET_DB_DATABASE = os.getenv("TARGET_DB_DATABASE", "TargetDB")
 TARGET_DB_USERNAME = os.getenv("TARGET_DB_USERNAME", "")
 TARGET_DB_PASSWORD = os.getenv("TARGET_DB_PASSWORD", "")
 TARGET_DB_SERVICE_NAME = os.getenv("TARGET_DB_SERVICE_NAME", "")  # For Oracle
 
 # KPI Database Configuration
-KPI_DB_TYPE = os.getenv("KPI_DB_TYPE", "sqlserver")
+KPI_DB_TYPE = os.getenv("KPI_DB_TYPE", "mysql")
 KPI_DB_HOST = os.getenv("KPI_DB_HOST", "localhost")
-KPI_DB_PORT = int(os.getenv("KPI_DB_PORT", "1433"))
+KPI_DB_PORT = int(os.getenv("KPI_DB_PORT", "3306"))
 KPI_DB_DATABASE = os.getenv("KPI_DB_DATABASE", "KPI_Analytics")
 KPI_DB_USERNAME = os.getenv("KPI_DB_USERNAME", "")
 KPI_DB_PASSWORD = os.getenv("KPI_DB_PASSWORD", "")

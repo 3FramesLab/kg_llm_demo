@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kg-builder-web
+  namespace: cognito-ai-dq-dev
+  labels:
+    app: kg-builder-web
+    component: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kg-builder-web
+  template:
+    metadata:
+      labels:
+        app: kg-builder-web
+        component: frontend
+    spec:
+      containers:
+        - name: web
+          image: image-registry.openshift-image-registry.svc:5000/cognito-ai-dq-dev/kg-builder-web:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kg-builder-web-service
+  namespace: cognito-ai-dq-dev
+  labels:
+    app: kg-builder-web
+spec:
+  selector:
+    app: kg-builder-web
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: ClusterIP

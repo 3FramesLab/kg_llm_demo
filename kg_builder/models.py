@@ -1070,7 +1070,8 @@ class KPIClearCacheRequest(BaseModel):
 class KPIExecutionRequest(BaseModel):
     """Request model for executing a KPI."""
     kg_name: str = Field(..., description="Knowledge Graph name to use")
-    schemas: List[str] = Field(..., description="List of schema names to query against")
+    schemas: List[str] = Field(default=[], description="List of schema names to query against (legacy)")
+    select_schema: Optional[str] = Field(default=None, description="Schema name to use (preferred)")
     definitions: List[str] = Field(..., description="List of NL definitions to execute")
     use_llm: bool = Field(default=True, description="Whether to use LLM for parsing")
     min_confidence: float = Field(default=0.7, ge=0.0, le=1.0, description="Minimum confidence threshold")

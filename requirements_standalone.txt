@@ -1,0 +1,16 @@
+# Requirements for Standalone KPI Executor Script
+# Install with: pip install -r requirements_standalone.txt
+
+# OpenAI API client
+openai>=1.0.0
+
+# Database connectivity
+pyodbc>=4.0.0
+
+# Standard libraries (usually included with Python)
+# argparse - built-in
+# logging - built-in  
+# sys - built-in
+# time - built-in
+# json - built-in
+# typing - built-in (Python 3.5+)
