@@ -1,8 +1,11 @@
-# UX Implementation: Always Show SQL Generation ✅
+# UX Implementation: Always Show SQL Generation ⚠️ DEPRECATED
 
-## 🎯 **Implementation Status: COMPLETE**
+> **⚠️ DEPRECATION NOTICE**: This document describes the KPIAnalyticsExecutionDialog component that has been removed.
+> This document is kept for historical reference only.
 
-Yes, I have now **fully implemented** the UX improvements to always show SQL generation, even when there are no records returned.
+## 🎯 **Implementation Status: DEPRECATED**
+
+This implementation was part of the KPI Analytics system that was never fully integrated into the application.
 
 ---
 

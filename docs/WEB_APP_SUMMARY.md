@@ -25,7 +25,7 @@ A modern, professional web interface for the DQ-POC Knowledge Graph Builder has 
 
 #### Components (src/components/)
 - ✅ `Layout.js` - Main layout with sidebar navigation
-- ✅ `GraphVisualization.js` - Interactive force-directed graph visualization
+- ✅ `KnowledgeGraphEditor.js` - Interactive knowledge graph editor with embedded visualization
 
 #### Pages (src/pages/)
 - ✅ `Dashboard.js` - System overview, health status, statistics

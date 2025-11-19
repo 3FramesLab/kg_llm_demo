@@ -21,6 +21,7 @@ from kg_builder.config import (
 from kg_builder.routes import router
 from kg_builder.routes_hints import router as hints_router
 from kg_builder.routers.kpi_schedule_router import router as schedule_router
+from kg_builder.routers.database_router import router as database_router
 from kg_builder.logging_config import LOGGING_CONFIG
 from kg_builder.middleware import DetailedLoggingMiddleware
 
@@ -143,6 +144,7 @@ app.add_middleware(
 app.include_router(router, prefix="/v1", tags=["Knowledge Graph"])
 app.include_router(hints_router, prefix="/v1", tags=["Column Hints"])
 app.include_router(schedule_router, prefix="/v1", tags=["KPI Schedules"])
+app.include_router(database_router, prefix="/v1", tags=["Database Connections"])
 
 # KPI Analytics routes are now included directly in routes.py
 

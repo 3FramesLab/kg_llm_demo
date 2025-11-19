@@ -1,8 +1,12 @@
-# KPI UX Updates for Separate Database Architecture ✅
+# KPI UX Updates for Separate Database Architecture ⚠️ DEPRECATED
+
+> **⚠️ DEPRECATION NOTICE**: This document describes components that have been removed from the codebase.
+> The KPIAnalyticsPage, KPIAnalyticsDashboard, KPIAnalyticsForm, and KPIAnalyticsExecutionDialog components
+> were never fully integrated and have been removed. This document is kept for historical reference only.
 
 ## 🎯 **Overview**
 
-The UX has been completely updated to support the new separate KPI Analytics database with enhanced features including ops_planner inclusion, always-visible SQL, and analytics-focused capabilities.
+The UX was designed to support a separate KPI Analytics database with enhanced features including ops_planner inclusion, always-visible SQL, and analytics-focused capabilities. However, this implementation was never completed or integrated into the application.
 
 ---
 

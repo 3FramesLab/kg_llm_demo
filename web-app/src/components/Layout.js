@@ -24,7 +24,6 @@ import {
   BarChart as BarChartIcon,
   ShowChart as ShowChartIcon,
   Label as LabelIcon,
-  Analytics as AnalyticsIcon,
   TableChart as TableChartIcon,
 } from '@mui/icons-material';
 
@@ -36,9 +35,8 @@ const menuItems = [
   { text: 'Knowledge Graph Builder', icon: <GraphIcon />, path: '/knowledge-graph' },
   { text: 'Table Aliases', icon: <TableChartIcon />, path: '/table-aliases' },
   { text: 'Column Hints', icon: <LabelIcon />, path: '/hints-management' },
-  // { text: 'Natural Language', icon: <NLIcon />, path: '/natural-language' }, // Hidden
   { text: 'NL KPI Management', icon: <KPIIcon />, path: '/landing-kpi' },
-  // { text: 'KPI Analytics', icon: <AnalyticsIcon />, path: '/kpi-analytics' }, // Hidden
+
   { text: 'Dashboard', icon: <ShowChartIcon />, path: '/dashboard-trends' },
 ];
 
@@ -80,7 +78,7 @@ export default function Layout({ children }) {
 
   return (
     <Box sx={{ display: 'flex' }}>
-      <AppBar
+      {/* <AppBar
         position="fixed"
         sx={{
           width: { sm: `calc(100% - ${drawerWidth}px)` },
@@ -101,7 +99,7 @@ export default function Layout({ children }) {
             Knowledge Graph Builder & KPI
           </Typography>
         </Toolbar>
-      </AppBar>
+      </AppBar> */}
       <Box
         component="nav"
         sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
@@ -137,7 +135,6 @@ export default function Layout({ children }) {
           flexGrow: 1,
           p: 1,
           width: { sm: `calc(100% - ${drawerWidth}px)` },
-          mt: 8,
         }}
       >
         {children}

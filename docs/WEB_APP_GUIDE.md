@@ -202,21 +202,6 @@ web-app/
 - `GET /kg/{name}/export`
 - `DELETE /kg/{name}`
 
-### GraphVisualization Component (`components/GraphVisualization.js`)
-
-**Features:**
-- Force-directed graph layout using `react-force-graph-2d`
-- Node labels with entity names
-- Directional arrows on relationships
-- Auto-zoom to fit
-- Color-coded by entity type
-- Clickable nodes and links
-- Legend showing node types
-
-**Props:**
-- `entities`: Array of entity objects
-- `relationships`: Array of relationship objects
-
 ### Reconciliation Page (`pages/Reconciliation.js`)
 
 **Three Tabs:**

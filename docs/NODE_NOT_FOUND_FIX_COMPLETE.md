@@ -1,8 +1,12 @@
-# Complete Fix: "node not found" Error ✅ RESOLVED
+# Complete Fix: "node not found" Error ⚠️ DEPRECATED
+
+> **⚠️ DEPRECATION NOTICE**: This document describes the GraphVisualization component that has been removed.
+> The KnowledgeGraphEditor component now handles all graph visualization with embedded functionality.
+> This document is kept for historical reference only.
 
 ## 🎉 Problem Solved!
 
-The error **"node not found: hana_material_master"** has been completely fixed!
+The error **"node not found: hana_material_master"** was fixed in the GraphVisualization component (now removed).
 
 ---
 

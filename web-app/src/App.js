@@ -6,10 +6,6 @@ import Layout from './components/Layout';
 import Overview from './pages/Overview';
 import Schemas from './pages/Schemas';
 import KnowledgeGraph from './pages/KnowledgeGraph';
-import Reconciliation from './pages/Reconciliation';
-// Hidden pages - Natural Language and KPI Analytics
-// import NaturalLanguage from './pages/NaturalLanguage';
-// import KPIAnalyticsPage from './pages/KPIAnalyticsPage';
 import Execution from './pages/Execution';
 import KPIManagement from './pages/KPIManagement';
 import KPIResults from './pages/KPIResults';
@@ -69,16 +65,12 @@ function App() {
             <Route path="/" element={<Overview />} />
             <Route path="/schemas" element={<Schemas />} />
             <Route path="/knowledge-graph" element={<KnowledgeGraph />} />
-            <Route path="/reconciliation" element={<Reconciliation />} />
-            {/* Hidden routes - Natural Language and KPI Analytics */}
-            {/* <Route path="/natural-language" element={<NaturalLanguage />} /> */}
             <Route path="/execution" element={<Execution />} />
             <Route path="/kpi-management" element={<KPIManagement />} />
             <Route path="/kpi-results" element={<KPIResults />} />
             <Route path="/landing-kpi" element={<LandingKPIManagement />} />
             <Route path="/landing-kpi/:kpiId/history" element={<KPIExecutionHistoryPage />} />
             <Route path="/kpi-dashboard" element={<KPIDashboardPage />} />
-            {/* <Route path="/kpi-analytics" element={<KPIAnalyticsPage />} /> */}
             <Route path="/table-aliases" element={<TableAliasesManagement />} />
             <Route path="/dashboard-trends" element={<DashboardTrends />} />
             <Route path="/hints-management" element={<HintsManagement />} />

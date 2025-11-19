@@ -821,6 +821,91 @@ async def llm_status():
     }
 
 
+@router.post("/llm/generate-aliases", tags=["LLM"])
+async def llm_generate_aliases(request: dict):
+    """
+    Generate business-friendly aliases for database tables using LLM.
+
+    Request body:
+    {
+        "tables": [
+            {
+                "connectionId": "conn_123",
+                "databaseName": "mydb",
+                "tableName": "brz_lnd_RBP_GPU",
+                "columns": ["Material", "Description", "Price"]
+            }
+        ]
+    }
+
+    Returns:
+    {
+        "success": true,
+        "data": [
+            {
+                "connectionId": "conn_123",
+                "databaseName": "mydb",
+                "tableName": "brz_lnd_RBP_GPU",
+                "aliases": ["RBP", "RBP GPU", "GPU"],
+                "reasoning": "Table appears to contain GPU-related data from RBP system"
+            }
+        ]
+    }
+    """
+    try:
+        llm_service = get_llm_service()
+
+        if not llm_service.is_enabled():
+            raise HTTPException(
+                status_code=503,
+                detail="LLM service is not enabled. Please set OPENAI_API_KEY environment variable."
+            )
+
+        tables = request.get("tables", [])
+
+        if not tables:
+            raise HTTPException(status_code=400, detail="tables array is required")
+
+        results = []
+
+        for table in tables:
+            table_name = table.get("tableName")
+            connection_id = table.get("connectionId")
+            database_name = table.get("databaseName")
+            columns = table.get("columns", [])
+
+            if not table_name:
+                logger.warning(f"Skipping table without tableName: {table}")
+                continue
+
+            # Generate aliases using LLM
+            table_description = f"Table from database {database_name}"
+            alias_result = llm_service.extract_table_aliases(
+                table_name=table_name,
+                table_description=table_description,
+                columns=columns
+            )
+
+            results.append({
+                "connectionId": connection_id,
+                "databaseName": database_name,
+                "tableName": table_name,
+                "aliases": alias_result.get("aliases", []),
+                "reasoning": alias_result.get("reasoning", "")
+            })
+
+        return {
+            "success": True,
+            "data": results
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating aliases: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/llm/suggest-relationships", tags=["LLM"])
 async def llm_suggest_relationships(request: dict):
     """

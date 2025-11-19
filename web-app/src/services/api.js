@@ -40,6 +40,7 @@ export const deleteTableAlias = (kgName, tableName) => api.delete(`/kg/${kgName}
 export const extractEntities = (schemaName) => api.post(`/llm/extract/${schemaName}`);
 export const analyzeSchema = (schemaName) => api.post(`/llm/analyze/${schemaName}`);
 export const suggestRelationships = (data) => api.post('/llm/suggest-relationships', data);
+export const generateTableAliases = (data) => api.post('/llm/generate-aliases', data);
 
 // Reconciliation - Rules
 export const generateRules = (data) => api.post('/reconciliation/generate', data);
@@ -164,5 +165,16 @@ export const importHints = (data) => api.post('/hints/import', data);
 
 // Material Master Operations
 // export const getUniqueOpsPlanner = () => api.get('/material-master/ops-planners'); // Disabled due to Java serialization issues
+
+// Database Connection Management (for Schema Wizard)
+export const testDatabaseConnection = (data) => api.post('/database/test-connection', data);
+export const addDatabaseConnection = (data) => api.post('/database/connections', data);
+export const listDatabaseConnections = () => api.get('/database/connections');
+export const removeDatabaseConnection = (connectionId) => api.delete(`/database/connections/${connectionId}`);
+export const listDatabasesFromConnection = (connectionId) => api.get(`/database/connections/${connectionId}/databases`);
+export const listTablesFromDatabase = (connectionId, databaseName) => api.get(`/database/connections/${connectionId}/databases/${databaseName}/tables`);
+export const getTableColumns = (connectionId, databaseName, tableName) => api.get(`/database/connections/${connectionId}/databases/${databaseName}/tables/${tableName}/columns`);
+export const saveSchemaConfiguration = (data) => api.post('/database/schema-configuration', data);
+export const getSchemaConfigurations = () => api.get('/database/schema-configuration');
 
 export default api;

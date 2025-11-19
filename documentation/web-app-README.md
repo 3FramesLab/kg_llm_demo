@@ -82,7 +82,7 @@ web-app/
 ├── src/
 │   ├── components/        # Reusable components
 │   │   ├── Layout.js      # Main layout with navigation
-│   │   └── GraphVisualization.js  # Graph visualization component
+│   │   └── KnowledgeGraphEditor.js  # Knowledge graph editor with visualization
 │   ├── pages/            # Page components
 │   │   ├── Dashboard.js
 │   │   ├── Schemas.js

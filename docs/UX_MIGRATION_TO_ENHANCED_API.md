@@ -1,8 +1,11 @@
-# UX Migration to Enhanced KPI Analytics API ✅
+# UX Migration to Enhanced KPI Analytics API ⚠️ DEPRECATED
 
-## 🎯 **Migration Complete**
+> **⚠️ DEPRECATION NOTICE**: This document describes components that have been removed from the codebase.
+> This document is kept for historical reference only.
 
-Successfully migrated all frontend components from the old SQLite-based API to the new enhanced KPI Analytics API with MS SQL Server backend.
+## 🎯 **Migration Status: DEPRECATED**
+
+This migration was part of the KPI Analytics system that was never fully integrated into the application.
 
 ---
 

@@ -18,6 +18,7 @@
     "react-scripts": "5.0.1",
     "react-sparklines": "^1.7.0",
     "react-vega": "^8.0.0",
+    "react-window": "^2.2.3",
     "recharts": "^2.15.4",
     "to-regex-range": "^5.0.1",
     "vega": "^6.2.0",

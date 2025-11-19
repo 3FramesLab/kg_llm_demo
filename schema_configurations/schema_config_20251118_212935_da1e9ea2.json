@@ -1,0 +1,62 @@
+{
+  "id": "schema_config_20251118_212935_da1e9ea2",
+  "created_at": "2025-11-18T21:29:35.253652",
+  "tables": [
+    {
+      "connectionId": "65b5f0cf-0fc2-4fae-85d5-1d71132e3f49",
+      "connectionName": "SQL Server",
+      "databaseName": "NewDQ",
+      "tableName": "brz_lnd_RBP_GPU",
+      "tableAliases": [
+        "GPU"
+      ],
+      "columns": [
+        {
+          "name": "Product_Line",
+          "aliases": []
+        },
+        {
+          "name": "Business_Unit",
+          "aliases": []
+        },
+        {
+          "name": "Material",
+          "aliases": []
+        }
+      ]
+    },
+    {
+      "connectionId": "65b5f0cf-0fc2-4fae-85d5-1d71132e3f49",
+      "connectionName": "SQL Server",
+      "databaseName": "NewDQ",
+      "tableName": "brz_lnd_OPS_EXCEL_GPU",
+      "tableAliases": [
+        "RBP"
+      ],
+      "columns": [
+        {
+          "name": "PLANNING_SKU",
+          "aliases": []
+        },
+        {
+          "name": "Product_Line",
+          "aliases": []
+        },
+        {
+          "name": "Business_Unit",
+          "aliases": []
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total_tables": 2,
+    "total_columns": 6,
+    "databases": [
+      "NewDQ"
+    ],
+    "connections": [
+      "SQL Server"
+    ]
+  }
+}

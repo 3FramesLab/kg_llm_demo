@@ -1,4 +1,8 @@
-# Knowledge Graph Visualization Fix: "Node Not Found" Error
+# Knowledge Graph Visualization Fix: "Node Not Found" Error ⚠️ DEPRECATED
+
+> **⚠️ DEPRECATION NOTICE**: This document describes the GraphVisualization component that has been removed.
+> The KnowledgeGraphEditor component now handles all graph visualization with embedded functionality.
+> This document is kept for historical reference only.
 
 ## 🔴 Problem
 

@@ -21,23 +21,30 @@ def ensure_jvm_initialized():
     Thread-safe and idempotent - can be called multiple times safely.
     """
     global _jvm_initialized
-    
+
     with _jvm_lock:
         if _jvm_initialized:
+            logger.debug("JVM already initialized")
             return True
-            
+
         try:
             import jpype
             from kg_builder.config import JDBC_DRIVERS_PATH
-            
+
             # Check if JVM is already started by another process
             if jpype.isJVMStarted():
                 logger.info("JVM already started by external process")
                 _jvm_initialized = True
                 return True
-            
+
             logger.info("🚀 Initializing JVM with all JDBC drivers...")
-            
+            logger.info(f"JDBC_DRIVERS_PATH: {JDBC_DRIVERS_PATH}")
+
+            # Check if JDBC drivers path exists
+            if not os.path.exists(JDBC_DRIVERS_PATH):
+                logger.error(f"JDBC drivers path does not exist: {JDBC_DRIVERS_PATH}")
+                return False
+
             # Find all JDBC driver JAR files
             jdbc_patterns = [
                 "mssql-jdbc*.jar",      # SQL Server
@@ -45,34 +52,69 @@ def ensure_jvm_initialized():
                 "postgresql-*.jar",     # PostgreSQL
                 "ojdbc*.jar"           # Oracle
             ]
-            
+
             all_jars = []
             for pattern in jdbc_patterns:
                 jar_pattern = os.path.join(JDBC_DRIVERS_PATH, pattern)
                 jars = glob.glob(jar_pattern)
                 all_jars.extend(jars)
-            
+                logger.debug(f"Pattern {pattern}: found {len(jars)} files")
+
             if not all_jars:
-                logger.warning(f"No JDBC drivers found in {JDBC_DRIVERS_PATH}")
+                logger.error(f"No JDBC drivers found in {JDBC_DRIVERS_PATH}")
+                logger.error(f"Please ensure JDBC driver JAR files are present in this directory")
                 return False
-            
+
             logger.info(f"Found {len(all_jars)} JDBC drivers:")
             for jar in all_jars:
                 logger.info(f"  - {os.path.basename(jar)}")
-            
+
+            # Get JVM path - try multiple methods
+            jvm_path = None
+            try:
+                jvm_path = jpype.getDefaultJVMPath()
+                logger.info(f"JVM path (default): {jvm_path}")
+            except Exception as e:
+                logger.warning(f"Could not get default JVM path: {e}")
+
+                # Try to find JVM manually
+                import platform
+                if platform.system() == "Windows":
+                    # Common Java installation paths on Windows
+                    possible_paths = [
+                        r"C:\Program Files\Java\jdk-19\bin\server\jvm.dll",
+                        r"C:\Program Files\Java\jdk-21\bin\server\jvm.dll",
+                        r"C:\Program Files\Java\jdk-17\bin\server\jvm.dll",
+                        r"C:\Program Files\Java\jdk-11\bin\server\jvm.dll",
+                        r"C:\Program Files\Java\jre-19\bin\server\jvm.dll",
+                        r"C:\Program Files\Java\jre-21\bin\server\jvm.dll",
+                    ]
+
+                    for path in possible_paths:
+                        if os.path.exists(path):
+                            jvm_path = path
+                            logger.info(f"Found JVM at: {jvm_path}")
+                            break
+
+                if not jvm_path:
+                    logger.error("Could not locate JVM. Please set JAVA_HOME environment variable.")
+                    return False
+
             # Start JVM with all JDBC drivers in classpath
             classpath = os.pathsep.join(all_jars)
-            jpype.startJVM(jpype.getDefaultJVMPath(), f"-Djava.class.path={classpath}")
-            
+            logger.info(f"Classpath: {classpath}")
+
+            jpype.startJVM(jvm_path, f"-Djava.class.path={classpath}", convertStrings=False)
+
             logger.info("✅ JVM initialized successfully with all JDBC drivers")
             _jvm_initialized = True
             return True
-            
-        except ImportError:
-            logger.warning("JPype not available - JDBC functionality will be limited")
+
+        except ImportError as e:
+            logger.error(f"JPype not available: {e}", exc_info=True)
             return False
         except Exception as e:
-            logger.error(f"Failed to initialize JVM with JDBC drivers: {e}")
+            logger.error(f"Failed to initialize JVM with JDBC drivers: {e}", exc_info=True)
             return False
 
 

@@ -1,4 +1,7 @@
-# Quick Fix Reference: "node not found" Error
+# Quick Fix Reference: "node not found" Error ⚠️ DEPRECATED
+
+> **⚠️ DEPRECATION NOTICE**: The GraphVisualization component has been removed.
+> Only KnowledgeGraphEditor remains and handles all graph visualization.
 
 ## 🔴 Error
 ```
@@ -6,18 +9,13 @@ node not found: hana_material_master
 ```
 
 ## ✅ Status
-**FIXED** - Both visualization components now validate relationships
+**FIXED** - KnowledgeGraphEditor component validates relationships
 
 ---
 
 ## 🔧 What Was Fixed
 
-### Component 1: GraphVisualization.js
-- **Status**: ✅ Already had validation
-- **Location**: Lines 12-24
-- **What it does**: Filters relationships to only include valid nodes
-
-### Component 2: KnowledgeGraphEditor.js
+### Component: KnowledgeGraphEditor.js
 - **Status**: ✅ Just fixed!
 - **Location**: Lines 56-68
 - **What it does**: Filters relationships to only include valid nodes

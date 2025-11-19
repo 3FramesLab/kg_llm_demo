@@ -8,3 +8,4 @@ __pycache__/
 logs/*.log
 logs/*.log.*
 !logs/.gitkeep
+venv
