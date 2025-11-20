@@ -11,6 +11,9 @@ from kg_builder.models import (
     SchemaUploadResponse, KGGenerationRequest, KGGenerationResponse,
     QueryRequest, QueryResponse, EntityResponse, GraphExportResponse,
     HealthCheckResponse, LLMExtractionResponse, LLMAnalysisResponse,
+    LLMSuggestRelationshipsRequest, LLMSuggestRelationshipsResponse,
+    LLMGenerateAliasesRequest, LLMGenerateAliasesResponse,
+    LLMGenerateColumnAliasesRequest, LLMGenerateColumnAliasesResponse,
     RuleGenerationRequest, RuleGenerationResponse, RuleValidationRequest,
     ValidationResult, RuleExecutionRequest, RuleExecutionResponse,
     NLRelationshipRequest, NLRelationshipResponse, KnowledgeGraph,
@@ -35,6 +38,11 @@ from kg_builder.services.rule_storage import get_rule_storage
 from kg_builder.services.rule_validator import get_rule_validator
 from kg_builder.services.nl_relationship_parser import get_nl_relationship_parser
 from kg_builder.services.landing_kpi_executor import get_landing_kpi_executor
+from kg_builder.services.groups_dashboards_service import get_groups_dashboards_service
+from kg_builder.models import (
+    GroupCreateRequest, GroupUpdateRequest, GroupResponse, GroupListResponse,
+    DashboardCreateRequest, DashboardUpdateRequest, DashboardResponse, DashboardListResponse
+)
 from kg_builder.utils.java_response_decorator import java_safe_response
 
 logger = logging.getLogger(__name__)
@@ -821,8 +829,8 @@ async def llm_status():
     }
 
 
-@router.post("/llm/generate-aliases", tags=["LLM"])
-async def llm_generate_aliases(request: dict):
+@router.post("/llm/generate-aliases", response_model=LLMGenerateAliasesResponse, tags=["LLM"])
+async def llm_generate_aliases(request: LLMGenerateAliasesRequest):
     """
     Generate business-friendly aliases for database tables using LLM.
 
@@ -861,7 +869,7 @@ async def llm_generate_aliases(request: dict):
                 detail="LLM service is not enabled. Please set OPENAI_API_KEY environment variable."
             )
 
-        tables = request.get("tables", [])
+        tables = request.tables
 
         if not tables:
             raise HTTPException(status_code=400, detail="tables array is required")
@@ -869,10 +877,10 @@ async def llm_generate_aliases(request: dict):
         results = []
 
         for table in tables:
-            table_name = table.get("tableName")
-            connection_id = table.get("connectionId")
-            database_name = table.get("databaseName")
-            columns = table.get("columns", [])
+            table_name = table.tableName
+            connection_id = table.connectionId
+            database_name = table.databaseName
+            columns = table.columns
 
             if not table_name:
                 logger.warning(f"Skipping table without tableName: {table}")
@@ -906,12 +914,177 @@ async def llm_generate_aliases(request: dict):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/llm/suggest-relationships", tags=["LLM"])
-async def llm_suggest_relationships(request: dict):
+@router.post("/llm/generate-column-aliases", response_model=LLMGenerateColumnAliasesResponse, tags=["LLM"])
+async def llm_generate_column_aliases(request: LLMGenerateColumnAliasesRequest):
+    """
+    Generate business-friendly aliases for database columns using LLM.
+
+    Request body:
+    {
+        "columns": [
+            {
+                "tableName": "brz_lnd_RBP_GPU",
+                "columnName": "MATERIAL_ID",
+                "columnType": "VARCHAR"
+            },
+            {
+                "tableName": "brz_lnd_RBP_GPU",
+                "columnName": "OPS_STATUS",
+                "columnType": "VARCHAR"
+            }
+        ]
+    }
+
+    Returns:
+    {
+        "success": true,
+        "data": [
+            {
+                "tableName": "brz_lnd_RBP_GPU",
+                "columnName": "MATERIAL_ID",
+                "aliases": ["Material", "Product", "Item"],
+                "reasoning": "Column contains material/product identifiers"
+            },
+            {
+                "tableName": "brz_lnd_RBP_GPU",
+                "columnName": "OPS_STATUS",
+                "aliases": ["Status", "State"],
+                "reasoning": "Column contains operational status information"
+            }
+        ]
+    }
+    """
+    try:
+        llm_service = get_llm_service()
+
+        if not llm_service.is_enabled():
+            raise HTTPException(
+                status_code=503,
+                detail="LLM service is not enabled. Please set OPENAI_API_KEY environment variable."
+            )
+
+        columns = request.columns
+
+        if not columns:
+            raise HTTPException(status_code=400, detail="columns array is required")
+
+        results = []
+
+        for column in columns:
+            table_name = column.tableName
+            column_name = column.columnName
+            column_type = column.columnType
+
+            if not table_name or not column_name:
+                logger.warning(f"Skipping column without tableName or columnName: {column}")
+                continue
+
+            # Generate aliases using LLM
+            alias_result = llm_service.extract_column_aliases(
+                table_name=table_name,
+                column_name=column_name,
+                column_type=column_type
+            )
+
+            results.append({
+                "tableName": table_name,
+                "columnName": column_name,
+                "aliases": alias_result.get("aliases", []),
+                "reasoning": alias_result.get("reasoning", "")
+            })
+
+        return {
+            "success": True,
+            "data": results
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating column aliases: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def _load_tables_from_schema_config(schema_id: str) -> tuple[dict, list]:
+    """
+    Load table and column data directly from a schema configuration.
+
+    Args:
+        schema_id: The schema configuration ID (e.g., schema_config_20251118_212935_da1e9ea2)
+
+    Returns:
+        Tuple of (available_tables dict, tables_list)
+        - available_tables: {table_name: [column_names]}
+        - tables_list: List of table configurations from the schema
+
+    Raises:
+        HTTPException: If configuration not found or cannot be loaded
+    """
+    from pathlib import Path
+    import json
+
+    config_dir = Path("schema_configurations")
+    config_file = config_dir / f"{schema_id}.json"
+
+    if not config_file.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"Schema configuration '{schema_id}' not found"
+        )
+
+    try:
+        with open(config_file, 'r', encoding='utf-8') as f:
+            config_data = json.load(f)
+
+        # Extract tables from the configuration
+        tables_list = config_data.get('tables', [])
+        if not tables_list:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Schema configuration '{schema_id}' contains no tables"
+            )
+
+        # Build available_tables dict: {table_name: [column_names]}
+        available_tables = {}
+        for table_config in tables_list:
+            table_name = table_config.get('tableName')
+            columns = table_config.get('columns', [])
+            column_names = [col.get('name') for col in columns if col.get('name')]
+
+            if table_name:
+                available_tables[table_name] = column_names
+
+        logger.info(f"Loaded {len(available_tables)} tables from schema config {schema_id}")
+        return available_tables, tables_list
+
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse schema configuration {schema_id}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to parse schema configuration: {str(e)}"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error loading schema configuration {schema_id}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error loading schema configuration: {str(e)}"
+        )
+
+
+@router.post("/llm/suggest-relationships", response_model=LLMSuggestRelationshipsResponse, tags=["LLM"])
+async def llm_suggest_relationships(request: LLMSuggestRelationshipsRequest):
     """
     Use LLM to suggest which tables are likely related to a source table.
 
-    Request body:
+    Request body (with schema_id - preferred):
+    {
+        "source_table": "brz_lnd_RBP_GPU",
+        "schema_id": "schema_config_20251118_212935_da1e9ea2"
+    }
+
+    Request body (with schema_names - fallback):
     {
         "source_table": "brz_lnd_RBP_GPU",
         "schema_names": ["schema1", "schema2"]
@@ -923,6 +1096,7 @@ async def llm_suggest_relationships(request: dict):
         "source_table": "brz_lnd_RBP_GPU",
         "suggestions": [
             {
+                "source_table": "brz_lnd_RBP_GPU",
                 "target_table": "brz_lnd_OPS_EXCEL_GPU",
                 "source_column": "Material",
                 "target_column": "PLANNING_SKU",
@@ -942,37 +1116,53 @@ async def llm_suggest_relationships(request: dict):
                 detail="LLM service is not enabled. Please set OPENAI_API_KEY environment variable."
             )
 
-        source_table = request.get("source_table")
-        schema_names = request.get("schema_names", [])
+        source_table = request.source_table
 
         if not source_table:
             raise HTTPException(status_code=400, detail="source_table is required")
 
-        if not schema_names:
-            raise HTTPException(status_code=400, detail="schema_names is required")
-
-        # Load schemas and collect all tables with their columns
+        # Load tables and columns: prefer schema_id, fallback to schema_names
         available_tables = {}
         source_columns = []
 
-        for schema_name in schema_names:
-            try:
-                schema = SchemaParser.load_schema(schema_name)
-                for table_name, table in schema.tables.items():
-                    column_names = [col.name for col in table.columns]
-                    available_tables[table_name] = column_names
+        if request.schema_id:
+            # Load directly from schema configuration
+            logger.info(f"Loading tables from schema configuration: {request.schema_id}")
+            available_tables, tables_list = _load_tables_from_schema_config(request.schema_id)
+            logger.info(f"✅ Loaded {len(available_tables)} tables from schema config")
 
-                    # If this is the source table, save its columns
-                    if table_name == source_table:
-                        source_columns = column_names
+            # Find source table columns
+            for table_config in tables_list:
+                if table_config.get('tableName') == source_table:
+                    columns = table_config.get('columns', [])
+                    source_columns = [col.get('name') for col in columns if col.get('name')]
+                    logger.info(f"🔍 Found source table '{source_table}' with {len(source_columns)} columns")
+                    logger.info(f"   Columns: {', '.join(source_columns)}")
+                    break
 
-            except Exception as e:
-                logger.warning(f"Failed to load schema {schema_name}: {e}")
+        elif request.schema_names:
+            # Load from schema files (fallback)
+            logger.info(f"Loading tables from schema files: {request.schema_names}")
+            for schema_name in request.schema_names:
+                try:
+                    schema = SchemaParser.load_schema(schema_name)
+                    for table_name, table in schema.tables.items():
+                        column_names = [col.name for col in table.columns]
+                        available_tables[table_name] = column_names
+
+                        # If this is the source table, save its columns
+                        if table_name == source_table:
+                            source_columns = column_names
+
+                except Exception as e:
+                    logger.warning(f"Failed to load schema {schema_name}: {e}")
+        else:
+            raise HTTPException(status_code=400, detail="Either schema_id or schema_names is required")
 
         if not source_columns:
             raise HTTPException(
                 status_code=404,
-                detail=f"Source table '{source_table}' not found in any of the provided schemas"
+                detail=f"Source table '{source_table}' not found in the provided schema configuration"
             )
 
         # Get LLM suggestions
@@ -4338,4 +4528,220 @@ async def get_unique_ops_planners():
             status_code=500,
             detail=f"Failed to fetch OPS_PLANNER values: {str(e)}"
         )
+
+
+# ==================== Groups Management Endpoints ====================
+
+@router.post("/groups", response_model=GroupResponse, tags=["Groups Management"])
+async def create_group(request: GroupCreateRequest):
+    """Create a new group."""
+    try:
+        service = get_groups_dashboards_service()
+        result = service.create_group(
+            code=request.code,
+            name=request.name,
+            description=request.description,
+            color=request.color,
+            icon=request.icon,
+            is_active=request.is_active
+        )
+
+        # Fetch and return the created group
+        group = service.get_group(result["id"])
+        return group
+    except Exception as e:
+        logger.error(f"Error creating group: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/groups", response_model=GroupListResponse, tags=["Groups Management"])
+async def list_groups(is_active: Optional[bool] = Query(None)):
+    """List all groups."""
+    try:
+        service = get_groups_dashboards_service()
+        groups = service.list_groups(is_active=is_active)
+
+        return {
+            "success": True,
+            "total": len(groups),
+            "groups": groups
+        }
+    except Exception as e:
+        logger.error(f"Error listing groups: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/groups/{group_id}", response_model=GroupResponse, tags=["Groups Management"])
+async def get_group(group_id: int):
+    """Get a group by ID."""
+    try:
+        service = get_groups_dashboards_service()
+        group = service.get_group(group_id)
+
+        if not group:
+            raise HTTPException(status_code=404, detail="Group not found")
+
+        return group
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting group: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/groups/{group_id}", response_model=GroupResponse, tags=["Groups Management"])
+async def update_group(group_id: int, request: GroupUpdateRequest):
+    """Update a group."""
+    try:
+        service = get_groups_dashboards_service()
+
+        # Prepare update data
+        update_data = {}
+        if request.code is not None:
+            update_data["code"] = request.code
+        if request.name is not None:
+            update_data["name"] = request.name
+        if request.description is not None:
+            update_data["description"] = request.description
+        if request.color is not None:
+            update_data["color"] = request.color
+        if request.icon is not None:
+            update_data["icon"] = request.icon
+        if request.is_active is not None:
+            update_data["is_active"] = request.is_active
+
+        service.update_group(group_id, **update_data)
+
+        # Fetch and return the updated group
+        group = service.get_group(group_id)
+        if not group:
+            raise HTTPException(status_code=404, detail="Group not found")
+
+        return group
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating group: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/groups/{group_id}", tags=["Groups Management"])
+async def delete_group(group_id: int):
+    """Delete a group."""
+    try:
+        service = get_groups_dashboards_service()
+        service.delete_group(group_id)
+
+        return {"success": True, "message": "Group deleted successfully"}
+    except Exception as e:
+        logger.error(f"Error deleting group: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== Dashboards Management Endpoints ====================
+
+@router.post("/dashboards", response_model=DashboardResponse, tags=["Dashboards Management"])
+async def create_dashboard(request: DashboardCreateRequest):
+    """Create a new dashboard (independent of groups)."""
+    try:
+        service = get_groups_dashboards_service()
+        result = service.create_dashboard(
+            code=request.code,
+            name=request.name,
+            description=request.description,
+            layout=request.layout,
+            widgets=request.widgets,
+            is_active=request.is_active
+        )
+
+        # Fetch and return the created dashboard
+        dashboard = service.get_dashboard(result["id"])
+        return dashboard
+    except Exception as e:
+        logger.error(f"Error creating dashboard: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/dashboards", response_model=DashboardListResponse, tags=["Dashboards Management"])
+async def list_dashboards(is_active: Optional[bool] = Query(None)):
+    """List dashboards (independent of groups)."""
+    try:
+        service = get_groups_dashboards_service()
+        dashboards = service.list_dashboards(is_active=is_active)
+
+        return {
+            "success": True,
+            "total": len(dashboards),
+            "dashboards": dashboards
+        }
+    except Exception as e:
+        logger.error(f"Error listing dashboards: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/dashboards/{dashboard_id}", response_model=DashboardResponse, tags=["Dashboards Management"])
+async def get_dashboard(dashboard_id: int):
+    """Get a dashboard by ID."""
+    try:
+        service = get_groups_dashboards_service()
+        dashboard = service.get_dashboard(dashboard_id)
+
+        if not dashboard:
+            raise HTTPException(status_code=404, detail="Dashboard not found")
+
+        return dashboard
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting dashboard: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/dashboards/{dashboard_id}", response_model=DashboardResponse, tags=["Dashboards Management"])
+async def update_dashboard(dashboard_id: int, request: DashboardUpdateRequest):
+    """Update a dashboard."""
+    try:
+        service = get_groups_dashboards_service()
+
+        # Prepare update data
+        update_data = {}
+        if request.code is not None:
+            update_data["code"] = request.code
+        if request.name is not None:
+            update_data["name"] = request.name
+        if request.description is not None:
+            update_data["description"] = request.description
+        if request.layout is not None:
+            update_data["layout"] = request.layout
+        if request.widgets is not None:
+            update_data["widgets"] = request.widgets
+        if request.is_active is not None:
+            update_data["is_active"] = request.is_active
+
+        service.update_dashboard(dashboard_id, **update_data)
+
+        # Fetch and return the updated dashboard
+        dashboard = service.get_dashboard(dashboard_id)
+        if not dashboard:
+            raise HTTPException(status_code=404, detail="Dashboard not found")
+
+        return dashboard
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating dashboard: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/dashboards/{dashboard_id}", tags=["Dashboards Management"])
+async def delete_dashboard(dashboard_id: int):
+    """Delete a dashboard."""
+    try:
+        service = get_groups_dashboards_service()
+        service.delete_dashboard(dashboard_id)
+
+        return {"success": True, "message": "Dashboard deleted successfully"}
+    except Exception as e:
+        logger.error(f"Error deleting dashboard: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 

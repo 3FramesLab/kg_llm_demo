@@ -212,7 +212,7 @@ VirtualizedTableBody.displayName = 'VirtualizedTableBody';
 
 /**
  * TableSelectionStep Component
- * Step 2: Select tables from connected databases
+ * Step 2: Entities - Select tables from connected databases
  */
 function TableSelectionStep({ connections, selectedTables, setSelectedTables, onDataChange }) {
   const [loading, setLoading] = useState(false);
@@ -448,7 +448,7 @@ function TableSelectionStep({ connections, selectedTables, setSelectedTables, on
   if (connections.length === 0) {
     return (
       <Alert severity="warning">
-        No database connections available. Please add connections in Step 1.
+        No database connections available. Please add connections in the Sources step.
       </Alert>
     );
   }
@@ -467,7 +467,7 @@ function TableSelectionStep({ connections, selectedTables, setSelectedTables, on
                 mb: 0.5,
               }}
             >
-              Select Tables
+              Entities
             </Typography>
             <Typography
               variant="body2"
@@ -477,10 +477,10 @@ function TableSelectionStep({ connections, selectedTables, setSelectedTables, on
                 lineHeight: 1.5,
               }}
             >
-              Choose tables from your connected databases to include in your knowledge graph.
+              Choose entities from your connected sources to include in your knowledge graph.
             </Typography>
           </Box>
-          <Tooltip title="Refresh table list" arrow>
+          <Tooltip title="Refresh entity list" arrow>
             <IconButton
               size="small"
               onClick={handleRefresh}
@@ -534,7 +534,7 @@ function TableSelectionStep({ connections, selectedTables, setSelectedTables, on
                 fontSize: '0.875rem',
               }}
             >
-              {selectedTables.length} {selectedTables.length === 1 ? 'table' : 'tables'} selected
+              {selectedTables.length} {selectedTables.length === 1 ? 'entity' : 'entities'} selected
             </Typography>
             <Typography
               variant="caption"
@@ -544,8 +544,8 @@ function TableSelectionStep({ connections, selectedTables, setSelectedTables, on
               }}
             >
               {searchQuery
-                ? `${filteredTableCount} tables match your search`
-                : `${totalTableCount} total tables available`}
+                ? `${filteredTableCount} entities match your search`
+                : `${totalTableCount} total entities available`}
             </Typography>
           </Box>
         </Box>
@@ -554,7 +554,7 @@ function TableSelectionStep({ connections, selectedTables, setSelectedTables, on
       {/* Search Bar */}
       <Box sx={{ mb: 2 }}>
         <TextField
-          placeholder="Search tables by name..."
+          placeholder="Search entities by name..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           fullWidth
@@ -621,7 +621,7 @@ function TableSelectionStep({ connections, selectedTables, setSelectedTables, on
               fontSize: '0.75rem',
             }}
           >
-            Showing {filteredTableCount} of {totalTableCount} tables
+            Showing {filteredTableCount} of {totalTableCount} entities
           </Typography>
         )}
       </Box>
@@ -643,7 +643,7 @@ function TableSelectionStep({ connections, selectedTables, setSelectedTables, on
             },
           }}
         >
-          No tables found. Make sure your database connections are active.
+          No entities found. Make sure your source connections are active.
         </Alert>
       ) : (
         <Box>
@@ -726,7 +726,7 @@ function TableSelectionStep({ connections, selectedTables, setSelectedTables, on
                       }}
                     />
                     <Chip
-                      label={`${Object.keys(connData.databases).length} database(s)`}
+                      label={`${Object.keys(connData.databases).length} schema(s)`}
                       size="small"
                       sx={{
                         height: 22,
@@ -756,7 +756,7 @@ function TableSelectionStep({ connections, selectedTables, setSelectedTables, on
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
                       <CircularProgress size={32} sx={{ color: '#5B6FE5' }} />
                       <Typography variant="body2" sx={{ ml: 2, color: '#6B7280' }}>
-                        Loading tables...
+                        Loading entities...
                       </Typography>
                     </Box>
                   ) : (
@@ -780,7 +780,7 @@ function TableSelectionStep({ connections, selectedTables, setSelectedTables, on
                                 },
                               }}
                             >
-                              No tables found in database: {dbName}
+                              No entities found in schema: {dbName}
                             </Alert>
                           </Box>
                         );
@@ -802,7 +802,7 @@ function TableSelectionStep({ connections, selectedTables, setSelectedTables, on
                                 },
                               }}
                             >
-                              No tables match your search criteria in database: {dbName}
+                              No entities match your search criteria in schema: {dbName}
                             </Alert>
                           </Box>
                         );
@@ -815,7 +815,7 @@ function TableSelectionStep({ connections, selectedTables, setSelectedTables, on
                             <TableHead>
                               <TableRow sx={{ bgcolor: '#F9FAFB' }}>
                                 <TableCell padding="checkbox" sx={{ width: 50, borderBottom: '2px solid #E5E7EB' }}>
-                                  <Tooltip title="Select/Deselect table" arrow>
+                                  <Tooltip title="Select/Deselect entity" arrow>
                                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                       <CheckBoxIcon sx={{ fontSize: 18, color: '#9CA3AF' }} />
                                     </Box>
@@ -842,7 +842,7 @@ function TableSelectionStep({ connections, selectedTables, setSelectedTables, on
                                       },
                                     }}
                                   >
-                                    Table Name
+                                    Entity Name
                                   </TableSortLabel>
                                 </TableCell>
                                 <TableCell sx={{ fontWeight: 600, color: '#1F2937', borderBottom: '2px solid #E5E7EB' }}>
@@ -890,7 +890,7 @@ function TableSelectionStep({ connections, selectedTables, setSelectedTables, on
                                       },
                                     }}
                                   >
-                                    Database
+                                    Schema
                                   </TableSortLabel>
                                 </TableCell>
                                 <TableCell sx={{ fontWeight: 600, color: '#1F2937', borderBottom: '2px solid #E5E7EB' }}>
@@ -948,7 +948,7 @@ function TableSelectionStep({ connections, selectedTables, setSelectedTables, on
                                         <TableCell colSpan={5} sx={{ borderBottom: 'none', pt: 2, pb: 2 }}>
                                           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
                                             <Typography variant="caption" sx={{ color: '#6B7280' }}>
-                                              Showing {startIndex + 1}-{Math.min(endIndex, sortedTables.length)} of {sortedTables.length} tables
+                                              Showing {startIndex + 1}-{Math.min(endIndex, sortedTables.length)} of {sortedTables.length} entities
                                             </Typography>
                                             <Pagination
                                               count={totalPages}

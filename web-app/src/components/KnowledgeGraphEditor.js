@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
-import { Box, Paper, Typography, Button, IconButton, Chip, Tooltip, Zoom, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
-import { Close, Edit, Delete, ZoomIn, ZoomOut, CenterFocusStrong } from '@mui/icons-material';
+import { Box, Paper, Typography, IconButton, Chip, Tooltip } from '@mui/material';
+import { ZoomIn, ZoomOut, CenterFocusStrong } from '@mui/icons-material';
 
 /**
  * KnowledgeGraphEditor Component
@@ -25,28 +25,15 @@ export default function KnowledgeGraphEditor({
 }) {
   const fgRef = useRef();
   const [selectedNode, setSelectedNode] = useState(null);
-  const [selectedLink, setSelectedLink] = useState(null);
   const [graphData, setGraphData] = useState({ nodes: [], links: [] });
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editFormData, setEditFormData] = useState({ label: '', type: '' });
 
-  // Color palette for unique entity colors
+  // Teal color palette matching the reference image - using consistent teal for better visibility
   const colorPalette = [
-    '#667eea', // Blue
-    '#764ba2', // Purple
-    '#f093fb', // Pink
-    '#4facfe', // Light Blue
-    '#43e97b', // Green
-    '#fa709a', // Red
-    '#30cfd0', // Cyan
-    '#a8edea', // Light Cyan
-    '#fed6e3', // Light Pink
-    '#ffa502', // Orange
-    '#ff6b6b', // Coral
-    '#845ef7', // Violet
-    '#748ffc', // Indigo
-    '#15aabf', // Teal
-    '#20c997', // Mint
+    '#5B8A7D', // Primary Teal (matching reference)
+    '#5B8A7D', // Primary Teal
+    '#5B8A7D', // Primary Teal
+    '#5B8A7D', // Primary Teal
+    '#5B8A7D', // Primary Teal
   ];
 
   // Function to generate a consistent color for an entity based on its ID
@@ -72,7 +59,7 @@ export default function KnowledgeGraphEditor({
         id: entity.id,
         name: entity.label || entity.id,
         type: entityType,
-        val: 8,
+        val: 10, // Increased for better visibility
         color: uniqueColor,
         ...entity,
       };
@@ -102,608 +89,447 @@ export default function KnowledgeGraphEditor({
       return isValid;
     });
 
-    const links = validRelationships.map((rel) => {
-      // Map shortened IDs to full entity IDs
+    // Detect and consolidate bidirectional relationships
+    const linkMap = new Map();
+
+    validRelationships.forEach((rel) => {
       const sourceEntity = entityIdMap.get(rel.source_id);
       const targetEntity = entityIdMap.get(rel.target_id);
-      return {
-        source: sourceEntity?.id || rel.source_id,
-        target: targetEntity?.id || rel.target_id,
-        type: rel.relationship_type,
-        ...rel,
-      };
+      const sourceId = sourceEntity?.id || rel.source_id;
+      const targetId = targetEntity?.id || rel.target_id;
+
+      // Create a unique key for this pair (order-independent)
+      const pairKey = [sourceId, targetId].sort().join('|');
+
+      if (!linkMap.has(pairKey)) {
+        linkMap.set(pairKey, {
+          source: sourceId,
+          target: targetId,
+          type: rel.relationship_type,
+          forwardType: rel.relationship_type,
+          reverseType: null,
+          isBidirectional: false,
+          originalRel: rel,
+        });
+      } else {
+        // Found the reverse relationship - mark as bidirectional
+        const existingLink = linkMap.get(pairKey);
+
+        // Check if this is actually the reverse direction
+        if (existingLink.source === targetId && existingLink.target === sourceId) {
+          // This is the reverse - update the existing link
+          existingLink.reverseType = rel.relationship_type;
+          existingLink.isBidirectional = true;
+          // Combine both types in the label
+          existingLink.type = `${existingLink.forwardType} ⇄ ${rel.relationship_type}`;
+        } else if (existingLink.source === sourceId && existingLink.target === targetId) {
+          // Same direction, different relationship type - keep as separate (will be handled below)
+          // Create a unique key that includes direction
+          const uniqueKey = `${pairKey}|${existingLink.forwardType}|${rel.relationship_type}`;
+          linkMap.set(uniqueKey, {
+            source: sourceId,
+            target: targetId,
+            type: rel.relationship_type,
+            forwardType: rel.relationship_type,
+            reverseType: null,
+            isBidirectional: false,
+            originalRel: rel,
+          });
+        }
+      }
     });
 
-    console.log(`Graph data: ${nodes.length} nodes, ${links.length} links`);
+    const links = Array.from(linkMap.values()).map((link) => ({
+      ...link.originalRel,
+      source: link.source,
+      target: link.target,
+      type: link.type,
+      forwardType: link.forwardType,
+      reverseType: link.reverseType,
+      isBidirectional: link.isBidirectional,
+    }));
+
+    console.log(`Graph data: ${nodes.length} nodes, ${links.length} links (${validRelationships.length - links.length} bidirectional pairs consolidated)`);
     setGraphData({ nodes, links });
   }, [entities, relationships]);
 
   const handleNodeClick = (node) => {
     setSelectedNode(node);
-    setSelectedLink(null);
     onNodeClick?.(node);
   };
 
   const handleLinkClick = (link) => {
-    setSelectedLink(link);
-    setSelectedNode(null);
     onLinkClick?.(link);
   };
 
   const handleNodeHover = (node) => {
     if (fgRef.current) {
-      fgRef.current.d3Force('charge').strength(node ? -30 : -5);
+      fgRef.current.d3Force('charge').strength(node ? -200 : -150);
     }
   };
 
-  const handleEditClick = () => {
-    if (selectedNode) {
-      setEditFormData({
-        label: selectedNode.name || '',
-        type: selectedNode.type || '',
-      });
-      setEditDialogOpen(true);
-    }
-  };
+  // Configure force simulation to match reference image layout
+  useEffect(() => {
+    if (fgRef.current) {
+      // Import d3-force for collision
+      const d3 = require('d3-force');
 
-  const handleEditSave = () => {
-    if (selectedNode) {
-      // Update the selected node with new values
-      const updatedNode = {
-        ...selectedNode,
-        name: editFormData.label,
-        label: editFormData.label,
-        type: editFormData.type,
-      };
-      setSelectedNode(updatedNode);
-      setEditDialogOpen(false);
-    }
-  };
+      // Configure charge force for organic, spread-out layout like reference
+      const chargeForce = fgRef.current.d3Force('charge');
+      if (chargeForce) {
+        chargeForce
+          .strength(-800) // Stronger repulsion to prevent overlap
+          .distanceMin(80) // Increased minimum distance
+          .distanceMax(500);
+      }
 
-  const handleEditCancel = () => {
-    setEditDialogOpen(false);
-    setEditFormData({ label: '', type: '' });
-  };
+      // Configure link force with varied distances for organic layout
+      const linkForce = fgRef.current.d3Force('link');
+      if (linkForce) {
+        linkForce
+          .distance((link) => {
+            // Varied distances create more organic layout
+            if (link.type === "SEMANTIC_REFERENCE" || link.type === "SEMANTIC_REFERENCED_BY") {
+              return 200; // Increased distance
+            }
+            if (link.type === "MATCHES") {
+              return 160; // Increased distance
+            }
+            return 180; // Increased distance
+          })
+          .strength(0.6); // Slightly stronger for better spacing
+      }
+
+      // Add/configure collision force to prevent node overlap
+      // Force add it if it doesn't exist
+      fgRef.current.d3Force('collide', d3.forceCollide()
+        .radius(45) // Node radius (30px) + padding (15px)
+        .strength(1.0) // Maximum collision strength
+        .iterations(3) // More iterations for better collision detection
+      );
+
+      // Weak centering force for natural spread
+      const centerForce = fgRef.current.d3Force('center');
+      if (centerForce) {
+        centerForce.strength(0.15);
+      }
+
+      // Reheat the simulation to apply new forces
+      fgRef.current.d3ReheatSimulation();
+    }
+  }, [graphData]);
 
   return (
-    <Box sx={{ display: 'flex', gap: 2, width: '100%', flexDirection: { xs: 'column', lg: 'row' } }}>
+    <Box sx={{ width: '100%' }}>
       {/* Graph Visualization */}
-      <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Paper
-          elevation={0}
-          sx={{
-            height: 480,
-            borderRadius: 1.5,
-            overflow: 'hidden',
-            position: 'relative',
-            border: '2px solid',
-            borderColor: 'divider',
-            bgcolor: '#ffffff',
-            boxShadow: 'none',
-          }}
-        >
-          {graphData.nodes.length > 0 ? (
-            <>
-              {/* Zoom Controls */}
-              <Box
-                sx={{
-                  position: 'absolute',
-                  top: 10,
-                  right: 10,
-                  zIndex: 10,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 0.5,
-                }}
-              >
-                <Tooltip title="Zoom In" placement="left">
-                  <IconButton
-                    size="small"
-                    onClick={() => fgRef.current?.zoom(fgRef.current.zoom() * 1.2, 400)}
-                    sx={{
-                      bgcolor: 'white',
-                      boxShadow: 1,
-                      width: 32,
-                      height: 32,
-                      '&:hover': {
-                        bgcolor: 'grey.100',
-                      },
-                    }}
-                  >
-                    <ZoomIn sx={{ fontSize: 18 }} />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Zoom Out" placement="left">
-                  <IconButton
-                    size="small"
-                    onClick={() => fgRef.current?.zoom(fgRef.current.zoom() / 1.2, 400)}
-                    sx={{
-                      bgcolor: 'white',
-                      boxShadow: 1,
-                      width: 32,
-                      height: 32,
-                      '&:hover': {
-                        bgcolor: 'grey.100',
-                      },
-                    }}
-                  >
-                    <ZoomOut sx={{ fontSize: 18 }} />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Center View" placement="left">
-                  <IconButton
-                    size="small"
-                    onClick={() => fgRef.current?.zoomToFit(400)}
-                    sx={{
-                      bgcolor: 'white',
-                      boxShadow: 1,
-                      width: 32,
-                      height: 32,
-                      '&:hover': {
-                        bgcolor: 'grey.100',
-                      },
-                    }}
-                  >
-                    <CenterFocusStrong sx={{ fontSize: 18 }} />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-
-              {/* Graph Stats Overlay */}
-              <Box
-                sx={{
-                  position: 'absolute',
-                  top: 12,
-                  left: 12,
-                  zIndex: 10,
-                  display: 'flex',
-                  gap: 0.75,
-                }}
-              >
-                <Chip
-                  label={`${graphData.nodes.length} Nodes`}
+      <Paper
+        elevation={0}
+        sx={{
+          height: 'calc(100vh - 250px)',
+          borderRadius: 1.5,
+          overflow: 'hidden',
+          position: 'relative',
+          border: '2px solid',
+          borderColor: 'divider',
+          bgcolor: '#ffffff',
+          boxShadow: 'none',
+        }}
+      >
+        {graphData.nodes.length > 0 ? (
+          <>
+            {/* Zoom Controls */}
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 10,
+                right: 10,
+                zIndex: 10,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 0.5,
+              }}
+            >
+              <Tooltip title="Zoom In" placement="left">
+                <IconButton
                   size="small"
+                  onClick={() => fgRef.current?.zoom(fgRef.current.zoom() * 1.2, 400)}
                   sx={{
                     bgcolor: 'white',
-                    fontWeight: 600,
-                    fontSize: '0.7rem',
-                    height: 24,
                     boxShadow: 1,
+                    width: 32,
+                    height: 32,
+                    '&:hover': {
+                      bgcolor: 'grey.100',
+                    },
                   }}
-                />
-                <Chip
-                  label={`${graphData.links.length} Links`}
+                >
+                  <ZoomIn sx={{ fontSize: 18 }} />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Zoom Out" placement="left">
+                <IconButton
                   size="small"
+                  onClick={() => fgRef.current?.zoom(fgRef.current.zoom() / 1.2, 400)}
                   sx={{
                     bgcolor: 'white',
-                    fontWeight: 600,
-                    fontSize: '0.7rem',
-                    height: 24,
                     boxShadow: 1,
+                    width: 32,
+                    height: 32,
+                    '&:hover': {
+                      bgcolor: 'grey.100',
+                    },
                   }}
-                />
-              </Box>
+                >
+                  <ZoomOut sx={{ fontSize: 18 }} />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Center View" placement="left">
+                <IconButton
+                  size="small"
+                  onClick={() => fgRef.current?.zoomToFit(400)}
+                  sx={{
+                    bgcolor: 'white',
+                    boxShadow: 1,
+                    width: 32,
+                    height: 32,
+                    '&:hover': {
+                      bgcolor: 'grey.100',
+                    },
+                  }}
+                >
+                  <CenterFocusStrong sx={{ fontSize: 18 }} />
+                </IconButton>
+              </Tooltip>
+            </Box>
 
-              <ForceGraph2D
-                ref={fgRef}
-                graphData={graphData}
-                nodeLabel={(node) => `${node.name} (${node.type})`}
-                nodeColor={(node) => node.color}
-                nodeVal={(node) => (selectedNode?.id === node.id ? 10 : 8)}
-                linkColor={() => '#999'}
-                linkWidth={(link) => (selectedLink === link ? 3 : 1)}
-                linkLabel={(link) => link.type}
-                onNodeClick={handleNodeClick}
-                onNodeHover={handleNodeHover}
-               // onLinkClick={handleLinkClick}
-                cooldownTicks={100}
-                onEngineStop={() => fgRef.current?.zoomToFit(400)}
-                width={typeof window !== 'undefined' ? window.innerWidth * 0.55 : 600}
-                height={500}
-                nodeCanvasObject={(node, ctx) => {
-                  const label = node.name;
-                  const fontSize = 1.5;
-                  const nodeRadius = node.val || 8; // Fallback to 8 if val is undefined
-
-                  ctx.font = `${fontSize}px Arial`;
-                  const textWidth = ctx.measureText(label).width;
-                  const bckgDimensions = [textWidth, fontSize].map((n) => n + fontSize * 0.05);
-
-                  // Draw glow effect for selected node
-                  if (selectedNode?.id === node.id && isFinite(nodeRadius) && isFinite(node.x) && isFinite(node.y)) {
-                    try {
-                      // Create gradient for glow effect
-                      const gradient = ctx.createRadialGradient(node.x, node.y, nodeRadius, node.x, node.y, nodeRadius + 4);
-                      gradient.addColorStop(0, 'rgba(255, 215, 0, 0.4)');
-                      gradient.addColorStop(0.5, 'rgba(255, 215, 0, 0.2)');
-                      gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
-
-                      ctx.fillStyle = gradient;
-                      ctx.beginPath();
-                      ctx.arc(node.x, node.y, nodeRadius + 4, 0, 2 * Math.PI);
-                      ctx.fill();
-
-                      // Draw golden ring border
-                      ctx.strokeStyle = 'rgba(255, 215, 0, 0.8)';
-                      ctx.lineWidth = 2.5;
-                      ctx.beginPath();
-                      ctx.arc(node.x, node.y, nodeRadius + 0.5, 0, 2 * Math.PI);
-                      ctx.stroke();
-                    } catch (e) {
-                      console.warn('Error drawing glow effect:', e);
-                    }
-                  }
-
-                  // Draw main node circle with white background and colored border
-                  ctx.fillStyle = '#ffffff';
-                  ctx.beginPath();
-                  ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI);
-                  ctx.fill();
-
-                  // Draw colored border
-                  ctx.strokeStyle = node.color;
-                  ctx.lineWidth = 1.5;
-                  ctx.beginPath();
-                  ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI);
-                  ctx.stroke();
-
-                  // Draw text background (transparent)
-                  ctx.fillStyle = 'rgba(255, 255, 255, 0)';
-                  ctx.fillRect(
-                    node.x - bckgDimensions[0] / 2,
-                    node.y - bckgDimensions[1] / 2,
-                    ...bckgDimensions
-                  );
-
-                  // Draw text label
-                  ctx.textAlign = 'center';
-                  ctx.textBaseline = 'middle';
-                  ctx.fillStyle = '#000';
-                  ctx.fillText(label, node.x, node.y);
+            {/* Graph Stats Overlay */}
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 12,
+                left: 12,
+                zIndex: 10,
+                display: 'flex',
+                gap: 0.75,
+              }}
+            >
+              <Chip
+                label={`${graphData.nodes.length} Nodes`}
+                size="small"
+                sx={{
+                  bgcolor: 'white',
+                  fontWeight: 600,
+                  fontSize: '0.7rem',
+                  height: 24,
+                  boxShadow: 1,
                 }}
               />
-            </>
-          ) : (
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 1 }}>
-              <Box
+              <Chip
+                label={`${graphData.links.length} Links`}
+                size="small"
                 sx={{
-                  p: 1.5,
-                  borderRadius: '50%',
-                  bgcolor: 'action.hover',
+                  bgcolor: 'white',
+                  fontWeight: 600,
+                  fontSize: '0.7rem',
+                  height: 24,
+                  boxShadow: 1,
                 }}
-              >
-                <Typography variant="h2" sx={{ opacity: 0.3, fontSize: '2.5rem' }}>📊</Typography>
-              </Box>
-              <Typography variant="body2" color="text.secondary" fontWeight={600} fontSize="0.85rem">
-                No nodes to visualize
-              </Typography>
-              <Typography variant="caption" color="text.secondary" fontSize="0.75rem">
-                Generate a knowledge graph to see the visualization
-              </Typography>
+              />
             </Box>
-          )}
-        </Paper>
-      </Box>
 
-      {/* Details Panel */}
-      <Box sx={{ width: { xs: '100%', lg: 300 }, flexShrink: 0 }}>
-        <Paper
-          elevation={0}
-          sx={{
-            borderRadius: 1.5,
-            overflow: 'hidden',
-            height: 480,
-            display: 'flex',
-            flexDirection: 'column',
-            border: '2px solid',
-            borderColor: 'divider',
-          }}
-        >
-          {selectedNode ? (
-            <Zoom in={!!selectedNode}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                <Box
-                  sx={{
-                    p: 1.5,
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: 'white',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  <Typography variant="body2" fontWeight="700" fontSize="0.85rem">Entity Details</Typography>
-                  <IconButton
-                    size="small"
-                    sx={{
-                      color: 'white',
-                      '&:hover': {
-                        bgcolor: 'rgba(255, 255, 255, 0.2)',
-                      },
-                    }}
-                    onClick={() => setSelectedNode(null)}
-                  >
-                    <Close />
-                  </IconButton>
-                </Box>
-                <Box sx={{ flex: 1, overflowY: 'auto', p: 1.5 }}>
-                  <Box sx={{ mb: 1.5 }}>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.65rem' }}>
-                      ID
-                    </Typography>
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: 0.75,
-                        mt: 0.5,
-                        bgcolor: 'grey.100',
-                        borderRadius: 0.75,
-                        fontFamily: 'monospace',
-                        fontSize: '0.75rem',
-                        wordBreak: 'break-all',
-                      }}
-                    >
-                      {selectedNode.id}
-                    </Paper>
-                  </Box>
-                  <Box sx={{ mb: 1.5 }}>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.65rem' }}>
-                      Label
-                    </Typography>
-                    <Typography variant="body2" fontWeight={700} sx={{ mt: 0.5, fontSize: '0.85rem' }}>
-                      {selectedNode.name}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ mb: 1.5 }}>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ textTransform: 'uppercase', letterSpacing: 0.5, mb: 0.5, display: 'block', fontSize: '0.65rem' }}>
-                      Type
-                    </Typography>
-                    <Chip
-                      label={selectedNode.type}
-                      size="small"
-                      sx={{
-                        bgcolor: selectedNode.color,
-                        color: 'white',
-                        fontWeight: 700,
-                        fontSize: '0.75rem',
-                        px: 0.5,
-                        height: 24,
-                      }}
-                    />
-                  </Box>
-                  {/* Edit and Delete buttons hidden */}
-                  {/* <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, mt: 2 }}>
-                    <Button
-                      variant="outlined"
-                      startIcon={<Edit sx={{ fontSize: 16 }} />}
-                      fullWidth
-                      size="small"
-                      onClick={handleEditClick}
-                      sx={{
-                        borderRadius: 1,
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        fontSize: '0.75rem',
-                        py: 0.5,
-                        borderWidth: 2,
-                        '&:hover': {
-                          borderWidth: 2,
-                        },
-                      }}
-                    >
-                      Edit Entity
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      startIcon={<Delete sx={{ fontSize: 16 }} />}
-                      fullWidth
-                      size="small"
-                      onClick={() => {
-                        onDeleteEntity?.(selectedNode.id);
-                        setSelectedNode(null);
-                      }}
-                      sx={{
-                        borderRadius: 1,
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        fontSize: '0.75rem',
-                        py: 0.5,
-                        borderWidth: 2,
-                        '&:hover': {
-                          borderWidth: 2,
-                        },
-                      }}
-                    >
-                      Delete Entity
-                    </Button>
-                  </Box> */}
-                </Box>
-              </Box>
-            </Zoom>
-          ) : selectedLink ? (
-            <Zoom in={!!selectedLink}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                <Box
-                  sx={{
-                    p: 1.5,
-                    background: 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
-                    color: 'white',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  <Typography variant="body2" fontWeight="700" fontSize="0.85rem">Relationship Details</Typography>
-                  <IconButton
-                    size="small"
-                    sx={{
-                      color: 'white',
-                      '&:hover': {
-                        bgcolor: 'rgba(255, 255, 255, 0.2)',
-                      },
-                    }}
-                    onClick={() => setSelectedLink(null)}
-                  >
-                    <Close />
-                  </IconButton>
-                </Box>
-                <Box sx={{ flex: 1, overflowY: 'auto', p: 1.5 }}>
-                  <Box sx={{ mb: 1.5 }}>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.65rem' }}>
-                      Source
-                    </Typography>
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: 0.75,
-                        mt: 0.5,
-                        bgcolor: 'grey.100',
-                        borderRadius: 0.75,
-                        fontFamily: 'monospace',
-                        fontSize: '0.75rem',
-                        wordBreak: 'break-all',
-                      }}
-                    >
-                      {selectedLink.source}
-                    </Paper>
-                  </Box>
-                  <Box sx={{ mb: 1.5 }}>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.65rem' }}>
-                      Target
-                    </Typography>
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: 0.75,
-                        mt: 0.5,
-                        bgcolor: 'grey.100',
-                        borderRadius: 0.75,
-                        fontFamily: 'monospace',
-                        fontSize: '0.75rem',
-                        wordBreak: 'break-all',
-                      }}
-                    >
-                      {selectedLink.target}
-                    </Paper>
-                  </Box>
-                  <Box sx={{ mb: 1.5 }}>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ textTransform: 'uppercase', letterSpacing: 0.5, mb: 0.5, display: 'block', fontSize: '0.65rem' }}>
-                      Relationship Type
-                    </Typography>
-                    <Chip
-                      label={selectedLink.type}
-                      size="small"
-                      sx={{
-                        bgcolor: '#764ba2',
-                        color: 'white',
-                        fontWeight: 700,
-                        fontSize: '0.75rem',
-                        px: 0.5,
-                        height: 24,
-                      }}
-                    />
-                  </Box>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    startIcon={<Delete sx={{ fontSize: 16 }} />}
-                    fullWidth
-                    size="small"
-                    onClick={() => {
-                      onDeleteRelationship?.(selectedLink);
-                      setSelectedLink(null);
-                    }}
-                    sx={{
-                      borderRadius: 1,
-                      textTransform: 'none',
-                      fontWeight: 600,
-                      fontSize: '0.75rem',
-                      py: 0.5,
-                      mt: 2,
-                      borderWidth: 2,
-                      '&:hover': {
-                        borderWidth: 2,
-                      },
-                    }}
-                  >
-                    Delete Relationship
-                  </Button>
-                </Box>
-              </Box>
-            </Zoom>
-          ) : (
-            <Box sx={{ p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 1.5 }}>
-              <Box
-                sx={{
-                  p: 2,
-                  borderRadius: '50%',
-                  bgcolor: 'action.hover',
-                }}
-              >
-                <Typography variant="h2" sx={{ opacity: 0.3, fontSize: '3rem' }}>👆</Typography>
-              </Box>
-              <Typography variant="body1" color="text.secondary" fontWeight={600} fontSize="0.95rem">
-                Select an Element
-              </Typography>
-              <Typography variant="body2" color="text.secondary" textAlign="center" fontSize="0.85rem">
-                Click on a node or link in the graph to view its details
-              </Typography>
+            <ForceGraph2D
+              ref={fgRef}
+              graphData={graphData}
+              onNodeClick={handleNodeClick}
+              onLinkClick={handleLinkClick}
+
+              /* === Physics tuned for organic layout like reference === */
+              d3AlphaDecay={0.015} // Slightly faster settling
+              d3VelocityDecay={0.3} // More damping for stable layout
+              warmupTicks={150}
+              cooldownTicks={200}
+              nodeRelSize={8} // Increased for better node sizing
+
+              width={window.innerWidth * 0.95}
+              height={window.innerHeight * 0.85}
+
+              /* STRAIGHT links with arrows - matching reference image */
+              linkCurvature={0} // NO CURVE - straight lines like reference
+              linkColor={() => "#BBBBBB"} // Light gray for subtle appearance
+              linkWidth={1.2} // Slightly thicker for visibility
+              linkDirectionalArrowLength={6} // Small arrows like reference
+              linkDirectionalArrowRelPos={1} // Arrow at the end
+              linkDirectionalArrowColor={() => "#BBBBBB"} // Match link color
+
+              /* Link labels with arrows - styled to match reference image */
+              linkCanvasObjectMode={() => "after"}
+              linkCanvasObject={(link, ctx, scale) => {
+                const start = link.source;
+                const end = link.target;
+                if (!start || !end) return;
+
+                // Calculate positions
+                const dx = end.x - start.x;
+                const dy = end.y - start.y;
+                const angle = Math.atan2(dy, dx);
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                // Draw arrow at the end of the link
+                const arrowLength = 8;
+                const arrowWidth = 4;
+                const nodeRadius = 30; // Match the node radius
+
+                // Position arrow just before the target node
+                const arrowPos = distance - nodeRadius - 5;
+                const arrowX = start.x + Math.cos(angle) * arrowPos;
+                const arrowY = start.y + Math.sin(angle) * arrowPos;
+
+                ctx.save();
+                ctx.translate(arrowX, arrowY);
+                ctx.rotate(angle);
+
+                // Draw arrow triangle
+                ctx.beginPath();
+                ctx.moveTo(arrowLength, 0);
+                ctx.lineTo(0, arrowWidth);
+                ctx.lineTo(0, -arrowWidth);
+                ctx.closePath();
+                ctx.fillStyle = "#999999";
+                ctx.fill();
+
+                ctx.restore();
+
+                // Draw label if exists
+                const label = link.type || "";
+                if (!label) return;
+
+                // Calculate midpoint
+                const mx = (start.x + end.x) / 2;
+                const my = (start.y + end.y) / 2;
+
+                // Calculate text angle (keep readable)
+                let textAngle = angle;
+                if (textAngle > Math.PI / 2) textAngle -= Math.PI;
+                if (textAngle < -Math.PI / 2) textAngle += Math.PI;
+
+                // Font styling - larger for better readability
+                const fontSize = 8 / scale; // Increased from 7 to 10
+                ctx.font = `${fontSize}px Arial`;
+
+                // Measure text for background box
+                const textMetrics = ctx.measureText(label);
+                const textWidth = textMetrics.width;
+                const textHeight = fontSize;
+                const padding = 3; // Slightly more padding for larger text
+
+                ctx.save();
+                ctx.translate(mx, my);
+                ctx.rotate(textAngle);
+
+                // Draw white/light background box for label (like reference)
+                ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+                ctx.fillRect(
+                  -textWidth / 2 - padding,
+                  -textHeight / 2 - padding,
+                  textWidth + padding * 2,
+                  textHeight + padding * 2
+                );
+
+                // Draw text on top
+                ctx.fillStyle = "#555555"; // Dark gray text
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(label, 0, 0);
+
+                ctx.restore();
+              }}
+
+              /* Node bubbles - styled to match reference image */
+              nodeCanvasObject={(node, ctx, scale) => {
+                const R = 30; // Larger radius to match reference
+
+                // Draw node circle with teal color matching reference
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, R, 0, 2 * Math.PI);
+                ctx.fillStyle = node.color || "#5B8A7D"; // Teal color from reference
+                ctx.fill();
+
+                // Add subtle border for definition
+                ctx.strokeStyle = "rgba(0, 0, 0, 0.15)";
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                // Draw label inside the circle
+                const label = (node.name || "").replace(/_/g, " ");
+                const fontSize = 10 / scale;
+                ctx.font = `${fontSize}px Arial`;
+                ctx.fillStyle = "#ffffff"; // White text like reference
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+
+                // Word wrap for long labels
+                const maxWidth = R * 1.6;
+                const words = label.split(" ");
+                const lines = [];
+                let line = "";
+
+                words.forEach(word => {
+                  const test = line ? line + " " + word : word;
+                  if (ctx.measureText(test).width < maxWidth) {
+                    line = test;
+                  } else {
+                    if (line) lines.push(line);
+                    line = word;
+                  }
+                });
+                if (line) lines.push(line);
+
+                // Draw text lines centered in the circle
+                const lineHeight = fontSize * 1.2;
+                const totalHeight = lines.length * lineHeight;
+                let y = node.y - totalHeight / 2 + lineHeight / 2;
+
+                lines.forEach(l => {
+                  ctx.fillText(l, node.x, y);
+                  y += lineHeight;
+                });
+              }}
+
+              nodePointerAreaPaint={(node, color, ctx) => {
+                const R = 42; // Match the node radius + small buffer
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, R, 0, 2 * Math.PI);
+                ctx.fillStyle = color;
+                ctx.fill();
+              }}
+            />
+
+
+
+
+
+
+          </>
+        ) : (
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 1 }}>
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: '50%',
+                bgcolor: 'action.hover',
+              }}
+            >
+              <Typography variant="h2" sx={{ opacity: 0.3, fontSize: '2.5rem' }}>📊</Typography>
             </Box>
-          )}
-        </Paper>
-      </Box>
-
-      {/* Edit Entity Dialog */}
-      <Dialog open={editDialogOpen} onClose={handleEditCancel} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '1rem' }}>
-          Edit Entity
-        </DialogTitle>
-        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <TextField
-            label="Label"
-            fullWidth
-            size="small"
-            value={editFormData.label}
-            onChange={(e) => setEditFormData({ ...editFormData, label: e.target.value })}
-            placeholder="Enter entity label"
-          />
-          <TextField
-            label="Type"
-            fullWidth
-            size="small"
-            value={editFormData.type}
-            onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value })}
-            placeholder="Enter entity type"
-          />
-        </Box>
-        <Box sx={{ p: 2, display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-          <Button
-            variant="outlined"
-            onClick={handleEditCancel}
-            sx={{
-              borderRadius: 1,
-              textTransform: 'none',
-              fontWeight: 600,
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleEditSave}
-            sx={{
-              borderRadius: 1,
-              textTransform: 'none',
-              fontWeight: 600,
-            }}
-          >
-            Save Changes
-          </Button>
-        </Box>
-      </Dialog>
+            <Typography variant="body2" color="text.secondary" fontWeight={600} fontSize="0.85rem">
+              No nodes to visualize
+            </Typography>
+            <Typography variant="caption" color="text.secondary" fontSize="0.75rem">
+              Generate a knowledge graph to see the visualization
+            </Typography>
+          </Box>
+        )}
+      </Paper>
     </Box>
   );
 }

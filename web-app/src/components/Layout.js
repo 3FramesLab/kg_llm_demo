@@ -25,19 +25,26 @@ import {
   ShowChart as ShowChartIcon,
   Label as LabelIcon,
   TableChart as TableChartIcon,
+  Link as LinkIcon,
+  Settings as SettingsIcon,
+  GridView as GridViewIcon,
 } from '@mui/icons-material';
 
 const drawerWidth = 240;
 
 const menuItems = [
   { text: 'Overview', icon: <DashboardIcon />, path: '/' },
+
   { text: 'Schemas', icon: <SchemaIcon />, path: '/schemas' },
   { text: 'Knowledge Graph Builder', icon: <GraphIcon />, path: '/knowledge-graph' },
+  { text: 'Relationship & KG Generation', icon: <LinkIcon />, path: '/relationship-kg-generation' },
   { text: 'Table Aliases', icon: <TableChartIcon />, path: '/table-aliases' },
   { text: 'Column Hints', icon: <LabelIcon />, path: '/hints-management' },
   { text: 'NL KPI Management', icon: <KPIIcon />, path: '/landing-kpi' },
 
   { text: 'Dashboard', icon: <ShowChartIcon />, path: '/dashboard-trends' },
+  { text: 'Master Configuration', icon: <GridViewIcon />, path: '/master-page' },
+  { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
 ];
 
 export default function Layout({ children }) {

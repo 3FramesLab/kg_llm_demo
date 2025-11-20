@@ -19,10 +19,10 @@ import ColumnPreviewStep from './schema-wizard/ColumnPreviewStep';
 import { saveSchemaConfiguration } from '../services/api';
 
 const steps = [
-  { label: 'Database Connections' },
-  { label: 'Table Selection' },
+  { label: 'Sources' },
+  { label: 'Entities' },
   { label: 'Aliases' },
-  { label: 'Column Preview' },
+  { label: 'Preview' },
 ];
 
 /**
@@ -40,6 +40,7 @@ function SchemaWizard() {
     selectedColumns: {},
     columnAliases: {},
     columns: [],
+    schemaName: '',
   });
   const [saving, setSaving] = useState(false);
   const [snackbar, setSnackbar] = useState({
@@ -67,6 +68,7 @@ function SchemaWizard() {
       selectedColumns: {},
       columnAliases: {},
       columns: [],
+      schemaName: '',
     });
   };
 
@@ -84,6 +86,7 @@ function SchemaWizard() {
     try {
       // Prepare the schema configuration data
       const schemaConfiguration = {
+        schemaName: wizardData.schemaName.trim(),
         tables: selectedTables.map(table => {
           const tableKey = table.key;
           const aliasData = wizardData.aliases.find(a => a.key === tableKey);
@@ -145,7 +148,7 @@ function SchemaWizard() {
       case 2:
         return wizardData.aliases && wizardData.aliases.length > 0;
       case 3:
-        return true;
+        return wizardData.schemaName && wizardData.schemaName.trim().length > 0;
       default:
         return false;
     }
@@ -187,7 +190,13 @@ function SchemaWizard() {
           <ColumnPreviewStep
             selectedTables={selectedTables}
             selectedColumns={wizardData.selectedColumns}
-            onDataChange={(data) => setWizardData({ ...wizardData, columns: data })}
+            tableAliases={wizardData.aliases}
+            columnAliases={wizardData.columnAliases}
+            onDataChange={(data) => setWizardData({
+              ...wizardData,
+              columns: data.columnsData,
+              schemaName: data.schemaName,
+            })}
           />
         );
       default:
@@ -221,7 +230,7 @@ function SchemaWizard() {
             lineHeight: 1.3,
           }}
         >
-          Database Schemas
+          Schemas
         </Typography>
 
         <Typography
@@ -232,7 +241,7 @@ function SchemaWizard() {
             lineHeight: 1.5,
           }}
         >
-          Transform your database schemas into powerful knowledge graphs. Connect tables and columns across multiple data sources to unlock deeper insights and enable advanced data quality analysis.
+          Transform your schemas into powerful knowledge graphs. Connect entities and columns across multiple sources to unlock deeper insights and enable advanced data quality analysis.
         </Typography>
       </Box>
       <Divider sx={{ mb: 3 }} />

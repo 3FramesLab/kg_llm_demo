@@ -49,6 +49,86 @@ class LLMAnalysisResponse(BaseModel):
     error: Optional[str] = None
 
 
+class LLMSuggestRelationshipsRequest(BaseModel):
+    """Request to suggest relationships using LLM."""
+    source_table: str = Field(..., description="Source table name")
+    schema_id: Optional[str] = Field(None, description="Schema configuration ID (preferred)")
+    schema_names: Optional[List[str]] = Field(None, description="List of schema names (fallback if schema_id not provided)")
+
+
+class LLMSuggestionDetail(BaseModel):
+    """Details of a suggested relationship."""
+    source_table: str = Field(..., description="Source table name")
+    target_table: str = Field(..., description="Target table name")
+    source_column: str = Field(..., description="Column in source table")
+    target_column: str = Field(..., description="Column in target table")
+    relationship_type: str = Field(..., description="Type of relationship (e.g., MATCHES, REFERENCES)")
+    confidence: float = Field(..., description="Confidence score (0.0-1.0)")
+    reasoning: str = Field(..., description="Explanation for the suggestion")
+
+
+class LLMSuggestRelationshipsResponse(BaseModel):
+    """Response with suggested relationships."""
+    success: bool = Field(..., description="Whether the operation was successful")
+    source_table: str = Field(..., description="Source table name")
+    suggestions: List[LLMSuggestionDetail] = Field(default=[], description="List of suggested relationships")
+    error: Optional[str] = Field(default=None, description="Error message if operation failed")
+
+
+class TableInfo(BaseModel):
+    """Information about a table for alias generation."""
+    connectionId: str = Field(..., description="Connection ID")
+    databaseName: str = Field(..., description="Database name")
+    tableName: str = Field(..., description="Table name")
+    columns: List[str] = Field(default=[], description="List of column names")
+
+
+class LLMGenerateAliasesRequest(BaseModel):
+    """Request to generate table aliases using LLM."""
+    tables: List[TableInfo] = Field(..., description="List of tables to generate aliases for")
+
+
+class TableAliasResult(BaseModel):
+    """Result of alias generation for a table."""
+    connectionId: str = Field(..., description="Connection ID")
+    databaseName: str = Field(..., description="Database name")
+    tableName: str = Field(..., description="Table name")
+    aliases: List[str] = Field(default=[], description="Generated aliases")
+    reasoning: str = Field(default="", description="Explanation for the aliases")
+
+
+class LLMGenerateAliasesResponse(BaseModel):
+    """Response with generated table aliases."""
+    success: bool = Field(..., description="Whether the operation was successful")
+    data: List[TableAliasResult] = Field(default=[], description="Generated aliases for each table")
+
+
+class ColumnInfo(BaseModel):
+    """Information about a column for alias generation."""
+    tableName: str = Field(..., description="Table name")
+    columnName: str = Field(..., description="Column name")
+    columnType: str = Field(default="", description="Column data type")
+
+
+class ColumnAliasResult(BaseModel):
+    """Result of alias generation for a column."""
+    tableName: str = Field(..., description="Table name")
+    columnName: str = Field(..., description="Column name")
+    aliases: List[str] = Field(default=[], description="Generated aliases")
+    reasoning: str = Field(default="", description="Explanation for the aliases")
+
+
+class LLMGenerateColumnAliasesRequest(BaseModel):
+    """Request to generate column aliases using LLM."""
+    columns: List[ColumnInfo] = Field(..., description="List of columns to generate aliases for")
+
+
+class LLMGenerateColumnAliasesResponse(BaseModel):
+    """Response with generated column aliases."""
+    success: bool = Field(..., description="Whether the operation was successful")
+    data: List[ColumnAliasResult] = Field(default=[], description="Generated aliases for each column")
+
+
 # Schema-related models
 class ColumnSchema(BaseModel):
     """Represents a database column."""
@@ -1012,6 +1092,9 @@ class KPICreateRequest(BaseModel):
     description: Optional[str] = Field(None, description="Detailed description")
     nl_definition: str = Field(..., min_length=1, description="Natural language query definition")
     created_by: Optional[str] = Field(None, max_length=100, description="User who created the KPI")
+    group_id: Optional[int] = Field(None, description="Associated Group ID from Master Page")
+    dashboard_id: Optional[int] = Field(None, description="Associated Dashboard ID from Master Page")
+    dashboard_name: Optional[str] = Field(None, description="Associated Dashboard name from Master Page")
 
 
 class KPIUpdateRequest(BaseModel):
@@ -1026,6 +1109,10 @@ class KPIUpdateRequest(BaseModel):
     isAccept: Optional[bool] = Field(None, description="Whether the generated SQL is accepted by user")
     isSQLCached: Optional[bool] = Field(None, description="Whether to use cached SQL instead of LLM generation")
     cached_sql: Optional[str] = Field(None, description="Cached/accepted SQL query")
+    # Master Page associations
+    group_id: Optional[int] = Field(None, description="Associated Group ID from Master Page")
+    dashboard_id: Optional[int] = Field(None, description="Associated Dashboard ID from Master Page")
+    dashboard_name: Optional[str] = Field(None, description="Associated Dashboard name from Master Page")
 
 
 class KPIDefinition(BaseModel):
@@ -1044,6 +1131,10 @@ class KPIDefinition(BaseModel):
     isAccept: bool = Field(default=False, description="Whether the generated SQL is accepted by user")
     isSQLCached: bool = Field(default=False, description="Whether to use cached SQL instead of LLM generation")
     cached_sql: Optional[str] = Field(None, description="Cached/accepted SQL query")
+    # Master Page associations
+    group_id: Optional[int] = Field(None, description="Associated Group ID from Master Page")
+    dashboard_id: Optional[int] = Field(None, description="Associated Dashboard ID from Master Page")
+    dashboard_name: Optional[str] = Field(None, description="Associated Dashboard name from Master Page")
 
 
 class KPIListResponse(BaseModel):
@@ -1139,4 +1230,89 @@ class DrilldownResponse(BaseModel):
     total: int = Field(..., description="Total records")
     total_pages: int = Field(..., description="Total pages")
     data: List[Dict[str, Any]] = Field(default=[], description="Drill-down data")
+
+
+# ==================== Groups Management Models ====================
+
+class GroupCreateRequest(BaseModel):
+    """Request model for creating a group."""
+    code: str = Field(..., min_length=1, max_length=100, description="Group code/identifier")
+    name: str = Field(..., min_length=1, max_length=255, description="Group name")
+    description: Optional[str] = Field(None, max_length=1000, description="Group description")
+    color: Optional[str] = Field(None, description="Group color (hex code)")
+    icon: Optional[str] = Field(None, description="Group icon name")
+    is_active: bool = Field(default=True, description="Whether group is active")
+
+
+class GroupUpdateRequest(BaseModel):
+    """Request model for updating a group."""
+    code: Optional[str] = Field(None, min_length=1, max_length=100, description="Group code/identifier")
+    name: Optional[str] = Field(None, min_length=1, max_length=255, description="Group name")
+    description: Optional[str] = Field(None, max_length=1000, description="Group description")
+    color: Optional[str] = Field(None, description="Group color (hex code)")
+    icon: Optional[str] = Field(None, description="Group icon name")
+    is_active: Optional[bool] = Field(None, description="Whether group is active")
+
+
+class GroupResponse(BaseModel):
+    """Response model for a group."""
+    id: int = Field(..., description="Group ID")
+    code: Optional[str] = Field(None, description="Group code/identifier")
+    name: str = Field(..., description="Group name")
+    description: Optional[str] = Field(None, description="Group description")
+    color: Optional[str] = Field(None, description="Group color")
+    icon: Optional[str] = Field(None, description="Group icon")
+    is_active: bool = Field(..., description="Whether group is active")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
+    dashboard_count: int = Field(default=0, description="Number of dashboards in group")
+
+
+class GroupListResponse(BaseModel):
+    """Response model for listing groups."""
+    success: bool = Field(..., description="Whether request was successful")
+    total: int = Field(..., description="Total number of groups")
+    groups: List[GroupResponse] = Field(default=[], description="List of groups")
+
+
+# ==================== Dashboards Management Models ====================
+
+class DashboardCreateRequest(BaseModel):
+    """Request model for creating a dashboard."""
+    code: str = Field(..., min_length=1, max_length=100, description="Dashboard code/identifier")
+    name: str = Field(..., min_length=1, max_length=255, description="Dashboard name")
+    description: Optional[str] = Field(None, max_length=1000, description="Dashboard description")
+    layout: Optional[Dict[str, Any]] = Field(None, description="Dashboard layout configuration")
+    widgets: Optional[List[Dict[str, Any]]] = Field(None, description="Dashboard widgets")
+    is_active: bool = Field(default=True, description="Whether dashboard is active")
+
+
+class DashboardUpdateRequest(BaseModel):
+    """Request model for updating a dashboard."""
+    code: Optional[str] = Field(None, min_length=1, max_length=100, description="Dashboard code/identifier")
+    name: Optional[str] = Field(None, min_length=1, max_length=255, description="Dashboard name")
+    description: Optional[str] = Field(None, max_length=1000, description="Dashboard description")
+    layout: Optional[Dict[str, Any]] = Field(None, description="Dashboard layout configuration")
+    widgets: Optional[List[Dict[str, Any]]] = Field(None, description="Dashboard widgets")
+    is_active: Optional[bool] = Field(None, description="Whether dashboard is active")
+
+
+class DashboardResponse(BaseModel):
+    """Response model for a dashboard."""
+    id: int = Field(..., description="Dashboard ID")
+    code: Optional[str] = Field(None, description="Dashboard code/identifier")
+    name: str = Field(..., description="Dashboard name")
+    description: Optional[str] = Field(None, description="Dashboard description")
+    layout: Optional[Dict[str, Any]] = Field(None, description="Dashboard layout")
+    widgets: Optional[List[Dict[str, Any]]] = Field(None, description="Dashboard widgets")
+    is_active: bool = Field(..., description="Whether dashboard is active")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
+
+
+class DashboardListResponse(BaseModel):
+    """Response model for listing dashboards."""
+    success: bool = Field(..., description="Whether request was successful")
+    total: int = Field(..., description="Total number of dashboards")
+    dashboards: List[DashboardResponse] = Field(default=[], description="List of dashboards")
 

@@ -92,6 +92,14 @@ KPI_DB_USERNAME = os.getenv("KPI_DB_USERNAME", "")
 KPI_DB_PASSWORD = os.getenv("KPI_DB_PASSWORD", "")
 KPI_DB_SERVICE_NAME = os.getenv("KPI_DB_SERVICE_NAME", "")  # For Oracle
 
+# Groups/Dashboards Database Configuration (SQL Server)
+# By default, uses SOURCE database if not specified
+GROUPS_DB_HOST = os.getenv("GROUPS_DB_HOST", os.getenv("SOURCE_DB_HOST", "localhost"))
+GROUPS_DB_PORT = int(os.getenv("GROUPS_DB_PORT", os.getenv("SOURCE_DB_PORT", "1433")))
+GROUPS_DB_DATABASE = os.getenv("GROUPS_DB_DATABASE", os.getenv("SOURCE_DB_DATABASE", "NewDQ33"))
+GROUPS_DB_USERNAME = os.getenv("GROUPS_DB_USERNAME", os.getenv("SOURCE_DB_USERNAME", ""))
+GROUPS_DB_PASSWORD = os.getenv("GROUPS_DB_PASSWORD", os.getenv("SOURCE_DB_PASSWORD", ""))
+
 # Execution settings
 USE_ENV_DB_CONFIGS = os.getenv("USE_ENV_DB_CONFIGS", "true").lower() == "true"
 
@@ -252,15 +260,54 @@ def get_mssql_connection_string() -> str:
     """
     Build MS SQL Server connection string for KPI database from configuration.
 
+    Handles both named instances (e.g., SERVER\\INSTANCE) and default instances.
+    For named instances, the port should NOT be included as they use dynamic ports.
+
     Returns:
         ODBC connection string for SQL Server
     """
+    # Handle named SQL Server instances (contains backslash)
+    if '\\' in KPI_DB_HOST:
+        # Named instance - don't include port
+        server_part = KPI_DB_HOST
+    else:
+        # Default instance or IP - include port
+        server_part = f"{KPI_DB_HOST},{KPI_DB_PORT}"
+
     return (
         f"DRIVER={{ODBC Driver 17 for SQL Server}};"
-        f"SERVER={KPI_DB_HOST},{KPI_DB_PORT};"
+        f"SERVER={server_part};"
         f"DATABASE={KPI_DB_DATABASE};"
         f"UID={KPI_DB_USERNAME};"
         f"PWD={KPI_DB_PASSWORD};"
+        f"TrustServerCertificate=yes;"
+    )
+
+
+def get_groups_db_connection_string() -> str:
+    """
+    Build MS SQL Server connection string for Groups/Dashboards database.
+
+    Handles both named instances (e.g., SERVER\\INSTANCE) and default instances.
+    For named instances, the port should NOT be included as they use dynamic ports.
+
+    Returns:
+        ODBC connection string for SQL Server
+    """
+    # Handle named SQL Server instances (contains backslash)
+    if '\\' in GROUPS_DB_HOST:
+        # Named instance - don't include port
+        server_part = GROUPS_DB_HOST
+    else:
+        # Default instance or IP - include port
+        server_part = f"{GROUPS_DB_HOST},{GROUPS_DB_PORT}"
+
+    return (
+        f"DRIVER={{ODBC Driver 17 for SQL Server}};"
+        f"SERVER={server_part};"
+        f"DATABASE={GROUPS_DB_DATABASE};"
+        f"UID={GROUPS_DB_USERNAME};"
+        f"PWD={GROUPS_DB_PASSWORD};"
         f"TrustServerCertificate=yes;"
     )
 

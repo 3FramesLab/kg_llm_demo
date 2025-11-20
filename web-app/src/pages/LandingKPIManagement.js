@@ -22,6 +22,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  alpha,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -205,467 +206,485 @@ const LandingKPIManagement = () => {
   };
 
   return (
-    <Container sx={{ p: 0 }}>
-      {/* Enhanced Header with Gradient Background */}
-      <Box
-        sx={{
-          mb: 2.5,
-          p: { xs: 2, sm: 2.5, md: 3 },
-          borderRadius: 2,
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
-          boxShadow: '0 8px 32px rgba(102, 126, 234, 0.25)',
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.75 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <AssessmentIcon sx={{ fontSize: { xs: 24, sm: 28 }, mr: 2 }} />
-            <Typography
-              variant="h5"
-              fontWeight="700"
+    <Box sx={{ p: 2 }}>
+      <Container maxWidth="auto" disableGutters>
+        <Fade in timeout={600}>
+          <Box
+            sx={{
+              position: 'relative',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: -8,
+                left: -8,
+                right: -8,
+                bottom: -8,
+                borderRadius: '16px',
+                background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
+                opacity: 0,
+                transition: 'opacity 0.3s ease-in-out',
+                pointerEvents: 'none',
+                zIndex: -1,
+              },
+              '&:hover::before': {
+                opacity: 1,
+              },
+            }}
+          >
+
+            <Paper
+              elevation={0}
               sx={{
-                mb: 0.25,
-                lineHeight: 1.2,
-                fontSize: '1.15rem'
+                height: '100%',
+                minHeight: 'calc(100vh - 64px)',
+                p: 2,
+                bgcolor: '#FFFFFF',
+                border: '1px solid #E5E7EB',
+                borderRadius: 4,
+                display: 'flex',
+                flexDirection: 'column',
               }}
             >
-              NL KPI Management
-            </Typography>
-          </Box>
-          <IconButton
-            onClick={handleRefresh}
-            sx={{
-              color: 'white',
-              '&:hover': {
-                bgcolor: 'rgba(255, 255, 255, 0.1)',
-              },
-            }}
-            aria-label="refresh"
-          >
-            <RefreshIcon />
-          </IconButton>
-        </Box>
-        <Typography
-          variant="body2"
-          fontSize="0.8rem"
-          sx={{
-            opacity: 0.95,
-            fontWeight: 400,
-            maxWidth: '800px',
-          }}
-        >
-          Create, manage, and execute Key Performance Indicators using natural language definitions
-        </Typography>
-      </Box>
-
-      {/* Animated Success Message */}
-      <Slide direction="down" in={!!successMessage} mountOnEnter unmountOnExit>
-        <Box sx={{ mb: 1.5 }}>
-          <Alert
-            severity="success"
-            onClose={() => setSuccessMessage('')}
-            sx={{
-              borderRadius: 2,
-              boxShadow: '0 4px 12px rgba(46, 125, 50, 0.15)',
-              '& .MuiAlert-icon': {
-                fontSize: 28,
-              },
-            }}
-          >
-            {successMessage}
-          </Alert>
-        </Box>
-      </Slide>
-
-      {/* Animated Error Message */}
-      <Slide direction="down" in={!!errorMessage} mountOnEnter unmountOnExit>
-        <Box sx={{ mb: 1.5 }}>
-          <Alert
-            severity="error"
-            onClose={() => setErrorMessage('')}
-            sx={{
-              borderRadius: 2,
-              boxShadow: 2,
-              '& .MuiAlert-message': {
-                fontWeight: 500,
-              },
-            }}
-          >
-            {errorMessage}
-          </Alert>
-        </Box>
-      </Slide>
-
-      {/* Main Content with Enhanced Styling */}
-      <Paper
-        elevation={0}
-        sx={{
-          borderRadius: 3,
-          overflow: 'hidden',
-          border: '1px solid',
-          borderColor: 'divider',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-        }}
-      >
-        {/* Enhanced Tabs */}
-        <Box
-          sx={{
-            borderBottom: 1,
-            borderColor: 'divider',
-            bgcolor: 'grey.50',
-            px: { xs: 1.5, sm: 2 },
-          }}
-        >
-          <Tabs
-            value={activeTab}
-            onChange={handleTabChange}
-            sx={{
-              minHeight: 42,
-              '& .MuiTab-root': {
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                textTransform: 'none',
-                minHeight: 42,
-                py: 0.75,
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  color: 'primary.main',
-                  bgcolor: 'rgba(25, 118, 210, 0.04)',
-                },
-                '&.Mui-selected': {
-                  color: 'primary.main',
-                },
-              },
-              '& .MuiTabs-indicator': {
-                height: 3,
-                borderRadius: '3px 3px 0 0',
-              },
-            }}
-          >
-            <Tab
-              icon={<DescriptionIcon sx={{ fontSize: 20, mb: 0.5 }} />}
-              iconPosition="start"
-              label="KPI Definitions"
-            />
-            <Tab
-              icon={<TrendingUpIcon sx={{ fontSize: 20, mb: 0.5 }} />}
-              iconPosition="start"
-              label="About"
-            />
-          </Tabs>
-        </Box>
-
-        {/* Tab Content */}
-        <Box sx={{ p: { xs: 1.5, sm: 2, md: 2.5 } }}>
-          {activeTab === 0 && (
-            <Fade in={activeTab === 0} timeout={500}>
-              <Box>
-                {/* Create Button with Enhanced Styling */}
-                <Box sx={{ mb: 2 }}>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={<AddIcon />}
-                    onClick={handleCreateKPI}
-                    sx={{
-                      py: 0.9,
-                      px: 2,
-                      borderRadius: 1,
-                      fontSize: '0.85rem',
-                      fontWeight: 700,
-                      textTransform: 'none',
-                      boxShadow: '0 4px 14px rgba(25, 118, 210, 0.3)',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: '0 6px 20px rgba(25, 118, 210, 0.4)',
-                      },
-                      '&:active': {
-                        transform: 'translateY(0)',
-                      },
-                    }}
-                  >
-                    Create New KPI
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<ScheduleIcon />}
-                    onClick={() => setMonitoringDialogOpen(true)}
-                    sx={{ ml: 2 }}
-                  >
-                    Schedule Monitor
-                  </Button>
-                </Box>
-
-                {/* KPI List */}
-                <KPIList
-                  onEdit={handleEditKPI}
-                  onExecute={handleExecuteKPI}
-                  onExecuteCached={handleExecuteCachedKPI}
-                  onViewHistory={handleViewHistory}
-                  onManageSchedule={handleManageSchedule}
-                  refreshTrigger={refreshTrigger}
-                />
-              </Box>
-            </Fade>
-          )}
-
-          {activeTab === 1 && (
-            <Fade in={activeTab === 1} timeout={500}>
-              <Box>
-                <Typography
-                  variant="h6"
-                  fontWeight="700"
-                  fontSize="0.95rem"
-                  sx={{
-                    mb: 2,
-                    color: 'text.primary'
-                  }}
-                >
-                  About Landing KPI Management
-                </Typography>
-
-                <Typography variant="body2" fontSize="0.8rem" paragraph sx={{ mb: 2.5, color: 'text.secondary' }}>
-                  The Landing KPI Management system provides a comprehensive solution for managing and
-                  executing Key Performance Indicators:
-                </Typography>
-
-                {/* Feature Cards Grid */}
-                <Grid container spacing={{ xs: 1.5, sm: 2 }}>
-                  {/* Create KPIs Card */}
-                  <Grid item xs={12} sm={6} md={6}>
-                    <Card
-                      elevation={0}
-                      sx={{
-                        height: '100%',
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        borderRadius: 2,
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                          borderColor: 'primary.main',
-                          boxShadow: '0 8px 24px rgba(25, 118, 210, 0.15)',
-                          transform: 'translateY(-4px)',
-                        },
-                      }}
-                    >
-                      <CardContent sx={{ p: { xs: 2, sm: 2.5 }, '&:last-child': { pb: { xs: 2, sm: 2.5 } } }}>
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            mb: 1.5,
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              p: 1.25,
-                              borderRadius: 2,
-                              bgcolor: 'primary.main',
-                              color: 'white',
-                              display: 'flex',
-                              mr: 1.5,
-                            }}
-                          >
-                            <AddIcon sx={{ fontSize: 24 }} />
-                          </Box>
-                          <Typography variant="h6" fontWeight="700" fontSize="0.95rem">
-                            Create KPIs
-                          </Typography>
-                        </Box>
-                        <Typography variant="body2" fontSize="0.8rem" color="text.secondary">
-                          Define Key Performance Indicators using natural language queries. Our
-                          intelligent system translates your requirements into actionable metrics.
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-
-                  {/* Execute KPIs Card */}
-                  <Grid item xs={12} sm={6} md={6}>
-                    <Card
-                      elevation={0}
-                      sx={{
-                        height: '100%',
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        borderRadius: 2,
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                          borderColor: 'success.main',
-                          boxShadow: '0 8px 24px rgba(46, 125, 50, 0.15)',
-                          transform: 'translateY(-4px)',
-                        },
-                      }}
-                    >
-                      <CardContent sx={{ p: { xs: 2, sm: 2.5 }, '&:last-child': { pb: { xs: 2, sm: 2.5 } } }}>
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            mb: 1.5,
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              p: 1.25,
-                              borderRadius: 2,
-                              bgcolor: 'success.main',
-                              color: 'white',
-                              display: 'flex',
-                              mr: 1.5,
-                            }}
-                          >
-                            <PlayArrowIcon sx={{ fontSize: 24 }} />
-                          </Box>
-                          <Typography variant="h6" fontWeight="700" fontSize="0.95rem">
-                            Execute KPIs
-                          </Typography>
-                        </Box>
-                        <Typography variant="body2" fontSize="0.8rem" color="text.secondary">
-                          Run KPI queries against your Knowledge Graphs with a single click. Get
-                          real-time insights and performance metrics instantly.
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-
-                  {/* Track History Card */}
-                  <Grid item xs={12} sm={6} md={6}>
-                    <Card
-                      elevation={0}
-                      sx={{
-                        height: '100%',
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        borderRadius: 2,
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                          borderColor: 'warning.main',
-                          boxShadow: '0 8px 24px rgba(237, 108, 2, 0.15)',
-                          transform: 'translateY(-4px)',
-                        },
-                      }}
-                    >
-                      <CardContent sx={{ p: { xs: 2, sm: 2.5 }, '&:last-child': { pb: { xs: 2, sm: 2.5 } } }}>
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            mb: 1.5,
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              p: 1.25,
-                              borderRadius: 2,
-                              bgcolor: 'warning.main',
-                              color: 'white',
-                              display: 'flex',
-                              mr: 1.5,
-                            }}
-                          >
-                            <HistoryIcon sx={{ fontSize: 24 }} />
-                          </Box>
-                          <Typography variant="h6" fontWeight="700" fontSize="0.95rem">
-                            Track History
-                          </Typography>
-                        </Box>
-                        <Typography variant="body2" fontSize="0.8rem" color="text.secondary">
-                          View comprehensive execution history and results. Monitor trends and track
-                          performance over time with detailed analytics.
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-
-                  {/* Drill-down Card */}
-                  <Grid item xs={12} sm={6} md={6}>
-                    <Card
-                      elevation={0}
-                      sx={{
-                        height: '100%',
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        borderRadius: 2,
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                          borderColor: 'secondary.main',
-                          boxShadow: '0 8px 24px rgba(220, 0, 78, 0.15)',
-                          transform: 'translateY(-4px)',
-                        },
-                      }}
-                    >
-                      <CardContent sx={{ p: { xs: 2, sm: 2.5 }, '&:last-child': { pb: { xs: 2, sm: 2.5 } } }}>
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            mb: 1.5,
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              p: 1.25,
-                              borderRadius: 2,
-                              bgcolor: 'secondary.main',
-                              color: 'white',
-                              display: 'flex',
-                              mr: 1.5,
-                            }}
-                          >
-                            <TrendingUpIcon sx={{ fontSize: 24 }} />
-                          </Box>
-                          <Typography variant="h6" fontWeight="700" fontSize="0.95rem">
-                            Drill-down Analysis
-                          </Typography>
-                        </Box>
-                        <Typography variant="body2" fontSize="0.8rem" color="text.secondary">
-                          Explore detailed results with advanced pagination and filtering. Deep dive
-                          into your data for comprehensive insights.
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                </Grid>
-
-                {/* Getting Started Section */}
-                <Divider sx={{ my: 2.5 }} />
-                <Box
-                  sx={{
-                    p: { xs: 2, sm: 2.5 },
-                    borderRadius: 2,
-                    bgcolor: 'primary.50',
-                    border: '1px solid',
-                    borderColor: 'primary.100',
-                  }}
-                >
+              {/* Header Section */}
+              <Box sx={{ mb: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
                   <Typography
-                    variant="subtitle1"
-                    fontSize="0.8rem"
+                    variant="h5"
                     sx={{
-                      fontWeight: 700,
-                      color: 'primary.main',
-                      mb: 0.75,
-                      display: 'flex',
-                      alignItems: 'center'
+                      fontWeight: 600,
+                      fontSize: '1.25rem',
+                      color: '#5B6FE5',
+                      lineHeight: 1.3,
                     }}
                   >
-                    <AssessmentIcon sx={{ mr: 1, fontSize: 22 }} />
-                    Getting Started
+                    NL KPI Management
                   </Typography>
-                  <Typography variant="body2" fontSize="0.8rem" color="text.secondary">
-                    Click the <strong>"Create New KPI"</strong> button above to define your first KPI
-                    using a natural language query. Our system will guide you through the process of
-                    creating powerful, actionable metrics for your organization.
-                  </Typography>
+                  <IconButton
+                    onClick={handleRefresh}
+                    sx={{
+                      color: '#5B6FE5',
+                      '&:hover': {
+                        bgcolor: 'rgba(91, 111, 229, 0.08)',
+                      },
+                    }}
+                    aria-label="refresh"
+                  >
+                    <RefreshIcon />
+                  </IconButton>
                 </Box>
+
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: '#6B7280',
+                    fontSize: '0.875rem',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Create, manage, and execute Key Performance Indicators using natural language definitions
+                </Typography>
               </Box>
-            </Fade>
-          )}
-        </Box>
-      </Paper>
+              <Divider sx={{ mb: 3 }} />
+
+              {/* Animated Success Message */}
+              <Slide direction="down" in={!!successMessage} mountOnEnter unmountOnExit>
+                <Box sx={{ mb: 1.5 }}>
+                  <Alert
+                    severity="success"
+                    onClose={() => setSuccessMessage('')}
+                    sx={{
+                      borderRadius: 2,
+                      boxShadow: '0 4px 12px rgba(46, 125, 50, 0.15)',
+                      '& .MuiAlert-icon': {
+                        fontSize: 28,
+                      },
+                    }}
+                  >
+                    {successMessage}
+                  </Alert>
+                </Box>
+              </Slide>
+
+              {/* Animated Error Message */}
+              <Slide direction="down" in={!!errorMessage} mountOnEnter unmountOnExit>
+                <Box sx={{ mb: 1.5 }}>
+                  <Alert
+                    severity="error"
+                    onClose={() => setErrorMessage('')}
+                    sx={{
+                      borderRadius: 2,
+                      boxShadow: 2,
+                      '& .MuiAlert-message': {
+                        fontWeight: 500,
+                      },
+                    }}
+                  >
+                    {errorMessage}
+                  </Alert>
+                </Box>
+              </Slide>
+              {/* Stepper - Compact and Aligned */}
+              <Tabs
+                value={activeTab}
+                onChange={handleTabChange}
+                sx={{
+                  mb: 2,
+                  '& .MuiTab-root': {
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    minHeight: 48,
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      color: 'primary.main',
+                      bgcolor: 'rgba(25, 118, 210, 0.04)',
+                    },
+                    '&.Mui-selected': {
+                      color: 'primary.main',
+                    },
+                  },
+                  '& .MuiTabs-indicator': {
+                    height: 3,
+                    borderRadius: '3px 3px 0 0',
+                  },
+                }}
+              >
+                <Tab
+                  icon={<DescriptionIcon sx={{ fontSize: 20, mb: 0.5 }} />}
+                  iconPosition="start"
+                  label="KPI Definitions"
+                />
+                <Tab
+                  icon={<TrendingUpIcon sx={{ fontSize: 20, mb: 0.5 }} />}
+                  iconPosition="start"
+                  label="About"
+                />
+              </Tabs>
+
+              {/* Content Area - Compact Design */}
+              <Box
+                sx={{
+                  flex: 1,
+                  bgcolor: '#F9FAFB',
+                  p: 1.5,
+                  borderRadius: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  minHeight: 300,
+                }}
+              >
+                {activeTab === 0 && (
+                  <Fade in={activeTab === 0} timeout={500}>
+                    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                      {/* Create Button with Enhanced Styling */}
+                      <Box sx={{ mb: 2 }}>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          startIcon={<AddIcon />}
+                          onClick={handleCreateKPI}
+                          sx={{
+                            py: 0.9,
+                            px: 2,
+                            borderRadius: 1,
+                            fontSize: '0.85rem',
+                            fontWeight: 700,
+                            textTransform: 'none',
+                            boxShadow: '0 4px 14px rgba(25, 118, 210, 0.3)',
+                            transition: 'all 0.3s ease',
+                            '&:hover': {
+                              transform: 'translateY(-2px)',
+                              boxShadow: '0 6px 20px rgba(25, 118, 210, 0.4)',
+                            },
+                            '&:active': {
+                              transform: 'translateY(0)',
+                            },
+                          }}
+                        >
+                          Create New KPI
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          startIcon={<ScheduleIcon />}
+                          onClick={() => setMonitoringDialogOpen(true)}
+                          sx={{ ml: 2 }}
+                        >
+                          Schedule Monitor
+                        </Button>
+                      </Box>
+
+                      {/* KPI List */}
+                      <KPIList
+                        onEdit={handleEditKPI}
+                        onExecute={handleExecuteKPI}
+                        onExecuteCached={handleExecuteCachedKPI}
+                        onViewHistory={handleViewHistory}
+                        onManageSchedule={handleManageSchedule}
+                        refreshTrigger={refreshTrigger}
+                      />
+                    </Box>
+                  </Fade>
+                )}
+
+                {activeTab === 1 && (
+                  <Fade in={activeTab === 1} timeout={500}>
+                    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                      <Typography
+                        variant="h6"
+                        fontWeight="700"
+                        fontSize="0.95rem"
+                        sx={{
+                          mb: 2,
+                          color: 'text.primary'
+                        }}
+                      >
+                        About Landing KPI Management
+                      </Typography>
+
+                      <Typography variant="body2" fontSize="0.8rem" paragraph sx={{ mb: 2.5, color: 'text.secondary' }}>
+                        The Landing KPI Management system provides a comprehensive solution for managing and
+                        executing Key Performance Indicators:
+                      </Typography>
+
+                      {/* Feature Cards Grid */}
+                      <Grid container spacing={{ xs: 1.5, sm: 2 }}>
+                        {/* Create KPIs Card */}
+                        <Grid item xs={12} sm={6} md={6}>
+                          <Card
+                            elevation={0}
+                            sx={{
+                              height: '100%',
+                              border: '1px solid',
+                              borderColor: 'divider',
+                              borderRadius: 2,
+                              transition: 'all 0.3s ease',
+                              '&:hover': {
+                                borderColor: 'primary.main',
+                                boxShadow: '0 8px 24px rgba(25, 118, 210, 0.15)',
+                                transform: 'translateY(-4px)',
+                              },
+                            }}
+                          >
+                            <CardContent sx={{ p: { xs: 2, sm: 2.5 }, '&:last-child': { pb: { xs: 2, sm: 2.5 } } }}>
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  mb: 1.5,
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    p: 1.25,
+                                    borderRadius: 2,
+                                    bgcolor: 'primary.main',
+                                    color: 'white',
+                                    display: 'flex',
+                                    mr: 1.5,
+                                  }}
+                                >
+                                  <AddIcon sx={{ fontSize: 24 }} />
+                                </Box>
+                                <Typography variant="h6" fontWeight="700" fontSize="0.95rem">
+                                  Create KPIs
+                                </Typography>
+                              </Box>
+                              <Typography variant="body2" fontSize="0.8rem" color="text.secondary">
+                                Define Key Performance Indicators using natural language queries. Our
+                                intelligent system translates your requirements into actionable metrics.
+                              </Typography>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+
+                        {/* Execute KPIs Card */}
+                        <Grid item xs={12} sm={6} md={6}>
+                          <Card
+                            elevation={0}
+                            sx={{
+                              height: '100%',
+                              border: '1px solid',
+                              borderColor: 'divider',
+                              borderRadius: 2,
+                              transition: 'all 0.3s ease',
+                              '&:hover': {
+                                borderColor: 'success.main',
+                                boxShadow: '0 8px 24px rgba(46, 125, 50, 0.15)',
+                                transform: 'translateY(-4px)',
+                              },
+                            }}
+                          >
+                            <CardContent sx={{ p: { xs: 2, sm: 2.5 }, '&:last-child': { pb: { xs: 2, sm: 2.5 } } }}>
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  mb: 1.5,
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    p: 1.25,
+                                    borderRadius: 2,
+                                    bgcolor: 'success.main',
+                                    color: 'white',
+                                    display: 'flex',
+                                    mr: 1.5,
+                                  }}
+                                >
+                                  <PlayArrowIcon sx={{ fontSize: 24 }} />
+                                </Box>
+                                <Typography variant="h6" fontWeight="700" fontSize="0.95rem">
+                                  Execute KPIs
+                                </Typography>
+                              </Box>
+                              <Typography variant="body2" fontSize="0.8rem" color="text.secondary">
+                                Run KPI queries against your Knowledge Graphs with a single click. Get
+                                real-time insights and performance metrics instantly.
+                              </Typography>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+
+                        {/* Track History Card */}
+                        <Grid item xs={12} sm={6} md={6}>
+                          <Card
+                            elevation={0}
+                            sx={{
+                              height: '100%',
+                              border: '1px solid',
+                              borderColor: 'divider',
+                              borderRadius: 2,
+                              transition: 'all 0.3s ease',
+                              '&:hover': {
+                                borderColor: 'warning.main',
+                                boxShadow: '0 8px 24px rgba(237, 108, 2, 0.15)',
+                                transform: 'translateY(-4px)',
+                              },
+                            }}
+                          >
+                            <CardContent sx={{ p: { xs: 2, sm: 2.5 }, '&:last-child': { pb: { xs: 2, sm: 2.5 } } }}>
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  mb: 1.5,
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    p: 1.25,
+                                    borderRadius: 2,
+                                    bgcolor: 'warning.main',
+                                    color: 'white',
+                                    display: 'flex',
+                                    mr: 1.5,
+                                  }}
+                                >
+                                  <HistoryIcon sx={{ fontSize: 24 }} />
+                                </Box>
+                                <Typography variant="h6" fontWeight="700" fontSize="0.95rem">
+                                  Track History
+                                </Typography>
+                              </Box>
+                              <Typography variant="body2" fontSize="0.8rem" color="text.secondary">
+                                View comprehensive execution history and results. Monitor trends and track
+                                performance over time with detailed analytics.
+                              </Typography>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+
+                        {/* Drill-down Card */}
+                        <Grid item xs={12} sm={6} md={6}>
+                          <Card
+                            elevation={0}
+                            sx={{
+                              height: '100%',
+                              border: '1px solid',
+                              borderColor: 'divider',
+                              borderRadius: 2,
+                              transition: 'all 0.3s ease',
+                              '&:hover': {
+                                borderColor: 'secondary.main',
+                                boxShadow: '0 8px 24px rgba(220, 0, 78, 0.15)',
+                                transform: 'translateY(-4px)',
+                              },
+                            }}
+                          >
+                            <CardContent sx={{ p: { xs: 2, sm: 2.5 }, '&:last-child': { pb: { xs: 2, sm: 2.5 } } }}>
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  mb: 1.5,
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    p: 1.25,
+                                    borderRadius: 2,
+                                    bgcolor: 'secondary.main',
+                                    color: 'white',
+                                    display: 'flex',
+                                    mr: 1.5,
+                                  }}
+                                >
+                                  <TrendingUpIcon sx={{ fontSize: 24 }} />
+                                </Box>
+                                <Typography variant="h6" fontWeight="700" fontSize="0.95rem">
+                                  Drill-down Analysis
+                                </Typography>
+                              </Box>
+                              <Typography variant="body2" fontSize="0.8rem" color="text.secondary">
+                                Explore detailed results with advanced pagination and filtering. Deep dive
+                                into your data for comprehensive insights.
+                              </Typography>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                      </Grid>
+
+                      {/* Getting Started Section */}
+                      <Divider sx={{ my: 2.5 }} />
+                      <Box
+                        sx={{
+                          p: { xs: 2, sm: 2.5 },
+                          borderRadius: 2,
+                          bgcolor: 'primary.50',
+                          border: '1px solid',
+                          borderColor: 'primary.100',
+                        }}
+                      >
+                        <Typography
+                          variant="subtitle1"
+                          fontSize="0.8rem"
+                          sx={{
+                            fontWeight: 700,
+                            color: 'primary.main',
+                            mb: 0.75,
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}
+                        >
+                          <AssessmentIcon sx={{ mr: 1, fontSize: 22 }} />
+                          Getting Started
+                        </Typography>
+                        <Typography variant="body2" fontSize="0.8rem" color="text.secondary">
+                          Click the <strong>"Create New KPI"</strong> button above to define your first KPI
+                          using a natural language query. Our system will guide you through the process of
+                          creating powerful, actionable metrics for your organization.
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Fade>
+                )}
+              </Box>
+            </Paper>
+          </Box>
+        </Fade>
+      </Container>
 
       {/* Dialogs */}
       <KPIForm
@@ -737,7 +756,7 @@ const LandingKPIManagement = () => {
           <Button onClick={() => setMonitoringDialogOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
-    </Container>
+    </Box>
   );
 };
 

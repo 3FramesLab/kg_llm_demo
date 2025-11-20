@@ -41,6 +41,7 @@ export const extractEntities = (schemaName) => api.post(`/llm/extract/${schemaNa
 export const analyzeSchema = (schemaName) => api.post(`/llm/analyze/${schemaName}`);
 export const suggestRelationships = (data) => api.post('/llm/suggest-relationships', data);
 export const generateTableAliases = (data) => api.post('/llm/generate-aliases', data);
+export const generateColumnAliases = (data) => api.post('/llm/generate-column-aliases', data);
 
 // Reconciliation - Rules
 export const generateRules = (data) => api.post('/reconciliation/generate', data);
@@ -176,5 +177,22 @@ export const listTablesFromDatabase = (connectionId, databaseName) => api.get(`/
 export const getTableColumns = (connectionId, databaseName, tableName) => api.get(`/database/connections/${connectionId}/databases/${databaseName}/tables/${tableName}/columns`);
 export const saveSchemaConfiguration = (data) => api.post('/database/schema-configuration', data);
 export const getSchemaConfigurations = () => api.get('/database/schema-configuration');
+
+// Groups Management
+export const createGroup = (data) => api.post('/groups', data);
+export const listGroups = (params) => api.get('/groups', { params });
+export const getGroup = (groupId) => api.get(`/groups/${groupId}`);
+export const updateGroup = (groupId, data) => api.put(`/groups/${groupId}`, data);
+export const deleteGroup = (groupId) => api.delete(`/groups/${groupId}`);
+
+// Dashboards Management
+export const createDashboard = (data) => api.post('/dashboards', data);
+export const listDashboards = (params) => api.get('/dashboards', { params });
+export const getDashboard = (dashboardId) => api.get(`/dashboards/${dashboardId}`);
+export const updateDashboard = (dashboardId, data) => api.put(`/dashboards/${dashboardId}`, data);
+export const deleteDashboard = (dashboardId) => api.delete(`/dashboards/${dashboardId}`);
+
+
+export const getUniqueOpsPlanner = () => api.get('/material-master/ops-planners');
 
 export default api;

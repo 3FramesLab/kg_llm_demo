@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import {
   Container,
@@ -15,7 +15,6 @@ import {
   DialogContent,
   DialogActions,
   IconButton,
-  Tooltip,
   CircularProgress,
   Alert,
   Table,
@@ -25,45 +24,145 @@ import {
   TableHead,
   TableRow,
   TablePagination,
-  Checkbox,
-  FormControlLabel,
-  Chip,
   TextField,
   InputAdornment,
   MenuItem,
+  Chip,
 } from '@mui/material';
 import {
-  Refresh as RefreshIcon,
   Assessment as AssessmentIcon,
   ShowChart as ShowChartIcon,
   Close as CloseIcon,
   Download as DownloadIcon,
-  Person as PersonIcon,
   Search as SearchIcon,
   Clear as ClearIcon,
 } from '@mui/icons-material';
 import { VegaEmbed } from 'react-vega';
 
 // Service Dependencies
-import { getDashboardData, getLatestResults, getKPIExecutions } from '../services/api';
+import { getDashboardData, getLatestResults, getKPIExecutions, getUniqueOpsPlanner } from '../services/api';
 
 /**
  * Helper function to determine background color based on record count
- * Returns color similar to the reference image
+ * Returns color matching the reference image
  */
 const getRecordCountColor = (count) => {
   if (count === 0) {
-    return '#86efac'; // Green for 0
+    return '#8bc34a'; // Green for 0
   } else if (count < 10) {
-    return '#fde047'; // Yellow for low counts
+    return '#fdd835'; // Yellow for low counts (1-9)
+  } else if (count < 50) {
+    return '#ffca28'; // Amber for 10-49
   } else if (count < 100) {
-    return '#fcd34d'; // Darker yellow
+    return '#ff9800'; // Orange for 50-99
   } else if (count < 1000) {
-    return '#fbbf24'; // Orange-yellow
+    return '#ff6f00'; // Dark orange for 100-999
   } else {
-    return '#fb923c'; // Orange for high counts
+    return '#e53935'; // Red for 1000+
   }
 };
+
+/**
+ * Helper function to generate Vega-Lite specification for trend chart
+ * @param {Array} data - Array of data points with date and records fields
+ * @returns {Object} Vega-Lite specification object
+ */
+const getVegaSpec = (data) => ({
+  $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+  width: 'container',
+  height: 350,
+  data: { values: data },
+  layer: [
+    {
+      // Line and points layer
+      mark: {
+        type: 'line',
+        point: {
+          filled: true,
+          fill: '#6366f1',
+          size: 100
+        },
+        color: '#6366f1',
+        strokeWidth: 3,
+        interpolate: 'linear',
+        tooltip: true
+      },
+      encoding: {
+        x: {
+          field: 'date',
+          type: 'ordinal',
+          axis: {
+            title: null,
+            labelAngle: 0,
+            labelFontSize: 12,
+            labelColor: '#6b7280'
+          }
+        },
+        y: {
+          field: 'records',
+          type: 'quantitative',
+          scale: {
+            domain: {
+              unionWith: [
+                { expr: 'floor(domain("y")[0] * 0.95)' },
+                { expr: 'ceil(domain("y")[1] * 1.05)' }
+              ]
+            }
+          },
+          axis: {
+            title: 'Record Count',
+            titleFontSize: 14,
+            titleColor: '#6b7280',
+            labelFontSize: 12,
+            labelColor: '#6b7280',
+            grid: true,
+            gridColor: '#e5e7eb',
+            gridDash: [3, 3]
+          }
+        },
+        tooltip: [
+          { field: 'date', type: 'ordinal', title: 'Date' },
+          { field: 'records', type: 'quantitative', title: 'Records', format: ',' }
+        ]
+      }
+    },
+    {
+      // Text labels layer
+      mark: {
+        type: 'text',
+        align: 'center',
+        baseline: 'bottom',
+        dy: -10,
+        fontSize: 12,
+        fontWeight: 600,
+        color: '#111827'
+      },
+      encoding: {
+        x: {
+          field: 'date',
+          type: 'ordinal'
+        },
+        y: {
+          field: 'records',
+          type: 'quantitative'
+        },
+        text: {
+          field: 'records',
+          type: 'quantitative',
+          format: ','
+        }
+      }
+    }
+  ],
+  config: {
+    view: {
+      stroke: 'transparent'
+    },
+    axis: {
+      domainColor: '#e5e7eb'
+    }
+  }
+});
 
 /**
  * DashboardTrendsWidget - A reusable, self-contained component for displaying KPI trends
@@ -78,17 +177,10 @@ const getRecordCountColor = (count) => {
  * @requires getKPIExecutions - API function from services/api for fetching execution history
  *
  * @param {Object} props - Component props
- * @param {string} props.title - Custom title for the dashboard (default: "Dashboard Trends")
- * @param {string} props.subtitle - Custom subtitle (default: "Monitor and track your key performance indicators")
  * @param {string} props.maxWidth - Maximum width of the container (default: "xl")
  * @param {Object} props.containerSx - Custom styles for the container
- * @param {boolean} props.showHeader - Whether to show the header section (default: true)
- * @param {boolean} props.showRefreshButton - Whether to show the refresh button (default: true)
- * @param {Function} props.onRefresh - Callback function when refresh is triggered
  * @param {Function} props.onKPIClick - Callback function when a KPI card is clicked. Receives (kpi, action) where action is 'view-results' or 'view-trend'
  * @param {string} props.emptyStateRedirectUrl - URL for the "Go to KPI Management" button (default: "/landing-kpi")
- * @param {number} props.gridSpacing - Spacing between grid items (default: 1)
- * @param {Object} props.gridItemProps - Custom props for grid items (default: {xs: 12, sm: 6, md: 4, lg: 3})
  *
  * @example
  * // Basic usage
@@ -97,20 +189,12 @@ const getRecordCountColor = (count) => {
  * @example
  * // With customization
  * <DashboardTrendsWidget
- *   title="My Dashboard"
- *   subtitle="Custom subtitle"
  *   onKPIClick={(kpi, action) => console.log(kpi, action)}
- *   onRefresh={() => console.log('Refreshed')}
  * />
  */
 const DashboardTrendsWidget = ({
-  title = "Dashboard Trends",
-  subtitle = "Monitor and track your key performance indicators",
   maxWidth = "xl",
   containerSx = {},
-  showHeader = true,
-  showRefreshButton = true,
-  onRefresh,
   onKPIClick,
   emptyStateRedirectUrl = "/landing-kpi",
 }) => {
@@ -129,115 +213,11 @@ const DashboardTrendsWidget = ({
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  // Owner filter state
-  const [selectedOwners, setSelectedOwners] = useState([]);
-  const [availableOwners, setAvailableOwners] = useState([]);
-  const [loadingOwners, setLoadingOwners] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-
   // OPS Planner filter state
   const [selectedOpsPlanner, setSelectedOpsPlanner] = useState('');
   const [availableOpsPlanner, setAvailableOpsPlanner] = useState([]);
   const [loadingOpsPlanner, setLoadingOpsPlanner] = useState(true);
   const [opsSearchQuery, setOpsSearchQuery] = useState('');
-
-  // Vega-Lite specification for the trend chart
-  const getVegaSpec = (data) => ({
-    $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
-    width: 'container',
-    height: 350,
-    data: { values: data },
-    layer: [
-      {
-        // Line and points layer
-        mark: {
-          type: 'line',
-          point: {
-            filled: true,
-            fill: '#6366f1',
-            size: 100
-          },
-          color: '#6366f1',
-          strokeWidth: 3,
-          interpolate: 'linear',
-          tooltip: true
-        },
-        encoding: {
-          x: {
-            field: 'date',
-            type: 'ordinal',
-            axis: {
-              title: null,
-              labelAngle: 0,
-              labelFontSize: 12,
-              labelColor: '#6b7280'
-            }
-          },
-          y: {
-            field: 'records',
-            type: 'quantitative',
-            scale: {
-              domain: {
-                unionWith: [
-                  { expr: 'floor(domain("y")[0] * 0.95)' },
-                  { expr: 'ceil(domain("y")[1] * 1.05)' }
-                ]
-              }
-            },
-            axis: {
-              title: 'Record Count',
-              titleFontSize: 14,
-              titleColor: '#6b7280',
-              labelFontSize: 12,
-              labelColor: '#6b7280',
-              grid: true,
-              gridColor: '#e5e7eb',
-              gridDash: [3, 3]
-            }
-          },
-          tooltip: [
-            { field: 'date', type: 'ordinal', title: 'Date' },
-            { field: 'records', type: 'quantitative', title: 'Records', format: ',' }
-          ]
-        }
-      },
-      {
-        // Text labels layer
-        mark: {
-          type: 'text',
-          align: 'center',
-          baseline: 'bottom',
-          dy: -10,
-          fontSize: 12,
-          fontWeight: 600,
-          color: '#111827'
-        },
-        encoding: {
-          x: {
-            field: 'date',
-            type: 'ordinal'
-          },
-          y: {
-            field: 'records',
-            type: 'quantitative'
-          },
-          text: {
-            field: 'records',
-            type: 'quantitative',
-            format: ','
-          }
-        }
-      }
-    ],
-    config: {
-      view: {
-        stroke: 'transparent'
-      },
-      axis: {
-        domainColor: '#e5e7eb'
-      }
-    }
-  });
 
   useEffect(() => {
     fetchDashboardData();
@@ -245,40 +225,30 @@ const DashboardTrendsWidget = ({
 
   const fetchDashboardData = async () => {
     setLoading(true);
-    setLoadingOwners(true);
     setLoadingOpsPlanner(true);
     try {
       const response = await getDashboardData();
-      const data = response.data;
+      const data = 
       setDashboardData(data);
 
-      // Extract unique owners from all KPIs in all groups
-      const ownersSet = new Set();
-      if (data.groups) {
-        data.groups.forEach(group => {
-          if (group.kpis) {
-            group.kpis.forEach(kpi => {
-              if (kpi.created_by) {
-                ownersSet.add(kpi.created_by);
-              } else {
-                ownersSet.add('Unassigned');
-              }
-            });
-          }
-        });
+      // Fetch unique OPS Planners from hana master
+      try {
+        const opsResponse = await getUniqueOpsPlanner();
+        if (opsResponse.data && opsResponse.data.success) {
+          setAvailableOpsPlanner(opsResponse.data.data || []);
+        } else {
+          setAvailableOpsPlanner([]);
+        }
+      } catch (opsError) {
+        console.error('Error fetching OPS Planners:', opsError);
+        setAvailableOpsPlanner([]);
       }
-      setAvailableOwners(Array.from(ownersSet).sort());
-
-      // OPS Planner filtering disabled - removed API call to avoid Java serialization issues
-      setAvailableOpsPlanner([]);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       setDashboardData({ groups: [] });
-      setAvailableOwners([]);
       setAvailableOpsPlanner([]);
     } finally {
       setLoading(false);
-      setLoadingOwners(false);
       setLoadingOpsPlanner(false);
     }
   };
@@ -314,20 +284,6 @@ const DashboardTrendsWidget = ({
       console.log('📊 Processed results data:', resultsData);
       setResults(resultsData);
       setPage(0);
-
-      // Extract unique OPS planners directly from the results data
-      if (resultsData?.result_data && resultsData?.column_names) {
-        const extractedPlanners = extractOpsPlannersFromResults(
-          resultsData.result_data,
-          resultsData.column_names
-        );
-        setAvailableOpsPlanner(extractedPlanners);
-        setLoadingOpsPlanner(false);
-        console.log('📋 Extracted OPS Planners from table data:', extractedPlanners);
-      } else {
-        setAvailableOpsPlanner([]);
-        setLoadingOpsPlanner(false);
-      }
     } catch (err) {
       console.error('Error fetching results:', err);
 
@@ -355,9 +311,6 @@ const DashboardTrendsWidget = ({
       }
 
       setResultsError(errorMessage);
-      // Clear OPS planners when there's an error
-      setAvailableOpsPlanner([]);
-      setLoadingOpsPlanner(false);
     } finally {
       setResultsLoading(false);
     }
@@ -423,23 +376,6 @@ const DashboardTrendsWidget = ({
     handleViewResults(kpi);
   };
 
-  const handleRefresh = () => {
-    fetchDashboardData();
-    if (onRefresh) {
-      onRefresh();
-    }
-  };
-
-  const handleOwnerToggle = (owner) => {
-    setSelectedOwners(prev => {
-      if (prev.includes(owner)) {
-        return prev.filter(o => o !== owner);
-      } else {
-        return [...prev, owner];
-      }
-    });
-  };
-
   const handleOpsplannerChange = (event) => {
     setSelectedOpsPlanner(event.target.value);
   };
@@ -469,35 +405,6 @@ const DashboardTrendsWidget = ({
     });
   };
 
-  // Function to extract unique OPS planner values from results data
-  const extractOpsPlannersFromResults = (resultData, columnNames) => {
-    if (!resultData || !Array.isArray(resultData) || !columnNames) {
-      return [];
-    }
-
-    // Find the ops_planner column (case insensitive)
-    const opsColumnName = columnNames.find(col =>
-      col.toLowerCase().includes('ops_planner') ||
-      col.toLowerCase().includes('ops planner') ||
-      col.toLowerCase() === 'ops_planner'
-    );
-
-    if (!opsColumnName) {
-      return [];
-    }
-
-    // Extract unique non-empty values from the ops_planner column
-    const uniquePlanners = new Set();
-    resultData.forEach(row => {
-      const opsValue = row[opsColumnName];
-      if (opsValue && opsValue.toString().trim() !== '') {
-        uniquePlanners.add(opsValue.toString().trim());
-      }
-    });
-
-    return Array.from(uniquePlanners).sort();
-  };
-
   const handleChangePage = (_event, newPage) => {
     setPage(newPage);
   };
@@ -510,10 +417,8 @@ const DashboardTrendsWidget = ({
   const handleDownloadCSV = () => {
     if (!results?.result_data || results.result_data.length === 0) return;
 
-    // Use filtered results for CSV download
-    const filteredResults = filterResultsByOpsPlanner(results.result_data, results.column_names);
     const headers = results.column_names || [];
-    const rows = filteredResults.map((row) =>
+    const rows = results.result_data.map((row) =>
       headers.map((header) => {
         const value = row[header];
         // Escape quotes and wrap in quotes if contains comma
@@ -553,28 +458,6 @@ const DashboardTrendsWidget = ({
   if (loading) {
     return (
       <Container maxWidth={maxWidth} sx={{ p: 0, ...containerSx }}>
-        {/* Header Skeleton */}
-        {showHeader && (
-          <Paper
-            elevation={0}
-            sx={{
-              mb: 1.5,
-              p: 1.25,
-              borderRadius: 2,
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: 'white',
-              boxShadow: '0 2px 8px rgba(102, 126, 234, 0.2)',
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5 }}>
-              <Box sx={{ flex: '1 1 auto', minWidth: '200px' }}>
-                <Skeleton variant="text" width={200} height={32} sx={{ bgcolor: 'rgba(255,255,255,0.2)' }} />
-                <Skeleton variant="text" width={150} height={20} sx={{ bgcolor: 'rgba(255,255,255,0.15)', mt: 0.25 }} />
-              </Box>
-            </Box>
-          </Paper>
-        )}
-
         {/* Content Skeletons */}
         <Grid container spacing={1.5}>
           {[1, 2, 3, 4].map((i) => (
@@ -591,84 +474,47 @@ const DashboardTrendsWidget = ({
     );
   }
 
-  // Define the desired group order based on the reference image
-  // The order should display GPU groups in left column and NBU groups in right column
-  // with corresponding group types aligned horizontally
-  const groupOrder = [
-    "GPU Product Master vs RBP",                                      // Position 1 (top-left)
-    "NBU Product Master vs RBP",                                      // Position 2 (top-right)
-    "GPU Master Product List Quality",                                // Position 3 (second row, left)
-    "NBU Master Product List Quality",                                // Position 4 (second row, right)
-    "GPU Master Product List vs SKULIFNR",                            // Position 5 (third row, left)
-    "NBU Master Product List vs SKULIFNR",                            // Position 6 (third row, right)
-    "GPU Master Product List vs SAR > 0 (Total Incoming Supply)",     // Position 7 (fourth row, left)
-    "NBU Master Product List vs SAR > 0 (Total Incoming Supply)"      // Position 8 (fourth row, right)
+  // Define custom group order based on the reference image
+  const customGroupOrder = [
+    'GPU Product Master vs RBP',
+    'NBU Product Master vs RBP',
+    'GPU Master Product List Quality',
+    'NBU Master Product List Quality',
+    'GPU Product Master List vs SKU/IFNR',
+    'NBU Product Master List vs SKU/IFNR',
+    'GPU Product Master List vs SAR > 0 (total incoming supply)',
+    'NBU Product Master List vs SAR > 0 (total incoming supply)',
   ];
 
-  // Filter groups based on selected owners
-  const allGroups = dashboardData?.groups || [];
-  const filteredGroups = selectedOwners.length > 0
-    ? allGroups.map(group => ({
-      ...group,
-      kpis: group.kpis.filter(kpi =>
-        selectedOwners.includes(kpi.created_by) ||
-        (selectedOwners.includes('Unassigned') && !kpi.created_by)
-      )
-    })).filter(group => group.kpis.length > 0)
-    : allGroups;
+  // Sort groups based on custom order
+  const sortGroupsByCustomOrder = (groups) => {
+    return [...groups].sort((a, b) => {
+      const indexA = customGroupOrder.indexOf(a.group_name);
+      const indexB = customGroupOrder.indexOf(b.group_name);
 
-  // Sort groups according to the defined order
-  const groups = [...filteredGroups].sort((a, b) => {
-    const indexA = groupOrder.indexOf(a.group_name);
-    const indexB = groupOrder.indexOf(b.group_name);
+      // If both groups are in the custom order, sort by their position
+      if (indexA !== -1 && indexB !== -1) {
+        return indexA - indexB;
+      }
 
-    // If both groups are in the order array, sort by their position
-    if (indexA !== -1 && indexB !== -1) {
-      return indexA - indexB;
-    }
+      // If only one group is in the custom order, prioritize it
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
 
-    // If only one group is in the order array, prioritize it
-    if (indexA !== -1) return -1;
-    if (indexB !== -1) return 1;
+      // If neither group is in the custom order, sort alphabetically
+      return a.group_name.localeCompare(b.group_name);
+    });
+  };
 
-    // If neither group is in the order array, maintain original order
-    return 0;
-  });
-
-  // Debug: Log the sorted group order
-  console.log('📊 Sorted groups order:', groups.map((g, idx) => `${idx + 1}. ${g.group_name}`));
+  // Filter groups based on selected owners and apply custom ordering
+  const rawGroups = dashboardData?.groups || [];
+  const groups = sortGroupsByCustomOrder(rawGroups);
 
   const totalKPIs = groups.reduce((sum, group) => sum + group.kpis.length, 0);
 
   if (totalKPIs === 0) {
     return (
       <Container maxWidth={maxWidth} sx={{ p: 0, ...containerSx }}>
-        {/* Header */}
-        {showHeader && (
-          <Paper
-            elevation={0}
-            sx={{
-              mb: 1.5,
-              p: 1.25,
-              borderRadius: 2,
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: 'white',
-              boxShadow: '0 2px 8px rgba(102, 126, 234, 0.2)',
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5 }}>
-              <Box sx={{ flex: '1 1 auto', minWidth: '200px' }}>
-                <Typography variant="h5" fontWeight="700" sx={{ mb: 0.25, lineHeight: 1.2, fontSize: '1.25rem', letterSpacing: '-0.02em' }}>
-                  {title}
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.875rem', opacity: 0.95 }}>
-                  {subtitle}
-                </Typography>
-              </Box>
-            </Box>
-          </Paper>
-        )}
-
         {/* Empty State */}
         <Paper
           elevation={0}
@@ -733,11 +579,10 @@ const DashboardTrendsWidget = ({
   return (
     <Box
       sx={{
-        display: 'flex',
         width: '100%',
-        minHeight: '100vh',
+        height: 'calc(100vh - 100px)',
         bgcolor: '#f9fafb',
-        gap: 2,
+        gap: 1,
         p: 2,
       }}
     >
@@ -750,57 +595,8 @@ const DashboardTrendsWidget = ({
         }}
       >
         <Container maxWidth={maxWidth} sx={{ p: 0, ...containerSx }}>
-          {/* Header Section */}
-          {showHeader && (
-            <Paper
-              elevation={0}
-              sx={{
-                mb: 1.5,
-                p: 1.25,
-                borderRadius: 2,
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                color: 'white',
-                boxShadow: '0 2px 8px rgba(102, 126, 234, 0.2)',
-              }}
-            >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5 }}>
-                {/* Left Side - Title and Subtitle */}
-                <Box sx={{ flex: '1 1 auto', minWidth: '200px' }}>
-                  <Typography variant="h5" fontWeight="700" sx={{ mb: 0.25, lineHeight: 1.2, fontSize: '1.125rem' }}>
-                    {title}
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.875rem', opacity: 0.95 }}>
-                    {subtitle}
-                  </Typography>
-                </Box>
-
-                {/* Right Side - Refresh Icon */}
-                {showRefreshButton && (
-                  <Tooltip title="Refresh Dashboard">
-                    <IconButton
-                      onClick={handleRefresh}
-                      disabled={loading}
-                      size="small"
-                      sx={{
-                        color: 'white',
-                        '&:hover': {
-                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                        },
-                        '&:disabled': {
-                          color: 'rgba(255, 255, 255, 0.5)',
-                        },
-                      }}
-                    >
-                      <RefreshIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                )}
-              </Box>
-            </Paper>
-          )}
-
           {/* KPI Cards - Grouped Card Layout */}
-          <Grid container spacing={1.5}>
+          <Grid container spacing={2}>
             {groups.map((group, groupIndex) => (
               <Grid item xs={12} md={6} key={groupIndex}>
                 <Card
@@ -808,25 +604,24 @@ const DashboardTrendsWidget = ({
                   sx={{
                     height: '100%',
                     borderRadius: 1.5,
-                    border: '1.5px solid #e5e7eb',
+                    border: '1px solid #c5c5c5',
                     overflow: 'hidden',
-                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                    '&:hover': {
-                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-                      borderColor: '#84cc16',
-                    },
+                    bgcolor: 'white',
+                    boxShadow: 'none',
                   }}
                 >
                   {/* Group Header */}
                   <Box
                     sx={{
-                      background: 'linear-gradient(135deg, #84cc16 0%, #65a30d 100%)',
+                      bgcolor: '#7cb342',
                       color: 'white',
                       px: 1.5,
-                      py: 1,
+                      pr: 0,
+                      py: 0.5,
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'space-between',
+                      justifyContent: 'center',
+                      position: 'relative',
                     }}
                   >
                     <Typography
@@ -834,37 +629,40 @@ const DashboardTrendsWidget = ({
                       sx={{
                         fontWeight: 700,
                         fontSize: '0.9375rem',
-                        letterSpacing: '-0.01em',
+                        letterSpacing: '0.02em',
                       }}
                     >
                       {group.group_name}
                     </Typography>
-                    <Button
-                      size="small"
-                      variant="outlined"
+                    <Typography
+                      variant="body2"
                       sx={{
                         color: 'white',
-                        borderColor: 'rgba(255, 255, 255, 0.5)',
+                        bgcolor: '#7cb342',
+                        border: '1px solid white',
+                        borderRadius: 1,
                         textTransform: 'none',
-                        fontWeight: 600,
-                        fontSize: '0.6875rem',
+                        fontWeight: 500,
+                        fontSize: '0.8125rem',
                         px: 1,
-                        py: 0.25,
+                        py: 0.125,
+
+                        mr: 2,
                         minWidth: 'auto',
                         minHeight: 'auto',
-                        '&:hover': {
-                          borderColor: 'white',
-                          bgcolor: 'rgba(255, 255, 255, 0.1)',
-                        },
+                        boxShadow: 'none',
+                        position: 'absolute',
+                        right: 0,
+
                       }}
                     >
                       Trends
-                    </Button>
+                    </Typography>
                   </Box>
 
                   {/* KPIs List */}
-                  <CardContent sx={{ p: 0 }}>
-                    {group.kpis.map((kpi, kpiIndex) => (
+                  <CardContent sx={{ p: 0, mt: 3, borderTop: '1px solid #f2f2f2', mr: 1.5 }}>
+                    {group.kpis.map((kpi) => (
                       <Box
                         key={kpi.id}
                         onClick={() => handleRecordsClick(kpi)}
@@ -873,23 +671,13 @@ const DashboardTrendsWidget = ({
                           alignItems: 'center',
                           justifyContent: 'space-between',
                           px: 1.5,
-                          py: 1,
-                          borderBottom: kpiIndex < group.kpis.length - 1 ? '1px solid #f3f4f6' : 'none',
+                          pr: 0,
                           cursor: 'pointer',
-                          transition: 'all 0.15s ease',
-                          '&:hover': {
-                            bgcolor: '#f9fafb',
-                            '& .kpi-name': {
-                              color: '#84cc16',
-                            },
-                            '& .record-count': {
-                              transform: 'scale(1.05)',
-                            },
-                          },
+                          borderBottom: '1px solid #f2f2f2',
                         }}
                       >
                         {/* KPI Name */}
-                        <Box sx={{ flex: 1, pr: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box sx={{ flex: 1, pr: 1.5, display: 'flex', alignItems: 'center', gap: 1, }}>
                           {/* Sparkline Icon */}
                           <Box
                             onClick={(e) => {
@@ -900,11 +688,7 @@ const DashboardTrendsWidget = ({
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              cursor: 'pointer',
-                              transition: 'all 0.15s ease',
-                              '&:hover': {
-                                transform: 'scale(1.15)',
-                              },
+                              cursor: 'pointer'
                             }}
                           >
                             <ShowChartIcon
@@ -923,8 +707,6 @@ const DashboardTrendsWidget = ({
                             sx={{
                               color: '#4b5563',
                               fontSize: '0.875rem',
-                              fontWeight: 500,
-                              lineHeight: 1.3,
                               transition: 'color 0.15s ease',
                             }}
                           >
@@ -937,10 +719,10 @@ const DashboardTrendsWidget = ({
                           <Box
                             className="record-count"
                             sx={{
-                              minWidth: 50,
+                              minWidth: 100,
+                              maxWidth: 100,
                               px: 1.5,
-                              py: 0.5,
-                              borderRadius: 1,
+                              borderRadius: 0.5,
                               bgcolor: getRecordCountColor(kpi.latest_execution.record_count),
                               display: 'flex',
                               alignItems: 'center',
@@ -954,7 +736,6 @@ const DashboardTrendsWidget = ({
                                 fontSize: '1rem',
                                 fontWeight: 700,
                                 color: '#1f2937',
-                                lineHeight: 1,
                               }}
                             >
                               {kpi.latest_execution.record_count.toLocaleString()}
@@ -963,10 +744,10 @@ const DashboardTrendsWidget = ({
                         ) : (
                           <Box
                             sx={{
-                              minWidth: 50,
+                              minWidth: 100,
+                              maxWidth: 100,
                               px: 1.5,
-                              py: 0.5,
-                              borderRadius: 1,
+                              borderRadius: 0.5,
                               bgcolor: '#f3f4f6',
                               display: 'flex',
                               alignItems: 'center',
@@ -1454,33 +1235,13 @@ const DashboardTrendsWidget = ({
           </Dialog>
         </Container>
       </Box>
-
-      {/* Right Sidebar - Planner Filter */}
-      <Box
-        sx={{
-          width: '200px',
-          minWidth: '200px',
-          display: { xs: 'none', lg: 'block' },
-          position: 'fixed',
-          right: 16,
-          top: 16,
-          zIndex: 1000,
-        }}
-      >
-       
-      </Box>
     </Box>
   );
 };
 
 DashboardTrendsWidget.propTypes = {
-  title: PropTypes.string,
-  subtitle: PropTypes.string,
   maxWidth: PropTypes.string,
   containerSx: PropTypes.object,
-  showHeader: PropTypes.bool,
-  showRefreshButton: PropTypes.bool,
-  onRefresh: PropTypes.func,
   onKPIClick: PropTypes.func,
   emptyStateRedirectUrl: PropTypes.string,
 };

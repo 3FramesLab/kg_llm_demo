@@ -1,37 +1,30 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Button,
-  Card,
-  CardContent,
   Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  FormControl,
-  Grid,
   IconButton,
-  InputLabel,
-  MenuItem,
-  Select,
-  TextField,
   Typography,
   CircularProgress,
   Alert,
   Snackbar,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from '@mui/material';
 import {
-  Add as AddIcon,
   Delete as DeleteIcon,
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
   Refresh as RefreshIcon,
   Info as InfoIcon,
+  Settings as SettingsIcon,
 } from '@mui/icons-material';
 import {
-  testDatabaseConnection,
-  addDatabaseConnection,
   listDatabaseConnections,
   removeDatabaseConnection,
   listDatabasesFromConnection,
@@ -39,23 +32,12 @@ import {
 
 /**
  * DatabaseConnectionsStep Component
- * Step 1: Manage database connections
+ * Step 1: Sources - Select from existing database connections
  */
 function DatabaseConnectionsStep({ connections, setConnections, onDataChange }) {
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [testingConnection, setTestingConnection] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
-  const [formData, setFormData] = useState({
-    name: '',
-    type: 'mysql',
-    host: '',
-    port: '',
-    database: '',
-    username: '',
-    password: '',
-    service_name: '',
-  });
   const [databases, setDatabases] = useState({});
 
   useEffect(() => {
@@ -96,61 +78,6 @@ function DatabaseConnectionsStep({ connections, setConnections, onDataChange }) 
     }
   };
 
-  const handleOpenDialog = () => {
-    setFormData({
-      name: '',
-      type: 'mysql',
-      host: '',
-      port: '',
-      database: '',
-      username: '',
-      password: '',
-      service_name: '',
-    });
-    setDialogOpen(true);
-  };
-
-  const handleCloseDialog = () => {
-    setDialogOpen(false);
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-
-  const handleTestConnection = async () => {
-    setTestingConnection(true);
-    try {
-      const response = await testDatabaseConnection(formData);
-      if (response.data.success) {
-        showSnackbar('Connection successful!', 'success');
-      } else {
-        showSnackbar('Connection failed: ' + response.data.message, 'error');
-      }
-    } catch (error) {
-      showSnackbar('Connection test failed: ' + (error.response?.data?.detail || error.message), 'error');
-    } finally {
-      setTestingConnection(false);
-    }
-  };
-
-  const handleAddConnection = async () => {
-    setLoading(true);
-    try {
-      const response = await addDatabaseConnection(formData);
-      if (response.data.success) {
-        showSnackbar('Connection added successfully!', 'success');
-        handleCloseDialog();
-        loadConnections();
-      }
-    } catch (error) {
-      showSnackbar('Error adding connection: ' + (error.response?.data?.detail || error.message), 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleRemoveConnection = async (connectionId) => {
     try {
       await removeDatabaseConnection(connectionId);
@@ -169,28 +96,16 @@ function DatabaseConnectionsStep({ connections, setConnections, onDataChange }) 
     setSnackbar({ ...snackbar, open: false });
   };
 
-  const getDefaultPort = (type) => {
-    const ports = {
-      mysql: '3306',
-      postgresql: '5432',
-      oracle: '1521',
-      sqlserver: '1433',
-      mongodb: '27017',
-    };
-    return ports[type] || '';
+  const getStatusChip = (status) => {
+    if (status === 'connected') {
+      return <Chip icon={<CheckCircleIcon />} label="Connected" color="success" size="small" />;
+    }
+    return <Chip icon={<ErrorIcon />} label="Disconnected" color="error" size="small" />;
   };
 
-  // Track previous type to avoid infinite loop
-  const prevTypeRef = useRef(formData.type);
-
-  useEffect(() => {
-    // Only update port if type actually changed (not on initial render or formData updates)
-    if (formData.type && formData.type !== prevTypeRef.current) {
-      const defaultPort = getDefaultPort(formData.type);
-      setFormData(prev => ({ ...prev, port: defaultPort }));
-      prevTypeRef.current = formData.type;
-    }
-  }, [formData.type]);
+  const handleNavigateToSettings = () => {
+    navigate('/settings');
+  };
 
   return (
     <Box sx={{ bgcolor: '#FFFFFF', p: 2, borderRadius: 1.5 }}>
@@ -204,7 +119,7 @@ function DatabaseConnectionsStep({ connections, setConnections, onDataChange }) 
             mb: 0.5,
           }}
         >
-          Load Database Sources
+          Sources
         </Typography>
         <Typography
           variant="body2"
@@ -215,41 +130,73 @@ function DatabaseConnectionsStep({ connections, setConnections, onDataChange }) 
             mb: 1.5,
           }}
         >
-          Connect to one or more database sources to build your knowledge graph. You can add multiple sources to create relationships across different databases.
+          Connect to your data sources to begin building your knowledge graph. Select from existing connections to extract entities and relationships across multiple sources.
         </Typography>
       </Box>
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography
-          variant="subtitle2"
-          sx={{
-            fontWeight: 600,
-            color: '#1F2937',
-            fontSize: '0.875rem',
-          }}
-        >
-          Connected Sources
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography
+            variant="subtitle2"
+            sx={{
+              fontWeight: 600,
+              color: '#1F2937',
+              fontSize: '0.875rem',
+            }}
+          >
+            Available Sources
+          </Typography>
+          <IconButton
+            size="small"
+            onClick={loadConnections}
+            title="Refresh All Connections"
+            sx={{
+              p: 0.5,
+              color: '#6B7280',
+              '&:hover': {
+                bgcolor: '#F3F4F6',
+                color: '#1F2937',
+              },
+            }}
+          >
+            <RefreshIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      </Box>
+
+      {/* Info Alert about Settings Page */}
+      <Alert
+        severity="info"
+        icon={<SettingsIcon />}
+        sx={{
+          display: 'flex', flexDirection: 'row', alignItems: 'center',
+          py: 0.5,
+          mb: 2,
+          bgcolor: '#F0F9FF',
+          color: '#1F2937',
+          border: '1px solid #BFDBFE',
+          '& .MuiAlert-icon': {
+            color: '#3B82F6',
+          },
+        }}
+      >
+        Manage connections in the <strong>Settings</strong>.
         <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleOpenDialog}
           size="small"
+          onClick={handleNavigateToSettings}
           sx={{
-            px: 2.5,
-            bgcolor: '#5B6FE5',
+            ml: 1,
             textTransform: 'none',
-            fontWeight: 500,
-            fontSize: '0.875rem',
-            borderRadius: '8px',
+            fontWeight: 600,
+            color: '#3B82F6',
             '&:hover': {
-              bgcolor: '#4C5FD5',
+              bgcolor: 'rgba(59, 130, 246, 0.1)',
             },
           }}
         >
-          New Connection
+          Go to Settings →
         </Button>
-      </Box>
+      </Alert>
 
       {loading && connections.length === 0 ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
@@ -269,444 +216,68 @@ function DatabaseConnectionsStep({ connections, setConnections, onDataChange }) 
             },
           }}
         >
-          No database sources loaded yet. Click <strong>"New Connection"</strong> to add a source.
+          No sources available. Please add a connection in the <strong>Settings page</strong> first.
         </Alert>
       ) : (
-        <Grid container spacing={2}>
-          {connections.map((connection) => (
-            <Grid item xs={12} md={6} key={connection.id}>
-              <Card
-                variant="outlined"
-                sx={{
-                  border: '1px solid #E5E7EB',
-                  borderRadius: 1.5,
-                  '&:hover': {
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                  },
-                }}
-              >
-                <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography
-                        variant="subtitle2"
-                        sx={{
-                          fontWeight: 600,
-                          mb: 1,
+        <TableContainer sx={{ border: '1px solid #E5E7EB', borderRadius: 1 }}>
+          <Table>
+            <TableHead>
+              <TableRow sx={{ bgcolor: '#F9FAFB' }}>
+                <TableCell sx={{ fontWeight: 600, color: '#1F2937', fontSize: '0.875rem', py: 0.75 }}>Connection Name</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#1F2937', fontSize: '0.875rem', py: 0.75 }}>Type</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#1F2937', fontSize: '0.875rem', py: 0.75 }}>Host</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#1F2937', fontSize: '0.875rem', py: 0.75 }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#1F2937', fontSize: '0.875rem', py: 0.75 }}>Databases</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#1F2937', fontSize: '0.875rem', py: 0.75 }} align="right">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {connections.map((connection) => (
+                <TableRow key={connection.id} sx={{ '&:hover': { bgcolor: '#F3F4F6' } }}>
+                  <TableCell sx={{ color: '#1F2937', fontSize: '0.875rem', py: 0.75 }}>{connection.name}</TableCell>
+                  <TableCell sx={{ color: '#6B7280', fontSize: '0.875rem', py: 0.75 }}>{connection.type.toUpperCase()}</TableCell>
+                  <TableCell sx={{ color: '#6B7280', fontSize: '0.875rem', py: 0.75 }}>{connection.host}</TableCell>
+                  <TableCell sx={{ py: 0.75 }}>{getStatusChip(connection.status)}</TableCell>
+                  <TableCell sx={{ color: '#6B7280', fontSize: '0.875rem', py: 0.75 }}>
+                    {databases[connection.id]?.length || 0}
+                  </TableCell>
+                  <TableCell align="right" sx={{ py: 0.75 }}>
+                    <IconButton
+                      size="small"
+                      onClick={() => loadDatabasesForConnection(connection.id)}
+                      title="Refresh"
+                      sx={{
+                        p: 0.5,
+                        color: '#6B7280',
+                        '&:hover': {
+                          bgcolor: '#F3F4F6',
                           color: '#1F2937',
-                          fontSize: '0.9375rem',
-                        }}
-                      >
-                        {connection.name}
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        display="block"
-                        sx={{
-                          mb: 0.5,
-                          color: '#6B7280',
-                          fontSize: '0.8125rem',
-                        }}
-                      >
-                        <strong>Type:</strong> {connection.type.toUpperCase()}
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        display="block"
-                        sx={{
-                          mb: 0.5,
-                          color: '#6B7280',
-                          fontSize: '0.8125rem',
-                        }}
-                      >
-                        <strong>Host:</strong> {connection.host}:{connection.port}
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        display="block"
-                        sx={{
-                          mb: 1,
-                          color: '#6B7280',
-                          fontSize: '0.8125rem',
-                        }}
-                      >
-                        <strong>Database:</strong> {connection.database}
-                      </Typography>
-                      <Box>
-                        <Chip
-                          icon={connection.status === 'connected' ? <CheckCircleIcon /> : <ErrorIcon />}
-                          label={connection.status === 'connected' ? 'Connected' : 'Disconnected'}
-                          color={connection.status === 'connected' ? 'success' : 'error'}
-                          size="small"
-                          sx={{
-                            height: 22,
-                            fontSize: '0.75rem',
-                            fontWeight: 500,
-                          }}
-                        />
-                      </Box>
-                      {databases[connection.id] && databases[connection.id].length > 0 && (
-                        <Box sx={{ mt: 1 }}>
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              color: '#6B7280',
-                              fontSize: '0.75rem',
-                            }}
-                          >
-                            Available Databases: {databases[connection.id].length}
-                          </Typography>
-                        </Box>
-                      )}
-                    </Box>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                      <IconButton
-                        size="small"
-                        onClick={() => loadDatabasesForConnection(connection.id)}
-                        title="Refresh"
-                        sx={{
-                          p: 0.5,
-                          color: '#6B7280',
-                          '&:hover': {
-                            bgcolor: '#F3F4F6',
-                            color: '#1F2937',
-                          },
-                        }}
-                      >
-                        <RefreshIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleRemoveConnection(connection.id)}
-                        title="Remove"
-                        sx={{
-                          p: 0.5,
-                          color: '#EF4444',
-                          '&:hover': {
-                            bgcolor: '#FEE2E2',
-                          },
-                        }}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+                        },
+                      }}
+                    >
+                      <RefreshIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleRemoveConnection(connection.id)}
+                      title="Remove"
+                      sx={{
+                        p: 0.5,
+                        color: '#EF4444',
+                        '&:hover': {
+                          bgcolor: '#FEE2E2',
+                        },
+                      }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
-
-      {/* Add Connection Dialog */}
-      <Dialog
-        open={dialogOpen}
-        onClose={handleCloseDialog}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 2,
-          },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            pb: 1,
-            pt: 2.5,
-            px: 3,
-            fontWeight: 600,
-            fontSize: '1.125rem',
-            color: '#1F2937',
-          }}
-        >
-          Add New Database Connection
-        </DialogTitle>
-        <DialogContent sx={{ px: 3 }}>
-          <Box sx={{ pt: 1.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField
-              label="Connection Name"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              fullWidth
-              required
-              size="small"
-              sx={{
-                '& .MuiInputLabel-root': {
-                  fontSize: '0.875rem',
-                  color: '#6B7280',
-                },
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': {
-                    borderColor: '#D1D5DB',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#9CA3AF',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#5B6FE5',
-                  },
-                },
-              }}
-            />
-            <FormControl
-              fullWidth
-              required
-              size="small"
-              sx={{
-                '& .MuiInputLabel-root': {
-                  fontSize: '0.875rem',
-                  color: '#6B7280',
-                },
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': {
-                    borderColor: '#D1D5DB',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#9CA3AF',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#5B6FE5',
-                  },
-                },
-              }}
-            >
-              <InputLabel>Database Type</InputLabel>
-              <Select
-                name="type"
-                value={formData.type}
-                onChange={handleInputChange}
-                label="Database Type"
-              >
-                <MenuItem value="mysql">MySQL</MenuItem>
-                <MenuItem value="postgresql">PostgreSQL</MenuItem>
-                <MenuItem value="oracle">Oracle</MenuItem>
-                <MenuItem value="sqlserver">SQL Server</MenuItem>
-                <MenuItem value="mongodb">MongoDB</MenuItem>
-              </Select>
-            </FormControl>
-            <TextField
-              label="Host"
-              name="host"
-              value={formData.host}
-              onChange={handleInputChange}
-              fullWidth
-              required
-              size="small"
-              sx={{
-                '& .MuiInputLabel-root': {
-                  fontSize: '0.875rem',
-                  color: '#6B7280',
-                },
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': {
-                    borderColor: '#D1D5DB',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#9CA3AF',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#5B6FE5',
-                  },
-                },
-              }}
-            />
-            <TextField
-              label="Port"
-              name="port"
-              value={formData.port}
-              onChange={handleInputChange}
-              fullWidth
-              required
-              size="small"
-              sx={{
-                '& .MuiInputLabel-root': {
-                  fontSize: '0.875rem',
-                  color: '#6B7280',
-                },
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': {
-                    borderColor: '#D1D5DB',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#9CA3AF',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#5B6FE5',
-                  },
-                },
-              }}
-            />
-            <TextField
-              label="Database Name"
-              name="database"
-              value={formData.database}
-              onChange={handleInputChange}
-              fullWidth
-              required
-              size="small"
-              sx={{
-                '& .MuiInputLabel-root': {
-                  fontSize: '0.875rem',
-                  color: '#6B7280',
-                },
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': {
-                    borderColor: '#D1D5DB',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#9CA3AF',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#5B6FE5',
-                  },
-                },
-              }}
-            />
-            <TextField
-              label="Username"
-              name="username"
-              value={formData.username}
-              onChange={handleInputChange}
-              fullWidth
-              required
-              size="small"
-              sx={{
-                '& .MuiInputLabel-root': {
-                  fontSize: '0.875rem',
-                  color: '#6B7280',
-                },
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': {
-                    borderColor: '#D1D5DB',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#9CA3AF',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#5B6FE5',
-                  },
-                },
-              }}
-            />
-            <TextField
-              label="Password"
-              name="password"
-              type="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              fullWidth
-              required
-              size="small"
-              sx={{
-                '& .MuiInputLabel-root': {
-                  fontSize: '0.875rem',
-                  color: '#6B7280',
-                },
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': {
-                    borderColor: '#D1D5DB',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#9CA3AF',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#5B6FE5',
-                  },
-                },
-              }}
-            />
-            {formData.type === 'oracle' && (
-              <TextField
-                label="Service Name (Optional)"
-                name="service_name"
-                value={formData.service_name}
-                onChange={handleInputChange}
-                fullWidth
-                size="small"
-                helperText="Oracle service name (e.g., ORCLPDB). Leave empty to use SID."
-                sx={{
-                  '& .MuiInputLabel-root': {
-                    fontSize: '0.875rem',
-                    color: '#6B7280',
-                  },
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': {
-                      borderColor: '#D1D5DB',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: '#9CA3AF',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#5B6FE5',
-                    },
-                  },
-                  '& .MuiFormHelperText-root': {
-                    fontSize: '0.75rem',
-                    color: '#6B7280',
-                  },
-                }}
-              />
-            )}
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2.5, pt: 1.5 }}>
-          <Button
-            onClick={handleCloseDialog}
-            size="small"
-            sx={{
-              color: '#6B7280',
-              textTransform: 'none',
-              fontWeight: 500,
-              borderRadius: '8px',
-              '&:hover': {
-                bgcolor: '#F3F4F6',
-              },
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleTestConnection}
-            disabled={testingConnection}
-            startIcon={testingConnection ? <CircularProgress size={16} /> : null}
-            size="small"
-            sx={{
-              color: '#6B7280',
-              textTransform: 'none',
-              fontWeight: 500,
-              borderRadius: '8px',
-              '&:hover': {
-                bgcolor: '#F3F4F6',
-              },
-            }}
-          >
-            Test Connection
-          </Button>
-          <Button
-            onClick={handleAddConnection}
-            variant="contained"
-            disabled={loading || !formData.name || !formData.host}
-            size="small"
-            sx={{
-              bgcolor: '#5B6FE5',
-              textTransform: 'none',
-              fontWeight: 500,
-              borderRadius: '8px',
-              '&:hover': {
-                bgcolor: '#4C5FD5',
-              },
-              '&:disabled': {
-                bgcolor: '#D1D5DB',
-                color: '#9CA3AF',
-              },
-            }}
-          >
-            Add Connection
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Snackbar for notifications */}
       <Snackbar

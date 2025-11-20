@@ -28,6 +28,9 @@ import {
   IconButton,
   Badge,
   Backdrop,
+  Divider,
+  useTheme,
+  alpha,
 } from '@mui/material';
 import {
   Add,
@@ -67,6 +70,7 @@ import KnowledgeGraphEditor from '../components/KnowledgeGraphEditor';
 
 
 export default function KnowledgeGraph() {
+  const theme = useTheme();
   const [tabValue, setTabValue] = useState(0);
   const [schemas, setSchemas] = useState([]);
   const [knowledgeGraphs, setKnowledgeGraphs] = useState([]);
@@ -335,155 +339,148 @@ export default function KnowledgeGraph() {
   };
 
   return (
-    <Container sx={{ p: 0 }}>
-      {/* Enhanced Header with Gradient */}
-      <Box
-        sx={{
-          mb: 1.5,
-          p: 1.5,
-          borderRadius: 2,
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
-          boxShadow: '0 3px 15px rgba(102, 126, 234, 0.25)',
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-          <Hub sx={{ fontSize: 28 }} />
-          <Box>
-            <Typography variant="h5" fontWeight="700" sx={{ mb: 0.25, lineHeight: 1.2, fontSize: '1.15rem' }}>
-              Knowledge Graph Builder
-            </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 400, fontSize: '0.8rem' }}>
-              Generate and visualize knowledge graphs from database schemas
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* Stats Row */}
-        <Box sx={{ display: 'flex', gap: 1.5, mt: 1, flexWrap: 'wrap' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <AccountTree sx={{ fontSize: 16 }} />
-            <Box>
-              <Typography variant="h6" fontWeight="600" sx={{ lineHeight: 1.2, fontSize: '0.9rem' }}>{knowledgeGraphs.length}</Typography>
-              <Typography variant="caption" sx={{ opacity: 0.9, fontSize: '0.65rem' }}>Knowledge Graphs</Typography>
-            </Box>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Hub sx={{ fontSize: 16 }} />
-            <Box>
-              <Typography variant="h6" fontWeight="600" sx={{ lineHeight: 1.2, fontSize: '0.9rem' }}>{schemas.length}</Typography>
-              <Typography variant="caption" sx={{ opacity: 0.9, fontSize: '0.65rem' }}>Available Schemas</Typography>
-            </Box>
-          </Box>
-        </Box>
-      </Box>
-
-      {/* Alerts with Animation */}
-      {error && (
-        <Fade in={!!error}>
-          <Alert
-            severity="error"
-            onClose={() => setError(null)}
+    <Box sx={{ p: 2 }}>
+      <Container maxWidth="auto" disableGutters>
+        <Fade in timeout={600}>
+          <Box
             sx={{
-              mb: 1,
-              borderRadius: 1,
-              boxShadow: '0 1px 6px rgba(211, 47, 47, 0.15)',
-              py: 0.25,
-            }}
-            icon={<Warning />}
-          >
-            {typeof error === 'string' ? error : JSON.stringify(error)}
-          </Alert>
-        </Fade>
-      )}
-
-      {success && (
-        <Fade in={!!success}>
-          <Alert
-            severity="success"
-            onClose={() => setSuccess(null)}
-            sx={{
-              mb: 1,
-              borderRadius: 1,
-              boxShadow: '0 1px 6px rgba(46, 125, 50, 0.15)',
-              py: 0.25,
-            }}
-            icon={<CheckCircle />}
-          >
-            {success}
-          </Alert>
-        </Fade>
-      )}
-
-      {/* Enhanced Tabs */}
-      <Paper
-        elevation={0}
-        sx={{
-          mb: 1.5,
-          borderRadius: 1.5,
-          overflow: 'hidden',
-          border: '1px solid',
-          borderColor: 'divider',
-        }}
-      >
-        <Tabs
-          value={tabValue}
-          onChange={(e, newValue) => setTabValue(newValue)}
-          aria-label="Knowledge graph management tabs"
-          sx={{
-            minHeight: 42,
-            '& .MuiTab-root': {
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              textTransform: 'none',
-              minHeight: 42,
-              py: 0.75,
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                backgroundColor: 'action.hover',
+              position: 'relative',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: -8,
+                left: -8,
+                right: -8,
+                bottom: -8,
+                borderRadius: '16px',
+                background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
+                opacity: 0,
+                transition: 'opacity 0.3s ease-in-out',
+                pointerEvents: 'none',
+                zIndex: -1,
               },
-              '&:focus-visible': {
-                outline: '3px solid #667eea',
-                outlineOffset: '-3px',
+              '&:hover::before': {
+                opacity: 1,
               },
-            },
-            '& .Mui-selected': {
-              color: '#667eea',
-            },
-            '& .MuiTabs-indicator': {
-              height: 2.5,
-              borderRadius: '2.5px 2.5px 0 0',
-              background: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)',
-            },
-          }}
-        >
-          <Tab
-            label="Generate KG"
-            icon={<Add />}
-            iconPosition="start"
-            aria-label="Generate knowledge graph tab"
-            id="tab-0"
-            aria-controls="tabpanel-0"
-          />
-          <Tab
-            label="View KG"
-            icon={<Visibility />}
-            iconPosition="start"
-            aria-label="View knowledge graph tab"
-            id="tab-1"
-            aria-controls="tabpanel-1"
-          />
-          <Tab
-            label="Manage KGs"
-            icon={<AccountTree />}
-            iconPosition="start"
-            aria-label="Manage knowledge graphs tab"
-            id="tab-2"
-            aria-controls="tabpanel-2"
-          />
-        </Tabs>
-      </Paper>
+            }}
+          >
+            <Paper
+              elevation={0}
+              sx={{
+                height: '100%',
+                minHeight: 'calc(100vh - 64px)',
+                p: 2,
+                bgcolor: '#FFFFFF',
+                border: '1px solid #E5E7EB',
+                borderRadius: 4,
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              {/* Header Section */}
+              <Box sx={{ mb: 1.5 }}>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    mb: 0.5,
+                    fontWeight: 600,
+                    fontSize: '1.25rem',
+                    color: '#5B6FE5',
+                    lineHeight: 1.3,
+                  }}
+                >
+                  Knowledge Graph Builder
+                </Typography>
 
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: '#6B7280',
+                    fontSize: '0.875rem',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Generate and visualize knowledge graphs from database schemas
+                </Typography>
+              </Box>
+              <Divider sx={{ mb: 2 }} />
+
+              {/* Alerts */}
+              {error && (
+                <Alert
+                  severity="error"
+                  onClose={() => setError(null)}
+                  sx={{ mb: 1.5 }}
+                >
+                  {typeof error === 'string' ? error : JSON.stringify(error)}
+                </Alert>
+              )}
+
+              {success && (
+                <Alert
+                  severity="success"
+                  onClose={() => setSuccess(null)}
+                  sx={{ mb: 1.5 }}
+                >
+                  {success}
+                </Alert>
+              )}
+
+              {/* Tabs Navigation */}
+              <Tabs
+                value={tabValue}
+                onChange={(e, newValue) => setTabValue(newValue)}
+                sx={{
+                  mb: 1.5,
+                  '& .MuiTab-root': {
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    minHeight: 48,
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      color: 'primary.main',
+                      bgcolor: 'rgba(25, 118, 210, 0.04)',
+                    },
+                    '&.Mui-selected': {
+                      color: 'primary.main',
+                    },
+                  },
+                  '& .MuiTabs-indicator': {
+                    height: 3,
+                    borderRadius: '3px 3px 0 0',
+                  },
+                }}
+              >
+                <Tab
+                  icon={<Add sx={{ fontSize: 20, mb: 0.5 }} />}
+                  iconPosition="start"
+                  label="Generate KG"
+                />
+                <Tab
+                  icon={<Visibility sx={{ fontSize: 20, mb: 0.5 }} />}
+                  iconPosition="start"
+                  label="View KG"
+                />
+                <Tab
+                  icon={<AccountTree sx={{ fontSize: 20, mb: 0.5 }} />}
+                  iconPosition="start"
+                  label="Manage KGs"
+                />
+              </Tabs>
+
+              {/* Content Area */}
+              <Box
+                sx={{
+                  flex: 1,
+                  bgcolor: '#F9FAFB',
+                  p: 1.5,
+                  borderRadius: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  minHeight: 300,
+                }}
+              >
       {/* Tab 1: Generate */}
       {tabValue === 0 && (
         <Fade in={tabValue === 0}>
@@ -500,14 +497,10 @@ export default function KnowledgeGraph() {
                 elevation={0}
                 sx={{
                   p: 2,
-                  borderRadius: 1.5,
-                  border: '1px solid',
-                  borderColor: 'divider',
+                  borderRadius: 1,
+                  border: '1px solid #E5E7EB',
                   height: '100%',
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    boxShadow: '0 3px 12px rgba(0,0,0,0.08)',
-                  },
+                  bgcolor: '#FFFFFF',
                 }}
               >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
@@ -515,7 +508,7 @@ export default function KnowledgeGraph() {
                     sx={{
                       p: 0.75,
                       borderRadius: 1,
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      backgroundColor: '#5B6FE5',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -523,7 +516,7 @@ export default function KnowledgeGraph() {
                   >
                     <Add sx={{ color: 'white', fontSize: 20 }} />
                   </Box>
-                  <Typography variant="h6" fontWeight="700" fontSize="0.95rem">
+                  <Typography variant="h6" fontWeight="600" fontSize="0.95rem" color="#1F2937">
                     Generate Knowledge Graph
                   </Typography>
                 </Box>
@@ -543,13 +536,13 @@ export default function KnowledgeGraph() {
                   }}
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: 1.5,
+                      borderRadius: 1,
                       fontSize: '0.85rem',
                       '&:hover fieldset': {
-                        borderColor: '#667eea',
+                        borderColor: '#5B6FE5',
                       },
                       '&.Mui-focused fieldset': {
-                        borderColor: '#667eea',
+                        borderColor: '#5B6FE5',
                       },
                     },
                   }}
@@ -714,26 +707,21 @@ export default function KnowledgeGraph() {
                     fullWidth
                     aria-label={loading ? 'Generating knowledge graph' : 'Generate knowledge graph'}
                     sx={{
-                      py: 0.9,
-                      borderRadius: 1,
-                      fontSize: '0.85rem',
-                      fontWeight: 700,
+                      px: 2,
+                      py: 0.5,
+                      borderRadius: '8px',
+                      fontSize: '0.8125rem',
+                      fontWeight: 600,
                       textTransform: 'none',
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      boxShadow: '0 2px 10px rgba(102, 126, 234, 0.35)',
-                      transition: 'all 0.3s ease',
+                      bgcolor: '#5B6FE5',
+                      boxShadow: '0 1px 3px 0 rgba(91, 111, 229, 0.2)',
                       '&:hover': {
-                        background: 'linear-gradient(135deg, #5568d3 0%, #653a8b 100%)',
-                        boxShadow: '0 3px 12px rgba(102, 126, 234, 0.45)',
-                        transform: 'translateY(-1px)',
+                        bgcolor: '#4A5FD4',
+                        boxShadow: '0 2px 6px 0 rgba(91, 111, 229, 0.3)',
                       },
                       '&:disabled': {
-                        background: 'linear-gradient(135deg, #ccc 0%, #999 100%)',
-                        boxShadow: 'none',
-                      },
-                      '&:focus-visible': {
-                        outline: '3px solid #667eea',
-                        outlineOffset: '2px',
+                        bgcolor: '#CBD5E1',
+                        color: '#94A3B8',
                       },
                     }}
                   >
@@ -779,7 +767,7 @@ export default function KnowledgeGraph() {
                           sx={{
                             p: 0.75,
                             borderRadius: 1,
-                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            backgroundColor: '#5B6FE5',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -787,7 +775,7 @@ export default function KnowledgeGraph() {
                         >
                           <Info sx={{ color: 'white', fontSize: 20 }} />
                         </Box>
-                        <Typography variant="h6" fontWeight="700" fontSize="0.95rem">
+                        <Typography variant="h6" fontWeight="600" fontSize="0.95rem" color="#1F2937">
                           Advanced Options (Optional)
                         </Typography>
                       </Box>
@@ -902,7 +890,7 @@ export default function KnowledgeGraph() {
                         sx={{
                           p: 0.75,
                           borderRadius: 1,
-                          background: 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)',
+                          backgroundColor: '#5B6FE5',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -910,7 +898,7 @@ export default function KnowledgeGraph() {
                       >
                         <Warning sx={{ color: 'white', fontSize: 20 }} />
                       </Box>
-                      <Typography variant="h6" fontWeight="700" fontSize="0.95rem">
+                      <Typography variant="h6" fontWeight="600" fontSize="0.95rem" color="#1F2937">
                         Excluded Fields (Optional)
                       </Typography>
                     </Box>
@@ -967,118 +955,19 @@ export default function KnowledgeGraph() {
 
               {selectedKG ? (
                 <>
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: 2.5,
-                      mb: 2,
-                      borderRadius: 2,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)',
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1.5 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Box
-                          sx={{
-                            p: 1,
-                            borderRadius: 1.5,
-                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          <Hub sx={{ color: 'white', fontSize: 22 }} />
-                        </Box>
-                        <Box>
-                          <Typography variant="h6" fontWeight="700">
-                            {selectedKG}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary" fontSize="0.8rem">
-                            Knowledge Graph Visualization
-                          </Typography>
-                        </Box>
-                      </Box>
-                      {selectedKG === 'Sample Knowledge Graph' && (
-                        <Chip
-                          label="Sample Data"
-                          color="info"
-                          icon={<Info />}
-                          size="small"
-                          sx={{
-                            fontWeight: 600,
-                            fontSize: '0.65rem',
-                            height: 20,
-                          }}
-                        />
-                      )}
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
-                      <Chip
-                        label={`${kgEntities.length} Entities`}
-                        icon={<Hub />}
-                        sx={{
-                          bgcolor: 'rgba(102, 126, 234, 0.1)',
-                          color: '#667eea',
-                          fontWeight: 600,
-                          fontSize: '0.95rem',
-                          px: 1,
-                          '& .MuiChip-icon': {
-                            color: '#667eea',
-                          },
-                        }}
-                      />
-                      <Chip
-                        label={`${kgRelationships.length} Relationships`}
-                        icon={<AccountTree />}
-                        sx={{
-                          bgcolor: 'rgba(118, 75, 162, 0.1)',
-                          color: '#764ba2',
-                          fontWeight: 600,
-                          fontSize: '0.95rem',
-                          px: 1,
-                          '& .MuiChip-icon': {
-                            color: '#764ba2',
-                          },
-                        }}
-                      />
-                    </Box>
 
-                    {/* Relationship Type Breakdown */}
-
-                  </Paper>
 
                   {/* Force-Directed Graph Visualization */}
                   <Paper
                     elevation={0}
                     sx={{
-                      p: 3,
-                      borderRadius: 3,
-                      mb: 3,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                      p: 2,
+                      borderRadius: 1,
+                      mb: 2,
+                      border: '1px solid #E5E7EB',
+                      bgcolor: '#FFFFFF',
                     }}
                   >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                      <Box
-                        sx={{
-                          p: 1.5,
-                          borderRadius: 2,
-                          bgcolor: 'primary.light',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <AccountTree sx={{ color: 'primary.dark', fontSize: 28 }} />
-                      </Box>
-                      <Typography variant="h5" fontWeight="700">
-                        Graph Visualization
-                      </Typography>
-                    </Box>
                     <KnowledgeGraphEditor entities={kgEntities} relationships={kgRelationships} />
                   </Paper>
 
@@ -1091,9 +980,8 @@ export default function KnowledgeGraph() {
                         onChange={(e, isExpanded) => setEntitiesExpanded(isExpanded)}
                         elevation={0}
                         sx={{
-                          border: '2px solid',
-                          borderColor: 'divider',
-                          borderRadius: 1.5,
+                          border: '1px solid #E5E7EB',
+                          borderRadius: 1,
                           '&:before': { display: 'none' },
                           overflow: 'hidden',
                         }}
@@ -1102,11 +990,10 @@ export default function KnowledgeGraph() {
                           expandIcon={<ExpandMore />}
                           sx={{
                             minHeight: 48,
-                            bgcolor: 'linear-gradient(135deg, #667eea15 0%, #764ba215 100%)',
-                            borderBottom: entitiesExpanded ? '1px solid' : 'none',
-                            borderColor: 'divider',
+                            bgcolor: '#F9FAFB',
+                            borderBottom: entitiesExpanded ? '1px solid #E5E7EB' : 'none',
                             '&:hover': {
-                              bgcolor: 'action.hover',
+                              bgcolor: '#F3F4F6',
                             },
                             '& .MuiAccordionSummary-content': {
                               my: 1,
@@ -1118,7 +1005,7 @@ export default function KnowledgeGraph() {
                               sx={{
                                 p: 0.75,
                                 borderRadius: 1,
-                                bgcolor: 'primary.main',
+                                backgroundColor: '#5B6FE5',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -1126,7 +1013,7 @@ export default function KnowledgeGraph() {
                             >
                               <Hub sx={{ color: 'white', fontSize: 18 }} />
                             </Box>
-                            <Typography variant="body1" fontWeight={700} fontSize="0.9rem">
+                            <Typography variant="body1" fontWeight={600} fontSize="0.9rem" color="#1F2937">
                               Entities
                             </Typography>
                             <Badge
@@ -1299,9 +1186,8 @@ export default function KnowledgeGraph() {
                         onChange={(e, isExpanded) => setRelationshipsExpanded(isExpanded)}
                         elevation={0}
                         sx={{
-                          border: '2px solid',
-                          borderColor: 'divider',
-                          borderRadius: 1.5,
+                          border: '1px solid #E5E7EB',
+                          borderRadius: 1,
                           '&:before': { display: 'none' },
                           overflow: 'hidden',
                         }}
@@ -1310,11 +1196,10 @@ export default function KnowledgeGraph() {
                           expandIcon={<ExpandMore />}
                           sx={{
                             minHeight: 48,
-                            bgcolor: 'linear-gradient(135deg, #43e97b15 0%, #38f9d715 100%)',
-                            borderBottom: relationshipsExpanded ? '1px solid' : 'none',
-                            borderColor: 'divider',
+                            bgcolor: '#F9FAFB',
+                            borderBottom: relationshipsExpanded ? '1px solid #E5E7EB' : 'none',
                             '&:hover': {
-                              bgcolor: 'action.hover',
+                              bgcolor: '#F3F4F6',
                             },
                             '& .MuiAccordionSummary-content': {
                               my: 1,
@@ -1326,7 +1211,7 @@ export default function KnowledgeGraph() {
                               sx={{
                                 p: 0.75,
                                 borderRadius: 1,
-                                bgcolor: 'success.main',
+                                backgroundColor: '#5B6FE5',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -1334,7 +1219,7 @@ export default function KnowledgeGraph() {
                             >
                               <AccountTree sx={{ color: 'white', fontSize: 18 }} />
                             </Box>
-                            <Typography variant="body1" fontWeight={700} fontSize="0.9rem">
+                            <Typography variant="body1" fontWeight={600} fontSize="0.9rem" color="#1F2937">
                               Relationships
                             </Typography>
                             <Badge
@@ -1570,9 +1455,19 @@ export default function KnowledgeGraph() {
                       startIcon={<Add sx={{ fontSize: 18 }} />}
                       onClick={() => setTabValue(0)}
                       sx={{
-                        borderRadius: 1,
+                        px: 1.5,
+                        py: 0.5,
+                        borderRadius: '8px',
                         textTransform: 'none',
                         fontWeight: 600,
+                        fontSize: '0.8125rem',
+                        color: '#64748B',
+                        borderColor: '#CBD5E1',
+                        '&:hover': {
+                          bgcolor: '#F8FAFC',
+                          borderColor: '#94A3B8',
+                          color: '#475569',
+                        },
                       }}
                     >
                       Generate KG
@@ -1582,9 +1477,19 @@ export default function KnowledgeGraph() {
                       startIcon={<Visibility sx={{ fontSize: 18 }} />}
                       onClick={() => setTabValue(2)}
                       sx={{
-                        borderRadius: 1,
+                        px: 1.5,
+                        py: 0.5,
+                        borderRadius: '8px',
                         textTransform: 'none',
                         fontWeight: 600,
+                        fontSize: '0.8125rem',
+                        color: '#64748B',
+                        borderColor: '#CBD5E1',
+                        '&:hover': {
+                          bgcolor: '#F8FAFC',
+                          borderColor: '#94A3B8',
+                          color: '#475569',
+                        },
                       }}
                     >
                       Manage KGs
@@ -1623,14 +1528,18 @@ export default function KnowledgeGraph() {
                   startIcon={<Refresh sx={{ fontSize: 18 }} />}
                   onClick={loadInitialData}
                   sx={{
-                    borderRadius: 1,
+                    px: 1.5,
+                    py: 0.5,
+                    borderRadius: '8px',
                     textTransform: 'none',
                     fontWeight: 600,
-                    fontSize: '0.8rem',
-                    borderWidth: 2,
-                    py: 0.5,
+                    fontSize: '0.8125rem',
+                    color: '#64748B',
+                    borderColor: '#CBD5E1',
                     '&:hover': {
-                      borderWidth: 2,
+                      bgcolor: '#F8FAFC',
+                      borderColor: '#94A3B8',
+                      color: '#475569',
                     },
                   }}
                 >
@@ -1645,9 +1554,9 @@ export default function KnowledgeGraph() {
                   elevation={0}
                   sx={{
                     p: 3,
-                    borderRadius: 1.5,
-                    border: '2px dashed',
-                    borderColor: 'divider',
+                    borderRadius: 1,
+                    border: '1px solid #E5E7EB',
+                    bgcolor: '#FFFFFF',
                     textAlign: 'center',
                   }}
                 >
@@ -1675,16 +1584,17 @@ export default function KnowledgeGraph() {
                     onClick={() => setTabValue(0)}
                     sx={{
                       borderRadius: 1,
-                      fontSize: '0.8rem',
+                      fontSize: '0.8125rem',
                       textTransform: 'none',
                       fontWeight: 600,
-                      fontSize: '0.9rem',
-                      px: 3,
-                      py: 0.75,
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      boxShadow: '0 3px 12px rgba(102, 126, 234, 0.35)',
+                      px: 2,
+                      py: 0.5,
+                      borderRadius: '8px',
+                      bgcolor: '#5B6FE5',
+                      boxShadow: '0 1px 3px 0 rgba(91, 111, 229, 0.2)',
                       '&:hover': {
-                        background: 'linear-gradient(135deg, #5568d3 0%, #653a8b 100%)',
+                        bgcolor: '#4A5FD4',
+                        boxShadow: '0 2px 6px 0 rgba(91, 111, 229, 0.3)',
                       },
                     }}
                   >
@@ -1699,15 +1609,9 @@ export default function KnowledgeGraph() {
                     elevation={0}
                     sx={{
                       height: '100%',
-                      borderRadius: 1.5,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-                        transform: 'translateY(-2px)',
-                        borderColor: 'primary.main',
-                      },
+                      borderRadius: 1,
+                      border: '1px solid #E5E7EB',
+                      bgcolor: '#FFFFFF',
                     }}
                   >
                     <CardContent sx={{ p: 1.5 }}>
@@ -1716,7 +1620,7 @@ export default function KnowledgeGraph() {
                           sx={{
                             p: 0.75,
                             borderRadius: 1,
-                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            backgroundColor: '#5B6FE5',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -1767,14 +1671,17 @@ export default function KnowledgeGraph() {
                           startIcon={<Visibility sx={{ fontSize: 16 }} />}
                           onClick={() => handleLoadKG(kg.name)}
                           sx={{
-                            borderRadius: 1.5,
+                            px: 2,
+                            py: 0.5,
+                            borderRadius: '8px',
                             textTransform: 'none',
                             fontWeight: 600,
-                            fontSize: '0.85rem',
-                            py: 0.6,
-                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            fontSize: '0.8125rem',
+                            bgcolor: '#5B6FE5',
+                            boxShadow: '0 1px 3px 0 rgba(91, 111, 229, 0.2)',
                             '&:hover': {
-                              background: 'linear-gradient(135deg, #5568d3 0%, #653a8b 100%)',
+                              bgcolor: '#4A5FD4',
+                              boxShadow: '0 2px 6px 0 rgba(91, 111, 229, 0.3)',
                             },
                           }}
                         >
@@ -1788,11 +1695,19 @@ export default function KnowledgeGraph() {
                             startIcon={<Download sx={{ fontSize: 16 }} />}
                             onClick={() => handleExport(kg.name)}
                             sx={{
-                              borderRadius: 1.5,
+                              px: 1.5,
+                              py: 0.5,
+                              borderRadius: '8px',
                               textTransform: 'none',
                               fontWeight: 600,
-                              fontSize: '0.8rem',
-                              py: 0.5,
+                              fontSize: '0.8125rem',
+                              color: '#64748B',
+                              borderColor: '#CBD5E1',
+                              '&:hover': {
+                                bgcolor: '#F8FAFC',
+                                borderColor: '#94A3B8',
+                                color: '#475569',
+                              },
                             }}
                           >
                             Export
@@ -1805,11 +1720,12 @@ export default function KnowledgeGraph() {
                             startIcon={<Delete sx={{ fontSize: 16 }} />}
                             onClick={() => handleDelete(kg.name)}
                             sx={{
-                              borderRadius: 1.5,
+                              px: 1.5,
+                              py: 0.5,
+                              borderRadius: '8px',
                               textTransform: 'none',
                               fontWeight: 600,
-                              fontSize: '0.8rem',
-                              py: 0.5,
+                              fontSize: '0.8125rem',
                             }}
                           >
                             Delete
@@ -1824,9 +1740,10 @@ export default function KnowledgeGraph() {
           </Grid>
         </Fade>
       )}
+              </Box>
 
-      {/* Overlay Loader */}
-      <Backdrop
+              {/* Overlay Loader */}
+              <Backdrop
         sx={{
           color: '#fff',
           zIndex: (theme) => theme.zIndex.drawer + 1,
@@ -1847,7 +1764,7 @@ export default function KnowledgeGraph() {
             size={60}
             thickness={4}
             sx={{
-              color: '#667eea',
+              color: '#5B6FE5',
             }}
           />
           <Box sx={{ textAlign: 'center' }}>
@@ -1860,6 +1777,10 @@ export default function KnowledgeGraph() {
           </Box>
         </Box>
       </Backdrop>
-    </Container>
+            </Paper>
+          </Box>
+        </Fade>
+      </Container>
+    </Box>
   );
 }

@@ -38,16 +38,24 @@ class KPIAnalyticsService:
     def _get_connection(self):
         """Get KPI Analytics database connection."""
         try:
+            # Handle named SQL Server instances (contains backslash)
+            if '\\' in self.host:
+                # Named instance - don't include port
+                server_part = self.host
+            else:
+                # Default instance or IP - include port
+                server_part = f"{self.host},{self.port}"
+
             # Build connection string for KPI database
             conn_str = (
                 f"DRIVER={{ODBC Driver 17 for SQL Server}};"
-                f"SERVER={self.host},{self.port};"
+                f"SERVER={server_part};"
                 f"DATABASE={self.kpi_database};"
                 f"UID={self.username};"
                 f"PWD={self.password};"
                 f"TrustServerCertificate=yes;"
             )
-            
+
             conn = pyodbc.connect(conn_str)
             return conn
         except Exception as e:
@@ -63,11 +71,12 @@ class KPIAnalyticsService:
         
         try:
             cursor.execute("""
-                INSERT INTO kpi_definitions 
-                (name, alias_name, group_name, description, nl_definition, created_by, 
-                 business_priority, target_sla_seconds, execution_frequency, data_retention_days)
+                INSERT INTO kpi_definitions
+                (name, alias_name, group_name, description, nl_definition, created_by,
+                 business_priority, target_sla_seconds, execution_frequency, data_retention_days,
+                 group_id, dashboard_id, dashboard_name)
                 OUTPUT INSERTED.id
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 kpi_data.get('name'),
                 kpi_data.get('alias_name'),
@@ -78,7 +87,10 @@ class KPIAnalyticsService:
                 kpi_data.get('business_priority', 'medium'),
                 kpi_data.get('target_sla_seconds', 30),
                 kpi_data.get('execution_frequency', 'on_demand'),
-                kpi_data.get('data_retention_days', 90)
+                kpi_data.get('data_retention_days', 90),
+                kpi_data.get('group_id'),
+                kpi_data.get('dashboard_id'),
+                kpi_data.get('dashboard_name')
             ))
             
             kpi_id = cursor.fetchone()[0]
@@ -101,11 +113,12 @@ class KPIAnalyticsService:
             cursor.execute("""
                 SELECT id, name, alias_name, group_name, description, nl_definition,
                        created_at, updated_at, created_by, is_active, business_priority,
-                       target_sla_seconds, execution_frequency, data_retention_days
-                FROM kpi_definitions 
+                       target_sla_seconds, execution_frequency, data_retention_days,
+                       group_id, dashboard_id, dashboard_name
+                FROM kpi_definitions
                 WHERE id = ?
             """, (kpi_id,))
-            
+
             row = cursor.fetchone()
             if row:
                 return {
@@ -123,6 +136,9 @@ class KPIAnalyticsService:
                     'target_sla_seconds': row[11],
                     'execution_frequency': row[12],
                     'data_retention_days': row[13],
+                    'group_id': row[14],
+                    'dashboard_id': row[15],
+                    'dashboard_name': row[16],
                     'database': self.kpi_database
                 }
             return None
@@ -138,10 +154,11 @@ class KPIAnalyticsService:
             where_clause = "" if include_inactive else "WHERE k.is_active = 1"
             
             cursor.execute(f"""
-                SELECT 
+                SELECT
                     k.id, k.name, k.alias_name, k.group_name, k.description, k.nl_definition,
                     k.created_at, k.updated_at, k.created_by, k.is_active, k.business_priority,
                     k.target_sla_seconds, k.execution_frequency, k.data_retention_days,
+                    k.group_id, k.dashboard_id, k.dashboard_name,
                     e.id as latest_execution_id,
                     e.execution_timestamp as latest_execution,
                     e.execution_status as latest_status,
@@ -153,8 +170,8 @@ class KPIAnalyticsService:
                 FROM kpi_definitions k
                 LEFT JOIN kpi_execution_results e ON k.id = e.kpi_id
                     AND e.execution_timestamp = (
-                        SELECT MAX(execution_timestamp) 
-                        FROM kpi_execution_results 
+                        SELECT MAX(execution_timestamp)
+                        FROM kpi_execution_results
                         WHERE kpi_id = k.id
                     )
                 {where_clause}
@@ -178,22 +195,95 @@ class KPIAnalyticsService:
                     'target_sla_seconds': row[11],
                     'execution_frequency': row[12],
                     'data_retention_days': row[13],
+                    'group_id': row[14],
+                    'dashboard_id': row[15],
+                    'dashboard_name': row[16],
                     'database': self.kpi_database,
                     'latest_execution': {
-                        'id': row[14],
-                        'timestamp': row[15].isoformat() if row[15] else None,
-                        'status': row[16],
-                        'record_count': row[17],
-                        'generated_sql': row[18],  # Always include original SQL
-                        'enhanced_sql': row[19],   # Always include enhanced SQL
-                        'error_message': row[20],
-                        'execution_time_ms': row[21]
-                    } if row[14] else None
+                        'id': row[17],
+                        'timestamp': row[18].isoformat() if row[18] else None,
+                        'status': row[19],
+                        'record_count': row[20],
+                        'generated_sql': row[21],  # Always include original SQL
+                        'enhanced_sql': row[22],   # Always include enhanced SQL
+                        'error_message': row[23],
+                        'execution_time_ms': row[24]
+                    } if row[17] else None
                 }
                 kpis.append(kpi)
             
             logger.info(f"Retrieved {len(kpis)} KPIs from Analytics database")
             return kpis
+        finally:
+            conn.close()
+
+    def update_kpi(self, kpi_id: int, kpi_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update KPI definition in Analytics database."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        try:
+            # Build dynamic update query to only update provided fields
+            updates = []
+            params = []
+
+            field_mappings = {
+                'name': 'name',
+                'alias_name': 'alias_name',
+                'group_name': 'group_name',
+                'description': 'description',
+                'nl_definition': 'nl_definition',
+                'is_active': 'is_active',
+                'business_priority': 'business_priority',
+                'target_sla_seconds': 'target_sla_seconds',
+                'execution_frequency': 'execution_frequency',
+                'data_retention_days': 'data_retention_days',
+                'group_id': 'group_id',
+                'dashboard_id': 'dashboard_id',
+                'dashboard_name': 'dashboard_name'
+            }
+
+            for key, db_field in field_mappings.items():
+                if key in kpi_data and kpi_data[key] is not None:
+                    updates.append(f"{db_field} = ?")
+                    params.append(kpi_data[key])
+
+            if not updates:
+                return self.get_kpi(kpi_id)
+
+            updates.append("updated_at = GETDATE()")
+            params.append(kpi_id)
+
+            query = f"UPDATE kpi_definitions SET {', '.join(updates)} WHERE id = ?"
+            cursor.execute(query, params)
+
+            if cursor.rowcount == 0:
+                raise ValueError(f"KPI with ID {kpi_id} not found")
+
+            conn.commit()
+            logger.info(f"✓ Updated KPI ID: {kpi_id}")
+            return self.get_kpi(kpi_id)
+        finally:
+            conn.close()
+
+    def delete_kpi(self, kpi_id: int) -> bool:
+        """Delete KPI definition (soft delete by setting is_active = False)."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute("""
+                UPDATE kpi_definitions
+                SET is_active = 0, updated_at = GETDATE()
+                WHERE id = ?
+            """, (kpi_id,))
+
+            if cursor.rowcount == 0:
+                return False
+
+            conn.commit()
+            logger.info(f"✓ Deactivated KPI ID: {kpi_id}")
+            return True
         finally:
             conn.close()
 

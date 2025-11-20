@@ -36,12 +36,13 @@ import {
   Add as AddIcon,
   Close as CloseIcon,
   Info as InfoIcon,
+  AutoAwesome as AutoAwesomeIcon,
 } from '@mui/icons-material';
-import { generateTableAliases, getTableColumns } from '../../services/api';
+import { generateTableAliases, generateColumnAliases, getTableColumns } from '../../services/api';
 
 /**
  * AliasesStep Component
- * Step 3: Generate and manage table aliases with column selection
+ * Step 3: Aliases - Generate and manage table aliases with column selection
  */
 function AliasesStep({ selectedTables, onDataChange }) {
   const [loading, setLoading] = useState(false);
@@ -126,6 +127,112 @@ function AliasesStep({ selectedTables, onDataChange }) {
       }
     } catch (error) {
       console.error('Error generating aliases:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateAllAliases = async () => {
+    setLoading(true);
+    try {
+      // Step 1: Generate table aliases
+      const tablesForAPI = selectedTables.map(table => ({
+        connectionId: table.connectionId,
+        databaseName: table.databaseName,
+        tableName: table.tableName,
+        columns: [],
+      }));
+
+      const tableResponse = await generateTableAliases({ tables: tablesForAPI });
+
+      if (tableResponse.data.success) {
+        const aliasesWithKeys = tableResponse.data.data.map(item => ({
+          ...item,
+          key: `${item.connectionId}:${item.databaseName}:${item.tableName}`,
+          aliasString: item.aliases.join(', '),
+        }));
+        setAliasesData(aliasesWithKeys);
+
+        // Step 2: Load columns for all tables and generate column aliases
+        const allColumnsData = {};
+        const allColumnAliases = {};
+        const allSelectedColumns = {};
+
+        for (const row of aliasesWithKeys) {
+          try {
+            const columnsResponse = await getTableColumns(
+              row.connectionId,
+              row.databaseName,
+              row.tableName
+            );
+
+            const columns = columnsResponse.data.columns || [];
+            allColumnsData[row.key] = columns;
+
+            // Initialize column selections
+            const columnSelections = {};
+            columns.forEach(col => {
+              columnSelections[col.name] = false;
+            });
+            allSelectedColumns[row.key] = columnSelections;
+
+            // Initialize column aliases as empty arrays
+            const columnAliasesInit = {};
+            columns.forEach(col => {
+              columnAliasesInit[col.name] = [];
+            });
+            allColumnAliases[row.key] = columnAliasesInit;
+          } catch (error) {
+            console.error(`Error loading columns for ${row.tableName}:`, error);
+          }
+        }
+
+        setColumnsData(allColumnsData);
+        setSelectedColumns(allSelectedColumns);
+        setColumnAliases(allColumnAliases);
+
+        // Step 3: Generate column aliases for all columns
+        const columnsForAliasGeneration = [];
+        for (const tableKey in allColumnsData) {
+          const columns = allColumnsData[tableKey];
+          const tableInfo = aliasesWithKeys.find(t => t.key === tableKey);
+          if (tableInfo) {
+            columns.forEach(col => {
+              columnsForAliasGeneration.push({
+                tableName: tableInfo.tableName,
+                columnName: col.name,
+                columnType: col.type || '',
+              });
+            });
+          }
+        }
+
+        if (columnsForAliasGeneration.length > 0) {
+          const columnAliasResponse = await generateColumnAliases({
+            columns: columnsForAliasGeneration,
+          });
+
+          if (columnAliasResponse.data.success) {
+            // Populate column aliases
+            const updatedColumnAliases = { ...allColumnAliases };
+            columnAliasResponse.data.data.forEach(result => {
+              // Find the table key for this column
+              for (const tableKey in allColumnsData) {
+                const tableInfo = aliasesWithKeys.find(t => t.key === tableKey);
+                if (tableInfo && tableInfo.tableName === result.tableName) {
+                  if (updatedColumnAliases[tableKey]) {
+                    updatedColumnAliases[tableKey][result.columnName] = result.aliases;
+                  }
+                  break;
+                }
+              }
+            });
+            setColumnAliases(updatedColumnAliases);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error generating all aliases:', error);
     } finally {
       setLoading(false);
     }
@@ -427,7 +534,7 @@ function AliasesStep({ selectedTables, onDataChange }) {
       >
         <CircularProgress size={48} sx={{ color: '#5B6FE5' }} />
         <Typography variant="body1" sx={{ color: '#6B7280' }}>
-          Generating table aliases using AI...
+          Generating entity aliases using AI...
         </Typography>
       </Box>
     );
@@ -436,7 +543,7 @@ function AliasesStep({ selectedTables, onDataChange }) {
   if (selectedTables.length === 0) {
     return (
       <Alert severity="info" sx={{ mt: 2 }}>
-        No tables selected. Please go back and select tables first.
+        No entities selected. Please go back and select entities first.
       </Alert>
     );
   }
@@ -446,13 +553,13 @@ function AliasesStep({ selectedTables, onDataChange }) {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Typography variant="h6" sx={{ color: '#1F2937', fontWeight: 600 }}>
-            Table Aliases & Column Selection
+            Entity Aliases & Column Selection
           </Typography>
           <Tooltip
             title={
               <Box>
                 <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>
-                  AI-generated aliases help make your tables more recognizable. You can edit them or add more aliases separated by commas.
+                  AI-generated aliases help make your entities more recognizable. You can edit them or add more aliases separated by commas.
                   Click on a row to select which columns to include.
                 </Typography>
               </Box>
@@ -466,11 +573,36 @@ function AliasesStep({ selectedTables, onDataChange }) {
           </Tooltip>
         </Box>
 
-        <Tooltip title="Regenerate aliases">
-          <IconButton onClick={generateAliases} size="small" sx={{ color: '#5B6FE5' }}>
-            <RefreshIcon />
-          </IconButton>
-        </Tooltip>
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+          <Tooltip title="Generate aliases for both entities and columns">
+            <Button
+              onClick={generateAllAliases}
+              disabled={loading}
+              variant="contained"
+              size="small"
+              startIcon={<AutoAwesomeIcon />}
+              sx={{
+                bgcolor: '#10B981',
+                color: '#FFFFFF',
+                '&:hover': {
+                  bgcolor: '#059669',
+                },
+                '&:disabled': {
+                  bgcolor: '#D1D5DB',
+                  color: '#9CA3AF',
+                },
+              }}
+            >
+              Generate All Aliases
+            </Button>
+          </Tooltip>
+
+          <Tooltip title="Regenerate entity aliases only">
+            <IconButton onClick={generateAliases} size="small" sx={{ color: '#5B6FE5' }} disabled={loading}>
+              <RefreshIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
       </Box>
 
 
@@ -480,8 +612,8 @@ function AliasesStep({ selectedTables, onDataChange }) {
           <TableHead>
             <TableRow sx={{ bgcolor: '#F9FAFB' }}>
               <TableCell sx={{ width: 50, py: 0.75 }} />
-              <TableCell sx={{ fontWeight: 600, color: '#1F2937', py: 0.75 }}>Database</TableCell>
-              <TableCell sx={{ fontWeight: 600, color: '#1F2937', py: 0.75 }}>Table Name</TableCell>
+              <TableCell sx={{ fontWeight: 600, color: '#1F2937', py: 0.75 }}>Schema</TableCell>
+              <TableCell sx={{ fontWeight: 600, color: '#1F2937', py: 0.75 }}>Entity Name</TableCell>
               <TableCell sx={{ fontWeight: 600, color: '#1F2937', minWidth: 300, py: 0.75 }}>Aliases</TableCell>
               <TableCell sx={{ fontWeight: 600, color: '#1F2937', width: 120, py: 0.75 }}>Actions</TableCell>
             </TableRow>
@@ -585,7 +717,7 @@ function AliasesStep({ selectedTables, onDataChange }) {
                   </TableCell>
                   <TableCell sx={{ py: 0.75 }}>
                     <Box sx={{ display: 'flex', gap: 0.5 }}>
-                      <Tooltip title="Delete table" arrow>
+                      <Tooltip title="Delete entity" arrow>
                         <IconButton
                           size="small"
                           onClick={() => handleDelete(row.key)}
@@ -833,8 +965,8 @@ function AliasesStep({ selectedTables, onDataChange }) {
         <DialogContent sx={{ pt: 3, pb: 2 }}>
           <Alert severity="info" sx={{ mb: 2, fontSize: '0.875rem' }}>
             {isEditMode
-              ? 'Update the alias name for this table.'
-              : 'Enter a new alias name for this table. Aliases help make your tables more recognizable.'
+              ? 'Update the alias name for this entity.'
+              : 'Enter a new alias name for this entity. Aliases help make your entities more recognizable.'
             }
           </Alert>
 

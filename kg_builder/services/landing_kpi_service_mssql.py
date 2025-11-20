@@ -43,16 +43,24 @@ class LandingKPIServiceMSSQL:
     def _get_connection(self):
         """Get MS SQL Server database connection."""
         try:
+            # Handle named SQL Server instances (contains backslash)
+            if '\\' in self.host:
+                # Named instance - don't include port
+                server_part = self.host
+            else:
+                # Default instance or IP - include port
+                server_part = f"{self.host},{self.port}"
+
             # Build connection string
             conn_str = (
                 f"DRIVER={{ODBC Driver 17 for SQL Server}};"
-                f"SERVER={self.host},{self.port};"
+                f"SERVER={server_part};"
                 f"DATABASE={self.database};"
                 f"UID={self.username};"
                 f"PWD={self.password};"
                 f"TrustServerCertificate=yes;"
             )
-            
+
             conn = pyodbc.connect(conn_str)
             return conn
         except Exception as e:

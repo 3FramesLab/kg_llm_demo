@@ -68,6 +68,12 @@ class TableConfiguration(BaseModel):
 
 class SchemaConfigurationRequest(BaseModel):
     """Request model for saving schema configuration."""
+    schemaName: str = Field(
+        ...,
+        min_length=1,
+        max_length=255,
+        description="Name of the schema configuration"
+    )
     tables: List[TableConfiguration]
 
 
@@ -567,6 +573,7 @@ async def save_schema_configuration(request: SchemaConfigurationRequest):
     Save schema configuration from the Schema Wizard.
 
     This endpoint saves the user's selections including:
+    - Schema name provided by the user
     - Selected tables from databases
     - Selected columns for each table
     - User-defined aliases for tables
@@ -582,6 +589,7 @@ async def save_schema_configuration(request: SchemaConfigurationRequest):
         # Prepare the configuration data
         config_data = {
             "id": config_id,
+            "schemaName": request.schemaName.strip(),
             "created_at": datetime.now().isoformat(),
             "tables": [table.model_dump() for table in request.tables],
             "summary": {
@@ -598,6 +606,7 @@ async def save_schema_configuration(request: SchemaConfigurationRequest):
             json.dump(config_data, f, indent=2, ensure_ascii=False)
 
         logger.info(f"Schema configuration saved: {config_id}")
+        logger.info(f"  Schema Name: {config_data['schemaName']}")
         logger.info(f"  Tables: {config_data['summary']['total_tables']}")
         logger.info(f"  Columns: {config_data['summary']['total_columns']}")
         logger.info(f"  Databases: {', '.join(config_data['summary']['databases'])}")
@@ -606,6 +615,7 @@ async def save_schema_configuration(request: SchemaConfigurationRequest):
             "success": True,
             "message": "Schema configuration saved successfully",
             "config_id": config_id,
+            "schemaName": config_data['schemaName'],
             "summary": config_data['summary'],
             "file_path": str(config_file)
         }
@@ -624,12 +634,17 @@ async def get_schema_configurations():
     Retrieve all saved schema configurations.
 
     This endpoint returns a list of all schema configurations that have been
-    saved through the Schema Wizard, including their metadata and summaries.
+    saved through the Schema Wizard, including their metadata, schema names, and summaries.
 
     Returns:
         JSON response with:
         - success: Boolean indicating success
-        - configurations: List of configuration objects with metadata
+        - configurations: List of configuration objects with metadata including:
+            - id: Unique configuration identifier
+            - schemaName: User-provided name for the schema
+            - created_at: Timestamp when configuration was created
+            - tables: List of configured tables
+            - summary: Summary statistics (total_tables, total_columns, databases, connections)
         - count: Total number of configurations
     """
     try:

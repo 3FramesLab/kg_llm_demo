@@ -539,6 +539,82 @@ Return ONLY valid JSON with this structure (no other text):
             logger.error(f"Error during table alias extraction: {e}")
             return {"table_name": table_name, "aliases": [], "error": str(e)}
 
+    def extract_column_aliases(self, table_name: str, column_name: str, column_type: str = None) -> Dict[str, Any]:
+        """
+        Extract business-friendly names/aliases for a database column using LLM.
+
+        Args:
+            table_name: Name of the table containing the column
+            column_name: Name of the column
+            column_type: Data type of the column (optional)
+
+        Returns:
+            Dictionary with column_name and suggested aliases
+        """
+        if not self.enabled:
+            logger.warning("LLM service disabled, cannot extract column aliases")
+            return {"column_name": column_name, "aliases": [], "error": "LLM service disabled"}
+
+        try:
+            type_info = f" (Type: {column_type})" if column_type else ""
+
+            prompt = f"""Analyze this database column and suggest 2-3 short, business-friendly names/aliases that users might use to refer to this column.
+
+Table Name: {table_name}
+Column Name: {column_name}{type_info}
+
+Suggest short business names (1-2 words each) that capture the essence of this column. For example:
+- If column is 'MATERIAL_ID', suggest: ['Material', 'Product', 'Item']
+- If column is 'OPS_STATUS', suggest: ['Status', 'State', 'Condition']
+- If column is 'CREATED_DATE', suggest: ['Created', 'Date', 'Created Date']
+
+Return ONLY valid JSON with this structure (no other text):
+{{
+    "column_name": "{column_name}",
+    "aliases": ["alias1", "alias2"],
+    "reasoning": "Brief explanation of why these aliases make sense"
+}}"""
+
+            logger.info(f"Extracting aliases for column: {table_name}.{column_name}")
+
+            response = self.create_chat_completion(
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a database expert. Suggest business-friendly names for database columns. Always return valid JSON."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                max_tokens=150
+            )
+
+            result_text = response.choices[0].message.content
+            logger.info(f"📝 LLM Raw Response for column '{column_name}':\n{result_text}")
+
+            # Extract JSON from response
+            import re
+            json_match = re.search(r'\{.*\}', result_text, re.DOTALL)
+            if not json_match:
+                logger.warning(f"❌ No JSON found in LLM response for column {column_name}")
+                return {"column_name": column_name, "aliases": [], "error": "No JSON in response"}
+
+            result = json.loads(json_match.group())
+            logger.info(f"✅ Successfully extracted aliases for {column_name}: {result.get('aliases', [])}")
+            return result
+
+        except APIError as e:
+            logger.error(f"OpenAI API error during column alias extraction: {e}")
+            return {"column_name": column_name, "aliases": [], "error": str(e)}
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse LLM response as JSON: {e}")
+            return {"column_name": column_name, "aliases": [], "error": "Invalid JSON response"}
+        except Exception as e:
+            logger.error(f"Error during column alias extraction: {e}")
+            return {"column_name": column_name, "aliases": [], "error": str(e)}
+
     def suggest_related_tables(self, source_table: str, source_columns: List[str], available_tables: Dict[str, List[str]]) -> Dict[str, Any]:
         """
         Suggest which tables might be related to a source table based on schema analysis.
@@ -557,9 +633,10 @@ Return ONLY valid JSON with this structure (no other text):
 
         try:
             # Prepare the prompt with available tables
-            source_cols_str = ", ".join(source_columns[:15])
-            if len(source_columns) > 15:
-                source_cols_str += f", ... ({len(source_columns) - 15} more)"
+            # Include ALL source columns - don't truncate
+            source_cols_str = ", ".join(source_columns)
+            logger.info(f"🔍 Analyzing {len(source_columns)} columns from source table {source_table}")
+            logger.info(f"   Source columns: {source_cols_str}")
 
             # Format available tables
             tables_info = []
@@ -574,7 +651,7 @@ Return ONLY valid JSON with this structure (no other text):
             if len(tables_info) > 20:
                 tables_str += f"\n... and {len(tables_info) - 20} more tables"
 
-            prompt = f"""Analyze the source table and suggest which of the available tables are likely to have relationships with it.
+            prompt = f"""Analyze the source table and suggest relationships with available tables for ALL columns.
 
 Source Table: {source_table}
 Source Columns: [{source_cols_str}]
@@ -582,12 +659,23 @@ Source Columns: [{source_cols_str}]
 Available Tables:
 {tables_str}
 
-Based on the column names, suggest up to 5 tables that are most likely related to the source table. For each suggestion, identify:
-1. The target table name
-2. The most likely source column for the relationship
+IMPORTANT: Analyze EVERY column in the source table and suggest potential relationships with columns in available tables.
+
+For each column in the source table, identify:
+1. The target table name that might contain related data
+2. The source column name
 3. The most likely target column for the relationship
-4. The relationship type (e.g., "MATCHES", "REFERENCES", "LINKS_TO")
-5. Confidence score (0.0 to 1.0)
+4. The relationship type (e.g., "MATCHES", "REFERENCES", "LINKS_TO", "CONTAINS", "DESCRIBES")
+5. Confidence score (0.0 to 1.0) - even low confidence relationships should be included
+6. Brief reasoning
+
+Include relationships for:
+- Foreign key columns (IDs, references)
+- Descriptive columns (names, descriptions, statuses)
+- Measure columns (amounts, counts, percentages)
+- Date/time columns (dates, timestamps)
+- Category/classification columns (types, categories, statuses)
+- Any other column that might have semantic relationships
 
 Return ONLY valid JSON with this structure (no other text):
 {{
@@ -604,7 +692,7 @@ Return ONLY valid JSON with this structure (no other text):
     ]
 }}
 
-Focus on columns that look like foreign keys, IDs, or matching fields (e.g., Material, SKU, Product_ID, etc.)."""
+Return suggestions for ALL columns, even if confidence is low. Include at least one suggestion per column if possible."""
 
             logger.info(f"Suggesting related tables for: {source_table}")
 
@@ -612,14 +700,14 @@ Focus on columns that look like foreign keys, IDs, or matching fields (e.g., Mat
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are a database relationship expert. Analyze table schemas and suggest likely relationships based on column names and patterns. Always return valid JSON."
+                        "content": "You are a database relationship expert. Analyze table schemas and suggest likely relationships based on column names and patterns. Always return valid JSON. Provide comprehensive suggestions for ALL columns in the source table."
                     },
                     {
                         "role": "user",
                         "content": prompt
                     }
                 ],
-                max_tokens=1000
+                max_tokens=2000
             )
 
             result_text = response.choices[0].message.content
@@ -633,6 +721,14 @@ Focus on columns that look like foreign keys, IDs, or matching fields (e.g., Mat
                 return {"source_table": source_table, "suggestions": [], "error": "No JSON in response"}
 
             result = json.loads(json_match.group())
+
+            # Add source_table to each suggestion for consistency
+            suggestions = result.get('suggestions', [])
+            for suggestion in suggestions:
+                if 'source_table' not in suggestion:
+                    suggestion['source_table'] = source_table
+
+            result['suggestions'] = suggestions
             logger.info(f"✅ Successfully suggested {len(result.get('suggestions', []))} related tables for {source_table}")
             return result
 

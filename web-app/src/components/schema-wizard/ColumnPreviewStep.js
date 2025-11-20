@@ -19,24 +19,28 @@ import {
   TableHead,
   TableRow,
   Paper,
+  Tooltip,
+  IconButton,
 } from '@mui/material';
 import {
   ExpandMore as ExpandMoreIcon,
   Search as SearchIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
+  Clear as ClearIcon,
 } from '@mui/icons-material';
 import { getTableColumns } from '../../services/api';
 
 /**
  * ColumnPreviewStep Component
- * Step 4: Preview selected columns from tables
+ * Step 4: Preview - Preview selected columns from tables
  */
-function ColumnPreviewStep({ selectedTables, selectedColumns = {}, onDataChange }) {
+function ColumnPreviewStep({ selectedTables, selectedColumns = {}, tableAliases = [], columnAliases = {}, onDataChange }) {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [columnsData, setColumnsData] = useState({});
   const [expandedPanels, setExpandedPanels] = useState({});
+  const [schemaName, setSchemaName] = useState('');
 
   // Track loaded tables to prevent duplicate API calls
   const loadedTablesRef = useRef('');
@@ -64,8 +68,11 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, onDataChange 
       return;
     }
 
-    onDataChange(columnsData);
-  }, [columnsData, onDataChange]);
+    onDataChange({
+      columnsData,
+      schemaName,
+    });
+  }, [columnsData, schemaName, onDataChange]);
 
   const loadAllColumns = async () => {
     if (selectedTables.length === 0) return;
@@ -160,10 +167,21 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, onDataChange 
     return grouped;
   };
 
+  // Get aliases for a specific table
+  const getTableAliasesForKey = (tableKey) => {
+    const aliasData = tableAliases.find(a => a.key === tableKey);
+    return aliasData?.aliases || [];
+  };
+
+  // Get aliases for a specific column
+  const getColumnAliasesForKey = (tableKey, columnName) => {
+    return columnAliases?.[tableKey]?.[columnName] || [];
+  };
+
   if (selectedTables.length === 0) {
     return (
       <Alert severity="warning">
-        No tables selected. Please select tables in Step 2.
+        No entities selected. Please select entities in the Entities step.
       </Alert>
     );
   }
@@ -192,40 +210,117 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, onDataChange 
             lineHeight: 1.5,
           }}
         >
-          Review selected columns from <strong>{selectedTables.length}</strong> table(s). Total selected columns: <strong>{getTotalColumnCount()}</strong>
+          Review selected columns from <strong>{selectedTables.length}</strong> entit{selectedTables.length !== 1 ? 'ies' : 'y'}. Total selected columns: <strong>{getTotalColumnCount()}</strong>
         </Typography>
       </Box>
 
-      <Box sx={{ mb: 2 }}>
-        <TextField
-          placeholder="Search columns..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          fullWidth
-          size="small"
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" sx={{ color: '#9CA3AF' }} />
-              </InputAdornment>
-            ),
-          }}
-          sx={{
-            '& .MuiOutlinedInput-root': {
-              bgcolor: '#F9FAFB',
-              '& fieldset': {
-                borderColor: '#E5E7EB',
+      <Box sx={{ mb: 2, display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+        <Box>
+          <TextField
+            placeholder="Search entities by name..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            fullWidth
+            size="small"
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" sx={{ color: '#9CA3AF' }} />
+                </InputAdornment>
+              ),
+              endAdornment: searchQuery && (
+                <InputAdornment position="end">
+                  <Tooltip title="Clear search" arrow>
+                    <IconButton
+                      size="small"
+                      onClick={() => setSearchQuery('')}
+                      sx={{
+                        p: 0.5,
+                        color: '#9CA3AF',
+                        '&:hover': {
+                          color: '#6B7280',
+                        },
+                      }}
+                    >
+                      <ClearIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                bgcolor: '#F9FAFB',
+                color: '#1F2937',
+                '& fieldset': {
+                  borderColor: '#E5E7EB',
+                },
+                '&:hover fieldset': {
+                  borderColor: '#D1D5DB',
+                },
+                '&.Mui-focused': {
+                  bgcolor: '#FFFFFF',
+                  '& fieldset': {
+                    borderColor: '#5B6FE5',
+                  },
+                },
               },
-              '&:hover fieldset': {
-                borderColor: '#D1D5DB',
+              '& .MuiOutlinedInput-input': {
+                color: '#1F2937',
+                '&::placeholder': {
+                  color: '#9CA3AF',
+                  opacity: 1,
+                },
               },
-              '&.Mui-focused fieldset': {
-                borderColor: '#5B6FE5',
-                bgcolor: '#FFFFFF',
+            }}
+          />
+        </Box>
+        <Box>
+          <TextField
+            label="Schema Name"
+            placeholder="Enter schema name..."
+            value={schemaName}
+            onChange={(e) => setSchemaName(e.target.value)}
+            fullWidth
+            size="small"
+            required
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                bgcolor: '#F9FAFB',
+                color: '#1F2937',
+                '& fieldset': {
+                  borderColor: '#E5E7EB',
+                },
+                '&:hover fieldset': {
+                  borderColor: '#D1D5DB',
+                },
+                '&.Mui-focused': {
+                  bgcolor: '#FFFFFF',
+                  '& fieldset': {
+                    borderColor: '#5B6FE5',
+                  },
+                },
               },
-            },
-          }}
-        />
+              '& .MuiOutlinedInput-input': {
+                color: '#1F2937',
+                '&::placeholder': {
+                  color: '#9CA3AF',
+                  opacity: 1,
+                },
+              },
+              '& .MuiInputBase-input:required:invalid + fieldset': {
+                borderColor: '#EF4444',
+              },
+              '& .MuiFormLabel-root': {
+                color: '#6B7280',
+                fontSize: '0.875rem',
+                '&.Mui-focused': {
+                  color: '#5B6FE5',
+                },
+              },
+            }}
+          />
+        </Box>
       </Box>
 
       {loading ? (
@@ -298,7 +393,7 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, onDataChange 
                         display: 'block',
                       }}
                     >
-                      Database: {dbName}
+                      Schema: {dbName}
                     </Typography>
                     {tables.map((tableData) => {
                       const selectedColumnsForTable = getSelectedColumnsForTable(tableData.key, tableData.columns);
@@ -320,17 +415,38 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, onDataChange 
                           }}
                         >
                           <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  fontWeight: 600,
-                                  color: '#1F2937',
-                                  fontSize: '0.9375rem',
-                                }}
-                              >
-                                {tableData.tableName}
-                              </Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5, flexWrap: 'wrap' }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    fontWeight: 600,
+                                    color: '#1F2937',
+                                    fontSize: '0.9375rem',
+                                  }}
+                                >
+                                  {tableData.tableName}
+                                </Typography>
+                                {getTableAliasesForKey(tableData.key).length > 0 && (
+                                  <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                    {getTableAliasesForKey(tableData.key).map((alias, idx) => (
+                                      <Chip
+                                        key={idx}
+                                        label={alias}
+                                        size="small"
+                                        sx={{
+                                          height: 20,
+                                          fontSize: '0.7rem',
+                                          fontWeight: 500,
+                                          bgcolor: '#FEF3C7',
+                                          color: '#92400E',
+                                          border: '1px solid #FCD34D',
+                                        }}
+                                      />
+                                    ))}
+                                  </Box>
+                                )}
+                              </Box>
                               <Chip
                                 label={`${selectedColumnsForTable.length} selected column${selectedColumnsForTable.length !== 1 ? 's' : ''}`}
                                 size="small"
@@ -359,41 +475,41 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, onDataChange 
                               )}
                             </Box>
 
-                          {tableData.error ? (
-                            <Alert
-                              severity="error"
-                              sx={{
-                                py: 1,
-                                fontSize: '0.8125rem',
-                              }}
-                            >
-                              Error loading columns: {tableData.error}
-                            </Alert>
-                          ) : selectedColumnsForTable.length === 0 ? (
-                            <Alert
-                              severity="info"
-                              sx={{
-                                py: 1,
-                                fontSize: '0.8125rem',
-                                bgcolor: '#E8F4FD',
-                                color: '#1F2937',
-                                border: '1px solid #BFDBFE',
-                                '& .MuiAlert-icon': {
-                                  color: '#3B82F6',
-                                },
-                              }}
-                            >
-                              No columns selected for this table.
-                            </Alert>
-                          ) : (
-                            <TableContainer
-                              component={Paper}
-                              variant="outlined"
-                              sx={{
-                                border: '1px solid #E5E7EB',
-                                borderRadius: 1,
-                              }}
-                            >
+                            {tableData.error ? (
+                              <Alert
+                                severity="error"
+                                sx={{
+                                  py: 1,
+                                  fontSize: '0.8125rem',
+                                }}
+                              >
+                                Error loading columns: {tableData.error}
+                              </Alert>
+                            ) : selectedColumnsForTable.length === 0 ? (
+                              <Alert
+                                severity="info"
+                                sx={{
+                                  py: 1,
+                                  fontSize: '0.8125rem',
+                                  bgcolor: '#E8F4FD',
+                                  color: '#1F2937',
+                                  border: '1px solid #BFDBFE',
+                                  '& .MuiAlert-icon': {
+                                    color: '#3B82F6',
+                                  },
+                                }}
+                              >
+                                No columns selected for this entity.
+                              </Alert>
+                            ) : (
+                              <TableContainer
+                                component={Paper}
+                                variant="outlined"
+                                sx={{
+                                  border: '1px solid #E5E7EB',
+                                  borderRadius: 1,
+                                }}
+                              >
                               <Table size="small">
                                 <TableHead>
                                   <TableRow sx={{ bgcolor: '#F9FAFB' }}>
@@ -465,16 +581,37 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, onDataChange 
                                             borderBottom: '1px solid #F3F4F6',
                                           }}
                                         >
-                                          <Typography
-                                            variant="caption"
-                                            sx={{
-                                              fontWeight: 500,
-                                              color: '#1F2937',
-                                              fontSize: '0.8125rem',
-                                            }}
-                                          >
-                                            {column.name}
-                                          </Typography>
+                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
+                                            <Typography
+                                              variant="caption"
+                                              sx={{
+                                                fontWeight: 500,
+                                                color: '#1F2937',
+                                                fontSize: '0.8125rem',
+                                              }}
+                                            >
+                                              {column.name}
+                                            </Typography>
+                                            {getColumnAliasesForKey(tableData.key, column.name).length > 0 && (
+                                              <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                                {getColumnAliasesForKey(tableData.key, column.name).map((alias, idx) => (
+                                                  <Chip
+                                                    key={idx}
+                                                    label={alias}
+                                                    size="small"
+                                                    sx={{
+                                                      height: 18,
+                                                      fontSize: '0.65rem',
+                                                      fontWeight: 500,
+                                                      bgcolor: '#DBEAFE',
+                                                      color: '#0C4A6E',
+                                                      border: '1px solid #7DD3FC',
+                                                    }}
+                                                  />
+                                                ))}
+                                              </Box>
+                                            )}
+                                          </Box>
                                         </TableCell>
                                         <TableCell
                                           sx={{
@@ -549,7 +686,7 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, onDataChange 
                                 </TableBody>
                               </Table>
                             </TableContainer>
-                          )}
+                            )}
                           </CardContent>
                         </Card>
                       );
@@ -566,4 +703,3 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, onDataChange 
 }
 
 export default ColumnPreviewStep;
-
