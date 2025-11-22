@@ -59,24 +59,34 @@ export default function RelationshipEditor({ schemaConfig, onRelationshipsUpdate
 
     setLoading(true);
     try {
-      const sourceTable = schemaConfig.tables[0];
-      const response = await suggestRelationships({
-        source_table: sourceTable.tableName,
-        schema_id: schemaConfig.id,
-      });
+      // Call the API for each table in the schema to get suggestions
+      const allSuggestions = [];
 
-      if (response.data.success && response.data.suggestions) {
-        const suggestedRels = response.data.suggestions.map(rel => ({
-          ...rel,
-          id: Math.random(),
-        }));
+      for (const table of schemaConfig.tables) {
+        try {
+          const response = await suggestRelationships({
+            source_table: table.tableName,
+            schema_id: schemaConfig.id,
+          });
 
-        // Merge suggestions with all columns from the schema
-        const mergedRels = mergeWithAllColumns(suggestedRels);
-
-        setRelationships(mergedRels);
-        onRelationshipsUpdated(mergedRels);
+          if (response.data.success && response.data.suggestions) {
+            const suggestedRels = response.data.suggestions.map(rel => ({
+              ...rel,
+              id: Math.random(),
+            }));
+            allSuggestions.push(...suggestedRels);
+          }
+        } catch (tableErr) {
+          console.error(`Error suggesting relationships for table ${table.tableName}:`, tableErr);
+          // Continue with other tables even if one fails
+        }
       }
+
+      // Merge suggestions with all columns from the schema
+      const mergedRels = mergeWithAllColumns(allSuggestions);
+
+      setRelationships(mergedRels);
+      onRelationshipsUpdated(mergedRels);
     } catch (err) {
       console.error('Error suggesting relationships:', err);
       setError('Failed to generate relationship suggestions');
@@ -170,39 +180,54 @@ export default function RelationshipEditor({ schemaConfig, onRelationshipsUpdate
   };
 
   const getAllSourceColumns = () => {
-    // Get all columns from the first (source) table in the schema
+    // Get all columns from ALL tables in the schema
     if (!schemaConfig || !schemaConfig.tables || schemaConfig.tables.length === 0) {
       return [];
     }
-    const sourceTable = schemaConfig.tables[0];
-    return sourceTable.columns?.map(c => c.name) || [];
+
+    // Collect columns from all tables with their table names
+    const allColumns = [];
+    schemaConfig.tables.forEach(table => {
+      if (table.columns && Array.isArray(table.columns)) {
+        table.columns.forEach(column => {
+          allColumns.push({
+            tableName: table.tableName,
+            columnName: column.name
+          });
+        });
+      }
+    });
+
+    return allColumns;
   };
 
   const mergeWithAllColumns = (suggestions) => {
-    // Get all columns from the source table
+    // Get all columns from all tables in the schema
     const allColumns = getAllSourceColumns();
-    const sourceTableName = schemaConfig?.tables?.[0]?.tableName || '';
 
-    // Create a map of suggestions by source_column for quick lookup
+    // Create a map of suggestions by source_table + source_column for quick lookup
     const suggestionMap = {};
     suggestions.forEach(suggestion => {
-      suggestionMap[suggestion.source_column] = suggestion;
+      const key = `${suggestion.source_table}:${suggestion.source_column}`;
+      suggestionMap[key] = suggestion;
     });
 
     // Create merged list: suggestions first, then placeholder rows for columns without suggestions
     const merged = [];
 
     // Add all columns, using suggestions if available
-    allColumns.forEach(columnName => {
-      if (suggestionMap[columnName]) {
+    allColumns.forEach(columnInfo => {
+      const key = `${columnInfo.tableName}:${columnInfo.columnName}`;
+
+      if (suggestionMap[key]) {
         // Column has a suggestion - use it
-        merged.push(suggestionMap[columnName]);
+        merged.push(suggestionMap[key]);
       } else {
         // Column has no suggestion - create a placeholder row
         merged.push({
           id: Math.random(),
-          source_table: sourceTableName,
-          source_column: columnName,
+          source_table: columnInfo.tableName,
+          source_column: columnInfo.columnName,
           target_table: '',
           target_column: '',
           relationship_type: '',
