@@ -105,38 +105,30 @@ export default function KnowledgeGraphEditor({
         linkMap.set(pairKey, {
           source: sourceId,
           target: targetId,
-          type: rel.relationship_type,
           forwardType: rel.relationship_type,
           reverseType: null,
           isBidirectional: false,
-          originalRel: rel,
         });
       } else {
-        // Found the reverse relationship - mark as bidirectional
-        const existingLink = linkMap.get(pairKey);
+        const existing = linkMap.get(pairKey);
 
-        // Check if this is actually the reverse direction
-        if (existingLink.source === targetId && existingLink.target === sourceId) {
-          // This is the reverse - update the existing link
-          existingLink.reverseType = rel.relationship_type;
-          existingLink.isBidirectional = true;
-          // Combine both types in the label
-          existingLink.type = `${existingLink.forwardType} ⇄ ${rel.relationship_type}`;
-        } else if (existingLink.source === sourceId && existingLink.target === targetId) {
-          // Same direction, different relationship type - keep as separate (will be handled below)
-          // Create a unique key that includes direction
-          const uniqueKey = `${pairKey}|${existingLink.forwardType}|${rel.relationship_type}`;
-          linkMap.set(uniqueKey, {
-            source: sourceId,
-            target: targetId,
-            type: rel.relationship_type,
-            forwardType: rel.relationship_type,
-            reverseType: null,
-            isBidirectional: false,
-            originalRel: rel,
-          });
+        // Detect reverse direction
+        if (
+          (existing.source === sourceId && existing.target === targetId) ||
+          (existing.source === targetId && existing.target === sourceId)
+        ) {
+          existing.reverseType = rel.relationship_type;
+          existing.isBidirectional = true;
+
+          // If same type both ways → use only one
+          if (existing.forwardType === rel.relationship_type) {
+            existing.type = existing.forwardType;
+          } else {
+            existing.type = `${existing.forwardType} ⇄ ${rel.relationship_type}`;
+          }
         }
       }
+
     });
 
     const links = Array.from(linkMap.values()).map((link) => ({

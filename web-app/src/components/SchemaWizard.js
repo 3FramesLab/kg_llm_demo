@@ -19,8 +19,7 @@ import ColumnPreviewStep from './schema-wizard/ColumnPreviewStep';
 import { saveSchemaConfiguration } from '../services/api';
 
 const steps = [
-  { label: 'Sources' },
-  { label: 'Entities' },
+  { label: 'Sources & Entities' },
   { label: 'Aliases' },
   { label: 'Preview' },
 ];
@@ -41,6 +40,7 @@ function SchemaWizard() {
     columnAliases: {},
     columns: [],
     schemaName: '',
+    hasSelectedColumns: false,
   });
   const [saving, setSaving] = useState(false);
   const [snackbar, setSnackbar] = useState({
@@ -69,6 +69,7 @@ function SchemaWizard() {
       columnAliases: {},
       columns: [],
       schemaName: '',
+      hasSelectedColumns: false,
     });
   };
 
@@ -129,10 +130,12 @@ function SchemaWizard() {
       }
     } catch (error) {
       console.error('Error saving schema configuration:', error);
-      const errorMessage = error.response?.data?.detail ||
-                          error.response?.data?.message ||
-                          error.message ||
-                          'Failed to save schema configuration';
+      const errorDetail = error.response?.data?.detail ||
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to save schema configuration';
+      // Ensure error message is a string
+      const errorMessage = typeof errorDetail === 'string' ? errorDetail : JSON.stringify(errorDetail);
       showSnackbar(errorMessage, 'error');
     } finally {
       setSaving(false);
@@ -142,12 +145,13 @@ function SchemaWizard() {
   const isStepValid = (step) => {
     switch (step) {
       case 0:
-        return connections.length > 0;
-      case 1:
+        // For DatabaseConnectionsStep, require at least one table to be selected
         return selectedTables.length > 0;
+      case 1:
+        // For Aliases step, require at least one column to be selected
+        return selectedTables.length > 0 && wizardData.hasSelectedColumns;
       case 2:
-        return wizardData.aliases && wizardData.aliases.length > 0;
-      case 3:
+        // For ColumnPreviewStep, require a valid schema name
         return wizardData.schemaName && wizardData.schemaName.trim().length > 0;
       default:
         return false;
@@ -162,18 +166,12 @@ function SchemaWizard() {
             connections={connections}
             setConnections={setConnections}
             onDataChange={(data) => setWizardData({ ...wizardData, connections: data })}
+            selectedSchemaTables={selectedTables}
+            setSelectedSchemaTables={setSelectedTables}
+            onTableDataChange={(data) => setWizardData({ ...wizardData, selectedTables: data })}
           />
         );
       case 1:
-        return (
-          <TableSelectionStep
-            connections={connections}
-            selectedTables={selectedTables}
-            setSelectedTables={setSelectedTables}
-            onDataChange={(data) => setWizardData({ ...wizardData, selectedTables: data })}
-          />
-        );
-      case 2:
         return (
           <AliasesStep
             selectedTables={selectedTables}
@@ -181,11 +179,12 @@ function SchemaWizard() {
               ...wizardData,
               aliases: data.aliases,
               selectedColumns: data.selectedColumns,
-              columnAliases: data.columnAliases
+              columnAliases: data.columnAliases,
+              hasSelectedColumns: data.hasSelectedColumns
             })}
           />
         );
-      case 3:
+      case 2:
         return (
           <ColumnPreviewStep
             selectedTables={selectedTables}
@@ -208,18 +207,18 @@ function SchemaWizard() {
     <Paper
       elevation={0}
       sx={{
-        height: '100%',
-        minHeight: 'calc(100vh - 64px)',
+        height: 'calc(100vh - 64px)',
         p: 2,
         bgcolor: '#FFFFFF',
         border: '1px solid #E5E7EB',
         borderRadius: 4,
         display: 'flex',
         flexDirection: 'column',
+        overflow: 'hidden',
       }}
     >
-      {/* Header Section */}
-      <Box sx={{ mb: 1.5 }}>
+      {/* Header Section - Fixed */}
+      <Box sx={{ mb: 1.5, flexShrink: 0 }}>
         <Typography
           variant="h5"
           sx={{
@@ -244,11 +243,17 @@ function SchemaWizard() {
           Transform your schemas into powerful knowledge graphs. Connect entities and columns across multiple sources to unlock deeper insights and enable advanced data quality analysis.
         </Typography>
       </Box>
-      <Divider sx={{ mb: 3 }} />
-      {/* Stepper - Compact and Aligned */}
+      <Divider sx={{ mb: 3, flexShrink: 0 }} />
 
-
-      <Stepper activeStep={activeStep} sx={{ mb: 2, '& .MuiStepLabel-label': { fontSize: '0.875rem' } }}>
+      {/* Stepper - Fixed */}
+      <Stepper
+        activeStep={activeStep}
+        sx={{
+          mb: 2,
+          flexShrink: 0,
+          '& .MuiStepLabel-label': { fontSize: '0.875rem' }
+        }}
+      >
         {steps.map((stepperItem) => (
           <Step key={stepperItem.label}>
             <StepLabel>{stepperItem.label}</StepLabel>
@@ -256,28 +261,30 @@ function SchemaWizard() {
         ))}
       </Stepper>
 
-      {/* Content Area - Compact Design */}
+      {/* Content Area - Scrollable */}
       <Box
         sx={{
           flex: 1,
           bgcolor: '#F9FAFB',
           p: 1.5,
           borderRadius: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: 300,
+          overflow: 'auto',
+          minHeight: 0,
         }}
       >
         {getStepContent(activeStep)}
       </Box>
 
-      {/* Action Buttons - Compact Design */}
+      {/* Action Buttons - Fixed at Bottom */}
       <Box
         sx={{
           display: 'flex',
           justifyContent: 'space-between',
           mt: 1.5,
-          pt: 1,
+          pt: 1.5,
+          flexShrink: 0,
+          borderTop: '1px solid #E5E7EB',
+          bgcolor: '#FFFFFF',
         }}
       >
         <Button

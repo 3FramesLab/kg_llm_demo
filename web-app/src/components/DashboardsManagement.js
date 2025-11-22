@@ -125,12 +125,17 @@ const DashboardsManagement = ({ refreshTrigger, onRefresh }) => {
     }
   };
 
+  // Validation helper to check if all required fields are filled
+  const isFormValid = () => {
+    return formData.code.trim() !== '' && formData.name.trim() !== '';
+  };
+
   return (
     <Box>
       {error && <Alert severity="error" sx={{ mb: 1.5 }} onClose={() => setError('')}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 1.5 }} onClose={() => setSuccess('')}>{success}</Alert>}
 
-      <Box sx={{ display: 'flex', gap: 1.5, mb: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, mb: 2 }}>
         <Button
           variant="contained"
           size="small"
@@ -297,6 +302,7 @@ const DashboardsManagement = ({ refreshTrigger, onRefresh }) => {
             onClick={handleSave}
             variant="contained"
             size="small"
+            disabled={!isFormValid()}
             sx={{
               px: 2,
               py: 0.5,
@@ -311,6 +317,11 @@ const DashboardsManagement = ({ refreshTrigger, onRefresh }) => {
               '&:hover': {
                 bgcolor: '#4C5FD5',
                 boxShadow: '0 2px 6px 0 rgba(91, 111, 229, 0.3)',
+              },
+              '&:disabled': {
+                bgcolor: '#D1D5DB',
+                color: '#9CA3AF',
+                boxShadow: 'none',
               },
             }}
           >

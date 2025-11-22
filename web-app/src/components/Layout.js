@@ -38,12 +38,12 @@ const menuItems = [
   { text: 'Schemas', icon: <SchemaIcon />, path: '/schemas' },
   { text: 'Knowledge Graph Builder', icon: <GraphIcon />, path: '/knowledge-graph' },
   { text: 'Relationship & KG Generation', icon: <LinkIcon />, path: '/relationship-kg-generation' },
-  { text: 'Table Aliases', icon: <TableChartIcon />, path: '/table-aliases' },
-  { text: 'Column Hints', icon: <LabelIcon />, path: '/hints-management' },
+  //{ text: 'Table Aliases', icon: <TableChartIcon />, path: '/table-aliases' },
+  // { text: 'Column Hints', icon: <LabelIcon />, path: '/hints-management' },
   { text: 'NL KPI Management', icon: <KPIIcon />, path: '/landing-kpi' },
 
   { text: 'Dashboard', icon: <ShowChartIcon />, path: '/dashboard-trends' },
-  { text: 'Master Configuration', icon: <GridViewIcon />, path: '/master-page' },
+  { text: 'Master Config', icon: <GridViewIcon />, path: '/master-page' },
   { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
 ];
 

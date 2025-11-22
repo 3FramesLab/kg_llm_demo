@@ -1,298 +1,882 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useMemo } from "react";
 import {
   Box,
-  Button,
-  Chip,
-  IconButton,
   Typography,
-  CircularProgress,
   Alert,
-  Snackbar,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-} from '@mui/material';
+  Checkbox,
+  TextField,
+  Card,
+  Chip,
+  CircularProgress,
+  InputAdornment,
+  IconButton
+} from "@mui/material";
 import {
-  Delete as DeleteIcon,
+  Search as SearchIcon,
+  Clear as ClearIcon,
   CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon,
-  Refresh as RefreshIcon,
-  Info as InfoIcon,
-  Settings as SettingsIcon,
-} from '@mui/icons-material';
+  Storage as StorageIcon,
+  TableChart as TableChartIcon
+} from "@mui/icons-material";
 import {
   listDatabaseConnections,
-  removeDatabaseConnection,
   listDatabasesFromConnection,
-} from '../../services/api';
+  listTablesFromDatabase
+} from "../../services/api";
 
-/**
- * DatabaseConnectionsStep Component
- * Step 1: Sources - Select from existing database connections
- */
-function DatabaseConnectionsStep({ connections, setConnections, onDataChange }) {
-  const navigate = useNavigate();
+function DatabaseConnectionsStep({
+  connections,
+  setConnections,
+  onDataChange,
+  selectedSchemaTables,
+  setSelectedSchemaTables,
+  onTableDataChange
+}) {
   const [loading, setLoading] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
-  const [databases, setDatabases] = useState({});
 
+  const [schemasByConn, setSchemasByConn] = useState({});
+  const [tablesData, setTablesData] = useState({});
+  const [loadedSchemas, setLoadedSchemas] = useState({});
+
+  const [selectedSource, setSelectedSource] = useState(null);
+  const [selectedSchema, setSelectedSchema] = useState(null);
+
+  const [searchSchema, setSearchSchema] = useState("");
+  const [searchTables, setSearchTables] = useState("");
+  const [searchSelected, setSearchSelected] = useState("");
+
+  /* ============================
+    LOAD CONNECTIONS
+  ============================ */
   useEffect(() => {
-    loadConnections();
+    (async () => {
+      setLoading(true);
+      try {
+        const res = await listDatabaseConnections();
+        const list = res.data.connections || [];
+
+        setConnections(list);
+        onDataChange({ connections: list });
+
+        list
+          .filter((c) => c.status === "connected")
+          .forEach((c) => loadSchemas(c.id));
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
-  const loadConnections = async () => {
-    setLoading(true);
-    try {
-      const response = await listDatabaseConnections();
-      const connectionsData = response.data.connections || [];
-      setConnections(connectionsData);
-      onDataChange(connectionsData);
-      
-      // Load databases for each connection
-      for (const conn of connectionsData) {
-        if (conn.status === 'connected') {
-          loadDatabasesForConnection(conn.id);
+  /* ============================
+    LOAD SCHEMAS
+  ============================ */
+  const loadSchemas = async (connectionId) => {
+    const res = await listDatabasesFromConnection(connectionId);
+    setSchemasByConn((prev) => ({
+      ...prev,
+      [connectionId]: res.data.databases || []
+    }));
+  };
+
+  /* ============================
+    LOAD TABLES (Lazy)
+  ============================ */
+  const loadTablesForSchema = async (connectionId, schema) => {
+    const key = `${connectionId}:${schema}`;
+
+    if (loadedSchemas[key]) return;
+
+    const res = await listTablesFromDatabase(connectionId, schema);
+    const tables = (res.data.tables || []).map((t) => ({
+      key: `${connectionId}:${schema}:${typeof t === "string" ? t : t.name}`,
+      name: typeof t === "string" ? t : t.name,
+      row_count: t.row_count
+    }));
+
+    setTablesData((p) => ({ ...p, [key]: tables }));
+    setLoadedSchemas((p) => ({ ...p, [key]: true }));
+  };
+
+  /* ============================
+    TOGGLE TABLE (FULL FIX)
+  ============================ */
+  const toggleTable = (connectionId, connectionName, schema, table) => {
+    const exists = selectedSchemaTables.some((t) => t.key === table.key);
+
+    const updated = exists
+      ? selectedSchemaTables.filter((t) => t.key !== table.key)
+      : [
+        ...selectedSchemaTables,
+        {
+          key: table.key,
+          connectionId,
+          connectionName,
+          databaseName: schema,
+          tableName: table.name,
+          rowCount: table.row_count
         }
-      }
-    } catch (error) {
-      console.error('Error loading connections:', error);
-      showSnackbar('Error loading connections', 'error');
-    } finally {
-      setLoading(false);
-    }
+      ];
+    console.log("updated:", updated)
+    setSelectedSchemaTables(updated)
+    onTableDataChange({ selectedTables: updated });
+
   };
 
-  const loadDatabasesForConnection = async (connectionId) => {
-    try {
-      const response = await listDatabasesFromConnection(connectionId);
-      setDatabases((prev) => ({
-        ...prev,
-        [connectionId]: response.data.databases || [],
-      }));
-    } catch (error) {
-      console.error(`Error loading databases for connection ${connectionId}:`, error);
-    }
-  };
+  /* ============================
+    FILTERS
+  ============================ */
+  const schemaList = useMemo(() => {
+    if (!selectedSource) return [];
+    return (schemasByConn[selectedSource] || []).filter((s) =>
+      s.toLowerCase().includes(searchSchema.toLowerCase())
+    );
+  }, [schemasByConn, selectedSource, searchSchema]);
 
-  const handleRemoveConnection = async (connectionId) => {
-    try {
-      await removeDatabaseConnection(connectionId);
-      showSnackbar('Connection removed successfully!', 'success');
-      loadConnections();
-    } catch (error) {
-      showSnackbar('Error removing connection: ' + (error.response?.data?.detail || error.message), 'error');
-    }
-  };
+  const tablesForSchema = useMemo(() => {
+    if (!selectedSource || !selectedSchema) return [];
+    const key = `${selectedSource}:${selectedSchema}`;
+    return (tablesData[key] || []).filter((t) =>
+      t.name.toLowerCase().includes(searchTables.toLowerCase())
+    );
+  }, [tablesData, selectedSource, selectedSchema, searchTables]);
 
-  const showSnackbar = (message, severity) => {
-    setSnackbar({ open: true, message, severity });
-  };
+  const selectedTableList = useMemo(
+    () =>
+      selectedSchemaTables.filter((t) =>
+        t.tableName.toLowerCase().includes(searchSelected.toLowerCase())
+      ),
+    [selectedSchemaTables, searchSelected]
+  );
 
-  const handleCloseSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
-  };
-
-  const getStatusChip = (status) => {
-    if (status === 'connected') {
-      return <Chip icon={<CheckCircleIcon />} label="Connected" color="success" size="small" />;
-    }
-    return <Chip icon={<ErrorIcon />} label="Disconnected" color="error" size="small" />;
-  };
-
-  const handleNavigateToSettings = () => {
-    navigate('/settings');
-  };
-
+  /* ============================
+      UI SECTION
+  ============================ */
   return (
-    <Box sx={{ bgcolor: '#FFFFFF', p: 2, borderRadius: 1.5 }}>
-      <Box sx={{ mb: 2 }}>
-        <Typography
-          variant="h6"
-          sx={{
-            fontWeight: 600,
-            fontSize: '1.125rem',
-            color: '#1F2937',
-            mb: 0.5,
-          }}
-        >
-          Sources
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{
-            color: '#6B7280',
-            fontSize: '0.875rem',
-            lineHeight: 1.5,
-            mb: 1.5,
-          }}
-        >
-          Connect to your data sources to begin building your knowledge graph. Select from existing connections to extract entities and relationships across multiple sources.
-        </Typography>
-      </Box>
-
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* SOURCE SELECT */}
+      <Box
+        sx={{
+          mb: 1.5,
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+          p: 1.5,
+          bgcolor: '#FFFFFF',
+          borderRadius: 1.5,
+          border: '1px solid #E5E7EB',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+          <StorageIcon sx={{ color: '#5B6FE5', fontSize: 20 }} />
           <Typography
-            variant="subtitle2"
+            variant="subtitle1"
             sx={{
               fontWeight: 600,
               color: '#1F2937',
-              fontSize: '0.875rem',
+              fontSize: '0.9375rem'
             }}
           >
-            Available Sources
+            Select Source
           </Typography>
-          <IconButton
-            size="small"
-            onClick={loadConnections}
-            title="Refresh All Connections"
+        </Box>
+
+        <TextField
+          select
+          size="small"
+          value={selectedSource || ""}
+          SelectProps={{ native: true }}
+          onChange={(e) => {
+            setSelectedSource(e.target.value);
+            setSelectedSchema(null);
+          }}
+          sx={{
+            minWidth: 240,
+            '& .MuiOutlinedInput-root': {
+              bgcolor: '#FFFFFF',
+              '& fieldset': {
+                borderColor: '#E5E7EB',
+              },
+              '&:hover fieldset': {
+                borderColor: '#5B6FE5',
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: '#5B6FE5',
+                borderWidth: '2px',
+              },
+            },
+          }}
+        >
+          <option value="">-- Select a Source --</option>
+          {connections
+            .filter((c) => c.status === "connected")
+            .map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+        </TextField>
+
+        {loading && (
+          <CircularProgress size={20} sx={{ color: '#5B6FE5' }} />
+        )}
+      </Box>
+
+      {/* 3 COLUMN LAYOUT */}
+      <Box sx={{ display: "flex", gap: 1.5, flex: 1, minHeight: 0 }}>
+
+        {/* ================= SCHEMAS ================= */}
+        <Card
+          elevation={0}
+          sx={{
+            flex: 1.2,
+            display: "flex",
+            flexDirection: "column",
+            border: '1px solid #E5E7EB',
+            borderRadius: 1.5,
+            overflow: 'hidden',
+            minHeight: 0
+          }}
+        >
+          <Box sx={{
+            p: 1.25,
+            pb: 0.75,
+            bgcolor: '#F9FAFB',
+            borderBottom: '1px solid #E5E7EB'
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.75 }}>
+              <Box
+                sx={{
+                  width: 26,
+                  height: 26,
+                  borderRadius: 1,
+                  bgcolor: '#5B6FE5',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <StorageIcon sx={{ color: '#FFFFFF', fontSize: 15 }} />
+              </Box>
+              <Typography
+                sx={{
+                  fontWeight: 600,
+                  color: '#1F2937',
+                  fontSize: '0.875rem'
+                }}
+              >
+                Schemas
+              </Typography>
+              {selectedSource && schemaList.length > 0 && (
+                <Chip
+                  label={`${schemaList.length}`}
+                  size="small"
+                  sx={{
+                    height: 16,
+                    fontSize: '0.625rem',
+                    bgcolor: '#EEF2FF',
+                    color: '#5B6FE5',
+                    fontWeight: 500,
+                    '& .MuiChip-label': {
+                      px: 0.75
+                    }
+                  }}
+                />
+              )}
+            </Box>
+
+            <TextField
+              size="small"
+              placeholder="Search..."
+              fullWidth
+              value={searchSchema}
+              onChange={(e) => setSearchSchema(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: '#6B7280', fontSize: 16 }} />
+                  </InputAdornment>
+                ),
+                endAdornment: searchSchema && (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      onClick={() => setSearchSchema('')}
+                      sx={{ padding: 0.25 }}
+                    >
+                      <ClearIcon sx={{ fontSize: 14 }} />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: '#FFFFFF',
+                  fontSize: '0.8125rem',
+                  '& fieldset': {
+                    borderColor: '#E5E7EB',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#5B6FE5',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#5B6FE5',
+                    borderWidth: '1px',
+                  },
+                  '& input': {
+                    py: 0.75
+                  }
+                },
+              }}
+            />
+          </Box>
+
+          <Box
             sx={{
-              p: 0.5,
-              color: '#6B7280',
-              '&:hover': {
-                bgcolor: '#F3F4F6',
-                color: '#1F2937',
+              flex: 1,
+              overflowY: "auto",
+              p: 0.75,
+              maxHeight: 'calc(100vh - 52vh)',
+              '&::-webkit-scrollbar': {
+                width: '8px',
+              },
+              '&::-webkit-scrollbar-track': {
+                bgcolor: '#F9FAFB',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                bgcolor: '#D1D5DB',
+                borderRadius: '4px',
+                '&:hover': {
+                  bgcolor: '#9CA3AF',
+                },
               },
             }}
           >
-            <RefreshIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      </Box>
+            {!selectedSource ? (
+              <Alert
+                severity="info"
+                sx={{
+                  fontSize: '0.8125rem',
+                  '& .MuiAlert-icon': { fontSize: 18 }
+                }}
+              >
+                Please select a source first
+              </Alert>
+            ) : schemaList.length === 0 ? (
+              <Alert
+                severity="warning"
+                sx={{
+                  fontSize: '0.8125rem',
+                  '& .MuiAlert-icon': { fontSize: 18 }
+                }}
+              >
+                No schemas found
+              </Alert>
+            ) : (
+              schemaList.map((schema) => (
+                <Box
+                  key={schema}
+                  onClick={() => {
+                    setSelectedSchema(schema);
+                    loadTablesForSchema(selectedSource, schema);
+                  }}
+                  sx={{
+                    p: 0.75,
+                    mb: 0.5,
+                    borderRadius: 0.75,
+                    cursor: "pointer",
+                    fontSize: '0.8125rem',
+                    color: '#1F2937',
+                    bgcolor: selectedSchema === schema ? '#EEF2FF' : '#FFFFFF',
+                    border: selectedSchema === schema ? '1px solid #5B6FE5' : '1px solid #E5E7EB',
+                    transition: 'all 0.2s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    "&:hover": {
+                      bgcolor: selectedSchema === schema ? '#EEF2FF' : '#F9FAFB',
+                      borderColor: '#5B6FE5',
+                      transform: 'translateX(2px)'
+                    }
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      fontSize: '0.8125rem',
+                      fontWeight: 500,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {schema}
+                  </Typography>
+                  {selectedSchema === schema && (
+                    <CheckCircleIcon sx={{ color: '#5B6FE5', fontSize: 16, flexShrink: 0, ml: 0.5 }} />
+                  )}
+                </Box>
+              ))
+            )}
+          </Box>
+        </Card>
 
-      {/* Info Alert about Settings Page */}
-      <Alert
-        severity="info"
-        icon={<SettingsIcon />}
-        sx={{
-          display: 'flex', flexDirection: 'row', alignItems: 'center',
-          py: 0.5,
-          mb: 2,
-          bgcolor: '#F0F9FF',
-          color: '#1F2937',
-          border: '1px solid #BFDBFE',
-          '& .MuiAlert-icon': {
-            color: '#3B82F6',
-          },
-        }}
-      >
-        Manage connections in the <strong>Settings</strong>.
-        <Button
-          size="small"
-          onClick={handleNavigateToSettings}
+        {/* ================= TABLES ================= */}
+        <Card
+          elevation={0}
           sx={{
-            ml: 1,
-            textTransform: 'none',
-            fontWeight: 600,
-            color: '#3B82F6',
-            '&:hover': {
-              bgcolor: 'rgba(59, 130, 246, 0.1)',
-            },
+            flex: 2,
+            display: "flex",
+            flexDirection: "column",
+            border: '1px solid #E5E7EB',
+            borderRadius: 1.5,
+            overflow: 'hidden',
+            minHeight: 0
           }}
         >
-          Go to Settings →
-        </Button>
-      </Alert>
+          <Box sx={{
+            p: 1.25,
+            pb: 0.75,
+            bgcolor: '#F9FAFB',
+            borderBottom: '1px solid #E5E7EB'
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.75 }}>
+              <Box
+                sx={{
+                  width: 26,
+                  height: 26,
+                  borderRadius: 1,
+                  bgcolor: '#5B6FE5',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <TableChartIcon sx={{ color: '#FFFFFF', fontSize: 15 }} />
+              </Box>
+              <Typography
+                sx={{
+                  fontWeight: 600,
+                  color: '#1F2937',
+                  fontSize: '0.875rem'
+                }}
+              >
+                Entities
+              </Typography>
+              {selectedSchema && tablesForSchema.length > 0 && (
+                <Chip
+                  label={`${tablesForSchema.length}`}
+                  size="small"
+                  sx={{
+                    height: 16,
+                    fontSize: '0.625rem',
+                    bgcolor: '#EEF2FF',
+                    color: '#5B6FE5',
+                    fontWeight: 500,
+                    '& .MuiChip-label': {
+                      px: 0.75
+                    }
+                  }}
+                />
+              )}
+            </Box>
 
-      {loading && connections.length === 0 ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-          <CircularProgress size={32} sx={{ color: '#5B6FE5' }} />
-        </Box>
-      ) : connections.length === 0 ? (
-        <Alert
-          severity="info"
-          icon={<InfoIcon />}
-          sx={{
-            py: 1.5,
-            bgcolor: '#E8F4FD',
-            color: '#1F2937',
-            border: '1px solid #BFDBFE',
-            '& .MuiAlert-icon': {
-              color: '#3B82F6',
-            },
-          }}
-        >
-          No sources available. Please add a connection in the <strong>Settings page</strong> first.
-        </Alert>
-      ) : (
-        <TableContainer sx={{ border: '1px solid #E5E7EB', borderRadius: 1 }}>
-          <Table>
-            <TableHead>
-              <TableRow sx={{ bgcolor: '#F9FAFB' }}>
-                <TableCell sx={{ fontWeight: 600, color: '#1F2937', fontSize: '0.875rem', py: 0.75 }}>Connection Name</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#1F2937', fontSize: '0.875rem', py: 0.75 }}>Type</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#1F2937', fontSize: '0.875rem', py: 0.75 }}>Host</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#1F2937', fontSize: '0.875rem', py: 0.75 }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#1F2937', fontSize: '0.875rem', py: 0.75 }}>Databases</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#1F2937', fontSize: '0.875rem', py: 0.75 }} align="right">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {connections.map((connection) => (
-                <TableRow key={connection.id} sx={{ '&:hover': { bgcolor: '#F3F4F6' } }}>
-                  <TableCell sx={{ color: '#1F2937', fontSize: '0.875rem', py: 0.75 }}>{connection.name}</TableCell>
-                  <TableCell sx={{ color: '#6B7280', fontSize: '0.875rem', py: 0.75 }}>{connection.type.toUpperCase()}</TableCell>
-                  <TableCell sx={{ color: '#6B7280', fontSize: '0.875rem', py: 0.75 }}>{connection.host}</TableCell>
-                  <TableCell sx={{ py: 0.75 }}>{getStatusChip(connection.status)}</TableCell>
-                  <TableCell sx={{ color: '#6B7280', fontSize: '0.875rem', py: 0.75 }}>
-                    {databases[connection.id]?.length || 0}
-                  </TableCell>
-                  <TableCell align="right" sx={{ py: 0.75 }}>
+            <TextField
+              size="small"
+              placeholder="Search..."
+              fullWidth
+              value={searchTables}
+              onChange={(e) => setSearchTables(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: '#6B7280', fontSize: 16 }} />
+                  </InputAdornment>
+                ),
+                endAdornment: searchTables && (
+                  <InputAdornment position="end">
                     <IconButton
                       size="small"
-                      onClick={() => loadDatabasesForConnection(connection.id)}
-                      title="Refresh"
+                      onClick={() => setSearchTables('')}
+                      sx={{ padding: 0.25 }}
+                    >
+                      <ClearIcon sx={{ fontSize: 14 }} />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: '#FFFFFF',
+                  fontSize: '0.8125rem',
+                  '& fieldset': {
+                    borderColor: '#E5E7EB',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#5B6FE5',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#5B6FE5',
+                    borderWidth: '1px',
+                  },
+                  '& input': {
+                    py: 0.75
+                  }
+                },
+              }}
+            />
+          </Box>
+
+          <Box
+            sx={{
+              flex: 1,
+              overflowY: "auto",
+              p: 0.75,
+              maxHeight: 'calc(100vh - 52vh)',
+              '&::-webkit-scrollbar': {
+                width: '8px',
+              },
+              '&::-webkit-scrollbar-track': {
+                bgcolor: '#F9FAFB',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                bgcolor: '#D1D5DB',
+                borderRadius: '4px',
+                '&:hover': {
+                  bgcolor: '#9CA3AF',
+                },
+              },
+            }}
+          >
+            {!selectedSchema ? (
+              <Alert
+                severity="info"
+                sx={{
+                  fontSize: '0.8125rem',
+                  '& .MuiAlert-icon': { fontSize: 18 }
+                }}
+              >
+                Select a schema to view tables
+              </Alert>
+            ) : tablesForSchema.length === 0 ? (
+              <Alert
+                severity="warning"
+                sx={{
+                  fontSize: '0.8125rem',
+                  '& .MuiAlert-icon': { fontSize: 18 }
+                }}
+              >
+                No tables found in this schema
+              </Alert>
+            ) : (
+              tablesForSchema.map((t) => {
+                const conn = connections.find((c) => c.id == selectedSource);
+                const isSelected = selectedSchemaTables.some((u) => u.key === t.key);
+
+                return (
+                  <Box
+                    key={t.key}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      p: 0.75,
+                      mb: 0.5,
+                      borderRadius: 0.75,
+                      border: '1px solid #E5E7EB',
+                      bgcolor: isSelected ? '#F0FDF4' : '#FFFFFF',
+                      cursor: "pointer",
+                      transition: 'all 0.2s ease',
+                      "&:hover": {
+                        bgcolor: isSelected ? '#F0FDF4' : '#F9FAFB',
+                        borderColor: '#5B6FE5',
+                        transform: 'translateX(2px)'
+                      }
+                    }}
+                    onClick={() =>
+                      toggleTable(selectedSource, conn?.name, selectedSchema, t)
+                    }
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flex: 1, minWidth: 0 }}>
+                      <Checkbox
+                        checked={isSelected}
+                        onChange={() =>
+                          toggleTable(selectedSource, conn?.name, selectedSchema, t)
+                        }
+                        onClick={(e) => e.stopPropagation()}
+                        sx={{
+                          color: '#D1D5DB',
+                          padding: '2px',
+                          '&.Mui-checked': {
+                            color: '#5B6FE5',
+                          },
+                        }}
+                      />
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography
+                          sx={{
+                            fontSize: '0.8125rem',
+                            fontWeight: 500,
+                            color: '#1F2937',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {t.name}
+                        </Typography>
+                        {t.row_count !== undefined && (
+                          <Typography
+                            sx={{
+                              fontSize: '0.6875rem',
+                              color: '#6B7280',
+                              mt: 0
+                            }}
+                          >
+                            {t.row_count.toLocaleString()} rows
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
+                    <Chip
+                      label={selectedSchema}
+                      size="small"
                       sx={{
-                        p: 0.5,
-                        color: '#6B7280',
-                        '&:hover': {
-                          bgcolor: '#F3F4F6',
+                        height: 18,
+                        fontSize: '0.625rem',
+                        bgcolor: '#EEF2FF',
+                        color: '#5B6FE5',
+                        border: 'none',
+                        fontWeight: 500,
+                        flexShrink: 0,
+                        ml: 0.5,
+                        '& .MuiChip-label': {
+                          px: 0.75
+                        }
+                      }}
+                    />
+                  </Box>
+                );
+              })
+            )}
+          </Box>
+        </Card>
+
+        {/* ================= SELECTED TABLES ================= */}
+        <Card
+          elevation={0}
+          sx={{
+            flex: 1.8,
+            display: "flex",
+            flexDirection: "column",
+            border: '1px solid #E5E7EB',
+            borderRadius: 1.5,
+            overflow: 'hidden',
+            minHeight: 0
+          }}
+        >
+          <Box sx={{
+            p: 1.25,
+            pb: 0.75,
+            bgcolor: '#F9FAFB',
+            borderBottom: '1px solid #E5E7EB'
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.75 }}>
+              <Box
+                sx={{
+                  width: 26,
+                  height: 26,
+                  borderRadius: 1,
+                  bgcolor: '#10B981',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <CheckCircleIcon sx={{ color: '#FFFFFF', fontSize: 15 }} />
+              </Box>
+              <Typography
+                sx={{
+                  fontWeight: 600,
+                  color: '#1F2937',
+                  fontSize: '0.875rem'
+                }}
+              >
+                Selected Entities
+              </Typography>
+              {selectedTableList.length > 0 && (
+                <Chip
+                  label={`${selectedTableList.length}`}
+                  size="small"
+                  sx={{
+                    height: 16,
+                    fontSize: '0.625rem',
+                    bgcolor: '#D1FAE5',
+                    color: '#059669',
+                    fontWeight: 500,
+                    '& .MuiChip-label': {
+                      px: 0.75
+                    }
+                  }}
+                />
+              )}
+            </Box>
+
+            <TextField
+              size="small"
+              placeholder="Search..."
+              fullWidth
+              value={searchSelected}
+              onChange={(e) => setSearchSelected(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: '#6B7280', fontSize: 16 }} />
+                  </InputAdornment>
+                ),
+                endAdornment: searchSelected && (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      onClick={() => setSearchSelected('')}
+                      sx={{ padding: 0.25 }}
+                    >
+                      <ClearIcon sx={{ fontSize: 14 }} />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: '#FFFFFF',
+                  fontSize: '0.8125rem',
+                  '& fieldset': {
+                    borderColor: '#E5E7EB',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#10B981',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#10B981',
+                    borderWidth: '1px',
+                  },
+                  '& input': {
+                    py: 0.75
+                  }
+                },
+              }}
+            />
+          </Box>
+
+          <Box
+            sx={{
+              flex: 1,
+              overflowY: "auto",
+              p: 0.75,
+              maxHeight: 'calc(100vh - 52vh)',
+              '&::-webkit-scrollbar': {
+                width: '8px',
+              },
+              '&::-webkit-scrollbar-track': {
+                bgcolor: '#F9FAFB',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                bgcolor: '#D1D5DB',
+                borderRadius: '4px',
+                '&:hover': {
+                  bgcolor: '#9CA3AF',
+                },
+              },
+            }}
+          >
+            {selectedTableList.length === 0 ? (
+              <Alert
+                severity="info"
+                sx={{
+                  fontSize: '0.8125rem',
+                  '& .MuiAlert-icon': { fontSize: 18 }
+                }}
+              >
+                No tables selected yet. Select tables from the middle panel.
+              </Alert>
+            ) : (
+              selectedTableList.map((t) => (
+                <Box
+                  key={t.key}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    p: 0.75,
+                    mb: 0.5,
+                    borderRadius: 0.75,
+                    border: '1px solid #D1FAE5',
+                    bgcolor: '#F0FDF4',
+                    transition: 'all 0.2s ease',
+                    "&:hover": {
+                      bgcolor: '#ECFDF5',
+                      borderColor: '#10B981',
+                      transform: 'translateX(-2px)'
+                    }
+                  }}
+                >
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 0.75 }}>
+                      <Typography
+                        sx={{
+                          fontSize: '0.8125rem',
+                          fontWeight: 500,
                           color: '#1F2937',
-                        },
-                      }}
-                    >
-                      <RefreshIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleRemoveConnection(connection.id)}
-                      title="Remove"
-                      sx={{
-                        p: 0.5,
-                        color: '#EF4444',
-                        '&:hover': {
-                          bgcolor: '#FEE2E2',
-                        },
-                      }}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {t.tableName}
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+                        <Chip
+                          label={t.connectionName}
+                          size="small"
+                          sx={{
+                            height: 18,
+                            fontSize: '0.625rem',
+                            bgcolor: '#EEF2FF',
+                            color: '#5B6FE5',
+                            border: 'none',
+                            fontWeight: 500,
+                            '& .MuiChip-label': {
+                              px: 0.75
+                            }
+                          }}
+                        />
+                        <Chip
+                          label={t.databaseName}
+                          size="small"
+                          sx={{
+                            height: 18,
+                            fontSize: '0.625rem',
+                            bgcolor: '#D1FAE5',
+                            color: '#059669',
+                            border: 'none',
+                            fontWeight: 500,
+                            '& .MuiChip-label': {
+                              px: 0.75
+                            }
+                          }}
+                        />
+                      </Box>
+                    </Box>
+                  </Box>
+                </Box>
+              ))
+            )}
+          </Box>
+        </Card>
 
-      {/* Snackbar for notifications */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+      </Box>
     </Box>
   );
+
 }
 
 export default DatabaseConnectionsStep;
-

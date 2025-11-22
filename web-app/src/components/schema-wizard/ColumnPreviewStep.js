@@ -97,10 +97,15 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, tableAliases 
         } catch (error) {
           console.error(`Error loading columns for ${table.tableName}:`, error);
           const key = `${table.connectionId}:${table.databaseName}:${table.tableName}`;
+
+          // Extract error message and ensure it's a string
+          const errorDetail = error.response?.data?.detail || error.message || 'Unknown error';
+          const errorMsg = typeof errorDetail === 'string' ? errorDetail : JSON.stringify(errorDetail);
+
           allColumnsData[key] = {
             ...table,
             columns: [],
-            error: error.response?.data?.detail || error.message,
+            error: errorMsg,
           };
         }
       }
@@ -146,25 +151,17 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, tableAliases 
     return count;
   };
 
-  const groupByConnection = () => {
-    const grouped = {};
-    Object.entries(columnsData).forEach(([_key, tableData]) => {
-      const connKey = `${tableData.connectionId}:${tableData.connectionName}`;
-      if (!grouped[connKey]) {
-        grouped[connKey] = {
-          connectionId: tableData.connectionId,
-          connectionName: tableData.connectionName,
-          databases: {},
+  // Get flat list of tables with selected columns
+  const getTablesWithSelectedColumns = () => {
+    return Object.entries(columnsData)
+      .map(([tableKey, tableData]) => {
+        const selectedCols = getSelectedColumnsForTable(tableKey, tableData.columns);
+        return {
+          ...tableData,
+          selectedColumns: selectedCols,
         };
-      }
-
-      if (!grouped[connKey].databases[tableData.databaseName]) {
-        grouped[connKey].databases[tableData.databaseName] = [];
-      }
-
-      grouped[connKey].databases[tableData.databaseName].push(tableData);
-    });
-    return grouped;
+      })
+      .filter(table => table.selectedColumns.length > 0); // Only show tables with selected columns
   };
 
   // Get aliases for a specific table
@@ -186,7 +183,7 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, tableAliases 
     );
   }
 
-  const groupedData = groupByConnection();
+  const tablesWithSelectedColumns = getTablesWithSelectedColumns();
 
   return (
     <Box sx={{ bgcolor: '#FFFFFF', p: 2, borderRadius: 1.5 }}>
@@ -225,7 +222,7 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, tableAliases 
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon fontSize="small" sx={{ color: '#9CA3AF' }} />
+                  <SearchIcon sx={{ color: '#6B7280', fontSize: 16 }} />
                 </InputAdornment>
               ),
               endAdornment: searchQuery && (
@@ -235,14 +232,14 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, tableAliases 
                       size="small"
                       onClick={() => setSearchQuery('')}
                       sx={{
-                        p: 0.5,
+                        padding: 0.25,
                         color: '#9CA3AF',
                         '&:hover': {
                           color: '#6B7280',
                         },
                       }}
                     >
-                      <ClearIcon fontSize="small" />
+                      <ClearIcon sx={{ fontSize: 14 }} />
                     </IconButton>
                   </Tooltip>
                 </InputAdornment>
@@ -250,27 +247,21 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, tableAliases 
             }}
             sx={{
               '& .MuiOutlinedInput-root': {
-                bgcolor: '#F9FAFB',
-                color: '#1F2937',
+                bgcolor: '#FFFFFF',
+                fontSize: '0.8125rem',
                 '& fieldset': {
                   borderColor: '#E5E7EB',
                 },
                 '&:hover fieldset': {
-                  borderColor: '#D1D5DB',
+                  borderColor: '#5B6FE5',
                 },
-                '&.Mui-focused': {
-                  bgcolor: '#FFFFFF',
-                  '& fieldset': {
-                    borderColor: '#5B6FE5',
-                  },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#5B6FE5',
+                  borderWidth: '1px',
                 },
-              },
-              '& .MuiOutlinedInput-input': {
-                color: '#1F2937',
-                '&::placeholder': {
-                  color: '#9CA3AF',
-                  opacity: 1,
-                },
+                '& input': {
+                  py: 0.75
+                }
               },
             }}
           />
@@ -329,163 +320,123 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, tableAliases 
         </Box>
       ) : (
         <Box>
-          {Object.entries(groupedData).map(([connKey, connData]) => (
-            <Accordion
-              key={connKey}
-              expanded={expandedPanels[connKey] === true}
-              onChange={handlePanelChange(connKey)}
-              sx={{
-                mb: 1.5,
-                '&:before': { display: 'none' },
-                border: '1px solid #E5E7EB',
-                borderRadius: '8px !important',
-                '&:first-of-type': {
-                  borderRadius: '8px !important',
-                },
-                '&:last-of-type': {
-                  borderRadius: '8px !important',
-                },
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon sx={{ color: '#6B7280' }} />}
+          {tablesWithSelectedColumns.map((tableData) => {
+            const tableKey = tableData.key;
+            const tableAliasesForDisplay = getTableAliasesForKey(tableKey);
+            const schemaWithAliases = tableAliasesForDisplay.length > 0
+              ? `${tableData.databaseName} (${tableAliasesForDisplay.join(', ')})`
+              : tableData.databaseName;
+
+            return (
+              <Accordion
+                key={tableKey}
+                expanded={expandedPanels[tableKey] === true}
+                onChange={handlePanelChange(tableKey)}
                 sx={{
-                  minHeight: 48,
-                  '&.Mui-expanded': { minHeight: 48 },
-                  bgcolor: '#F9FAFB',
-                  borderRadius: '8px',
+                  mb: 1.5,
+                  '&:before': { display: 'none' },
+                  border: '1px solid #E5E7EB',
+                  borderRadius: '8px !important',
+                  '&:first-of-type': {
+                    borderRadius: '8px !important',
+                  },
+                  '&:last-of-type': {
+                    borderRadius: '8px !important',
+                  },
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%' }}>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      fontWeight: 600,
-                      color: '#1F2937',
-                      fontSize: '0.9375rem',
-                    }}
-                  >
-                    {connData.connectionName}
-                  </Typography>
-                  <Chip
-                    label={`${Object.keys(connData.databases).length} database(s)`}
-                    size="small"
-                    sx={{
-                      height: 22,
-                      fontSize: '0.75rem',
-                      fontWeight: 500,
-                      bgcolor: '#F3F4F6',
-                      color: '#6B7280',
-                    }}
-                  />
-                </Box>
-              </AccordionSummary>
-              <AccordionDetails sx={{ p: 2, bgcolor: '#FFFFFF' }}>
-                {Object.entries(connData.databases).map(([dbName, tables]) => (
-                  <Box key={dbName} sx={{ mb: 2, '&:last-child': { mb: 0 } }}>
-                    <Typography
-                      variant="caption"
+                <AccordionSummary
+                  expandIcon={<ExpandMoreIcon sx={{ color: '#6B7280' }} />}
+                  sx={{
+                    minHeight: 48,
+                    '&.Mui-expanded': { minHeight: 48 },
+                    bgcolor: '#F9FAFB',
+                    borderRadius: '8px',
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', pr: 1 }}>
+                    {/* Left side: Table name with aliases */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontWeight: 600,
+                          color: '#1F2937',
+                          fontSize: '0.9375rem',
+                        }}
+                      >
+                        {tableData.tableName}
+                      </Typography>
+                      {tableAliasesForDisplay.length > 0 && (
+                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                          {tableAliasesForDisplay.map((alias, idx) => (
+                            <Chip
+                              key={idx}
+                              label={alias}
+                              size="small"
+                              sx={{
+                                height: 20,
+                                fontSize: '0.7rem',
+                                fontWeight: 500,
+                                bgcolor: '#FEF3C7',
+                                color: '#92400E',
+                                border: '1px solid #FCD34D',
+                              }}
+                            />
+                          ))}
+                        </Box>
+                      )}
+                      <Chip
+                        label={`${tableData.selectedColumns.length} column${tableData.selectedColumns.length !== 1 ? 's' : ''}`}
+                        size="small"
+                        sx={{
+                          height: 22,
+                          fontSize: '0.75rem',
+                          fontWeight: 500,
+                          bgcolor: '#EEF2FF',
+                          color: '#5B6FE5',
+                          border: '1px solid #C7D2FE',
+                        }}
+                      />
+                    </Box>
+
+                    {/* Right side: Schema and Source */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0 }}>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: '#6B7280',
+                          fontSize: '0.8125rem',
+                          fontWeight: 500,
+                        }}
+                      >
+                        Schema: <span style={{ color: '#1F2937', fontWeight: 600 }}>{tableData.databaseName}</span>
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: '#6B7280',
+                          fontSize: '0.8125rem',
+                          fontWeight: 500,
+                        }}
+                      >
+                        Source: <span style={{ color: '#1F2937', fontWeight: 600 }}>{tableData.connectionName}</span>
+                      </Typography>
+                    </Box>
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails sx={{ p: 2, bgcolor: '#FFFFFF' }}>
+                  {tableData.error ? (
+                    <Alert
+                      severity="error"
                       sx={{
-                        color: '#5B6FE5',
-                        fontWeight: 600,
+                        py: 1,
                         fontSize: '0.8125rem',
-                        mb: 1.5,
-                        display: 'block',
                       }}
                     >
-                      Schema: {dbName}
-                    </Typography>
-                    {tables.map((tableData) => {
-                      const selectedColumnsForTable = getSelectedColumnsForTable(tableData.key, tableData.columns);
-
-                      // Skip tables with no selected columns
-                      if (selectedColumnsForTable.length === 0) {
-                        return null;
-                      }
-
-                      return (
-                        <Card
-                          key={tableData.key}
-                          variant="outlined"
-                          sx={{
-                            mb: 2,
-                            '&:last-child': { mb: 0 },
-                            border: '1px solid #E5E7EB',
-                            borderRadius: 1.5,
-                          }}
-                        >
-                          <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5, flexWrap: 'wrap' }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Typography
-                                  variant="body2"
-                                  sx={{
-                                    fontWeight: 600,
-                                    color: '#1F2937',
-                                    fontSize: '0.9375rem',
-                                  }}
-                                >
-                                  {tableData.tableName}
-                                </Typography>
-                                {getTableAliasesForKey(tableData.key).length > 0 && (
-                                  <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                    {getTableAliasesForKey(tableData.key).map((alias, idx) => (
-                                      <Chip
-                                        key={idx}
-                                        label={alias}
-                                        size="small"
-                                        sx={{
-                                          height: 20,
-                                          fontSize: '0.7rem',
-                                          fontWeight: 500,
-                                          bgcolor: '#FEF3C7',
-                                          color: '#92400E',
-                                          border: '1px solid #FCD34D',
-                                        }}
-                                      />
-                                    ))}
-                                  </Box>
-                                )}
-                              </Box>
-                              <Chip
-                                label={`${selectedColumnsForTable.length} selected column${selectedColumnsForTable.length !== 1 ? 's' : ''}`}
-                                size="small"
-                                sx={{
-                                  height: 22,
-                                  fontSize: '0.75rem',
-                                  fontWeight: 500,
-                                  bgcolor: '#EEF2FF',
-                                  color: '#5B6FE5',
-                                  border: '1px solid #C7D2FE',
-                                }}
-                              />
-                              {tableData.rowCount !== undefined && (
-                                <Chip
-                                  label={`${tableData.rowCount.toLocaleString()} rows`}
-                                  size="small"
-                                  sx={{
-                                    height: 22,
-                                    fontSize: '0.75rem',
-                                    fontWeight: 500,
-                                    bgcolor: '#F3F4F6',
-                                    color: '#6B7280',
-                                    border: '1px solid #E5E7EB',
-                                  }}
-                                />
-                              )}
-                            </Box>
-
-                            {tableData.error ? (
-                              <Alert
-                                severity="error"
-                                sx={{
-                                  py: 1,
-                                  fontSize: '0.8125rem',
-                                }}
-                              >
-                                Error loading columns: {tableData.error}
-                              </Alert>
-                            ) : selectedColumnsForTable.length === 0 ? (
+                      Error loading columns: {typeof tableData.error === 'string' ? tableData.error : JSON.stringify(tableData.error)}
+                    </Alert>
+                  ) : tableData.selectedColumns.length === 0 ? (
                               <Alert
                                 severity="info"
                                 sx={{
@@ -522,7 +473,7 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, tableAliases 
                                         borderBottom: '1px solid #E5E7EB',
                                       }}
                                     >
-                                      Column Name
+                                      Column name
                                     </TableCell>
                                     <TableCell
                                       sx={{
@@ -533,10 +484,10 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, tableAliases 
                                         borderBottom: '1px solid #E5E7EB',
                                       }}
                                     >
-                                      Data Type
+                                      Aliases
                                     </TableCell>
                                     <TableCell
-                                      align="center"
+                                      align="right"
                                       sx={{
                                         py: 1,
                                         fontSize: '0.8125rem',
@@ -545,9 +496,10 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, tableAliases 
                                         borderBottom: '1px solid #E5E7EB',
                                       }}
                                     >
-                                      Nullable
+                                      Schema (with aliases)
                                     </TableCell>
                                     <TableCell
+                                      align="right"
                                       sx={{
                                         py: 1,
                                         fontSize: '0.8125rem',
@@ -556,32 +508,34 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, tableAliases 
                                         borderBottom: '1px solid #E5E7EB',
                                       }}
                                     >
-                                      Key
+                                      Source
                                     </TableCell>
                                   </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                  {selectedColumnsForTable
+                                  {tableData.selectedColumns
                                     .filter((col) => matchesSearch(col.name))
-                                    .map((column, index) => (
-                                      <TableRow
-                                        key={index}
-                                        sx={{
-                                          '&:nth-of-type(odd)': {
-                                            bgcolor: '#F9FAFB',
-                                          },
-                                          '&:hover': {
-                                            bgcolor: '#F3F4F6',
-                                          },
-                                        }}
-                                      >
-                                        <TableCell
+                                    .map((column, index) => {
+                                      const columnAliases = getColumnAliasesForKey(tableKey, column.name);
+
+                                      return (
+                                        <TableRow
+                                          key={index}
                                           sx={{
-                                            py: 1,
-                                            borderBottom: '1px solid #F3F4F6',
+                                            '&:nth-of-type(odd)': {
+                                              bgcolor: '#F9FAFB',
+                                            },
+                                            '&:hover': {
+                                              bgcolor: '#F3F4F6',
+                                            },
                                           }}
                                         >
-                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
+                                          <TableCell
+                                            sx={{
+                                              py: 1,
+                                              borderBottom: '1px solid #F3F4F6',
+                                            }}
+                                          >
                                             <Typography
                                               variant="caption"
                                               sx={{
@@ -592,9 +546,16 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, tableAliases 
                                             >
                                               {column.name}
                                             </Typography>
-                                            {getColumnAliasesForKey(tableData.key, column.name).length > 0 && (
+                                          </TableCell>
+                                          <TableCell
+                                            sx={{
+                                              py: 1,
+                                              borderBottom: '1px solid #F3F4F6',
+                                            }}
+                                          >
+                                            {columnAliases.length > 0 ? (
                                               <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                                {getColumnAliasesForKey(tableData.key, column.name).map((alias, idx) => (
+                                                {columnAliases.map((alias, idx) => (
                                                   <Chip
                                                     key={idx}
                                                     label={alias}
@@ -610,92 +571,66 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, tableAliases 
                                                   />
                                                 ))}
                                               </Box>
+                                            ) : (
+                                              <Typography
+                                                variant="caption"
+                                                sx={{
+                                                  color: '#9CA3AF',
+                                                  fontSize: '0.75rem',
+                                                  fontStyle: 'italic',
+                                                }}
+                                              >
+                                                —
+                                              </Typography>
                                             )}
-                                          </Box>
-                                        </TableCell>
-                                        <TableCell
-                                          sx={{
-                                            py: 1,
-                                            borderBottom: '1px solid #F3F4F6',
-                                          }}
-                                        >
-                                          <Chip
-                                            label={column.data_type || column.type}
-                                            size="small"
+                                          </TableCell>
+                                          <TableCell
+                                            align="right"
                                             sx={{
-                                              height: 20,
-                                              fontSize: '0.75rem',
-                                              fontWeight: 500,
-                                              bgcolor: '#F3F4F6',
-                                              color: '#6B7280',
-                                              border: '1px solid #E5E7EB',
+                                              py: 1,
+                                              borderBottom: '1px solid #F3F4F6',
                                             }}
-                                          />
-                                        </TableCell>
-                                        <TableCell
-                                          align="center"
-                                          sx={{
-                                            py: 1,
-                                            borderBottom: '1px solid #F3F4F6',
-                                          }}
-                                        >
-                                          {column.nullable || column.is_nullable ? (
-                                            <CheckCircleIcon sx={{ fontSize: 18, color: '#10B981' }} />
-                                          ) : (
-                                            <CancelIcon sx={{ fontSize: 18, color: '#EF4444' }} />
-                                          )}
-                                        </TableCell>
-                                        <TableCell
-                                          sx={{
-                                            py: 1,
-                                            borderBottom: '1px solid #F3F4F6',
-                                          }}
-                                        >
-                                          {column.is_primary_key && (
-                                            <Chip
-                                              label="PK"
-                                              size="small"
+                                          >
+                                            <Typography
+                                              variant="caption"
                                               sx={{
-                                                height: 20,
-                                                fontSize: '0.7rem',
-                                                fontWeight: 600,
-                                                bgcolor: '#EEF2FF',
-                                                color: '#5B6FE5',
-                                                border: '1px solid #C7D2FE',
+                                                fontWeight: 500,
+                                                color: '#1F2937',
+                                                fontSize: '0.8125rem',
                                               }}
-                                            />
-                                          )}
-                                          {column.is_foreign_key && (
-                                            <Chip
-                                              label="FK"
-                                              size="small"
+                                            >
+                                              {schemaWithAliases}
+                                            </Typography>
+                                          </TableCell>
+                                          <TableCell
+                                            align="right"
+                                            sx={{
+                                              py: 1,
+                                              borderBottom: '1px solid #F3F4F6',
+                                            }}
+                                          >
+                                            <Typography
+                                              variant="caption"
                                               sx={{
-                                                ml: 0.5,
-                                                height: 20,
-                                                fontSize: '0.7rem',
-                                                fontWeight: 600,
-                                                bgcolor: '#FEF3C7',
-                                                color: '#D97706',
-                                                border: '1px solid #FDE68A',
+                                                fontWeight: 500,
+                                                color: '#1F2937',
+                                                fontSize: '0.8125rem',
                                               }}
-                                            />
-                                          )}
-                                        </TableCell>
-                                      </TableRow>
-                                    ))}
+                                            >
+                                              {tableData.connectionName}
+                                            </Typography>
+                                          </TableCell>
+                                        </TableRow>
+                                      );
+                                    })}
                                 </TableBody>
                               </Table>
                             </TableContainer>
-                            )}
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </Box>
-                ))}
-              </AccordionDetails>
-            </Accordion>
-          ))}
+                  )}
+                </AccordionDetails>
+              </Accordion>
+            );
+          })}
         </Box>
       )}
     </Box>

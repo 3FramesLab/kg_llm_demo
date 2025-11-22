@@ -562,7 +562,7 @@ function TableSelectionStep({ connections, selectedTables, setSelectedTables, on
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon fontSize="small" sx={{ color: '#9CA3AF' }} />
+                <SearchIcon sx={{ color: '#6B7280', fontSize: 16 }} />
               </InputAdornment>
             ),
             endAdornment: searchQuery && (
@@ -572,14 +572,14 @@ function TableSelectionStep({ connections, selectedTables, setSelectedTables, on
                     size="small"
                     onClick={() => setSearchQuery('')}
                     sx={{
-                      p: 0.5,
+                      padding: 0.25,
                       color: '#9CA3AF',
                       '&:hover': {
                         color: '#6B7280',
                       },
                     }}
                   >
-                    <ClearIcon fontSize="small" />
+                    <ClearIcon sx={{ fontSize: 14 }} />
                   </IconButton>
                 </Tooltip>
               </InputAdornment>
@@ -587,27 +587,21 @@ function TableSelectionStep({ connections, selectedTables, setSelectedTables, on
           }}
           sx={{
             '& .MuiOutlinedInput-root': {
-              bgcolor: '#F9FAFB',
-              color: '#1F2937',
+              bgcolor: '#FFFFFF',
+              fontSize: '0.8125rem',
               '& fieldset': {
                 borderColor: '#E5E7EB',
               },
               '&:hover fieldset': {
-                borderColor: '#D1D5DB',
+                borderColor: '#5B6FE5',
               },
-              '&.Mui-focused': {
-                bgcolor: '#FFFFFF',
-                '& fieldset': {
-                  borderColor: '#5B6FE5',
-                },
+              '&.Mui-focused fieldset': {
+                borderColor: '#5B6FE5',
+                borderWidth: '1px',
               },
-            },
-            '& .MuiOutlinedInput-input': {
-              color: '#1F2937',
-              '&::placeholder': {
-                color: '#9CA3AF',
-                opacity: 1,
-              },
+              '& input': {
+                py: 0.75
+              }
             },
           }}
         />

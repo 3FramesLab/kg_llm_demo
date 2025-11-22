@@ -88,6 +88,13 @@ function AliasesStep({ selectedTables, onDataChange }) {
     }
   }, [selectedTablesKey]);
 
+  // Helper function to check if at least one column is selected across all tables
+  const hasSelectedColumns = () => {
+    return Object.values(selectedColumns).some(tableColumns =>
+      Object.values(tableColumns).some(isSelected => isSelected)
+    );
+  };
+
   useEffect(() => {
     // Skip initial mount to prevent calling onDataChange before data is ready
     if (isInitialMount.current) {
@@ -95,13 +102,15 @@ function AliasesStep({ selectedTables, onDataChange }) {
       return;
     }
 
-    // Pass data to parent component
+    // Pass data to parent component including validation state
     onDataChange({
       aliases: aliasesData,
       selectedColumns: selectedColumns,
       columnAliases: columnAliases,
+      hasSelectedColumns: hasSelectedColumns(),
     });
-  }, [aliasesData, selectedColumns, columnAliases, onDataChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aliasesData, selectedColumns, columnAliases]);
 
   const generateAliases = async () => {
     setLoading(true);
@@ -605,7 +614,25 @@ function AliasesStep({ selectedTables, onDataChange }) {
         </Box>
       </Box>
 
-
+      {/* Informational message about column selection requirement */}
+      {!hasSelectedColumns() && (
+        <Alert
+          severity="info"
+          sx={{
+            mb: 2,
+            bgcolor: '#EEF2FF',
+            color: '#3730A3',
+            border: '1px solid #C7D2FE',
+            '& .MuiAlert-icon': {
+              color: '#5B6FE5',
+            },
+          }}
+        >
+          <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+            <strong>Required:</strong> Please expand at least one entity and select at least one column before proceeding to the next step.
+          </Typography>
+        </Alert>
+      )}
 
       <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #E5E7EB' }}>
         <Table>
