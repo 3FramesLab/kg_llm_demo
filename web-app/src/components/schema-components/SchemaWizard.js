@@ -16,7 +16,7 @@ import DatabaseConnectionsStep from './schema-wizard/DatabaseConnectionsStep';
 import TableSelectionStep from './schema-wizard/TableSelectionStep';
 import AliasesStep from './schema-wizard/AliasesStep';
 import ColumnPreviewStep from './schema-wizard/ColumnPreviewStep';
-import { saveSchemaConfiguration } from '../services/api';
+import { saveSchemaConfiguration } from '../../services/api';
 
 const steps = [
   { label: 'Sources & Entities' },
@@ -93,6 +93,7 @@ function SchemaWizard() {
           const aliasData = wizardData.aliases.find(a => a.key === tableKey);
           const tableColumns = wizardData.selectedColumns[tableKey] || {};
           const tableColumnAliases = wizardData.columnAliases?.[tableKey] || {};
+          const primaryAlias = wizardData.primaryAliases?.[tableKey] || null;
 
           // Get selected columns with their aliases
           const selectedColumnsWithAliases = Object.entries(tableColumns)
@@ -108,6 +109,7 @@ function SchemaWizard() {
             databaseName: table.databaseName,
             tableName: table.tableName,
             tableAliases: aliasData?.aliases || [],
+            primaryAlias: primaryAlias,
             columns: selectedColumnsWithAliases,
           };
         }),
@@ -180,6 +182,7 @@ function SchemaWizard() {
               aliases: data.aliases,
               selectedColumns: data.selectedColumns,
               columnAliases: data.columnAliases,
+              primaryAliases: data.primaryAliases,
               hasSelectedColumns: data.hasSelectedColumns
             })}
           />
@@ -191,6 +194,7 @@ function SchemaWizard() {
             selectedColumns={wizardData.selectedColumns}
             tableAliases={wizardData.aliases}
             columnAliases={wizardData.columnAliases}
+            primaryAliases={wizardData.primaryAliases}
             onDataChange={(data) => setWizardData({
               ...wizardData,
               columns: data.columnsData,

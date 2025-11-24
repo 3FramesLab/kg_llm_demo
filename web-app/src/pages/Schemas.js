@@ -5,7 +5,7 @@ import {
   useTheme,
   alpha,
 } from '@mui/material';
-import SchemaWizard from '../components/SchemaWizard';
+import SchemaWizard from '../components/schema-components/SchemaWizard';
 
 /**
  * Schemas Page Component

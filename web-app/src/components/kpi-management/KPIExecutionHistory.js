@@ -30,7 +30,7 @@ import {
   Error as ErrorIcon,
   Code as CodeIcon
 } from '@mui/icons-material';
-import { getKPIExecutions } from '../services/api';
+import { getKPIExecutions } from '../../services/api';
 
 const KPIExecutionHistory = ({ open, kpi, onClose, onViewDrilldown, fullScreen }) => {
   const theme = useTheme();

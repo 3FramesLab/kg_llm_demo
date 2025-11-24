@@ -22,7 +22,7 @@ import {
   IconButton,
 } from '@mui/material';
 import { ContentCopy as ContentCopyIcon } from '@mui/icons-material';
-import { getKPIDrilldownData } from '../services/api';
+import { getKPIDrilldownData } from '../../services/api';
 
 const KPIDrilldown = ({ open, execution, onClose }) => {
   const [data, setData] = useState(null);

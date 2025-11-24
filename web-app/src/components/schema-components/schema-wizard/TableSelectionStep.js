@@ -35,7 +35,7 @@ import {
   ArrowUpward as ArrowUpwardIcon,
   ArrowDownward as ArrowDownwardIcon,
 } from '@mui/icons-material';
-import { listTablesFromDatabase } from '../../services/api';
+import { listTablesFromDatabase } from '../../../services/api';
 
 /**
  * Custom hook for debouncing values

@@ -29,13 +29,13 @@ import {
   Cancel as CancelIcon,
   Clear as ClearIcon,
 } from '@mui/icons-material';
-import { getTableColumns } from '../../services/api';
+import { getTableColumns } from '../../../services/api';
 
 /**
  * ColumnPreviewStep Component
  * Step 4: Preview - Preview selected columns from tables
  */
-function ColumnPreviewStep({ selectedTables, selectedColumns = {}, tableAliases = [], columnAliases = {}, onDataChange }) {
+function ColumnPreviewStep({ selectedTables, selectedColumns = {}, tableAliases = [], columnAliases = {}, primaryAliases = {}, onDataChange }) {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [columnsData, setColumnsData] = useState({});
@@ -173,6 +173,11 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, tableAliases 
   // Get aliases for a specific column
   const getColumnAliasesForKey = (tableKey, columnName) => {
     return columnAliases?.[tableKey]?.[columnName] || [];
+  };
+
+  // Get primary alias for a table, fallback to table name
+  const getPrimaryAliasForTable = (tableKey, tableName) => {
+    return primaryAliases?.[tableKey] || tableName;
   };
 
   if (selectedTables.length === 0) {
@@ -323,6 +328,7 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, tableAliases 
           {tablesWithSelectedColumns.map((tableData) => {
             const tableKey = tableData.key;
             const tableAliasesForDisplay = getTableAliasesForKey(tableKey);
+            const primaryAlias = getPrimaryAliasForTable(tableKey, tableData.tableName);
             const schemaWithAliases = tableAliasesForDisplay.length > 0
               ? `${tableData.databaseName} (${tableAliasesForDisplay.join(', ')})`
               : tableData.databaseName;
@@ -355,7 +361,7 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, tableAliases 
                   }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', pr: 1 }}>
-                    {/* Left side: Table name with aliases */}
+                    {/* Left side: Primary alias with actual table name */}
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                       <Typography
                         variant="body2"
@@ -365,26 +371,21 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, tableAliases 
                           fontSize: '0.9375rem',
                         }}
                       >
-                        {tableData.tableName}
+                        {primaryAlias}
                       </Typography>
-                      {tableAliasesForDisplay.length > 0 && (
-                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                          {tableAliasesForDisplay.map((alias, idx) => (
-                            <Chip
-                              key={idx}
-                              label={alias}
-                              size="small"
-                              sx={{
-                                height: 20,
-                                fontSize: '0.7rem',
-                                fontWeight: 500,
-                                bgcolor: '#FEF3C7',
-                                color: '#92400E',
-                                border: '1px solid #FCD34D',
-                              }}
-                            />
-                          ))}
-                        </Box>
+                      {primaryAlias !== tableData.tableName && (
+                        <Chip
+                          label={tableData.tableName}
+                          size="small"
+                          sx={{
+                            height: 20,
+                            fontSize: '0.7rem',
+                            fontWeight: 500,
+                            bgcolor: '#F3F4F6',
+                            color: '#6B7280',
+                            border: '1px solid #D1D5DB',
+                          }}
+                        />
                       )}
                       <Chip
                         label={`${tableData.selectedColumns.length} column${tableData.selectedColumns.length !== 1 ? 's' : ''}`}

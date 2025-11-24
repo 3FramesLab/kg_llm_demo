@@ -29,7 +29,7 @@ import {
   FilterAltOff as ClearFiltersIcon,
   ContentCopy as ContentCopyIcon,
 } from '@mui/icons-material';
-import { getLatestResults } from '../services/api';
+import { getLatestResults } from '../../services/api';
 
 const KPIResultsViewDialog = ({ open, onClose, kpi, showMetadata = true }) => {
   const [results, setResults] = useState(null);

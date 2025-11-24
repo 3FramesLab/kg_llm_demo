@@ -21,7 +21,7 @@ import {
   HourglassEmpty,
   PlayArrow,
 } from '@mui/icons-material';
-import { getKPIExecutionResult } from '../services/api';
+import { getKPIExecutionResult } from '../../services/api';
 
 const KPIExecutionStatusModal = ({ open, executionId, kpiName, onComplete, onError, onClose }) => {
   const [status, setStatus] = useState('pending'); // pending, running, success, failed

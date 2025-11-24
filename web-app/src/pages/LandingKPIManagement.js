@@ -34,13 +34,13 @@ import {
   Refresh as RefreshIcon,
   Schedule as ScheduleIcon,
 } from '@mui/icons-material';
-import KPIList from '../components/KPIList';
-import KPIForm from '../components/KPIForm';
-import KPIExecutionDialog from '../components/KPIExecutionDialog';
-import KPIExecutionHistory from '../components/KPIExecutionHistory';
-import KPIDrilldown from '../components/KPIDrilldown';
-import ScheduleManagement from '../components/ScheduleManagement';
-import ScheduleMonitoringDashboard from '../components/ScheduleMonitoringDashboard';
+import KPIList from '../components/kpi-management/KPIList';
+import KPIForm from '../components/kpi-management/KPIForm';
+import KPIExecutionDialog from '../components/kpi-management/KPIExecutionDialog';
+import KPIExecutionHistory from '../components/kpi-management/KPIExecutionHistory';
+import KPIDrilldown from '../components/kpi-management/KPIDrilldown';
+import ScheduleManagement from '../components/kpi-management/ScheduleManagement';
+import ScheduleMonitoringDashboard from '../components/kpi-management/ScheduleMonitoringDashboard';
 import { executeCachedKPI } from '../services/api';
 
 const LandingKPIManagement = () => {

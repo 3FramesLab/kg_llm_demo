@@ -15,9 +15,9 @@ import {
   alpha,
 } from '@mui/material';
 import { ArrowForward, AutoAwesome } from '@mui/icons-material';
-import SchemaConfigurationDisplay from '../components/SchemaConfigurationDisplay';
-import RelationshipEditor from '../components/RelationshipEditor';
-import KGGenerationPanel from '../components/KGGenerationPanel';
+import SchemaConfigurationDisplay from '../components/relationshipAndkgGeneration-components/SchemaConfigurationDisplay';
+import RelationshipEditor from '../components/relationshipAndkgGeneration-components/RelationshipEditor';
+import KGGenerationPanel from '../components/relationshipAndkgGeneration-components/KGGenerationPanel';
 
 const steps = ['Schema Configuration', 'Relationships', 'Generate Knowledge Graph'];
 

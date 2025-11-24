@@ -16,7 +16,7 @@ import {
   LinearProgress,
 } from '@mui/material';
 import { PlayArrow } from '@mui/icons-material';
-import { generateKG } from '../services/api';
+import { generateKG } from '../../services/api';
 
 export default function KGGenerationPanel({ schemaConfig, relationships, onKGGenerated }) {
   const [kgName, setKgName] = useState('');
@@ -73,7 +73,10 @@ export default function KGGenerationPanel({ schemaConfig, relationships, onKGGen
         setError(response.data.message || 'Failed to generate knowledge graph');
       }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Error generating knowledge graph');
+      const errorMessage = err.code === 'ERR_NETWORK' || err.message === 'Network Error'
+        ? 'Unable to connect to the backend server. Please ensure the backend is running on http://localhost:8000'
+        : err.response?.data?.detail || 'Error generating knowledge graph';
+      setError(errorMessage);
       console.error('Error:', err);
     } finally {
       setLoading(false);

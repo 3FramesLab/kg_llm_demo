@@ -7,15 +7,10 @@ import Overview from './pages/Overview';
 import Schemas from './pages/Schemas';
 import KnowledgeGraph from './pages/KnowledgeGraph';
 import RelationshipAndKGGeneration from './pages/RelationshipAndKGGeneration';
-import Execution from './pages/Execution';
-import KPIManagement from './pages/KPIManagement';
-import KPIResults from './pages/KPIResults';
 import LandingKPIManagement from './pages/LandingKPIManagement';
-import KPIDashboardPage from './pages/KPIDashboardPage';
 import DashboardTrends from './pages/DashboardTrends';
 import HintsManagement from './pages/HintsManagement';
 import KPIExecutionHistoryPage from './pages/KPIExecutionHistoryPage';
-import TableAliasesManagement from './pages/TableAliasesManagement';
 import Settings from './pages/Settings';
 import MasterPage from './pages/MasterPage';
 
@@ -69,13 +64,8 @@ function App() {
             <Route path="/schemas" element={<Schemas />} />
             <Route path="/knowledge-graph" element={<KnowledgeGraph />} />
             <Route path="/relationship-kg-generation" element={<RelationshipAndKGGeneration />} />
-            <Route path="/execution" element={<Execution />} />
-            <Route path="/kpi-management" element={<KPIManagement />} />
-            <Route path="/kpi-results" element={<KPIResults />} />
             <Route path="/landing-kpi" element={<LandingKPIManagement />} />
             <Route path="/landing-kpi/:kpiId/history" element={<KPIExecutionHistoryPage />} />
-            <Route path="/kpi-dashboard" element={<KPIDashboardPage />} />
-            <Route path="/table-aliases" element={<TableAliasesManagement />} />
             <Route path="/dashboard-trends" element={<DashboardTrends />} />
             <Route path="/hints-management" element={<HintsManagement />} />
             <Route path="/master-page" element={<MasterPage />} />

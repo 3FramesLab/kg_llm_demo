@@ -9,20 +9,22 @@ import {
   Chip,
   CircularProgress,
   InputAdornment,
-  IconButton
+  IconButton,
+  AlertTitle
 } from "@mui/material";
 import {
   Search as SearchIcon,
   Clear as ClearIcon,
   CheckCircle as CheckCircleIcon,
   Storage as StorageIcon,
-  TableChart as TableChartIcon
+  TableChart as TableChartIcon,
+  CloudOff as CloudOffIcon
 } from "@mui/icons-material";
 import {
   listDatabaseConnections,
   listDatabasesFromConnection,
   listTablesFromDatabase
-} from "../../services/api";
+} from "../../../services/api";
 
 function DatabaseConnectionsStep({
   connections,
@@ -33,6 +35,7 @@ function DatabaseConnectionsStep({
   onTableDataChange
 }) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const [schemasByConn, setSchemasByConn] = useState({});
   const [tablesData, setTablesData] = useState({});
@@ -51,6 +54,7 @@ function DatabaseConnectionsStep({
   useEffect(() => {
     (async () => {
       setLoading(true);
+      setError(null);
       try {
         const res = await listDatabaseConnections();
         const list = res.data.connections || [];
@@ -61,6 +65,15 @@ function DatabaseConnectionsStep({
         list
           .filter((c) => c.status === "connected")
           .forEach((c) => loadSchemas(c.id));
+      } catch (err) {
+        console.error('Error loading connections:', err);
+        const isNetworkError = err.code === 'ERR_NETWORK' || err.message === 'Network Error' || !err.response;
+        setError({
+          type: isNetworkError ? 'network' : 'server',
+          message: isNetworkError
+            ? 'Unable to connect to the backend server. Please ensure the backend is running on http://localhost:8000'
+            : err.response?.data?.detail || 'Failed to load database connections'
+        });
       } finally {
         setLoading(false);
       }
@@ -153,6 +166,39 @@ function DatabaseConnectionsStep({
   ============================ */
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* ERROR BANNER */}
+      {error && (
+        <Alert
+          severity={error.type === 'network' ? 'warning' : 'error'}
+          icon={error.type === 'network' ? <CloudOffIcon /> : undefined}
+          sx={{
+            mb: 1.5,
+            borderRadius: 1.5,
+            '& .MuiAlert-message': {
+              width: '100%'
+            }
+          }}
+          onClose={() => setError(null)}
+        >
+          <AlertTitle sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {error.type === 'network' ? 'Backend Server Not Running' : 'Error Loading Data'}
+          </AlertTitle>
+          <Typography sx={{ fontSize: '0.8125rem', mb: 1 }}>
+            {error.message}
+          </Typography>
+          {error.type === 'network' && (
+            <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', fontStyle: 'italic' }}>
+              💡 Tip: Start the backend server with: <code style={{
+                backgroundColor: '#F3F4F6',
+                padding: '2px 6px',
+                borderRadius: '4px',
+                fontFamily: 'monospace'
+              }}>python -m kg_builder.main</code>
+            </Typography>
+          )}
+        </Alert>
+      )}
+
       {/* SOURCE SELECT */}
       <Box
         sx={{
@@ -190,6 +236,7 @@ function DatabaseConnectionsStep({
             setSelectedSource(e.target.value);
             setSelectedSchema(null);
           }}
+          disabled={error !== null}
           sx={{
             minWidth: 240,
             '& .MuiOutlinedInput-root': {
@@ -352,7 +399,17 @@ function DatabaseConnectionsStep({
               },
             }}
           >
-            {!selectedSource ? (
+            {error ? (
+              <Alert
+                severity="info"
+                sx={{
+                  fontSize: '0.8125rem',
+                  '& .MuiAlert-icon': { fontSize: 18 }
+                }}
+              >
+                Unable to load schemas. Please check the backend connection.
+              </Alert>
+            ) : !selectedSource ? (
               <Alert
                 severity="info"
                 sx={{
@@ -547,7 +604,17 @@ function DatabaseConnectionsStep({
               },
             }}
           >
-            {!selectedSchema ? (
+            {error ? (
+              <Alert
+                severity="info"
+                sx={{
+                  fontSize: '0.8125rem',
+                  '& .MuiAlert-icon': { fontSize: 18 }
+                }}
+              >
+                Unable to load tables. Please check the backend connection.
+              </Alert>
+            ) : !selectedSchema ? (
               <Alert
                 severity="info"
                 sx={{

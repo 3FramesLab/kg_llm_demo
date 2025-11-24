@@ -17,7 +17,7 @@ import {
   InputLabel,
   FormHelperText,
 } from '@mui/material';
-import { createKPI, updateKPI, listGroups, listDashboards } from '../services/api';
+import { createKPI, updateKPI, listGroups, listDashboards } from '../../services/api';
 
 const KPIForm = ({ open, kpi, onClose, onSuccess, fullScreen }) => {
   const theme = useTheme();

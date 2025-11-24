@@ -39,7 +39,7 @@ import {
   Code as CodeIcon,
 } from '@mui/icons-material';
 import { getKPIExecutions, getKPI } from '../services/api';
-import KPIDrilldown from '../components/KPIDrilldown';
+import KPIDrilldown from '../components/kpi-management/KPIDrilldown';
 
 const KPIExecutionHistoryPage = () => {
   const { kpiId } = useParams();

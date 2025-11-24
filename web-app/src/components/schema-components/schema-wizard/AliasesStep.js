@@ -8,6 +8,7 @@ import {
   TextField,
   Typography,
   Alert,
+  AlertTitle,
   Table,
   TableBody,
   TableCell,
@@ -24,6 +25,9 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
 } from '@mui/material';
 import {
   Delete as DeleteIcon,
@@ -37,8 +41,9 @@ import {
   Close as CloseIcon,
   Info as InfoIcon,
   AutoAwesome as AutoAwesomeIcon,
+  CloudOff as CloudOffIcon,
 } from '@mui/icons-material';
-import { generateTableAliases, generateColumnAliases, getTableColumns } from '../../services/api';
+import { generateTableAliases, generateColumnAliases, getTableColumns } from '../../../services/api';
 
 /**
  * AliasesStep Component
@@ -46,6 +51,7 @@ import { generateTableAliases, generateColumnAliases, getTableColumns } from '..
  */
 function AliasesStep({ selectedTables, onDataChange }) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [aliasesData, setAliasesData] = useState([]);
   const [editingRow, setEditingRow] = useState(null);
   const [editValue, setEditValue] = useState('');
@@ -53,6 +59,7 @@ function AliasesStep({ selectedTables, onDataChange }) {
   const [columnsData, setColumnsData] = useState({});
   const [selectedColumns, setSelectedColumns] = useState({});
   const [columnAliases, setColumnAliases] = useState({}); // { tableKey: { columnName: [alias1, alias2, ...] } }
+  const [primaryAliases, setPrimaryAliases] = useState({}); // { tableKey: primaryAliasString }
 
   // Dialog state for table alias management
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -107,13 +114,15 @@ function AliasesStep({ selectedTables, onDataChange }) {
       aliases: aliasesData,
       selectedColumns: selectedColumns,
       columnAliases: columnAliases,
+      primaryAliases: primaryAliases,
       hasSelectedColumns: hasSelectedColumns(),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aliasesData, selectedColumns, columnAliases]);
+  }, [aliasesData, selectedColumns, columnAliases, primaryAliases]);
 
   const generateAliases = async () => {
     setLoading(true);
+    setError(null);
     try {
       // Prepare tables data for API call
       const tablesForAPI = selectedTables.map(table => ({
@@ -133,9 +142,25 @@ function AliasesStep({ selectedTables, onDataChange }) {
           aliasString: item.aliases.join(', '),
         }));
         setAliasesData(aliasesWithKeys);
+
+        // Set first alias as primary by default for each table
+        const defaultPrimaryAliases = {};
+        aliasesWithKeys.forEach(item => {
+          if (item.aliases && item.aliases.length > 0) {
+            defaultPrimaryAliases[item.key] = item.aliases[0];
+          }
+        });
+        setPrimaryAliases(defaultPrimaryAliases);
       }
-    } catch (error) {
-      console.error('Error generating aliases:', error);
+    } catch (err) {
+      console.error('Error generating aliases:', err);
+      const isNetworkError = err.code === 'ERR_NETWORK' || err.message === 'Network Error' || !err.response;
+      setError({
+        type: isNetworkError ? 'network' : 'server',
+        message: isNetworkError
+          ? 'Unable to connect to the backend server'
+          : err.response?.data?.detail || 'Failed to generate aliases'
+      });
     } finally {
       setLoading(false);
     }
@@ -161,6 +186,15 @@ function AliasesStep({ selectedTables, onDataChange }) {
           aliasString: item.aliases.join(', '),
         }));
         setAliasesData(aliasesWithKeys);
+
+        // Set first alias as primary by default for each table
+        const defaultPrimaryAliases = {};
+        aliasesWithKeys.forEach(item => {
+          if (item.aliases && item.aliases.length > 0) {
+            defaultPrimaryAliases[item.key] = item.aliases[0];
+          }
+        });
+        setPrimaryAliases(defaultPrimaryAliases);
 
         // Step 2: Load columns for all tables and generate column aliases
         const allColumnsData = {};
@@ -344,6 +378,25 @@ function AliasesStep({ selectedTables, onDataChange }) {
     });
 
     setAliasesData(updatedAliases);
+
+    // If editing the primary alias, update it
+    if (isEditMode && primaryAliases[currentTableKey] === editingAliasOriginal) {
+      setPrimaryAliases(prev => ({
+        ...prev,
+        [currentTableKey]: trimmedAlias
+      }));
+    }
+    // If this is the first alias being added, set it as primary
+    else if (!isEditMode) {
+      const tableData = updatedAliases.find(item => item.key === currentTableKey);
+      if (tableData && tableData.aliases.length === 1) {
+        setPrimaryAliases(prev => ({
+          ...prev,
+          [currentTableKey]: trimmedAlias
+        }));
+      }
+    }
+
     setNewAliasInput('');
     handleCloseDialog();
   };
@@ -362,6 +415,32 @@ function AliasesStep({ selectedTables, onDataChange }) {
       return item;
     });
     setAliasesData(updatedAliases);
+
+    // If the deleted alias was the primary, set the first remaining alias as primary
+    if (primaryAliases[tableKey] === aliasToDelete) {
+      const tableData = updatedAliases.find(item => item.key === tableKey);
+      if (tableData && tableData.aliases.length > 0) {
+        setPrimaryAliases(prev => ({
+          ...prev,
+          [tableKey]: tableData.aliases[0]
+        }));
+      } else {
+        // No aliases left, remove primary alias
+        setPrimaryAliases(prev => {
+          const newPrimary = { ...prev };
+          delete newPrimary[tableKey];
+          return newPrimary;
+        });
+      }
+    }
+  };
+
+  // Handle primary alias selection
+  const handlePrimaryAliasChange = (tableKey, aliasValue) => {
+    setPrimaryAliases(prev => ({
+      ...prev,
+      [tableKey]: aliasValue
+    }));
   };
 
   const handleRowExpand = async (row) => {
@@ -559,6 +638,29 @@ function AliasesStep({ selectedTables, onDataChange }) {
 
   return (
     <Box sx={{ width: '100%' }}>
+      {/* ERROR BANNER */}
+      {error && (
+        <Alert
+          severity={error.type === 'network' ? 'warning' : 'error'}
+          icon={error.type === 'network' ? <CloudOffIcon /> : undefined}
+          sx={{
+            mb: 2,
+            borderRadius: 1.5,
+            '& .MuiAlert-message': {
+              width: '100%'
+            }
+          }}
+          onClose={() => setError(null)}
+        >
+          <AlertTitle sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {error.type === 'network' ? 'Backend Server Not Running' : 'Error'}
+          </AlertTitle>
+          <Typography sx={{ fontSize: '0.8125rem' }}>
+            {error.message}
+          </Typography>
+        </Alert>
+      )}
+
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Typography variant="h6" sx={{ color: '#1F2937', fontWeight: 600 }}>
@@ -586,7 +688,7 @@ function AliasesStep({ selectedTables, onDataChange }) {
           <Tooltip title="Generate aliases for both entities and columns">
             <Button
               onClick={generateAllAliases}
-              disabled={loading}
+              disabled={loading || error !== null}
               variant="contained"
               size="small"
               startIcon={<AutoAwesomeIcon />}
@@ -607,7 +709,7 @@ function AliasesStep({ selectedTables, onDataChange }) {
           </Tooltip>
 
           <Tooltip title="Regenerate entity aliases only">
-            <IconButton onClick={generateAliases} size="small" sx={{ color: '#5B6FE5' }} disabled={loading}>
+            <IconButton onClick={generateAliases} size="small" sx={{ color: '#5B6FE5' }} disabled={loading || error !== null}>
               <RefreshIcon />
             </IconButton>
           </Tooltip>
@@ -615,7 +717,7 @@ function AliasesStep({ selectedTables, onDataChange }) {
       </Box>
 
       {/* Informational message about column selection requirement */}
-      {!hasSelectedColumns() && (
+      {!hasSelectedColumns() && !error && (
         <Alert
           severity="info"
           sx={{
@@ -682,64 +784,90 @@ function AliasesStep({ selectedTables, onDataChange }) {
                     </Typography>
                   </TableCell>
                   <TableCell sx={{ py: 0.75 }}>
-                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }}>
-                      {row.aliases.map((alias, idx) => (
-                        <Tooltip key={idx} title="Click to edit, or click X to delete" arrow placement="top">
-                          <Chip
-                            label={alias}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      {/* Primary Alias Label */}
+                      <Typography variant="caption" sx={{ color: '#6B7280', fontSize: '0.7rem', fontWeight: 500 }}>
+                        Select Primary Alias:
+                      </Typography>
+
+                      {/* Aliases with Radio Buttons */}
+                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }}>
+                        {row.aliases.map((alias, idx) => {
+                          const isPrimary = primaryAliases[row.key] === alias;
+                          return (
+                            <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              <Tooltip title="Select as primary alias" arrow placement="top">
+                                <Radio
+                                  checked={isPrimary}
+                                  onChange={() => handlePrimaryAliasChange(row.key, alias)}
+                                  size="small"
+                                  sx={{
+                                    padding: '2px',
+                                    color: '#D1D5DB',
+                                    '&.Mui-checked': { color: '#5B6FE5' },
+                                  }}
+                                />
+                              </Tooltip>
+                              <Tooltip title="Click to edit, or click X to delete" arrow placement="top">
+                                <Chip
+                                  label={alias}
+                                  size="small"
+                                  onClick={() => handleEditAlias(row.key, alias)}
+                                  onDelete={() => handleDeleteAlias(row.key, alias)}
+                                  deleteIcon={
+                                    <CloseIcon
+                                      sx={{
+                                        fontSize: '16px !important',
+                                        '&:hover': { color: '#EF4444 !important' }
+                                      }}
+                                    />
+                                  }
+                                  sx={{
+                                    bgcolor: isPrimary ? '#5B6FE5' : '#EEF2FF',
+                                    color: isPrimary ? '#FFFFFF' : '#5B6FE5',
+                                    border: isPrimary ? '1px solid #5B6FE5' : '1px solid #C7D2FE',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    fontWeight: isPrimary ? 600 : 400,
+                                    '&:hover': {
+                                      bgcolor: isPrimary ? '#4C5FD5' : '#DDD6FE',
+                                      borderColor: isPrimary ? '#4C5FD5' : '#A5B4FC',
+                                      transform: 'translateY(-1px)',
+                                      boxShadow: '0 2px 4px rgba(91, 111, 229, 0.2)',
+                                    },
+                                    '& .MuiChip-deleteIcon': {
+                                      color: isPrimary ? '#FFFFFF' : '#5B6FE5',
+                                      fontSize: '16px',
+                                      '&:hover': {
+                                        color: '#EF4444',
+                                      },
+                                    },
+                                  }}
+                                />
+                              </Tooltip>
+                            </Box>
+                          );
+                        })}
+                        <Tooltip title="Add new alias" arrow>
+                          <IconButton
                             size="small"
-                            onClick={() => handleEditAlias(row.key, alias)}
-                            onDelete={() => handleDeleteAlias(row.key, alias)}
-                            deleteIcon={
-                              <CloseIcon
-                                sx={{
-                                  fontSize: '16px !important',
-                                  '&:hover': { color: '#EF4444 !important' }
-                                }}
-                              />
-                            }
+                            onClick={() => handleOpenDialog(row.key)}
                             sx={{
-                              bgcolor: '#EEF2FF',
-                              color: '#5B6FE5',
-                              border: '1px solid #C7D2FE',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s ease',
+                              color: '#10B981',
+                              bgcolor: '#F0FDF4',
+                              border: '1px solid #BBF7D0',
+                              width: 28,
+                              height: 28,
                               '&:hover': {
-                                bgcolor: '#DDD6FE',
-                                borderColor: '#A5B4FC',
-                                transform: 'translateY(-1px)',
-                                boxShadow: '0 2px 4px rgba(91, 111, 229, 0.2)',
-                              },
-                              '& .MuiChip-deleteIcon': {
-                                color: '#5B6FE5',
-                                fontSize: '16px',
-                                '&:hover': {
-                                  color: '#EF4444',
-                                },
+                                bgcolor: '#DCFCE7',
+                                borderColor: '#86EFAC',
                               },
                             }}
-                          />
+                          >
+                            <AddIcon fontSize="small" />
+                          </IconButton>
                         </Tooltip>
-                      ))}
-                      <Tooltip title="Add new alias" arrow>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleOpenDialog(row.key)}
-                          sx={{
-                            color: '#10B981',
-                            bgcolor: '#F0FDF4',
-                            border: '1px solid #BBF7D0',
-                            width: 28,
-                            height: 28,
-                            '&:hover': {
-                              bgcolor: '#DCFCE7',
-                              borderColor: '#86EFAC',
-                            },
-                          }}
-                        >
-                          <AddIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
+                      </Box>
                     </Box>
                   </TableCell>
                   <TableCell sx={{ py: 0.75 }}>

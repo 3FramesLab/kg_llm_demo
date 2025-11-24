@@ -29,13 +29,6 @@ export const queryKG = (kgName, query) => api.post(`/kg/${kgName}/query`, { quer
 export const exportKG = (kgName) => api.get(`/kg/${kgName}/export`);
 export const deleteKG = (kgName) => api.delete(`/kg/${kgName}`);
 
-// Table Aliases CRUD operations
-export const getAllTableAliases = () => api.get('/table-aliases');
-export const getKGTableAliases = (kgName) => api.get(`/kg/${kgName}/table-aliases`);
-export const createTableAlias = (kgName, aliasData) => api.post(`/kg/${kgName}/table-aliases`, aliasData);
-export const updateTableAlias = (kgName, tableName, aliasData) => api.put(`/kg/${kgName}/table-aliases/${tableName}`, aliasData);
-export const deleteTableAlias = (kgName, tableName) => api.delete(`/kg/${kgName}/table-aliases/${tableName}`);
-
 // LLM Features
 export const extractEntities = (schemaName) => api.post(`/llm/extract/${schemaName}`);
 export const analyzeSchema = (schemaName) => api.post(`/llm/analyze/${schemaName}`);

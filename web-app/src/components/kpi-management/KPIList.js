@@ -40,7 +40,7 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
 } from '@mui/icons-material';
-import { listKPIs, deleteKPI, updateKPICacheFlags, clearKPICacheFlags, getKPIExecutions } from '../services/api';
+import { listKPIs, deleteKPI, updateKPICacheFlags, clearKPICacheFlags, getKPIExecutions } from '../../services/api';
 
 const KPIList = ({ onEdit, onExecute, onExecuteCached, onViewHistory, onManageSchedule, refreshTrigger }) => {
   const theme = useTheme();

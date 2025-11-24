@@ -23,7 +23,7 @@ import {
   Link as LinkIcon,
   CheckCircle,
 } from '@mui/icons-material';
-import { getSchemaConfigurations } from '../services/api';
+import { getSchemaConfigurations } from '../../services/api';
 
 export default function SchemaConfigurationDisplay({ onSchemaLoaded }) {
   const [configurations, setConfigurations] = useState([]);
@@ -48,7 +48,10 @@ export default function SchemaConfigurationDisplay({ onSchemaLoaded }) {
       // User must manually select one
       setSelectedConfigId(null);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to load schema configurations');
+      const errorMessage = err.code === 'ERR_NETWORK' || err.message === 'Network Error'
+        ? 'Unable to connect to the backend server. Please ensure the backend is running on http://localhost:8000'
+        : err.response?.data?.detail || 'Failed to load schema configurations';
+      setError(errorMessage);
       console.error('Error fetching configurations:', err);
     } finally {
       setLoading(false);

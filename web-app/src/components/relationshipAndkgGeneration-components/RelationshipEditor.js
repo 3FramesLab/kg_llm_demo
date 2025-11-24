@@ -28,7 +28,7 @@ import {
   Slider,
 } from '@mui/material';
 import { Add, Edit, Delete, AutoAwesome, Storage, TableChart } from '@mui/icons-material';
-import { suggestRelationships } from '../services/api';
+import { suggestRelationships } from '../../services/api';
 
 export default function RelationshipEditor({ schemaConfig, onRelationshipsUpdated }) {
   const [relationships, setRelationships] = useState([]);
@@ -89,7 +89,10 @@ export default function RelationshipEditor({ schemaConfig, onRelationshipsUpdate
       onRelationshipsUpdated(mergedRels);
     } catch (err) {
       console.error('Error suggesting relationships:', err);
-      setError('Failed to generate relationship suggestions');
+      const errorMessage = err.code === 'ERR_NETWORK' || err.message === 'Network Error'
+        ? 'Unable to connect to the backend server. Please ensure the backend is running on http://localhost:8000'
+        : err.response?.data?.detail || 'Failed to generate relationship suggestions';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

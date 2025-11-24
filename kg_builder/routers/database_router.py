@@ -24,6 +24,31 @@ _connections: Dict[str, Dict[str, Any]] = {}
 SCHEMA_CONFIG_DIR = Path("schema_configurations")
 SCHEMA_CONFIG_DIR.mkdir(exist_ok=True)
 
+# Audit columns to exclude from column listing
+# These are common audit/metadata columns that should not be used in schema wizard or data quality operations
+AUDIT_COLUMNS = {
+    # Timestamp audit columns
+    "created_at", "created_date", "created_time", "creation_date", "creation_time",
+    "updated_at", "updated_date", "updated_time", "update_date", "update_time",
+    "modified_at", "modified_date", "modified_time", "modification_date", "modification_time",
+    "deleted_at", "deleted_date", "deleted_time", "deletion_date", "deletion_time",
+    # User audit columns
+    "created_by", "creator", "created_user", "creation_user",
+    "updated_by", "updater", "updated_user", "update_user", "modifier",
+    "modified_by", "modified_user", "modification_user",
+    "deleted_by", "deleter", "deleted_user", "deletion_user",
+    # Other common audit columns
+    "last_modified", "last_modified_by", "last_modified_date", "last_modified_time",
+    "last_updated", "last_updated_by", "last_updated_date", "last_updated_time",
+    "insert_date", "insert_time", "insert_user", "inserted_by",
+    "change_date", "change_time", "change_user", "changed_by",
+    # System metadata columns
+    "row_version", "version", "timestamp", "rowversion",
+    "audit_timestamp", "audit_user", "audit_date",
+    # Soft delete columns
+    "is_deleted", "deleted", "is_active", "active",
+}
+
 
 class DatabaseConnectionRequest(BaseModel):
     """Request model for adding a database connection."""
@@ -63,6 +88,10 @@ class TableConfiguration(BaseModel):
     databaseName: str
     tableName: str
     tableAliases: List[str] = []
+    primaryAlias: Optional[str] = Field(
+        None,
+        description="The primary/canonical alias selected by the user from the tableAliases list"
+    )
     columns: List[ColumnConfiguration] = []
 
 
@@ -75,6 +104,19 @@ class SchemaConfigurationRequest(BaseModel):
         description="Name of the schema configuration"
     )
     tables: List[TableConfiguration]
+
+
+def _is_audit_column(column_name: str) -> bool:
+    """
+    Check if a column is an audit column that should be excluded.
+
+    Args:
+        column_name: Name of the column to check
+
+    Returns:
+        bool: True if the column is an audit column, False otherwise
+    """
+    return column_name.lower() in AUDIT_COLUMNS
 
 
 def _get_driver_class(db_type: str) -> str:
@@ -453,7 +495,18 @@ async def list_tables_from_database(connection_id: str, database_name: str):
 
 @router.get("/database/connections/{connection_id}/databases/{database_name}/tables/{table_name}/columns")
 async def get_table_columns(connection_id: str, database_name: str, table_name: str):
-    """Get column information for a specific table using JDBC."""
+    """
+    Get column information for a specific table using JDBC.
+
+    This endpoint automatically filters out audit columns (created_at, updated_at, created_by, etc.)
+    to return only columns relevant for schema wizard and data quality operations.
+
+    Returns:
+        - columns: List of non-audit columns
+        - count: Number of non-audit columns
+        - total_columns: Total number of columns (including audit columns)
+        - excluded_audit_columns: Number of audit columns that were filtered out
+    """
     try:
         if connection_id not in _connections:
             raise HTTPException(status_code=404, detail=f"Connection {connection_id} not found")
@@ -550,10 +603,20 @@ async def get_table_columns(connection_id: str, database_name: str, table_name: 
             cursor.close()
             conn.close()
 
+            # Filter out audit columns
+            total_columns = len(columns)
+            filtered_columns = [col for col in columns if not _is_audit_column(col["name"])]
+            excluded_count = total_columns - len(filtered_columns)
+
+            if excluded_count > 0:
+                logger.info(f"Filtered out {excluded_count} audit columns from {database_name}.{table_name}")
+
             return {
                 "success": True,
-                "columns": columns,
-                "count": len(columns)
+                "columns": filtered_columns,
+                "count": len(filtered_columns),
+                "total_columns": total_columns,
+                "excluded_audit_columns": excluded_count
             }
 
         except Exception as e:

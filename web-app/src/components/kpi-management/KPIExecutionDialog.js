@@ -16,7 +16,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { executeKPI, listKGs, listSchemas } from '../services/api';
+import { executeKPI, listKGs, listSchemas } from '../../services/api';
 import KPIExecutionStatusModal from './KPIExecutionStatusModal';
 
 const KPIExecutionDialog = ({ open, kpi, onClose, onSuccess, fullScreen }) => {
