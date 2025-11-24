@@ -18,6 +18,25 @@ import {
 import { PlayArrow } from '@mui/icons-material';
 import { generateKG } from '../../services/api';
 
+/**
+ * Get the display name for a table.
+ * Returns the primary alias if available, otherwise returns the actual table name.
+ * @param {Object} table - The table object from schema configuration
+ * @returns {string} - The display name to show to users
+ */
+const getTableDisplayName = (table) => {
+  // First check for primaryAlias
+  if (table.primaryAlias && table.primaryAlias.trim()) {
+    return table.primaryAlias;
+  }
+  // Fall back to first alias in tableAliases array
+  if (table.tableAliases && table.tableAliases.length > 0 && table.tableAliases[0].trim()) {
+    return table.tableAliases[0];
+  }
+  // Fall back to actual table name
+  return table.tableName;
+};
+
 export default function KGGenerationPanel({ schemaConfig, relationships, onKGGenerated }) {
   const [kgName, setKgName] = useState('');
   const [useLLM, setUseLLM] = useState(true);
@@ -210,7 +229,7 @@ export default function KGGenerationPanel({ schemaConfig, relationships, onKGGen
                 {schemaConfig?.tables?.map(t => (
                   <Chip
                     key={t.tableName}
-                    label={t.tableName}
+                    label={getTableDisplayName(t)}
                     size="small"
                     sx={{
                       height: '24px',
@@ -393,7 +412,12 @@ export default function KGGenerationPanel({ schemaConfig, relationships, onKGGen
                         color: '#1F2937',
                       }}
                     >
-                      <strong>{rel.source_table}</strong>
+                      <strong>
+                        {(() => {
+                          const sourceTable = schemaConfig?.tables?.find(t => t.tableName === rel.source_table);
+                          return sourceTable ? getTableDisplayName(sourceTable) : rel.source_table;
+                        })()}
+                      </strong>
                       <span sx={{ color: '#9CA3AF' }}>.{rel.source_column}</span>
                     </Typography>
                     <Typography
@@ -411,7 +435,12 @@ export default function KGGenerationPanel({ schemaConfig, relationships, onKGGen
                         color: '#1F2937',
                       }}
                     >
-                      <strong>{rel.target_table}</strong>
+                      <strong>
+                        {(() => {
+                          const targetTable = schemaConfig?.tables?.find(t => t.tableName === rel.target_table);
+                          return targetTable ? getTableDisplayName(targetTable) : rel.target_table;
+                        })()}
+                      </strong>
                       <span sx={{ color: '#9CA3AF' }}>.{rel.target_column}</span>
                     </Typography>
                     <Chip

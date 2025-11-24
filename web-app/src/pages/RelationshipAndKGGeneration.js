@@ -59,7 +59,9 @@ export default function RelationshipAndKGGeneration() {
 
   const handleSchemaLoaded = (config) => {
     setSchemaConfig(config);
-    setSuccess('Schema configuration loaded successfully');
+    if (config) {
+      setSuccess('Schema configuration loaded successfully');
+    }
   };
 
   const handleRelationshipsUpdated = (updatedRelationships) => {
@@ -240,7 +242,11 @@ export default function RelationshipAndKGGeneration() {
                 <Button
                   onClick={handleNext}
                   variant="contained"
-                  disabled={activeStep === steps.length - 1 || (activeStep === 0 && !schemaConfig)}
+                  disabled={
+                    activeStep === steps.length - 1 ||
+                    (activeStep === 0 && !schemaConfig) ||
+                    (activeStep === 1 && relationships.length === 0)
+                  }
                   size="small"
                   endIcon={<ArrowForward />}
                   sx={{
@@ -264,7 +270,13 @@ export default function RelationshipAndKGGeneration() {
                       boxShadow: 'none',
                     },
                   }}
-                  title={activeStep === 0 && !schemaConfig ? 'Please select a schema configuration first' : ''}
+                  title={
+                    activeStep === 0 && !schemaConfig
+                      ? 'Please select a schema configuration first'
+                      : activeStep === 1 && relationships.length === 0
+                      ? 'Please add at least one relationship to continue'
+                      : ''
+                  }
                 >
                   Next
                 </Button>

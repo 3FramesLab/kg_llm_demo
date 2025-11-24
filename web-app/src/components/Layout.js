@@ -36,8 +36,8 @@ const menuItems = [
   { text: 'Overview', icon: <DashboardIcon />, path: '/' },
 
   { text: 'Schemas', icon: <SchemaIcon />, path: '/schemas' },
-  { text: 'Knowledge Graph Builder', icon: <GraphIcon />, path: '/knowledge-graph' },
   { text: 'Relationship & KG Generation', icon: <LinkIcon />, path: '/relationship-kg-generation' },
+  { text: 'Knowledge Graph Builder', icon: <GraphIcon />, path: '/knowledge-graph' },
   // { text: 'Column Hints', icon: <LabelIcon />, path: '/hints-management' },
   { text: 'NL KPI Management', icon: <KPIIcon />, path: '/landing-kpi' },
 

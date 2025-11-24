@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box,
   Card,
@@ -140,6 +140,11 @@ function AliasesStep({ selectedTables, onDataChange }) {
           ...item,
           key: `${item.connectionId}:${item.databaseName}:${item.tableName}`,
           aliasString: item.aliases.join(', '),
+          // Store confidence data if available
+          aliasesWithConfidence: item.aliasesWithConfidence || item.aliases.map(alias => ({
+            alias: alias,
+            confidence: 0.8 // Default confidence for backward compatibility
+          }))
         }));
         setAliasesData(aliasesWithKeys);
 
@@ -184,6 +189,11 @@ function AliasesStep({ selectedTables, onDataChange }) {
           ...item,
           key: `${item.connectionId}:${item.databaseName}:${item.tableName}`,
           aliasString: item.aliases.join(', '),
+          // Store confidence data if available
+          aliasesWithConfidence: item.aliasesWithConfidence || item.aliases.map(alias => ({
+            alias: alias,
+            confidence: 0.8 // Default confidence for backward compatibility
+          }))
         }));
         setAliasesData(aliasesWithKeys);
 
@@ -716,6 +726,45 @@ function AliasesStep({ selectedTables, onDataChange }) {
         </Box>
       </Box>
 
+      {/* Confidence Score Legend */}
+      <Box sx={{
+        mt: 2,
+        p: 1.5,
+        bgcolor: '#F9FAFB',
+        border: '1px solid #E5E7EB',
+        borderRadius: 1,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 2
+      }}>
+        <Typography variant="body2" sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#6B7280' }}>
+          Confidence Indicators:
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#10B981' }} />
+            <Typography variant="body2" sx={{ fontSize: '0.7rem', color: '#6B7280' }}>
+              High (≥90%)
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#F59E0B' }} />
+            <Typography variant="body2" sx={{ fontSize: '0.7rem', color: '#6B7280' }}>
+              Medium (70-89%)
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#EF4444' }} />
+            <Typography variant="body2" sx={{ fontSize: '0.7rem', color: '#6B7280' }}>
+              Low (&lt;70%)
+            </Typography>
+          </Box>
+        </Box>
+        <Typography variant="body2" sx={{ fontSize: '0.7rem', color: '#9CA3AF', fontStyle: 'italic', ml: 'auto' }}>
+          Only aliases with ≥70% confidence are shown
+        </Typography>
+      </Box>
+
       {/* Informational message about column selection requirement */}
       {!hasSelectedColumns() && !error && (
         <Alert
@@ -749,9 +798,8 @@ function AliasesStep({ selectedTables, onDataChange }) {
           </TableHead>
           <TableBody>
             {aliasesData.map((row) => (
-              <>
+              <React.Fragment key={row.key}>
                 <TableRow
-                  key={row.key}
                   hover
                   sx={{
                     '& > *': { borderBottom: expandedRows[row.key] ? 'none !important' : undefined },
@@ -790,10 +838,23 @@ function AliasesStep({ selectedTables, onDataChange }) {
                         Select Primary Alias:
                       </Typography>
 
-                      {/* Aliases with Radio Buttons */}
+                      {/* Aliases with Radio Buttons and Confidence Scores */}
                       <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }}>
                         {row.aliases.map((alias, idx) => {
                           const isPrimary = primaryAliases[row.key] === alias;
+                          // Get confidence score for this alias
+                          const aliasWithConf = row.aliasesWithConfidence?.find(a => a.alias === alias);
+                          const confidence = aliasWithConf?.confidence || 0.8;
+                          const confidencePercent = Math.round(confidence * 100);
+
+                          // Determine confidence color
+                          let confidenceColor = '#10B981'; // Green for high confidence (>=90%)
+                          if (confidence < 0.9 && confidence >= 0.7) {
+                            confidenceColor = '#F59E0B'; // Amber for medium confidence (70-89%)
+                          } else if (confidence < 0.7) {
+                            confidenceColor = '#EF4444'; // Red for low confidence (<70%)
+                          }
+
                           return (
                             <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                               <Tooltip title="Select as primary alias" arrow placement="top">
@@ -808,9 +869,33 @@ function AliasesStep({ selectedTables, onDataChange }) {
                                   }}
                                 />
                               </Tooltip>
-                              <Tooltip title="Click to edit, or click X to delete" arrow placement="top">
+                              <Tooltip
+                                title={
+                                  <Box>
+                                    <div>Click to edit, or click X to delete</div>
+                                    <div style={{ marginTop: '4px', fontSize: '0.75rem' }}>
+                                      Confidence: {confidencePercent}%
+                                    </div>
+                                  </Box>
+                                }
+                                arrow
+                                placement="top"
+                              >
                                 <Chip
-                                  label={alias}
+                                  label={
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                      <span>{alias}</span>
+                                      <Box
+                                        sx={{
+                                          width: 6,
+                                          height: 6,
+                                          borderRadius: '50%',
+                                          bgcolor: confidenceColor,
+                                          flexShrink: 0,
+                                        }}
+                                      />
+                                    </Box>
+                                  }
                                   size="small"
                                   onClick={() => handleEditAlias(row.key, alias)}
                                   onDelete={() => handleDeleteAlias(row.key, alias)}
@@ -1076,7 +1161,7 @@ function AliasesStep({ selectedTables, onDataChange }) {
                     </Collapse>
                   </TableCell>
                 </TableRow>
-              </>
+              </React.Fragment>
             ))}
           </TableBody>
         </Table>

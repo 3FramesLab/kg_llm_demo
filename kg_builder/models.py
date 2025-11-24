@@ -63,7 +63,7 @@ class LLMSuggestionDetail(BaseModel):
     source_column: str = Field(..., description="Column in source table")
     target_column: str = Field(..., description="Column in target table")
     relationship_type: str = Field(..., description="Type of relationship (e.g., MATCHES, REFERENCES)")
-    confidence: float = Field(..., description="Confidence score (0.0-1.0)")
+    confidence: Optional[float] = Field(None, description="Confidence score (0.0-1.0)")
     reasoning: str = Field(..., description="Explanation for the suggestion")
 
 
@@ -88,12 +88,19 @@ class LLMGenerateAliasesRequest(BaseModel):
     tables: List[TableInfo] = Field(..., description="List of tables to generate aliases for")
 
 
+class AliasWithConfidence(BaseModel):
+    """An alias with its confidence score."""
+    alias: str = Field(..., description="The alias text")
+    confidence: float = Field(..., description="Confidence score between 0 and 1", ge=0.0, le=1.0)
+
+
 class TableAliasResult(BaseModel):
     """Result of alias generation for a table."""
     connectionId: str = Field(..., description="Connection ID")
     databaseName: str = Field(..., description="Database name")
     tableName: str = Field(..., description="Table name")
-    aliases: List[str] = Field(default=[], description="Generated aliases")
+    aliases: List[str] = Field(default=[], description="Generated aliases (deprecated, use aliasesWithConfidence)")
+    aliasesWithConfidence: List[AliasWithConfidence] = Field(default=[], description="Generated aliases with confidence scores")
     reasoning: str = Field(default="", description="Explanation for the aliases")
 
 
@@ -114,7 +121,8 @@ class ColumnAliasResult(BaseModel):
     """Result of alias generation for a column."""
     tableName: str = Field(..., description="Table name")
     columnName: str = Field(..., description="Column name")
-    aliases: List[str] = Field(default=[], description="Generated aliases")
+    aliases: List[str] = Field(default=[], description="Generated aliases (deprecated, use aliasesWithConfidence)")
+    aliasesWithConfidence: List[AliasWithConfidence] = Field(default=[], description="Generated aliases with confidence scores")
     reasoning: str = Field(default="", description="Explanation for the aliases")
 
 

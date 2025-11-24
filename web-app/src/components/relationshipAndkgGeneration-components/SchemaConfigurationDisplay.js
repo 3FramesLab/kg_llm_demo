@@ -25,6 +25,25 @@ import {
 } from '@mui/icons-material';
 import { getSchemaConfigurations } from '../../services/api';
 
+/**
+ * Get the display name for a table.
+ * Returns the primary alias if available, otherwise returns the actual table name.
+ * @param {Object} table - The table object from schema configuration
+ * @returns {string} - The display name to show to users
+ */
+const getTableDisplayName = (table) => {
+  // First check for primaryAlias
+  if (table.primaryAlias && table.primaryAlias.trim()) {
+    return table.primaryAlias;
+  }
+  // Fall back to first alias in tableAliases array
+  if (table.tableAliases && table.tableAliases.length > 0 && table.tableAliases[0].trim()) {
+    return table.tableAliases[0];
+  }
+  // Fall back to actual table name
+  return table.tableName;
+};
+
 export default function SchemaConfigurationDisplay({ onSchemaLoaded }) {
   const [configurations, setConfigurations] = useState([]);
   const [selectedConfigId, setSelectedConfigId] = useState(null);
@@ -47,6 +66,8 @@ export default function SchemaConfigurationDisplay({ onSchemaLoaded }) {
       // Do NOT automatically select the first configuration
       // User must manually select one
       setSelectedConfigId(null);
+      // Notify parent component that selection has been cleared
+      onSchemaLoaded(null);
     } catch (err) {
       const errorMessage = err.code === 'ERR_NETWORK' || err.message === 'Network Error'
         ? 'Unable to connect to the backend server. Please ensure the backend is running on http://localhost:8000'
@@ -283,32 +304,20 @@ export default function SchemaConfigurationDisplay({ onSchemaLoaded }) {
                                     color: '#1F2937',
                                   }}
                                 >
-                                  {table.tableName}
+                                  {getTableDisplayName(table)}
                                 </Typography>
-                                {table.tableAliases && table.tableAliases.length > 0 && (
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.5 }}>
-                                    <Typography
-                                      sx={{
-                                        fontSize: '0.75rem',
-                                        color: '#6B7280',
-                                      }}
-                                    >
-                                      Aliases:
-                                    </Typography>
-                                    {table.tableAliases.map((alias, aliasIdx) => (
-                                      <Chip
-                                        key={aliasIdx}
-                                        label={alias}
-                                        size="small"
-                                        sx={{
-                                          height: '20px',
-                                          fontSize: '0.7rem',
-                                          bgcolor: '#F3F4F6',
-                                          color: '#6B7280',
-                                        }}
-                                      />
-                                    ))}
-                                  </Box>
+                                {/* Show actual table name if it differs from display name */}
+                                {getTableDisplayName(table) !== table.tableName && (
+                                  <Typography
+                                    sx={{
+                                      fontSize: '0.7rem',
+                                      color: '#9CA3AF',
+                                      mt: 0.25,
+                                      fontStyle: 'italic',
+                                    }}
+                                  >
+                                    Table: {table.tableName}
+                                  </Typography>
                                 )}
                               </Box>
                               <Chip
@@ -417,7 +426,12 @@ export default function SchemaConfigurationDisplay({ onSchemaLoaded }) {
                                               →
                                             </Typography>
                                             <Chip
-                                              label={`${rel.targetTable}.${rel.targetColumn}`}
+                                              label={(() => {
+                                                // Find the target table to get its display name
+                                                const targetTable = config.tables.find(t => t.tableName === rel.targetTable);
+                                                const targetDisplayName = targetTable ? getTableDisplayName(targetTable) : rel.targetTable;
+                                                return `${targetDisplayName}.${rel.targetColumn}`;
+                                              })()}
                                               size="small"
                                               sx={{
                                                 height: '18px',

@@ -486,14 +486,22 @@ Table Name: {table_name}
 Description: {table_description}
 Columns: {columns_str}
 
-Suggest short business names (1-3 words each) that capture the essence of this table. For example:
-- If table is 'brz_lnd_RBP_GPU', suggest: ['RBP', 'RBP GPU', 'GPU']
-- If table is 'brz_lnd_OPS_EXCEL_GPU', suggest: ['OPS', 'OPS Excel', 'Excel GPU']
+Suggest short business names (1-3 words each) that capture the essence of this table. For each alias, provide a confidence score between 0 and 1 indicating how confident you are that this alias accurately represents the table.
+
+For example:
+- If table is 'brz_lnd_RBP_GPU', suggest: [{{"alias": "RBP", "confidence": 0.95}}, {{"alias": "RBP GPU", "confidence": 0.90}}, {{"alias": "GPU", "confidence": 0.75}}]
+- If table is 'brz_lnd_OPS_EXCEL_GPU', suggest: [{{"alias": "OPS", "confidence": 0.92}}, {{"alias": "OPS Excel", "confidence": 0.88}}]
+
+Confidence score guidelines:
+- 0.9-1.0: Very confident - alias clearly represents the table
+- 0.7-0.89: Confident - alias is a good representation
+- 0.5-0.69: Moderately confident - alias might be relevant
+- Below 0.5: Low confidence - alias is speculative
 
 Return ONLY valid JSON with this structure (no other text):
 {{
     "table_name": "{table_name}",
-    "aliases": ["alias1", "alias2", "alias3"],
+    "aliases": [{{"alias": "alias1", "confidence": 0.95}}, {{"alias": "alias2", "confidence": 0.85}}],
     "reasoning": "Brief explanation of why these aliases make sense"
 }}"""
 
@@ -525,7 +533,19 @@ Return ONLY valid JSON with this structure (no other text):
                 return {"table_name": table_name, "aliases": [], "error": "No JSON in response"}
 
             result = json.loads(json_match.group())
-            logger.info(f"✅ Successfully extracted aliases for {table_name}: {result.get('aliases', [])}")
+
+            # Normalize the aliases format to support both old and new formats
+            aliases = result.get('aliases', [])
+            if aliases and isinstance(aliases[0], dict):
+                # New format with confidence scores
+                logger.info(f"✅ Successfully extracted aliases with confidence for {table_name}:")
+                for alias_obj in aliases:
+                    logger.info(f"   - {alias_obj.get('alias', 'N/A')}: {alias_obj.get('confidence', 0.0):.2f}")
+            else:
+                # Old format without confidence scores - convert to new format with default confidence
+                logger.warning(f"⚠️ LLM returned aliases without confidence scores for {table_name}, using default confidence 0.8")
+                result['aliases'] = [{"alias": alias, "confidence": 0.8} for alias in aliases]
+
             logger.info(f"   Reasoning: {result.get('reasoning', 'N/A')}")
             return result
 
@@ -563,15 +583,23 @@ Return ONLY valid JSON with this structure (no other text):
 Table Name: {table_name}
 Column Name: {column_name}{type_info}
 
-Suggest short business names (1-2 words each) that capture the essence of this column. For example:
-- If column is 'MATERIAL_ID', suggest: ['Material', 'Product', 'Item']
-- If column is 'OPS_STATUS', suggest: ['Status', 'State', 'Condition']
-- If column is 'CREATED_DATE', suggest: ['Created', 'Date', 'Created Date']
+Suggest short business names (1-2 words each) that capture the essence of this column. For each alias, provide a confidence score between 0 and 1 indicating how confident you are that this alias accurately represents the column.
+
+For example:
+- If column is 'MATERIAL_ID', suggest: [{{"alias": "Material", "confidence": 0.95}}, {{"alias": "Product", "confidence": 0.85}}]
+- If column is 'OPS_STATUS', suggest: [{{"alias": "Status", "confidence": 0.92}}, {{"alias": "State", "confidence": 0.80}}]
+- If column is 'CREATED_DATE', suggest: [{{"alias": "Created", "confidence": 0.90}}, {{"alias": "Date", "confidence": 0.75}}]
+
+Confidence score guidelines:
+- 0.9-1.0: Very confident - alias clearly represents the column
+- 0.7-0.89: Confident - alias is a good representation
+- 0.5-0.69: Moderately confident - alias might be relevant
+- Below 0.5: Low confidence - alias is speculative
 
 Return ONLY valid JSON with this structure (no other text):
 {{
     "column_name": "{column_name}",
-    "aliases": ["alias1", "alias2"],
+    "aliases": [{{"alias": "alias1", "confidence": 0.95}}, {{"alias": "alias2", "confidence": 0.85}}],
     "reasoning": "Brief explanation of why these aliases make sense"
 }}"""
 
@@ -602,7 +630,19 @@ Return ONLY valid JSON with this structure (no other text):
                 return {"column_name": column_name, "aliases": [], "error": "No JSON in response"}
 
             result = json.loads(json_match.group())
-            logger.info(f"✅ Successfully extracted aliases for {column_name}: {result.get('aliases', [])}")
+
+            # Normalize the aliases format to support both old and new formats
+            aliases = result.get('aliases', [])
+            if aliases and isinstance(aliases[0], dict):
+                # New format with confidence scores
+                logger.info(f"✅ Successfully extracted aliases with confidence for {column_name}:")
+                for alias_obj in aliases:
+                    logger.info(f"   - {alias_obj.get('alias', 'N/A')}: {alias_obj.get('confidence', 0.0):.2f}")
+            else:
+                # Old format without confidence scores - convert to new format with default confidence
+                logger.warning(f"⚠️ LLM returned aliases without confidence scores for {column_name}, using default confidence 0.8")
+                result['aliases'] = [{"alias": alias, "confidence": 0.8} for alias in aliases]
+
             return result
 
         except APIError as e:

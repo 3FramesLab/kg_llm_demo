@@ -30,6 +30,25 @@ import {
 import { Add, Edit, Delete, AutoAwesome, Storage, TableChart } from '@mui/icons-material';
 import { suggestRelationships } from '../../services/api';
 
+/**
+ * Get the display name for a table.
+ * Returns the primary alias if available, otherwise returns the actual table name.
+ * @param {Object} table - The table object from schema configuration
+ * @returns {string} - The display name to show to users
+ */
+const getTableDisplayName = (table) => {
+  // First check for primaryAlias
+  if (table.primaryAlias && table.primaryAlias.trim()) {
+    return table.primaryAlias;
+  }
+  // Fall back to first alias in tableAliases array
+  if (table.tableAliases && table.tableAliases.length > 0 && table.tableAliases[0].trim()) {
+    return table.tableAliases[0];
+  }
+  // Fall back to actual table name
+  return table.tableName;
+};
+
 export default function RelationshipEditor({ schemaConfig, onRelationshipsUpdated }) {
   const [relationships, setRelationships] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
@@ -353,7 +372,7 @@ export default function RelationshipEditor({ schemaConfig, onRelationshipsUpdate
             {schemaConfig.tables?.map((table, idx) => (
               <Chip
                 key={idx}
-                label={table.tableName}
+                label={getTableDisplayName(table)}
                 size="small"
                 sx={{
                   height: '22px',
@@ -584,7 +603,10 @@ export default function RelationshipEditor({ schemaConfig, onRelationshipsUpdate
                         py: 0.5,
                       }}
                     >
-                      {rel.source_table}
+                      {(() => {
+                        const sourceTable = schemaConfig?.tables?.find(t => t.tableName === rel.source_table);
+                        return sourceTable ? getTableDisplayName(sourceTable) : rel.source_table;
+                      })()}
                     </TableCell>
                     <TableCell
                       sx={{
@@ -606,7 +628,10 @@ export default function RelationshipEditor({ schemaConfig, onRelationshipsUpdate
                         fontStyle: rel.target_table ? 'normal' : 'italic',
                       }}
                     >
-                      {rel.target_table || '—'}
+                      {rel.target_table ? (() => {
+                        const targetTable = schemaConfig?.tables?.find(t => t.tableName === rel.target_table);
+                        return targetTable ? getTableDisplayName(targetTable) : rel.target_table;
+                      })() : '—'}
                     </TableCell>
                     <TableCell
                       sx={{
@@ -770,11 +795,28 @@ export default function RelationshipEditor({ schemaConfig, onRelationshipsUpdate
                 label="Source Table"
                 size="small"
               >
-                {getTables().map(t => (
-                  <MenuItem key={t} value={t}>
-                    {t}
-                  </MenuItem>
-                ))}
+                {getTables().map(tableName => {
+                  const table = schemaConfig?.tables?.find(t => t.tableName === tableName);
+                  const displayName = table ? getTableDisplayName(table) : tableName;
+                  return (
+                    <MenuItem key={tableName} value={tableName}>
+                      {displayName}
+                      {displayName !== tableName && (
+                        <Typography
+                          component="span"
+                          sx={{
+                            ml: 1,
+                            fontSize: '0.7rem',
+                            color: '#9CA3AF',
+                            fontStyle: 'italic',
+                          }}
+                        >
+                          ({tableName})
+                        </Typography>
+                      )}
+                    </MenuItem>
+                  );
+                })}
               </Select>
             </FormControl>
 
@@ -819,11 +861,28 @@ export default function RelationshipEditor({ schemaConfig, onRelationshipsUpdate
                 label="Target Table"
                 size="small"
               >
-                {getTables().map(t => (
-                  <MenuItem key={t} value={t}>
-                    {t}
-                  </MenuItem>
-                ))}
+                {getTables().map(tableName => {
+                  const table = schemaConfig?.tables?.find(t => t.tableName === tableName);
+                  const displayName = table ? getTableDisplayName(table) : tableName;
+                  return (
+                    <MenuItem key={tableName} value={tableName}>
+                      {displayName}
+                      {displayName !== tableName && (
+                        <Typography
+                          component="span"
+                          sx={{
+                            ml: 1,
+                            fontSize: '0.7rem',
+                            color: '#9CA3AF',
+                            fontStyle: 'italic',
+                          }}
+                        >
+                          ({tableName})
+                        </Typography>
+                      )}
+                    </MenuItem>
+                  );
+                })}
               </Select>
             </FormControl>
 

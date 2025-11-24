@@ -875,6 +875,7 @@ async def llm_generate_aliases(request: LLMGenerateAliasesRequest):
             raise HTTPException(status_code=400, detail="tables array is required")
 
         results = []
+        CONFIDENCE_THRESHOLD = 0.7  # Only return aliases with confidence >= 70%
 
         for table in tables:
             table_name = table.tableName
@@ -894,11 +895,32 @@ async def llm_generate_aliases(request: LLMGenerateAliasesRequest):
                 columns=columns
             )
 
+            # Get aliases with confidence scores
+            aliases_with_confidence = alias_result.get("aliases", [])
+
+            # Filter aliases by confidence threshold
+            filtered_aliases = []
+            if aliases_with_confidence and isinstance(aliases_with_confidence[0], dict):
+                # New format with confidence scores
+                filtered_aliases = [
+                    alias_obj for alias_obj in aliases_with_confidence
+                    if alias_obj.get("confidence", 0) >= CONFIDENCE_THRESHOLD
+                ]
+                logger.info(f"Filtered {len(aliases_with_confidence)} aliases to {len(filtered_aliases)} with confidence >= {CONFIDENCE_THRESHOLD}")
+            else:
+                # Old format without confidence - keep all
+                filtered_aliases = [{"alias": alias, "confidence": 0.8} for alias in aliases_with_confidence]
+
+            # Create backward-compatible aliases list (just the strings)
+            aliases_list = [alias_obj.get("alias", alias_obj) if isinstance(alias_obj, dict) else alias_obj
+                           for alias_obj in filtered_aliases]
+
             results.append({
                 "connectionId": connection_id,
                 "databaseName": database_name,
                 "tableName": table_name,
-                "aliases": alias_result.get("aliases", []),
+                "aliases": aliases_list,  # Backward compatible
+                "aliasesWithConfidence": filtered_aliases,  # New format with confidence
                 "reasoning": alias_result.get("reasoning", "")
             })
 
@@ -969,6 +991,7 @@ async def llm_generate_column_aliases(request: LLMGenerateColumnAliasesRequest):
             raise HTTPException(status_code=400, detail="columns array is required")
 
         results = []
+        CONFIDENCE_THRESHOLD = 0.7  # Only return aliases with confidence >= 70%
 
         for column in columns:
             table_name = column.tableName
@@ -986,10 +1009,31 @@ async def llm_generate_column_aliases(request: LLMGenerateColumnAliasesRequest):
                 column_type=column_type
             )
 
+            # Get aliases with confidence scores
+            aliases_with_confidence = alias_result.get("aliases", [])
+
+            # Filter aliases by confidence threshold
+            filtered_aliases = []
+            if aliases_with_confidence and isinstance(aliases_with_confidence[0], dict):
+                # New format with confidence scores
+                filtered_aliases = [
+                    alias_obj for alias_obj in aliases_with_confidence
+                    if alias_obj.get("confidence", 0) >= CONFIDENCE_THRESHOLD
+                ]
+                logger.info(f"Filtered {len(aliases_with_confidence)} aliases to {len(filtered_aliases)} with confidence >= {CONFIDENCE_THRESHOLD}")
+            else:
+                # Old format without confidence - keep all
+                filtered_aliases = [{"alias": alias, "confidence": 0.8} for alias in aliases_with_confidence]
+
+            # Create backward-compatible aliases list (just the strings)
+            aliases_list = [alias_obj.get("alias", alias_obj) if isinstance(alias_obj, dict) else alias_obj
+                           for alias_obj in filtered_aliases]
+
             results.append({
                 "tableName": table_name,
                 "columnName": column_name,
-                "aliases": alias_result.get("aliases", []),
+                "aliases": aliases_list,  # Backward compatible
+                "aliasesWithConfidence": filtered_aliases,  # New format with confidence
                 "reasoning": alias_result.get("reasoning", "")
             })
 
@@ -1078,6 +1122,9 @@ async def llm_suggest_relationships(request: LLMSuggestRelationshipsRequest):
     """
     Use LLM to suggest which tables are likely related to a source table.
 
+    Filtering: Only returns suggestions where confidence >= 0.7 OR confidence is not available.
+    Suggestions with confidence < 0.7 are excluded from the results.
+
     Request body (with schema_id - preferred):
     {
         "source_table": "brz_lnd_RBP_GPU",
@@ -1106,6 +1153,9 @@ async def llm_suggest_relationships(request: LLMSuggestRelationshipsRequest):
             }
         ]
     }
+
+    Note: The confidence field is optional. If not provided by the LLM, the suggestion
+    will still be included in the results.
     """
     try:
         llm_service = get_llm_service()
@@ -1171,6 +1221,18 @@ async def llm_suggest_relationships(request: LLMSuggestRelationshipsRequest):
             source_columns=source_columns,
             available_tables=available_tables
         )
+
+        # Filter suggestions based on confidence threshold
+        # Include suggestions where confidence >= 0.7 OR confidence is not available (None/missing)
+        suggestions = result.get('suggestions', [])
+        filtered_suggestions = [
+            suggestion for suggestion in suggestions
+            if suggestion.get('confidence') is None or suggestion.get('confidence') >= 0.7
+        ]
+
+        logger.info(f"Filtered {len(suggestions)} suggestions to {len(filtered_suggestions)} (confidence >= 0.7 or missing)")
+
+        result['suggestions'] = filtered_suggestions
 
         return {
             "success": True,
