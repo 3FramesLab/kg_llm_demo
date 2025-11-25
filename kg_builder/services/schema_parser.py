@@ -170,9 +170,20 @@ class SchemaParser:
             raise
     
     @staticmethod
-    def extract_entities(schema: DatabaseSchema) -> List[GraphNode]:
-        """Extract entities (nodes) from schema - only tables, not columns."""
+    def extract_entities(schema: DatabaseSchema, primary_aliases_map: Optional[Dict[str, str]] = None) -> List[GraphNode]:
+        """
+        Extract entities (nodes) from schema - only tables, not columns.
+
+        Args:
+            schema: Database schema to extract entities from
+            primary_aliases_map: Optional mapping of table names to their primary aliases
+                                 Format: {table_name: primary_alias}
+
+        Returns:
+            List of GraphNode objects representing tables
+        """
         nodes = []
+        primary_aliases_map = primary_aliases_map or {}
 
         for table_name, table in schema.tables.items():
             # Create node for the table itself with all column metadata
@@ -186,16 +197,27 @@ class SchemaParser:
                 for col in table.columns
             ]
 
+            # Get primary alias if available
+            primary_alias = primary_aliases_map.get(table_name)
+
+            # Build properties dict
+            properties = {
+                "type": "Table",
+                "column_count": len(table.columns),
+                "primary_keys": table.primary_keys,
+                "foreign_keys": [fk for fk in table.foreign_keys],  # Store foreign key info
+                "columns": columns_metadata,  # Store all column info as table properties
+            }
+
+            # Add primary_alias to properties if available
+            if primary_alias:
+                properties["primary_alias"] = primary_alias
+                logger.info(f"Added primary alias '{primary_alias}' to node for table '{table_name}'")
+
             table_node = GraphNode(
                 id=f"table_{table_name}",
                 label=table_name,
-                properties={
-                    "type": "Table",
-                    "column_count": len(table.columns),
-                    "primary_keys": table.primary_keys,
-                    "foreign_keys": [fk for fk in table.foreign_keys],  # Store foreign key info
-                    "columns": columns_metadata,  # Store all column info as table properties
-                },
+                properties=properties,
                 source_table=table_name
             )
             nodes.append(table_node)
@@ -326,15 +348,21 @@ class SchemaParser:
         schema_names: List[str],
         kg_name: str,
         use_llm: bool = True,
-        field_preferences: Optional[List[Any]] = None
+        field_preferences: Optional[List[Any]] = None,
+        primary_aliases_map: Optional[Dict[str, str]] = None,
+        prebuilt_schemas: Optional[Dict[str, DatabaseSchema]] = None
     ) -> KnowledgeGraph:
         """Build a unified knowledge graph from multiple schemas with cross-schema relationships.
 
         Args:
-            schema_names: List of schema names to merge
+            schema_names: List of schema names to merge (used only if prebuilt_schemas not provided)
             kg_name: Name for the generated KG
             use_llm: Whether to use LLM for relationship enhancement
             field_preferences: User-specific field hints to guide LLM
+            primary_aliases_map: Optional mapping of table names to their primary aliases
+                                 Format: {table_name: primary_alias}
+            prebuilt_schemas: Optional pre-built DatabaseSchema objects to use instead of loading from files
+                             Format: {schema_name: DatabaseSchema}
 
         Returns:
             Unified knowledge graph with cross-schema relationships
@@ -342,20 +370,28 @@ class SchemaParser:
         all_nodes = []
         all_relationships = []
         all_schemas = {}
+        primary_aliases_map = primary_aliases_map or {}
 
-        # Load all schemas
-        for schema_name in schema_names:
-            try:
-                schema = SchemaParser.load_schema(schema_name)
-                all_schemas[schema_name] = schema
-                logger.info(f"Loaded schema: {schema_name}")
-            except FileNotFoundError as e:
-                logger.error(f"Failed to load schema {schema_name}: {e}")
-                raise
+        # Use pre-built schemas if provided, otherwise load from files
+        if prebuilt_schemas:
+            all_schemas = prebuilt_schemas
+            logger.info(f"Using {len(prebuilt_schemas)} pre-built schemas")
+            for schema_name in all_schemas.keys():
+                logger.info(f"Using pre-built schema: {schema_name}")
+        else:
+            # Load all schemas from files
+            for schema_name in schema_names:
+                try:
+                    schema = SchemaParser.load_schema(schema_name)
+                    all_schemas[schema_name] = schema
+                    logger.info(f"Loaded schema from file: {schema_name}")
+                except FileNotFoundError as e:
+                    logger.error(f"Failed to load schema {schema_name}: {e}")
+                    raise
 
         # Extract entities and relationships from each schema
         for schema_name, schema in all_schemas.items():
-            nodes = SchemaParser.extract_entities(schema)
+            nodes = SchemaParser.extract_entities(schema, primary_aliases_map)
             relationships = SchemaParser.extract_relationships(schema, nodes)
 
             all_nodes.extend(nodes)
@@ -400,7 +436,7 @@ class SchemaParser:
             name=kg_name,
             nodes=all_nodes,
             relationships=all_relationships,
-            schema_file=",".join(schema_names),
+            schema_file=",".join(schema_names) if schema_names else "unknown",
             metadata=metadata,
             table_aliases=table_aliases
         )
@@ -537,8 +573,20 @@ class SchemaParser:
                     )
 
                     if result.get("aliases"):
-                        table_aliases[table_name] = result["aliases"]
-                        logger.info(f"✓ Extracted aliases for {table_name}: {result['aliases']}")
+                        # Extract just the alias strings from the result
+                        # LLM returns: [{"alias": "name", "confidence": 0.9}, ...]
+                        # KG model expects: ["name1", "name2", ...]
+                        aliases_list = result["aliases"]
+
+                        if aliases_list and isinstance(aliases_list[0], dict):
+                            # New format with confidence - extract just the alias strings
+                            alias_strings = [alias_obj.get("alias", "") for alias_obj in aliases_list if alias_obj.get("alias")]
+                            table_aliases[table_name] = alias_strings
+                            logger.info(f"✓ Extracted {len(alias_strings)} aliases for {table_name}: {alias_strings}")
+                        else:
+                            # Old format - already strings
+                            table_aliases[table_name] = aliases_list
+                            logger.info(f"✓ Extracted aliases for {table_name}: {aliases_list}")
                     else:
                         logger.warning(f"No aliases extracted for {table_name}: {result.get('error', 'Unknown error')}")
 

@@ -262,6 +262,12 @@ class KGGenerationRequest(BaseModel):
         description="Use LLM for relationship inference, descriptions, and confidence scoring"
     )
 
+    # Schema configuration ID (for primary alias support)
+    schema_config_id: Optional[str] = Field(
+        default=None,
+        description="Schema configuration ID to load table primary aliases from (e.g., schema_config_20251123_113432_a3108eac)"
+    )
+
     # V1: Field preferences (legacy - ambiguous table hints)
     field_preferences: Optional[List['FieldPreference']] = Field(
         default=None,

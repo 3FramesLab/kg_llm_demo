@@ -132,10 +132,10 @@ const DashboardsManagement = ({ refreshTrigger, onRefresh }) => {
 
   return (
     <Box>
-      {error && <Alert severity="error" sx={{ mb: 1.5 }} onClose={() => setError('')}>{error}</Alert>}
-      {success && <Alert severity="success" sx={{ mb: 1.5 }} onClose={() => setSuccess('')}>{success}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 1 }} onClose={() => setError('')}>{error}</Alert>}
+      {success && <Alert severity="success" sx={{ mb: 1 }} onClose={() => setSuccess('')}>{success}</Alert>}
 
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, mb: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, mb: 1.5 }}>
         <Button
           variant="contained"
           size="small"
@@ -186,7 +186,7 @@ const DashboardsManagement = ({ refreshTrigger, onRefresh }) => {
       </Box>
 
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
           <CircularProgress />
         </Box>
       ) : (
@@ -204,7 +204,7 @@ const DashboardsManagement = ({ refreshTrigger, onRefresh }) => {
             <TableBody>
               {dashboards.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                  <TableCell colSpan={5} align="center" sx={{ py: 2 }}>
                     No dashboards found
                   </TableCell>
                 </TableRow>
@@ -247,10 +247,10 @@ const DashboardsManagement = ({ refreshTrigger, onRefresh }) => {
       )}
 
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ pb: 1, pt: 2 }}>
+        <DialogTitle sx={{ pb: 0.5, pt: 1.5 }}>
           {editingDashboard ? 'Edit Dashboard' : 'Create New Dashboard'}
         </DialogTitle>
-        <DialogContent sx={{ pt: 1, pb: 2 }}>
+        <DialogContent sx={{ pt: 1, pb: 1.5 }}>
           <TextField
             fullWidth
             label="Dashboard Code"
@@ -281,7 +281,7 @@ const DashboardsManagement = ({ refreshTrigger, onRefresh }) => {
             rows={2}
           />
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, pt: 1 }}>
+        <DialogActions sx={{ px: 2, pb: 1.5, pt: 0.5 }}>
           <Button
             onClick={handleCloseDialog}
             size="small"

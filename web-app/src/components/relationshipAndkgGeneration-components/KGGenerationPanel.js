@@ -80,6 +80,12 @@ export default function KGGenerationPanel({ schemaConfig, relationships, onKGGen
         })),
       };
 
+      // Include schema configuration ID if available (for primary alias support)
+      if (schemaConfig.id) {
+        payload.schema_config_id = schemaConfig.id;
+        console.log('Including schema configuration ID for primary alias support:', schemaConfig.id);
+      }
+
       const response = await generateKG(payload);
       clearInterval(progressInterval);
       setGenerationProgress(100);

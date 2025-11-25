@@ -4,7 +4,7 @@ FastAPI routes for knowledge graph operations.
 import logging
 import time
 from fastapi import APIRouter, HTTPException, UploadFile, File, Query
-from typing import List, Optional
+from typing import List, Optional, Dict
 from pydantic import BaseModel
 
 from kg_builder.models import (
@@ -38,7 +38,7 @@ from kg_builder.services.rule_storage import get_rule_storage
 from kg_builder.services.rule_validator import get_rule_validator
 from kg_builder.services.nl_relationship_parser import get_nl_relationship_parser
 from kg_builder.services.landing_kpi_executor import get_landing_kpi_executor
-from kg_builder.services.groups_dashboards_service import get_groups_dashboards_service
+from kg_builder.services.groups_dashboards_service_jdbc import get_groups_dashboards_service
 from kg_builder.models import (
     GroupCreateRequest, GroupUpdateRequest, GroupResponse, GroupListResponse,
     DashboardCreateRequest, DashboardUpdateRequest, DashboardResponse, DashboardListResponse
@@ -213,6 +213,10 @@ async def generate_knowledge_graph(request: KGGenerationRequest):
     Generate a knowledge graph from one or multiple schemas.
 
     Supports both auto-detection and explicit relationship pairs (v2).
+    Also supports loading schema data and primary aliases from schema configuration.
+
+    When schema_config_id is provided, the system loads schema data directly from
+    the configuration file instead of requiring separate schema JSON files.
     """
     try:
         start_time = time.time()
@@ -220,14 +224,35 @@ async def generate_knowledge_graph(request: KGGenerationRequest):
         # Determine which schemas to process
         schema_names = request.schema_names or [request.schema_name]
 
+        # Load schema data and primary aliases from schema configuration if provided
+        primary_aliases_map = {}
+        prebuilt_schemas = None
+
+        if request.schema_config_id:
+            logger.info(f"Loading schema data from configuration: {request.schema_config_id}")
+
+            # Build DatabaseSchema objects from configuration
+            prebuilt_schemas = _build_database_schemas_from_config(request.schema_config_id)
+            logger.info(f"Built {len(prebuilt_schemas)} DatabaseSchema objects from configuration")
+
+            # Load primary aliases
+            primary_aliases_map = _load_primary_aliases_from_schema_config(request.schema_config_id)
+            if primary_aliases_map:
+                logger.info(f"Loaded {len(primary_aliases_map)} primary aliases from schema configuration")
+            else:
+                logger.warning(f"No primary aliases found in schema configuration '{request.schema_config_id}'")
+
         # Build knowledge graph - UNIFIED APPROACH
         # Always use build_merged_knowledge_graph() regardless of schema count
         # Single schema is just a special case of multiple schemas (count = 1)
+        # If prebuilt_schemas is provided, it will use those instead of loading from files
         kg = SchemaParser.build_merged_knowledge_graph(
             schema_names,
             request.kg_name,
             use_llm=request.use_llm_enhancement,
-            field_preferences=request.field_preferences
+            field_preferences=request.field_preferences,
+            primary_aliases_map=primary_aliases_map,
+            prebuilt_schemas=prebuilt_schemas
         )
 
         # Add explicit relationship pairs if provided (v2)
@@ -1047,6 +1072,173 @@ async def llm_generate_column_aliases(request: LLMGenerateColumnAliasesRequest):
     except Exception as e:
         logger.error(f"Error generating column aliases: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+def _build_database_schemas_from_config(schema_config_id: str) -> Dict[str, 'DatabaseSchema']:
+    """
+    Build DatabaseSchema objects from a schema configuration file.
+
+    This allows KG generation to work directly from schema configurations without
+    requiring separate schema JSON files in the schemas/ directory.
+
+    Args:
+        schema_config_id: The schema configuration ID (e.g., schema_config_20251123_113432_a3108eac)
+
+    Returns:
+        Dictionary mapping database names to DatabaseSchema objects: {db_name: DatabaseSchema}
+
+    Raises:
+        HTTPException: If configuration not found or cannot be loaded
+    """
+    from pathlib import Path
+    import json
+    from kg_builder.models import DatabaseSchema, TableSchema, ColumnSchema
+
+    config_dir = Path("schema_configurations")
+    config_file = config_dir / f"{schema_config_id}.json"
+
+    if not config_file.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"Schema configuration '{schema_config_id}' not found"
+        )
+
+    try:
+        with open(config_file, 'r', encoding='utf-8') as f:
+            config_data = json.load(f)
+
+        tables_list = config_data.get('tables', [])
+        if not tables_list:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Schema configuration '{schema_config_id}' contains no tables"
+            )
+
+        # Group tables by database name
+        db_tables_map = {}
+        for table_config in tables_list:
+            db_name = table_config.get('databaseName')
+            if not db_name:
+                continue
+
+            if db_name not in db_tables_map:
+                db_tables_map[db_name] = []
+            db_tables_map[db_name].append(table_config)
+
+        # Build DatabaseSchema objects for each database
+        database_schemas = {}
+        for db_name, tables_configs in db_tables_map.items():
+            tables_dict = {}
+
+            for table_config in tables_configs:
+                table_name = table_config.get('tableName')
+                if not table_name:
+                    continue
+
+                # Build ColumnSchema objects
+                columns = []
+                primary_keys = []
+                for col_config in table_config.get('columns', []):
+                    col_name = col_config.get('name')
+                    if not col_name:
+                        continue
+
+                    col_type = col_config.get('type', 'VARCHAR')
+                    is_nullable = col_config.get('nullable', True)
+                    is_primary = col_config.get('isPrimary', False)
+
+                    if is_primary:
+                        primary_keys.append(col_name)
+
+                    column = ColumnSchema(
+                        name=col_name,
+                        type=col_type,
+                        nullable=is_nullable,
+                        primary_key=is_primary
+                    )
+                    columns.append(column)
+
+                # Build TableSchema
+                table_schema = TableSchema(
+                    table_name=table_name,
+                    columns=columns,
+                    primary_keys=primary_keys,
+                    foreign_keys=[],  # Not stored in schema config currently
+                    indexes=[]  # Not stored in schema config currently
+                )
+                tables_dict[table_name] = table_schema
+
+            # Build DatabaseSchema
+            database_schema = DatabaseSchema(
+                database=db_name,
+                tables=tables_dict,
+                total_tables=len(tables_dict),
+                metadata={"source": "schema_configuration", "config_id": schema_config_id}
+            )
+            database_schemas[db_name] = database_schema
+            logger.info(f"Built DatabaseSchema for '{db_name}' with {len(tables_dict)} tables from config")
+
+        return database_schemas
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error building DatabaseSchema from config '{schema_config_id}': {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to build schema from configuration: {str(e)}"
+        )
+
+
+def _load_primary_aliases_from_schema_config(schema_id: str) -> Dict[str, str]:
+    """
+    Load primary aliases mapping from a schema configuration.
+
+    Args:
+        schema_id: The schema configuration ID (e.g., schema_config_20251123_113432_a3108eac)
+
+    Returns:
+        Dictionary mapping table names to their primary aliases: {table_name: primary_alias}
+        Returns empty dict if configuration not found or has no primary aliases
+
+    Example:
+        {
+            "activity": "User Activity",
+            "orders": "Customer Orders"
+        }
+    """
+    from pathlib import Path
+    import json
+
+    config_dir = Path("schema_configurations")
+    config_file = config_dir / f"{schema_id}.json"
+
+    if not config_file.exists():
+        logger.warning(f"Schema configuration '{schema_id}' not found, skipping primary alias loading")
+        return {}
+
+    try:
+        with open(config_file, 'r', encoding='utf-8') as f:
+            config_data = json.load(f)
+
+        # Extract primary aliases from tables
+        primary_aliases_map = {}
+        tables_list = config_data.get('tables', [])
+
+        for table_config in tables_list:
+            table_name = table_config.get('tableName')
+            primary_alias = table_config.get('primaryAlias')
+
+            if table_name and primary_alias and primary_alias.strip():
+                primary_aliases_map[table_name] = primary_alias.strip()
+                logger.info(f"Loaded primary alias for '{table_name}': '{primary_alias}'")
+
+        logger.info(f"Loaded {len(primary_aliases_map)} primary aliases from schema configuration '{schema_id}'")
+        return primary_aliases_map
+
+    except Exception as e:
+        logger.error(f"Error loading primary aliases from schema configuration '{schema_id}': {e}")
+        return {}
 
 
 def _load_tables_from_schema_config(schema_id: str) -> tuple[dict, list]:

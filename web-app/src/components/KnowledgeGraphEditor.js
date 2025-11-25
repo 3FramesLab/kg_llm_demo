@@ -55,9 +55,13 @@ export default function KnowledgeGraphEditor({
       const entityType = entity.type || entity.properties?.type || 'Unknown';
       // Use unique color based on entity ID, with fallback to index-based color
       const uniqueColor = getEntityColor(entity.id);
+
+      // Prefer primary_alias from properties, then label, then id
+      const displayName = entity.properties?.primary_alias || entity.label || entity.id;
+
       return {
         id: entity.id,
-        name: entity.label || entity.id,
+        name: displayName,
         type: entityType,
         val: 10, // Increased for better visibility
         color: uniqueColor,

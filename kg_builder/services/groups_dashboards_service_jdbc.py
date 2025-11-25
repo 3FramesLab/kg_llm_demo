@@ -1,55 +1,92 @@
 """
-Service for managing Groups and Dashboards.
+Service for managing Groups and Dashboards using JDBC connections.
+This version uses JDBC (jaydebeapi) instead of ODBC/pymysql for database connectivity.
 """
 import logging
 from typing import List, Optional, Dict, Any
-from datetime import datetime
-from kg_builder.config import get_groups_db_connection_config
+import json
+
+try:
+    import jaydebeapi  # noqa: F401
+    JAYDEBEAPI_AVAILABLE = True
+except ImportError:
+    JAYDEBEAPI_AVAILABLE = False
+    logging.warning("JayDeBeApi not installed. Database execution will not be available.")
+
+from kg_builder.config import (
+    GROUPS_DB_TYPE, GROUPS_DB_HOST, GROUPS_DB_PORT, GROUPS_DB_DATABASE,
+    GROUPS_DB_USERNAME, GROUPS_DB_PASSWORD
+)
+from kg_builder.services.jdbc_connection_manager import get_jdbc_connection
 
 logger = logging.getLogger(__name__)
 
 
-class GroupsDashboardsService:
-    """Service for managing groups and dashboards."""
+class GroupsDashboardsServiceJDBC:
+    """Service for managing groups and dashboards using JDBC."""
 
     def __init__(self):
         """Initialize the service."""
-        self.db_config = get_groups_db_connection_config()
-        self.db_type = self.db_config['db_type']
-        # MySQL uses %s, SQL Server uses ?
-        self.param_placeholder = '%s' if self.db_type == 'mysql' else '?'
+        self.host = GROUPS_DB_HOST
+        self.port = GROUPS_DB_PORT
+        self.database = GROUPS_DB_DATABASE
+        self.username = GROUPS_DB_USERNAME
+        self.password = GROUPS_DB_PASSWORD
+        self.db_type = GROUPS_DB_TYPE.lower()
+        
+        logger.info(f"Groups/Dashboards Service initialized for {self.db_type} at {self.host}:{self.port}/{self.database}")
 
     def _get_connection(self):
-        """Get database connection based on database type."""
+        """Get JDBC database connection."""
+        if not JAYDEBEAPI_AVAILABLE:
+            raise Exception("jaydebeapi is not available - cannot connect to database")
+
         try:
-            if self.db_type == 'mysql':
-                # Use pymysql for MySQL connections
-                import pymysql
-                return pymysql.connect(
-                    host=self.db_config['host'],
-                    port=self.db_config['port'],
-                    user=self.db_config['username'],
-                    password=self.db_config['password'],
-                    database=self.db_config['database'],
-                    charset='utf8mb4',
-                    cursorclass=pymysql.cursors.Cursor
-                )
-            elif self.db_type in ['sqlserver', 'mssql']:
-                # Use pyodbc for SQL Server connections
-                import pyodbc
-                return pyodbc.connect(self.db_config['connection_string'])
+            # Build JDBC URL based on database type
+            if self.db_type in ['sqlserver', 'mssql']:
+                # Handle named SQL Server instances (contains backslash)
+                if '\\' in self.host:
+                    # Named instance - use instance name, not port
+                    jdbc_url = f"jdbc:sqlserver://{self.host};databaseName={self.database};encrypt=true;trustServerCertificate=true"
+                else:
+                    # Default instance or IP - include port
+                    jdbc_url = f"jdbc:sqlserver://{self.host}:{self.port};databaseName={self.database};encrypt=true;trustServerCertificate=true"
+                driver_class = "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+            elif self.db_type == "mysql":
+                jdbc_url = f"jdbc:mysql://{self.host}:{self.port}/{self.database}?connectTimeout=60000&socketTimeout=120000&autoReconnect=true"
+                driver_class = "com.mysql.cj.jdbc.Driver"
             else:
                 raise ValueError(f"Unsupported database type: {self.db_type}")
+            
+            logger.debug(f"JDBC URL: {jdbc_url}")
+            logger.debug(f"Driver class: {driver_class}")
+            
+            # Use centralized JDBC connection manager
+            conn = get_jdbc_connection(driver_class, jdbc_url, self.username, self.password)
+
+            if not conn:
+                raise Exception("Failed to get JDBC connection from connection manager")
+
+            # Disable autocommit to allow manual transaction control
+            conn.jconn.setAutoCommit(False)
+
+            return conn
+            
         except Exception as e:
             logger.error(f"Failed to connect to {self.db_type} database: {e}")
             raise
 
-    def _format_query(self, query: str) -> str:
-        """Format query with appropriate parameter placeholder for the database type."""
-        if self.db_type == 'mysql':
-            # Replace ? with %s for MySQL
-            return query.replace('?', '%s')
-        return query
+    def _convert_java_types(self, value):
+        """Convert Java types to Python types."""
+        from kg_builder.utils.java_type_converter import convert_java_types
+        return convert_java_types(value)
+
+    def _convert_row_to_dict(self, row, columns):
+        """Convert a database row to a dictionary with proper type conversion."""
+        result = {}
+        for i, col_name in enumerate(columns):
+            result[col_name] = self._convert_java_types(row[i])
+        return result
 
     # ==================== Groups Operations ====================
 
@@ -61,18 +98,24 @@ class GroupsDashboardsService:
             conn = self._get_connection()
             cursor = conn.cursor()
 
-            query = self._format_query("""
-                INSERT INTO groups (code, name, description, color, icon, is_active, created_by, updated_by)
+            cursor.execute("""
+                INSERT INTO `groups` (code, name, description, color, icon, is_active, created_by, updated_by)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """)
-            cursor.execute(query, (code, name, description, color, icon, is_active, created_by, created_by))
+            """, (code, name, description, color, icon, is_active, created_by, created_by))
 
             conn.commit()
-            group_id = cursor.lastrowid
+
+            # Get the last inserted ID
+            if self.db_type == 'mysql':
+                cursor.execute("SELECT LAST_INSERT_ID()")
+            else:  # SQL Server
+                cursor.execute("SELECT SCOPE_IDENTITY()")
+
+            group_id = cursor.fetchone()[0]
             cursor.close()
             conn.close()
 
-            return {"id": group_id, "code": code, "name": name, "success": True}
+            return {"id": int(group_id), "code": code, "name": name, "success": True}
         except Exception as e:
             logger.error(f"Error creating group: {e}")
             raise
@@ -83,11 +126,10 @@ class GroupsDashboardsService:
             conn = self._get_connection()
             cursor = conn.cursor()
 
-            query = self._format_query("""
+            cursor.execute("""
                 SELECT id, code, name, description, color, icon, is_active, created_at, updated_at
-                FROM groups WHERE id = ?
-            """)
-            cursor.execute(query, (group_id,))
+                FROM `groups` WHERE id = ?
+            """, (group_id,))
 
             row = cursor.fetchone()
             cursor.close()
@@ -95,15 +137,15 @@ class GroupsDashboardsService:
 
             if row:
                 return {
-                    "id": row[0],
-                    "code": row[1],
-                    "name": row[2],
-                    "description": row[3],
-                    "color": row[4],
-                    "icon": row[5],
-                    "is_active": row[6],
-                    "created_at": row[7],
-                    "updated_at": row[8]
+                    "id": self._convert_java_types(row[0]),
+                    "code": self._convert_java_types(row[1]),
+                    "name": self._convert_java_types(row[2]),
+                    "description": self._convert_java_types(row[3]),
+                    "color": self._convert_java_types(row[4]),
+                    "icon": self._convert_java_types(row[5]),
+                    "is_active": self._convert_java_types(row[6]),
+                    "created_at": self._convert_java_types(row[7]),
+                    "updated_at": self._convert_java_types(row[8])
                 }
             return None
         except Exception as e:
@@ -116,7 +158,7 @@ class GroupsDashboardsService:
             conn = self._get_connection()
             cursor = conn.cursor()
 
-            query = "SELECT id, code, name, description, color, icon, is_active, created_at, updated_at FROM groups"
+            query = "SELECT id, code, name, description, color, icon, is_active, created_at, updated_at FROM `groups`"
             params = []
 
             if is_active is not None:
@@ -124,21 +166,20 @@ class GroupsDashboardsService:
                 params.append(is_active)
 
             query += " ORDER BY name"
-            query = self._format_query(query)
-            cursor.execute(query, params)
+            cursor.execute(query, params if params else None)
 
             groups = []
             for row in cursor.fetchall():
                 groups.append({
-                    "id": row[0],
-                    "code": row[1],
-                    "name": row[2],
-                    "description": row[3],
-                    "color": row[4],
-                    "icon": row[5],
-                    "is_active": row[6],
-                    "created_at": row[7],
-                    "updated_at": row[8]
+                    "id": self._convert_java_types(row[0]),
+                    "code": self._convert_java_types(row[1]),
+                    "name": self._convert_java_types(row[2]),
+                    "description": self._convert_java_types(row[3]),
+                    "color": self._convert_java_types(row[4]),
+                    "icon": self._convert_java_types(row[5]),
+                    "is_active": self._convert_java_types(row[6]),
+                    "created_at": self._convert_java_types(row[7]),
+                    "updated_at": self._convert_java_types(row[8])
                 })
 
             cursor.close()
@@ -172,8 +213,7 @@ class GroupsDashboardsService:
                 updates.append("updated_at = GETDATE()")
             params.append(group_id)
 
-            query = f"UPDATE groups SET {', '.join(updates)} WHERE id = ?"
-            query = self._format_query(query)
+            query = f"UPDATE `groups` SET {', '.join(updates)} WHERE id = ?"
             cursor.execute(query, params)
             conn.commit()
             cursor.close()
@@ -190,8 +230,7 @@ class GroupsDashboardsService:
             conn = self._get_connection()
             cursor = conn.cursor()
 
-            query = self._format_query("DELETE FROM groups WHERE id = ?")
-            cursor.execute(query, (group_id,))
+            cursor.execute("DELETE FROM `groups` WHERE id = ?", (group_id,))
             conn.commit()
             cursor.close()
             conn.close()
@@ -209,25 +248,30 @@ class GroupsDashboardsService:
                         is_active: bool = True, created_by: str = "system") -> Dict[str, Any]:
         """Create a new dashboard (independent of groups)."""
         try:
-            import json
             conn = self._get_connection()
             cursor = conn.cursor()
 
             layout_json = json.dumps(layout) if layout else None
             widgets_json = json.dumps(widgets) if widgets else None
 
-            query = self._format_query("""
+            cursor.execute("""
                 INSERT INTO dashboards (code, name, description, layout, widgets, is_active, created_by, updated_by)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """)
-            cursor.execute(query, (code, name, description, layout_json, widgets_json, is_active, created_by, created_by))
+            """, (code, name, description, layout_json, widgets_json, is_active, created_by, created_by))
 
             conn.commit()
-            dashboard_id = cursor.lastrowid
+
+            # Get the last inserted ID
+            if self.db_type == 'mysql':
+                cursor.execute("SELECT LAST_INSERT_ID()")
+            else:  # SQL Server
+                cursor.execute("SELECT SCOPE_IDENTITY()")
+
+            dashboard_id = cursor.fetchone()[0]
             cursor.close()
             conn.close()
 
-            return {"id": dashboard_id, "code": code, "name": name, "success": True}
+            return {"id": int(dashboard_id), "code": code, "name": name, "success": True}
         except Exception as e:
             logger.error(f"Error creating dashboard: {e}")
             raise
@@ -235,32 +279,33 @@ class GroupsDashboardsService:
     def get_dashboard(self, dashboard_id: int) -> Optional[Dict[str, Any]]:
         """Get a dashboard by ID."""
         try:
-            import json
             conn = self._get_connection()
             cursor = conn.cursor()
 
-            query = self._format_query("""
+            cursor.execute("""
                 SELECT id, code, name, description, layout, widgets, is_active, created_at, updated_at
                 FROM dashboards
                 WHERE id = ?
-            """)
-            cursor.execute(query, (dashboard_id,))
+            """, (dashboard_id,))
 
             row = cursor.fetchone()
             cursor.close()
             conn.close()
 
             if row:
+                layout_str = self._convert_java_types(row[4])
+                widgets_str = self._convert_java_types(row[5])
+
                 return {
-                    "id": row[0],
-                    "code": row[1],
-                    "name": row[2],
-                    "description": row[3],
-                    "layout": json.loads(row[4]) if row[4] else None,
-                    "widgets": json.loads(row[5]) if row[5] else None,
-                    "is_active": row[6],
-                    "created_at": row[7],
-                    "updated_at": row[8]
+                    "id": self._convert_java_types(row[0]),
+                    "code": self._convert_java_types(row[1]),
+                    "name": self._convert_java_types(row[2]),
+                    "description": self._convert_java_types(row[3]),
+                    "layout": json.loads(layout_str) if layout_str else None,
+                    "widgets": json.loads(widgets_str) if widgets_str else None,
+                    "is_active": self._convert_java_types(row[6]),
+                    "created_at": self._convert_java_types(row[7]),
+                    "updated_at": self._convert_java_types(row[8])
                 }
             return None
         except Exception as e:
@@ -270,7 +315,6 @@ class GroupsDashboardsService:
     def list_dashboards(self, is_active: Optional[bool] = None) -> List[Dict[str, Any]]:
         """List dashboards (independent of groups)."""
         try:
-            import json
             conn = self._get_connection()
             cursor = conn.cursor()
 
@@ -286,21 +330,23 @@ class GroupsDashboardsService:
                 params.append(is_active)
 
             query += " ORDER BY created_at DESC"
-            query = self._format_query(query)
-            cursor.execute(query, params)
+            cursor.execute(query, params if params else None)
 
             dashboards = []
             for row in cursor.fetchall():
+                layout_str = self._convert_java_types(row[4])
+                widgets_str = self._convert_java_types(row[5])
+
                 dashboards.append({
-                    "id": row[0],
-                    "code": row[1],
-                    "name": row[2],
-                    "description": row[3],
-                    "layout": json.loads(row[4]) if row[4] else None,
-                    "widgets": json.loads(row[5]) if row[5] else None,
-                    "is_active": row[6],
-                    "created_at": row[7],
-                    "updated_at": row[8]
+                    "id": self._convert_java_types(row[0]),
+                    "code": self._convert_java_types(row[1]),
+                    "name": self._convert_java_types(row[2]),
+                    "description": self._convert_java_types(row[3]),
+                    "layout": json.loads(layout_str) if layout_str else None,
+                    "widgets": json.loads(widgets_str) if widgets_str else None,
+                    "is_active": self._convert_java_types(row[6]),
+                    "created_at": self._convert_java_types(row[7]),
+                    "updated_at": self._convert_java_types(row[8])
                 })
 
             cursor.close()
@@ -313,7 +359,6 @@ class GroupsDashboardsService:
     def update_dashboard(self, dashboard_id: int, **kwargs) -> Dict[str, Any]:
         """Update a dashboard."""
         try:
-            import json
             conn = self._get_connection()
             cursor = conn.cursor()
 
@@ -339,7 +384,6 @@ class GroupsDashboardsService:
             params.append(dashboard_id)
 
             query = f"UPDATE dashboards SET {', '.join(updates)} WHERE id = ?"
-            query = self._format_query(query)
             cursor.execute(query, params)
             conn.commit()
             cursor.close()
@@ -356,8 +400,7 @@ class GroupsDashboardsService:
             conn = self._get_connection()
             cursor = conn.cursor()
 
-            query = self._format_query("DELETE FROM dashboards WHERE id = ?")
-            cursor.execute(query, (dashboard_id,))
+            cursor.execute("DELETE FROM dashboards WHERE id = ?", (dashboard_id,))
             conn.commit()
             cursor.close()
             conn.close()
@@ -372,10 +415,10 @@ class GroupsDashboardsService:
 _service_instance = None
 
 
-def get_groups_dashboards_service() -> GroupsDashboardsService:
+def get_groups_dashboards_service() -> GroupsDashboardsServiceJDBC:
     """Get or create the service instance."""
     global _service_instance
     if _service_instance is None:
-        _service_instance = GroupsDashboardsService()
+        _service_instance = GroupsDashboardsServiceJDBC()
     return _service_instance
 

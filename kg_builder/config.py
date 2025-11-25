@@ -4,6 +4,10 @@ Configuration settings for the Knowledge Graph Builder application.
 import os
 from pathlib import Path
 from typing import Optional
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Project paths
 BASE_DIR = Path(__file__).parent.parent
@@ -92,13 +96,14 @@ KPI_DB_USERNAME = os.getenv("KPI_DB_USERNAME", "")
 KPI_DB_PASSWORD = os.getenv("KPI_DB_PASSWORD", "")
 KPI_DB_SERVICE_NAME = os.getenv("KPI_DB_SERVICE_NAME", "")  # For Oracle
 
-# Groups/Dashboards Database Configuration (SQL Server)
-# By default, uses SOURCE database if not specified
-GROUPS_DB_HOST = os.getenv("GROUPS_DB_HOST", os.getenv("SOURCE_DB_HOST", "localhost"))
-GROUPS_DB_PORT = int(os.getenv("GROUPS_DB_PORT", os.getenv("SOURCE_DB_PORT", "1433")))
-GROUPS_DB_DATABASE = os.getenv("GROUPS_DB_DATABASE", os.getenv("SOURCE_DB_DATABASE", "NewDQ33"))
-GROUPS_DB_USERNAME = os.getenv("GROUPS_DB_USERNAME", os.getenv("SOURCE_DB_USERNAME", ""))
-GROUPS_DB_PASSWORD = os.getenv("GROUPS_DB_PASSWORD", os.getenv("SOURCE_DB_PASSWORD", ""))
+# Groups/Dashboards Database Configuration
+# Configuration is read from .env file
+GROUPS_DB_TYPE = os.getenv("GROUPS_DB_TYPE", "mysql")  # Database type: mysql, sqlserver
+GROUPS_DB_HOST = os.getenv("GROUPS_DB_HOST", "localhost")
+GROUPS_DB_PORT = int(os.getenv("GROUPS_DB_PORT", "3306"))
+GROUPS_DB_DATABASE = os.getenv("GROUPS_DB_DATABASE", "data_quality")
+GROUPS_DB_USERNAME = os.getenv("GROUPS_DB_USERNAME", "root")
+GROUPS_DB_PASSWORD = os.getenv("GROUPS_DB_PASSWORD", "3frames")
 
 # Execution settings
 USE_ENV_DB_CONFIGS = os.getenv("USE_ENV_DB_CONFIGS", "true").lower() == "true"
@@ -284,30 +289,50 @@ def get_mssql_connection_string() -> str:
     )
 
 
-def get_groups_db_connection_string() -> str:
+def get_groups_db_connection_config() -> dict:
     """
-    Build MS SQL Server connection string for Groups/Dashboards database.
+    Get Groups/Dashboards database connection configuration.
 
-    Handles both named instances (e.g., SERVER\\INSTANCE) and default instances.
-    For named instances, the port should NOT be included as they use dynamic ports.
+    Returns a dictionary with connection parameters that can be used
+    by the appropriate database driver (pymysql for MySQL, pyodbc for SQL Server).
 
     Returns:
-        ODBC connection string for SQL Server
+        dict: Database connection configuration with keys:
+            - db_type: 'mysql' or 'sqlserver'
+            - host: Database host
+            - port: Database port
+            - database: Database name
+            - username: Database username
+            - password: Database password
+            - connection_string: (for SQL Server only) ODBC connection string
     """
-    # Handle named SQL Server instances (contains backslash)
-    if '\\' in GROUPS_DB_HOST:
-        # Named instance - don't include port
-        server_part = GROUPS_DB_HOST
-    else:
-        # Default instance or IP - include port
-        server_part = f"{GROUPS_DB_HOST},{GROUPS_DB_PORT}"
+    config = {
+        'db_type': GROUPS_DB_TYPE.lower(),
+        'host': GROUPS_DB_HOST,
+        'port': GROUPS_DB_PORT,
+        'database': GROUPS_DB_DATABASE,
+        'username': GROUPS_DB_USERNAME,
+        'password': GROUPS_DB_PASSWORD
+    }
 
-    return (
-        f"DRIVER={{ODBC Driver 17 for SQL Server}};"
-        f"SERVER={server_part};"
-        f"DATABASE={GROUPS_DB_DATABASE};"
-        f"UID={GROUPS_DB_USERNAME};"
-        f"PWD={GROUPS_DB_PASSWORD};"
-        f"TrustServerCertificate=yes;"
-    )
+    # For SQL Server, also provide ODBC connection string
+    if config['db_type'] in ['sqlserver', 'mssql']:
+        # Handle named SQL Server instances (contains backslash)
+        if '\\' in GROUPS_DB_HOST:
+            # Named instance - don't include port
+            server_part = GROUPS_DB_HOST
+        else:
+            # Default instance or IP - include port
+            server_part = f"{GROUPS_DB_HOST},{GROUPS_DB_PORT}"
+
+        config['connection_string'] = (
+            f"DRIVER={{ODBC Driver 17 for SQL Server}};"
+            f"SERVER={server_part};"
+            f"DATABASE={GROUPS_DB_DATABASE};"
+            f"UID={GROUPS_DB_USERNAME};"
+            f"PWD={GROUPS_DB_PASSWORD};"
+            f"TrustServerCertificate=yes;"
+        )
+
+    return config
 

@@ -47,7 +47,7 @@ const MasterPage = () => {
   };
 
   return (
-    <Box sx={{ p: 2 }}>
+    <Box sx={{ p: 1.5 }}>
       <Container maxWidth="auto" disableGutters>
         <Fade in timeout={600}>
           <Box
@@ -56,11 +56,11 @@ const MasterPage = () => {
               '&::before': {
                 content: '""',
                 position: 'absolute',
-                top: -8,
-                left: -8,
-                right: -8,
-                bottom: -8,
-                borderRadius: '16px',
+                top: -4,
+                left: -4,
+                right: -4,
+                bottom: -4,
+                borderRadius: '12px',
                 background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
                 opacity: 0,
                 transition: 'opacity 0.3s ease-in-out',
@@ -77,16 +77,16 @@ const MasterPage = () => {
               sx={{
                 height: '100%',
                 minHeight: 'calc(100vh - 64px)',
-                p: 2,
+                p: 1.5,
                 bgcolor: '#FFFFFF',
                 border: '1px solid #E5E7EB',
-                borderRadius: 4,
+                borderRadius: 1.5,
                 display: 'flex',
                 flexDirection: 'column',
               }}
             >
               {/* Header Section - Compact */}
-              <Box sx={{ mb: 1.5 }}>
+              <Box sx={{ mb: 1 }}>
                 <Typography
                   variant="h5"
                   sx={{
@@ -111,19 +111,19 @@ const MasterPage = () => {
                   Manage groups and dashboards for your application
                 </Typography>
               </Box>
-              <Divider sx={{ mb: 2 }} />
+              <Divider sx={{ mb: 1.5 }} />
 
               {/* Tabs Navigation - Compact */}
               <Tabs
                 value={activeTab}
                 onChange={handleTabChange}
                 sx={{
-                  mb: 1.5,
+                  mb: 1,
                   '& .MuiTab-root': {
                     fontSize: '0.875rem',
                     fontWeight: 600,
                     textTransform: 'none',
-                    minHeight: 48,
+                    minHeight: 44,
                     transition: 'all 0.3s ease',
                     '&:hover': {
                       color: 'primary.main',
@@ -156,7 +156,7 @@ const MasterPage = () => {
                 sx={{
                   flex: 1,
                   bgcolor: '#F9FAFB',
-                  p: 1.5,
+                  p: 1,
                   borderRadius: 1,
                   display: 'flex',
                   flexDirection: 'column',

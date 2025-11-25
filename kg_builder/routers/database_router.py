@@ -17,7 +17,12 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# In-memory storage for database connections (in production, use a database)
+# Storage directory for database connections (persisted to disk)
+DB_CONNECTIONS_DIR = Path("database_connections")
+DB_CONNECTIONS_DIR.mkdir(exist_ok=True)
+DB_CONNECTIONS_FILE = DB_CONNECTIONS_DIR / "connections.json"
+
+# In-memory cache for database connections (loaded from disk on startup)
 _connections: Dict[str, Dict[str, Any]] = {}
 
 # Storage directory for schema configurations
@@ -48,6 +53,37 @@ AUDIT_COLUMNS = {
     # Soft delete columns
     "is_deleted", "deleted", "is_active", "active",
 }
+
+
+# ==================== Connection Persistence Functions ====================
+
+def _load_connections_from_disk():
+    """Load database connections from disk on startup."""
+    global _connections
+    try:
+        if DB_CONNECTIONS_FILE.exists():
+            with open(DB_CONNECTIONS_FILE, 'r') as f:
+                _connections = json.load(f)
+            logger.info(f"✅ Loaded {len(_connections)} database connection(s) from disk")
+        else:
+            logger.info("No existing connections file found. Starting with empty connections.")
+    except Exception as e:
+        logger.error(f"Failed to load connections from disk: {e}")
+        _connections = {}
+
+
+def _save_connections_to_disk():
+    """Save database connections to disk."""
+    try:
+        with open(DB_CONNECTIONS_FILE, 'w') as f:
+            json.dump(_connections, f, indent=2)
+        logger.debug(f"💾 Saved {len(_connections)} connection(s) to disk")
+    except Exception as e:
+        logger.error(f"Failed to save connections to disk: {e}")
+
+
+# Load connections on module import
+_load_connections_from_disk()
 
 
 class DatabaseConnectionRequest(BaseModel):
@@ -252,6 +288,9 @@ async def add_database_connection(request: DatabaseConnectionRequest):
             "status": "connected"
         }
 
+        # Persist to disk
+        _save_connections_to_disk()
+
         connection_response = DatabaseConnectionResponse(**_connections[connection_id])
 
         logger.info(f"Connection '{request.name}' added successfully with ID: {connection_id}")
@@ -327,6 +366,9 @@ async def remove_database_connection(connection_id: str):
             raise HTTPException(status_code=404, detail=f"Connection {connection_id} not found")
 
         del _connections[connection_id]
+
+        # Persist to disk
+        _save_connections_to_disk()
 
         return {
             "success": True,
