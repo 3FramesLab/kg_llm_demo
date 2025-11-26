@@ -188,17 +188,10 @@ export default function KnowledgeGraphEditor({
   const relationshipStyles = {
     // Important/Critical relationships - Red-Orange
     'MATCHES': { color: '#FF5630', width: 2, dashArray: [] },
-    'MATCHED_BY': { color: '#FF5630', width: 2, dashArray: [] },
-    'PRIMARY_KEY': { color: '#FF5630', width: 2, dashArray: [] },
-    'FOREIGN_KEY': { color: '#FF5630', width: 2, dashArray: [] },
+    'REFERENCES': { color: '#FF5630', width: 2, dashArray: [] },
 
-    // All other relationships - Cool Gray (primary)
+    // Semantic relationships - Cool Gray (primary)
     'SEMANTIC_REFERENCE': { color: '#9CA3AF', width: 1.5, dashArray: [] },
-    'SEMANTIC_REFERENCED_BY': { color: '#9CA3AF', width: 1.5, dashArray: [] },
-    'PARENT_OF': { color: '#9CA3AF', width: 1.5, dashArray: [] },
-    'CHILD_OF': { color: '#9CA3AF', width: 1.5, dashArray: [] },
-    'RELATED_TO': { color: '#9CA3AF', width: 1.5, dashArray: [] },
-    'ASSOCIATED_WITH': { color: '#9CA3AF', width: 1.5, dashArray: [] },
 
     // Default style - Cool Gray
     'DEFAULT': { color: '#9CA3AF', width: 1.5, dashArray: [] },
@@ -469,7 +462,7 @@ export default function KnowledgeGraphEditor({
       const targetId = targetEntity?.id || rel.target_id || rel.target_table;
 
       // Get relationship type (support both relationship_type and type)
-      const relType = rel.relationship_type || rel.type || 'RELATED_TO';
+      const relType = rel.relationship_type || rel.type || 'MATCHES';
 
       // Extract relationship properties - support standardized format
       // Standardized format has fields at top level: confidence, bidirectional, _comment
@@ -591,10 +584,10 @@ export default function KnowledgeGraphEditor({
         linkForce
           .distance((link) => {
             // Varied distances create more organic layout
-            if (link.type === "SEMANTIC_REFERENCE" || link.type === "SEMANTIC_REFERENCED_BY") {
+            if (link.type === "SEMANTIC_REFERENCE") {
               return 200; // Increased distance
             }
-            if (link.type === "MATCHES") {
+            if (link.type === "MATCHES" || link.type === "REFERENCES") {
               return 160; // Increased distance
             }
             return 180; // Increased distance
@@ -1320,7 +1313,7 @@ export default function KnowledgeGraphEditor({
                       whiteSpace: 'nowrap',
                     }}
                   >
-                    {hoveredLink.type || 'RELATED_TO'}
+                    {hoveredLink.type || 'MATCHES'}
                   </Typography>
                 </Box>
               )}

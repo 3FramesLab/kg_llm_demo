@@ -963,12 +963,9 @@ export default function RelationshipEditor({ schemaConfig, onRelationshipsUpdate
                 label="Relationship Type"
                 size="small"
               >
-                <MenuItem value="MATCHES">MATCHES</MenuItem>
-                <MenuItem value="ONE_TO_MANY">ONE_TO_MANY</MenuItem>
-                <MenuItem value="MANY_TO_ONE">MANY_TO_ONE</MenuItem>
-                <MenuItem value="MANY_TO_MANY">MANY_TO_MANY</MenuItem>
                 <MenuItem value="REFERENCES">REFERENCES</MenuItem>
-                <MenuItem value="RELATED_TO">RELATED_TO</MenuItem>
+                <MenuItem value="SEMANTIC_REFERENCE">SEMANTIC_REFERENCE</MenuItem>
+                <MenuItem value="MATCHES">MATCHES</MenuItem>
               </Select>
             </FormControl>
 
