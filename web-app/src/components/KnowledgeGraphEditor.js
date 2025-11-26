@@ -136,7 +136,7 @@ export default function KnowledgeGraphEditor({
       const normalizedTargetId = targetId?.startsWith('table_') ? targetId.substring(6) : targetId;
 
       if (sourceId === nodeId || targetId === nodeId ||
-          normalizedSourceId === normalizedNodeId || normalizedTargetId === normalizedNodeId) {
+        normalizedSourceId === normalizedNodeId || normalizedTargetId === normalizedNodeId) {
         connectionCount++;
       }
     });
@@ -627,155 +627,155 @@ export default function KnowledgeGraphEditor({
             position: 'relative',
             border: '2px solid',
             borderColor: 'divider',
-            bgcolor: '#ffffff',
+            bgcolor: '#F5F6F6',
             boxShadow: 'none',
           }}
         >
-        {graphData.nodes.length > 0 ? (
-          <>
-            {/* Enhanced Zoom Controls */}
-            <Box
-              sx={{
-                position: 'absolute',
-                bottom: 24,
-                right: 24,
-                zIndex: 10,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 0.5,
-                bgcolor: 'white',
-                borderRadius: 2,
-                p: 0.75,
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                border: '1px solid #E5E7EB',
-              }}
-            >
-              <Tooltip title="Zoom In" placement="left">
-                <IconButton
-                  size="small"
-                  onClick={() => fgRef.current?.zoom(fgRef.current.zoom() * 1.2, 400)}
-                  sx={{
-                    width: 36,
-                    height: 36,
-                    color: '#6B7280',
-                    '&:hover': {
-                      bgcolor: '#F9FAFB',
-                      color: '#5B6FE5',
-                    },
-                  }}
-                >
-                  <ZoomIn sx={{ fontSize: 20 }} />
-                </IconButton>
-              </Tooltip>
-
-              <Box sx={{ width: '100%', height: 1, bgcolor: '#E5E7EB', my: 0.25 }} />
-
-              <Tooltip title="Zoom Out" placement="left">
-                <IconButton
-                  size="small"
-                  onClick={() => fgRef.current?.zoom(fgRef.current.zoom() / 1.2, 400)}
-                  sx={{
-                    width: 36,
-                    height: 36,
-                    color: '#6B7280',
-                    '&:hover': {
-                      bgcolor: '#F9FAFB',
-                      color: '#5B6FE5',
-                    },
-                  }}
-                >
-                  <ZoomOut sx={{ fontSize: 20 }} />
-                </IconButton>
-              </Tooltip>
-
-              <Box sx={{ width: '100%', height: 1, bgcolor: '#E5E7EB', my: 0.25 }} />
-
-              <Tooltip title="Fit to View" placement="left">
-                <IconButton
-                  size="small"
-                  onClick={() => fgRef.current?.zoomToFit(400)}
-                  sx={{
-                    width: 36,
-                    height: 36,
-                    color: '#6B7280',
-                    '&:hover': {
-                      bgcolor: '#F9FAFB',
-                      color: '#5B6FE5',
-                    },
-                  }}
-                >
-                  <CenterFocusStrong sx={{ fontSize: 20 }} />
-                </IconButton>
-              </Tooltip>
-            </Box>
-
-            {/* Enhanced Toolbar with Better Layout and Styling */}
-            <Box
-              sx={{
-                position: 'absolute',
-                top: 16,
-                left: 16,
-                right: 16,
-                zIndex: 10,
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                pointerEvents: 'none', // Allow clicks through the container
-              }}
-            >
-              {/* Left Section: Stats and Primary Actions */}
+          {graphData.nodes.length > 0 ? (
+            <>
+              {/* Enhanced Zoom Controls */}
               <Box
                 sx={{
+                  position: 'absolute',
+                  bottom: 24,
+                  right: 24,
+                  zIndex: 10,
                   display: 'flex',
-                  gap: 1,
-                  alignItems: 'center',
+                  flexDirection: 'column',
+                  gap: 0.5,
                   bgcolor: 'white',
                   borderRadius: 2,
-                  p: 1,
+                  p: 0.75,
                   boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
                   border: '1px solid #E5E7EB',
-                  pointerEvents: 'auto',
                 }}
               >
-                {/* Stats Group - De-emphasized for better visual hierarchy */}
-                <Box sx={{ display: 'flex', gap: 0.75, alignItems: 'center' }}>
-                  <Chip
-                    label={`${graphData.nodes.length} Nodes`}
+                <Tooltip title="Zoom In" placement="left">
+                  <IconButton
                     size="small"
+                    onClick={() => fgRef.current?.zoom(fgRef.current.zoom() * 1.2, 400)}
                     sx={{
-                      bgcolor: 'transparent',
+                      width: 36,
+                      height: 36,
                       color: '#6B7280',
-                      fontWeight: 500,
-                      fontSize: '0.75rem',
-                      height: 32,
-                      border: 'none',
-                      '& .MuiChip-label': {
-                        px: 1,
+                      '&:hover': {
+                        bgcolor: '#F9FAFB',
+                        color: '#5B6FE5',
                       },
                     }}
-                  />
-                  <Chip
-                    label={`${graphData.links.length} Links`}
+                  >
+                    <ZoomIn sx={{ fontSize: 20 }} />
+                  </IconButton>
+                </Tooltip>
+
+                <Box sx={{ width: '100%', height: 1, bgcolor: '#E5E7EB', my: 0.25 }} />
+
+                <Tooltip title="Zoom Out" placement="left">
+                  <IconButton
                     size="small"
+                    onClick={() => fgRef.current?.zoom(fgRef.current.zoom() / 1.2, 400)}
                     sx={{
-                      bgcolor: 'transparent',
+                      width: 36,
+                      height: 36,
                       color: '#6B7280',
-                      fontWeight: 500,
-                      fontSize: '0.75rem',
-                      height: 32,
-                      border: 'none',
-                      '& .MuiChip-label': {
-                        px: 1,
+                      '&:hover': {
+                        bgcolor: '#F9FAFB',
+                        color: '#5B6FE5',
                       },
                     }}
-                  />
-                </Box>
+                  >
+                    <ZoomOut sx={{ fontSize: 20 }} />
+                  </IconButton>
+                </Tooltip>
 
-                {/* Divider */}
-                <Box sx={{ width: 1, height: 24, bgcolor: '#E5E7EB' }} />
+                <Box sx={{ width: '100%', height: 1, bgcolor: '#E5E7EB', my: 0.25 }} />
 
-                {/* Primary Actions Group - Hidden as per requirement */}
-                {/* <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+                <Tooltip title="Fit to View" placement="left">
+                  <IconButton
+                    size="small"
+                    onClick={() => fgRef.current?.zoomToFit(400)}
+                    sx={{
+                      width: 36,
+                      height: 36,
+                      color: '#6B7280',
+                      '&:hover': {
+                        bgcolor: '#F9FAFB',
+                        color: '#5B6FE5',
+                      },
+                    }}
+                  >
+                    <CenterFocusStrong sx={{ fontSize: 20 }} />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+
+              {/* Enhanced Toolbar with Better Layout and Styling */}
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 16,
+                  zIndex: 10,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  pointerEvents: 'none', // Allow clicks through the container
+                }}
+              >
+                {/* Left Section: Stats and Primary Actions */}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    gap: 1,
+                    alignItems: 'center',
+                    bgcolor: 'white',
+                    borderRadius: 2,
+                    p: 0.25,
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                    border: '1px solid #E5E7EB',
+                    pointerEvents: 'auto',
+                  }}
+                >
+                  {/* Stats Group - De-emphasized for better visual hierarchy */}
+                  <Box sx={{ display: 'flex', gap: 0.75, alignItems: 'center' }}>
+                    <Chip
+                      label={`${graphData.nodes.length} Nodes`}
+                      size="small"
+                      sx={{
+                        bgcolor: 'transparent',
+                        color: '#6B7280',
+                        fontWeight: 500,
+                        fontSize: '0.75rem',
+                        height: 32,
+                        border: 'none',
+                        '& .MuiChip-label': {
+                          px: 1,
+                        },
+                      }}
+                    />
+                    <Chip
+                      label={`${graphData.links.length} Links`}
+                      size="small"
+                      sx={{
+                        bgcolor: 'transparent',
+                        color: '#6B7280',
+                        fontWeight: 500,
+                        fontSize: '0.75rem',
+                        height: 32,
+                        border: 'none',
+                        '& .MuiChip-label': {
+                          px: 1,
+                        },
+                      }}
+                    />
+                  </Box>
+
+                  {/* Divider */}
+                  <Box sx={{ width: 1, height: 24, bgcolor: '#E5E7EB' }} />
+
+                  {/* Primary Actions Group - Hidden as per requirement */}
+                  {/* <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
                   <Tooltip title="Add a new node to the graph" placement="bottom">
                     <span>
                       <IconButton
@@ -834,477 +834,462 @@ export default function KnowledgeGraphEditor({
                   </Tooltip>
                 </Box> */}
 
-                {/* Divider - Hidden since Primary Actions are hidden */}
-                {/* <Box sx={{ width: 1, height: 24, bgcolor: '#E5E7EB' }} /> */}
+                  {/* Divider - Hidden since Primary Actions are hidden */}
+                  {/* <Box sx={{ width: 1, height: 24, bgcolor: '#E5E7EB' }} /> */}
 
-                {/* Secondary Actions Group */}
-                <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-                  <Tooltip title="Refresh graph data" placement="bottom">
-                    <span>
-                      <IconButton
-                        size="small"
-                        onClick={handleRefresh}
-                        disabled={loading || !kgName}
-                        sx={{
-                          width: 32,
-                          height: 32,
-                          color: '#6B7280',
-                          '&:hover': {
-                            bgcolor: '#F9FAFB',
-                            color: '#5B6FE5',
-                          },
-                          '&:disabled': {
-                            color: '#9CA3AF',
-                          },
-                        }}
-                      >
-                        <RefreshIcon sx={{ fontSize: 18 }} />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-
-                  <Tooltip title="Show color legend" placement="bottom">
-                    <IconButton
-                      size="small"
-                      onClick={handleToggleLegend}
-                      sx={{
-                        width: 32,
-                        height: 32,
-                        color: showLegend ? '#5B6FE5' : '#6B7280',
-                        bgcolor: showLegend ? '#EEF2FF' : 'transparent',
-                        '&:hover': {
-                          bgcolor: '#F9FAFB',
-                          color: '#5B6FE5',
-                        },
-                      }}
-                    >
-                      <PaletteIcon sx={{ fontSize: 18 }} />
-                    </IconButton>
-                  </Tooltip>
-
-                  <Tooltip title="Export graph as JSON" placement="bottom">
-                    <span>
-                      <IconButton
-                        size="small"
-                        onClick={handleExportGraph}
-                        disabled={loading || entities.length === 0}
-                        sx={{
-                          width: 32,
-                          height: 32,
-                          color: '#6B7280',
-                          '&:hover': {
-                            bgcolor: '#F9FAFB',
-                            color: '#5B6FE5',
-                          },
-                          '&:disabled': {
-                            color: '#9CA3AF',
-                          },
-                        }}
-                      >
-                        <DownloadIcon sx={{ fontSize: 18 }} />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-
-                  <Tooltip title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"} placement="bottom">
-                    <IconButton
-                      size="small"
-                      onClick={handleToggleFullscreen}
-                      sx={{
-                        width: 32,
-                        height: 32,
-                        color: '#6B7280',
-                        '&:hover': {
-                          bgcolor: '#F9FAFB',
-                          color: '#5B6FE5',
-                        },
-                      }}
-                    >
-                      {isFullscreen ? (
-                        <FullscreenExitIcon sx={{ fontSize: 18 }} />
-                      ) : (
-                        <FullscreenIcon sx={{ fontSize: 18 }} />
-                      )}
-                    </IconButton>
-                  </Tooltip>
-                </Box>
-              </Box>
-
-              {/* Right Section: Loading Indicator */}
-              {loading && (
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    bgcolor: 'white',
-                    borderRadius: 2,
-                    p: 1,
-                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                    border: '1px solid #E5E7EB',
-                    pointerEvents: 'auto',
-                  }}
-                >
-                  <CircularProgress size={16} sx={{ color: '#5B6FE5' }} />
-                  <Typography variant="caption" sx={{ color: '#6B7280', fontWeight: 600, fontSize: '0.75rem' }}>
-                    Loading...
-                  </Typography>
-                </Box>
-              )}
-            </Box>
-
-            {/* Legend Overlay */}
-            {showLegend && graphData.nodes.length > 0 && (
-              <Box
-                sx={{
-                  position: 'absolute',
-                  top: 80,
-                  left: 16,
-                  zIndex: 10,
-                  bgcolor: 'white',
-                  borderRadius: 2,
-                  p: 2,
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                  border: '1px solid #E5E7EB',
-                  maxWidth: 250,
-                  maxHeight: 400,
-                  overflow: 'auto',
-                }}
-              >
-                {/* Legend Header with Close Button */}
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1F2937', fontSize: '0.875rem' }}>
-                    Node Types
-                  </Typography>
-                  <Tooltip title="Close legend" placement="left">
-                    <IconButton
-                      size="small"
-                      onClick={handleToggleLegend}
-                      sx={{
-                        width: 24,
-                        height: 24,
-                        color: '#6B7280',
-                        '&:hover': {
-                          bgcolor: '#F9FAFB',
-                          color: '#5B6FE5',
-                        },
-                      }}
-                    >
-                      <CloseIcon sx={{ fontSize: 16 }} />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  {Array.from(new Set(graphData.nodes.map(n => n.primaryLabel || n.type || 'Unknown')))
-                    .sort()
-                    .map((label) => {
-                      const color = getColorForLabel(label);
-                      const count = graphData.nodes.filter(n => (n.primaryLabel || n.type) === label).length;
-                      return (
-                        <Box
-                          key={label}
+                  {/* Secondary Actions Group */}
+                  <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+                    <Tooltip title="Refresh graph data" placement="bottom">
+                      <span>
+                        <IconButton
+                          size="small"
+                          onClick={handleRefresh}
+                          disabled={loading || !kgName}
                           sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                            p: 0.75,
-                            borderRadius: 1,
+                            width: 32,
+                            height: 32,
+                            color: '#6B7280',
                             '&:hover': {
                               bgcolor: '#F9FAFB',
+                              color: '#5B6FE5',
+                            },
+                            '&:disabled': {
+                              color: '#9CA3AF',
                             },
                           }}
                         >
-                          <Box
-                            sx={{
-                              width: 16,
-                              height: 16,
-                              borderRadius: '50%',
-                              bgcolor: color,
-                              flexShrink: 0,
-                              border: '2px solid white',
-                              boxShadow: '0 0 0 1px rgba(0,0,0,0.1)',
-                            }}
-                          />
-                          <Typography variant="caption" sx={{ flex: 1, color: '#1F2937', fontSize: '0.75rem', fontWeight: 500 }}>
-                            {label}
-                          </Typography>
-                          <Chip
-                            label={count}
-                            size="small"
-                            sx={{
-                              height: 20,
-                              fontSize: '0.7rem',
+                          <RefreshIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+
+                    <Tooltip title="Show color legend" placement="bottom">
+                      <IconButton
+                        size="small"
+                        onClick={handleToggleLegend}
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          color: showLegend ? '#5B6FE5' : '#6B7280',
+                          bgcolor: showLegend ? '#EEF2FF' : 'transparent',
+                          '&:hover': {
+                            bgcolor: '#F9FAFB',
+                            color: '#5B6FE5',
+                          },
+                        }}
+                      >
+                        <PaletteIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    </Tooltip>
+
+                    <Tooltip title="Export graph as JSON" placement="bottom">
+                      <span>
+                        <IconButton
+                          size="small"
+                          onClick={handleExportGraph}
+                          disabled={loading || entities.length === 0}
+                          sx={{
+                            width: 32,
+                            height: 32,
+                            color: '#6B7280',
+                            '&:hover': {
                               bgcolor: '#F9FAFB',
-                              color: '#6B7280',
-                              fontWeight: 600,
-                              '& .MuiChip-label': {
-                                px: 0.75,
+                              color: '#5B6FE5',
+                            },
+                            '&:disabled': {
+                              color: '#9CA3AF',
+                            },
+                          }}
+                        >
+                          <DownloadIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+
+                    <Tooltip title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"} placement="bottom">
+                      <IconButton
+                        size="small"
+                        onClick={handleToggleFullscreen}
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          color: '#6B7280',
+                          '&:hover': {
+                            bgcolor: '#F9FAFB',
+                            color: '#5B6FE5',
+                          },
+                        }}
+                      >
+                        {isFullscreen ? (
+                          <FullscreenExitIcon sx={{ fontSize: 18 }} />
+                        ) : (
+                          <FullscreenIcon sx={{ fontSize: 18 }} />
+                        )}
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                </Box>
+
+                {/* Right Section: Loading Indicator */}
+                {loading && (
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      bgcolor: 'white',
+                      borderRadius: 2,
+                      p: 1,
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                      border: '1px solid #E5E7EB',
+                      pointerEvents: 'auto',
+                    }}
+                  >
+                    <CircularProgress size={16} sx={{ color: '#5B6FE5' }} />
+                    <Typography variant="caption" sx={{ color: '#6B7280', fontWeight: 600, fontSize: '0.75rem' }}>
+                      Loading...
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+
+              {/* Legend Overlay */}
+              {showLegend && graphData.nodes.length > 0 && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: 80,
+                    left: 16,
+                    zIndex: 10,
+                    bgcolor: 'white',
+                    borderRadius: 2,
+                    p: 2,
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                    border: '1px solid #E5E7EB',
+                    maxWidth: 250,
+                    maxHeight: 400,
+                    overflow: 'auto',
+                  }}
+                >
+                  {/* Legend Header with Close Button */}
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1F2937', fontSize: '0.875rem' }}>
+                      Node Types
+                    </Typography>
+                    <Tooltip title="Close legend" placement="left">
+                      <IconButton
+                        size="small"
+                        onClick={handleToggleLegend}
+                        sx={{
+                          width: 24,
+                          height: 24,
+                          color: '#6B7280',
+                          '&:hover': {
+                            bgcolor: '#F9FAFB',
+                            color: '#5B6FE5',
+                          },
+                        }}
+                      >
+                        <CloseIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    {Array.from(new Set(graphData.nodes.map(n => n.primaryLabel || n.type || 'Unknown')))
+                      .sort()
+                      .map((label) => {
+                        const color = getColorForLabel(label);
+                        const count = graphData.nodes.filter(n => (n.primaryLabel || n.type) === label).length;
+                        return (
+                          <Box
+                            key={label}
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 1,
+                              p: 0.75,
+                              borderRadius: 1,
+                              '&:hover': {
+                                bgcolor: '#F9FAFB',
                               },
                             }}
-                          />
-                        </Box>
-                      );
-                    })}
+                          >
+                            <Box
+                              sx={{
+                                width: 16,
+                                height: 16,
+                                borderRadius: '50%',
+                                bgcolor: color,
+                                flexShrink: 0,
+                                border: '2px solid white',
+                                boxShadow: '0 0 0 1px rgba(0,0,0,0.1)',
+                              }}
+                            />
+                            <Typography variant="caption" sx={{ flex: 1, color: '#1F2937', fontSize: '0.75rem', fontWeight: 500 }}>
+                              {label}
+                            </Typography>
+                            <Chip
+                              label={count}
+                              size="small"
+                              sx={{
+                                height: 20,
+                                fontSize: '0.7rem',
+                                bgcolor: '#F9FAFB',
+                                color: '#6B7280',
+                                fontWeight: 600,
+                                '& .MuiChip-label': {
+                                  px: 0.75,
+                                },
+                              }}
+                            />
+                          </Box>
+                        );
+                      })}
+                  </Box>
                 </Box>
-              </Box>
-            )}
+              )}
 
-            <ForceGraph2D
-              ref={fgRef}
-              graphData={graphData}
-              onNodeClick={handleNodeClick}
-              onLinkClick={handleLinkClick}
+              <ForceGraph2D
+                ref={fgRef}
+                graphData={graphData}
+                onNodeClick={handleNodeClick}
+                onLinkClick={handleLinkClick}
 
-              /* === Physics tuned for organic layout like reference === */
-              d3AlphaDecay={0.015} // Slightly faster settling
-              d3VelocityDecay={0.3} // More damping for stable layout
-              warmupTicks={150}
-              cooldownTicks={200}
-              nodeRelSize={8} // Increased for better node sizing
+                /* === Physics tuned for organic layout like reference === */
+                d3AlphaDecay={0.015} // Slightly faster settling
+                d3VelocityDecay={0.3} // More damping for stable layout
+                warmupTicks={150}
+                cooldownTicks={200}
+                nodeRelSize={8} // Increased for better node sizing
 
-              width={graphWidth}
-              height={window.innerHeight * 0.85}
+                width={graphWidth}
+                height={window.innerHeight * 0.85}
 
-              /* STRAIGHT links with arrows - with dynamic styling based on relationship type */
-              linkCurvature={0} // NO CURVE - straight lines like reference
-              linkColor={(link) => {
-                const style = getRelationshipStyle(link.type);
-                return style.color;
-              }}
-              linkWidth={(link) => {
-                const style = getRelationshipStyle(link.type);
-                return style.width;
-              }}
-              linkDirectionalArrowLength={0} // Disable built-in arrows - using custom canvas arrows only
-              linkLineDash={(link) => {
-                const style = getRelationshipStyle(link.type);
-                return style.dashArray;
-              }}
+                /* STRAIGHT links with arrows - with dynamic styling based on relationship type */
+                linkCurvature={0} // NO CURVE - straight lines like reference
+                linkColor={(link) => {
+                  const style = getRelationshipStyle(link.type);
+                  return style.color;
+                }}
+                linkWidth={(link) => {
+                  const style = getRelationshipStyle(link.type);
+                  return style.width;
+                }}
+                linkDirectionalArrowLength={0} // Disable built-in arrows - using custom canvas arrows only
+                linkLineDash={(link) => {
+                  const style = getRelationshipStyle(link.type);
+                  return style.dashArray;
+                }}
 
-              /* Link labels with unidirectional arrows - styled to match reference image */
-              linkCanvasObjectMode={() => "after"}
-              linkCanvasObject={(link, ctx, scale) => {
-                const start = link.source;
-                const end = link.target;
-                if (!start || !end) return;
+                /* Link labels with unidirectional arrows - styled to match reference image */
+                linkCanvasObjectMode={() => "after"}
+                linkCanvasObject={(link, ctx, scale) => {
+                  const start = link.source;
+                  const end = link.target;
+                  if (!start || !end) return;
 
-                // Get relationship style
-                const relStyle = getRelationshipStyle(link.type);
+                  const relStyle = getRelationshipStyle(link.type);
 
-                // Calculate positions
-                const dx = end.x - start.x;
-                const dy = end.y - start.y;
-                const angle = Math.atan2(dy, dx);
-                const distance = Math.sqrt(dx * dx + dy * dy);
+                  const dx = end.x - start.x;
+                  const dy = end.y - start.y;
+                  const angle = Math.atan2(dy, dx);
+                  const distance = Math.sqrt(dx * dx + dy * dy);
 
-                // Draw single unidirectional arrow at the end of the link (from source to target)
-                const arrowLength = 8;
-                const arrowWidth = 4;
-                const nodeRadius = 30; // Match the node radius
+                  const arrowLength = 8;
+                  const arrowWidth = 4;
+                  const nodeRadius = 30;
 
-                // Position arrow just before the target node
-                const arrowPos = distance - nodeRadius - 5;
-                const arrowX = start.x + Math.cos(angle) * arrowPos;
-                const arrowY = start.y + Math.sin(angle) * arrowPos;
+                  const arrowPos = distance - nodeRadius - 6;
+                  const arrowX = start.x + Math.cos(angle) * arrowPos;
+                  const arrowY = start.y + Math.sin(angle) * arrowPos;
 
-                ctx.save();
-                ctx.translate(arrowX, arrowY);
-                ctx.rotate(angle);
-
-                // Draw arrow triangle with relationship color (pointing from source to target)
-                ctx.beginPath();
-                ctx.moveTo(arrowLength, 0);
-                ctx.lineTo(0, arrowWidth);
-                ctx.lineTo(0, -arrowWidth);
-                ctx.closePath();
-                ctx.fillStyle = relStyle.color;
-                ctx.fill();
-
-                ctx.restore();
-
-                // Draw label if exists
-                const label = link.type || "";
-                if (!label) return;
-
-                // Calculate midpoint
-                const mx = (start.x + end.x) / 2;
-                const my = (start.y + end.y) / 2;
-
-                // Calculate text angle (keep readable)
-                let textAngle = angle;
-                if (textAngle > Math.PI / 2) textAngle -= Math.PI;
-                if (textAngle < -Math.PI / 2) textAngle += Math.PI;
-
-                // Font styling - larger for better readability
-                const fontSize = 8 / scale; // Increased from 7 to 10
-                ctx.font = `${fontSize}px Arial`;
-
-                // Measure text for background box
-                const textMetrics = ctx.measureText(label);
-                const textWidth = textMetrics.width;
-                const textHeight = fontSize;
-                const padding = 3; // Slightly more padding for larger text
-
-                ctx.save();
-                ctx.translate(mx, my);
-                ctx.rotate(textAngle);
-
-                // Draw white/light background box for label (like reference)
-                ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
-                ctx.fillRect(
-                  -textWidth / 2 - padding,
-                  -textHeight / 2 - padding,
-                  textWidth + padding * 2,
-                  textHeight + padding * 2
-                );
-
-                // Draw text on top
-                ctx.fillStyle = "#555555"; // Dark gray text
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText(label, 0, 0);
-
-                ctx.restore();
-              }}
-
-              /* Node bubbles - styled with matching border colors and black text */
-              nodeCanvasObject={(node, ctx, scale) => {
-                const R = 30; // Node radius
-                const isSelected = selectedNode && selectedNode.id === node.id;
-                const nodeColor = node.color || "#5B6FE5"; // Get node color
-                const selectionGap = 5; // Gap between node and selection border (in pixels)
-
-                // Draw selection highlight border FIRST (as outer ring) if node is selected
-                // This creates a "halo" effect with visible spacing from the node
-                if (isSelected) {
+                  /* === CLEANLY ALIGNED ARROW === */
+                  ctx.save();
+                  ctx.translate(arrowX, arrowY);
+                  ctx.rotate(angle);
                   ctx.beginPath();
-                  ctx.arc(node.x, node.y, R + selectionGap, 0, 2 * Math.PI);
-                  ctx.strokeStyle = SELECTION_BORDER_COLOR; // Bright cyan for selection
-                  ctx.lineWidth = 4; // Thicker border for selection
-                  ctx.stroke();
-                }
-
-                // Draw node circle with color based on relationships or primary label
-                ctx.beginPath();
-                ctx.arc(node.x, node.y, R, 0, 2 * Math.PI);
-                ctx.fillStyle = nodeColor;
-                ctx.fill();
-
-                // Add border that matches the node color
-                ctx.strokeStyle = nodeColor; // Border matches node background color
-                ctx.lineWidth = 2;
-                ctx.stroke();
-
-                // Draw main label inside the circle
-                // Black text for readability on lighter node colors
-                const label = (node.name || "").replace(/_/g, " ");
-                const fontSize = 10 / scale;
-                ctx.font = `${fontSize}px Arial`;
-                ctx.fillStyle = "#1F2937"; // Design system text primary (dark) for readability
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-
-                // Word wrap for long labels
-                const maxWidth = R * 1.6;
-                const words = label.split(" ");
-                const lines = [];
-                let line = "";
-
-                words.forEach(word => {
-                  const test = line ? line + " " + word : word;
-                  if (ctx.measureText(test).width < maxWidth) {
-                    line = test;
-                  } else {
-                    if (line) lines.push(line);
-                    line = word;
-                  }
-                });
-                if (line) lines.push(line);
-
-                // Draw text lines centered in the circle
-                const lineHeight = fontSize * 1.2;
-                const totalHeight = lines.length * lineHeight;
-                let y = node.y - totalHeight / 2 + lineHeight / 2;
-
-                lines.forEach(l => {
-                  ctx.fillText(l, node.x, y);
-                  y += lineHeight;
-                });
-
-                // Draw multiple labels as badges below the node (if more than one label)
-                if (node.labels && node.labels.length > 1) {
-                  const labelFontSize = 6 / scale;
-                  ctx.font = `${labelFontSize}px Arial`;
-
-                  // Join labels with separator
-                  const labelsText = node.labels.join(' • ');
-                  const labelsWidth = ctx.measureText(labelsText).width;
-                  const labelsPadding = 4 / scale;
-                  const labelsHeight = labelFontSize + labelsPadding * 2;
-
-                  // Position below the node
-                  const badgeY = node.y + R + 8 / scale;
-
-                  // Draw background badge with design system colors
-                  ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
-                  ctx.strokeStyle = node.color || "#5B6FE5"; // Design system primary color
-                  ctx.lineWidth = 1 / scale;
-
-                  const badgeRadius = 3 / scale;
-                  const badgeX = node.x - labelsWidth / 2 - labelsPadding;
-                  const badgeWidth = labelsWidth + labelsPadding * 2;
-
-                  // Rounded rectangle for badge
-                  ctx.beginPath();
-                  ctx.moveTo(badgeX + badgeRadius, badgeY);
-                  ctx.lineTo(badgeX + badgeWidth - badgeRadius, badgeY);
-                  ctx.quadraticCurveTo(badgeX + badgeWidth, badgeY, badgeX + badgeWidth, badgeY + badgeRadius);
-                  ctx.lineTo(badgeX + badgeWidth, badgeY + labelsHeight - badgeRadius);
-                  ctx.quadraticCurveTo(badgeX + badgeWidth, badgeY + labelsHeight, badgeX + badgeWidth - badgeRadius, badgeY + labelsHeight);
-                  ctx.lineTo(badgeX + badgeRadius, badgeY + labelsHeight);
-                  ctx.quadraticCurveTo(badgeX, badgeY + labelsHeight, badgeX, badgeY + labelsHeight - badgeRadius);
-                  ctx.lineTo(badgeX, badgeY + badgeRadius);
-                  ctx.quadraticCurveTo(badgeX, badgeY, badgeX + badgeRadius, badgeY);
+                  ctx.moveTo(arrowLength, 0);
+                  ctx.lineTo(0, arrowWidth);
+                  ctx.lineTo(0, -arrowWidth);
                   ctx.closePath();
+                  ctx.fillStyle = relStyle.color;
                   ctx.fill();
-                  ctx.stroke();
+                  ctx.restore();
 
-                  // Draw labels text with node color for consistency
-                  ctx.fillStyle = node.color || "#5B6FE5"; // Design system primary color
+                  const label = link.type || "";
+                  if (!label) return;
+
+                  /* === PERFECT LABEL ALIGNMENT WITH OFFSET === */
+                  const mx = (start.x + end.x) / 2;
+                  const my = (start.y + end.y) / 2;
+
+                  // Perpendicular offset so text NEVER overlaps the line
+                  // ✅ Pull label CLOSER to the link (reduce visual gap)
+                  const OFFSET = 6; // smaller = closer to the link
+                  const offsetX = Math.sin(angle) * OFFSET;
+                  const offsetY = -Math.cos(angle) * OFFSET;
+
+                  const labelX = mx + offsetX;
+                  const labelY = my + offsetY;
+
+                  let textAngle = angle;
+                  if (textAngle > Math.PI / 2) textAngle -= Math.PI;
+                  if (textAngle < -Math.PI / 2) textAngle += Math.PI;
+
+                  const fontSize = 9 / scale;
+                  ctx.font = `${fontSize}px Arial`;
+
+                  ctx.save();
+                  ctx.translate(labelX, labelY);
+                  ctx.rotate(textAngle);
+
+                  ctx.fillStyle = "#6B7280";
                   ctx.textAlign = "center";
                   ctx.textBaseline = "middle";
-                  ctx.fillText(labelsText, node.x, badgeY + labelsHeight / 2);
-                }
-              }}
+                  ctx.fillText(label, 0, 0);
 
-              nodePointerAreaPaint={(node, color, ctx) => {
-                const R = 42; // Match the node radius + small buffer
-                ctx.beginPath();
-                ctx.arc(node.x, node.y, R, 0, 2 * Math.PI);
-                ctx.fillStyle = color;
-                ctx.fill();
-              }}
-            />
-          </>
-        ) : (
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 1 }}>
-            <Box
-              sx={{
-                p: 1.5,
-                borderRadius: '50%',
-                bgcolor: 'action.hover',
-              }}
-            >
-              <Typography variant="h2" sx={{ opacity: 0.3, fontSize: '2.5rem' }}>📊</Typography>
+                  ctx.restore();
+                }}
+
+
+                /* Node bubbles - styled with matching border colors and black text */
+                nodeCanvasObject={(node, ctx, scale) => {
+                  const R = 30; // Node radius
+                  const isSelected = selectedNode && selectedNode.id === node.id;
+                  const nodeColor = node.color || "#5B6FE5"; // Get node color
+                  const selectionGap = 5; // Gap between node and selection border (in pixels)
+
+                  // Draw selection highlight border FIRST (as outer ring) if node is selected
+                  // This creates a "halo" effect with visible spacing from the node
+                  if (isSelected) {
+                    ctx.beginPath();
+                    ctx.arc(node.x, node.y, R + selectionGap, 0, 2 * Math.PI);
+                    ctx.strokeStyle = SELECTION_BORDER_COLOR; // Bright cyan for selection
+                    ctx.lineWidth = 2; // Thinner border for selection
+                    ctx.stroke();
+                  }
+
+                  // Draw node circle with color based on relationships or primary label
+                  ctx.beginPath();
+                  ctx.arc(node.x, node.y, R, 0, 2 * Math.PI);
+                  ctx.fillStyle = nodeColor;
+                  ctx.fill();
+
+                  // Add border that matches the node color
+                  ctx.strokeStyle = nodeColor; // Border matches node background color
+                  ctx.lineWidth = 2;
+                  ctx.stroke();
+
+                  // Draw main label inside the circle
+                  // Black text for readability on lighter node colors
+                  const label = (node.name || "").replace(/_/g, " ");
+                  const fontSize = 10 / scale;
+                  ctx.font = `${fontSize}px Arial`;
+                  ctx.fillStyle = "#1F2937"; // Design system text primary (dark) for readability
+                  ctx.textAlign = "center";
+                  ctx.textBaseline = "middle";
+
+                  // Word wrap for long labels
+                  const maxWidth = R * 1.6;
+                  const words = label.split(" ");
+                  const lines = [];
+                  let line = "";
+
+                  words.forEach(word => {
+                    const test = line ? line + " " + word : word;
+                    if (ctx.measureText(test).width < maxWidth) {
+                      line = test;
+                    } else {
+                      if (line) lines.push(line);
+                      line = word;
+                    }
+                  });
+                  if (line) lines.push(line);
+
+                  // Draw text lines centered in the circle
+                  const lineHeight = fontSize * 1.2;
+                  const totalHeight = lines.length * lineHeight;
+                  let y = node.y - totalHeight / 2 + lineHeight / 2;
+
+                  lines.forEach(l => {
+                    ctx.fillText(l, node.x, y);
+                    y += lineHeight;
+                  });
+
+                  // Draw multiple labels as badges below the node (if more than one label)
+                  if (node.labels && node.labels.length > 1) {
+                    const labelFontSize = 6 / scale;
+                    ctx.font = `${labelFontSize}px Arial`;
+
+                    // Join labels with separator
+                    const labelsText = node.labels.join(' • ');
+                    const labelsWidth = ctx.measureText(labelsText).width;
+                    const labelsPadding = 4 / scale;
+                    const labelsHeight = labelFontSize + labelsPadding * 2;
+
+                    // Position below the node
+                    const badgeY = node.y + R + 8 / scale;
+
+                    // Draw background badge with design system colors
+                    ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+                    ctx.strokeStyle = node.color || "#5B6FE5"; // Design system primary color
+                    ctx.lineWidth = 1 / scale;
+
+                    const badgeRadius = 3 / scale;
+                    const badgeX = node.x - labelsWidth / 2 - labelsPadding;
+                    const badgeWidth = labelsWidth + labelsPadding * 2;
+
+                    // Rounded rectangle for badge
+                    ctx.beginPath();
+                    ctx.moveTo(badgeX + badgeRadius, badgeY);
+                    ctx.lineTo(badgeX + badgeWidth - badgeRadius, badgeY);
+                    ctx.quadraticCurveTo(badgeX + badgeWidth, badgeY, badgeX + badgeWidth, badgeY + badgeRadius);
+                    ctx.lineTo(badgeX + badgeWidth, badgeY + labelsHeight - badgeRadius);
+                    ctx.quadraticCurveTo(badgeX + badgeWidth, badgeY + labelsHeight, badgeX + badgeWidth - badgeRadius, badgeY + labelsHeight);
+                    ctx.lineTo(badgeX + badgeRadius, badgeY + labelsHeight);
+                    ctx.quadraticCurveTo(badgeX, badgeY + labelsHeight, badgeX, badgeY + labelsHeight - badgeRadius);
+                    ctx.lineTo(badgeX, badgeY + badgeRadius);
+                    ctx.quadraticCurveTo(badgeX, badgeY, badgeX + badgeRadius, badgeY);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Draw labels text with node color for consistency
+                    ctx.fillStyle = node.color || "#5B6FE5"; // Design system primary color
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.fillText(labelsText, node.x, badgeY + labelsHeight / 2);
+                  }
+                }}
+
+                nodePointerAreaPaint={(node, color, ctx) => {
+                  const R = 42; // Match the node radius + small buffer
+                  ctx.beginPath();
+                  ctx.arc(node.x, node.y, R, 0, 2 * Math.PI);
+                  ctx.fillStyle = color;
+                  ctx.fill();
+                }}
+              />
+            </>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 1 }}>
+              <Box
+                sx={{
+                  p: 1.5,
+                  borderRadius: '50%',
+                  bgcolor: 'action.hover',
+                }}
+              >
+                <Typography variant="h2" sx={{ opacity: 0.3, fontSize: '2.5rem' }}>📊</Typography>
+              </Box>
+              <Typography variant="body2" color="text.secondary" fontWeight={600} fontSize="0.85rem">
+                No nodes to visualize
+              </Typography>
+              <Typography variant="caption" color="text.secondary" fontSize="0.75rem">
+                Generate a knowledge graph to see the visualization
+              </Typography>
             </Box>
-            <Typography variant="body2" color="text.secondary" fontWeight={600} fontSize="0.85rem">
-              No nodes to visualize
-            </Typography>
-            <Typography variant="caption" color="text.secondary" fontSize="0.75rem">
-              Generate a knowledge graph to see the visualization
-            </Typography>
-          </Box>
-        )}
+          )}
         </Paper>
       </Box>
 
@@ -1336,7 +1321,7 @@ export default function KnowledgeGraphEditor({
         onClose={() => setAddNodeDialogOpen(false)}
         existingEntities={entities}
         onAddNode={handleAddNode}
-        kgName={kgName} 
+        kgName={kgName}
         onRefresh={onRefresh}
       />
 

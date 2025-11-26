@@ -337,13 +337,15 @@ function StepRelationships({ node, relationships, allNodes, relationshipStyles =
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTypes, setSelectedTypes] = useState(['All']); // Filter by relationship types
 
-  // Muted, professional color palette for table names (matches KnowledgeGraphEditor)
+  // Color palette matching KnowledgeGraphEditor node colors
+  const DEPARTMENT_COLOR = 'rgb(95, 158, 160)'; // Teal/cyan for Department nodes (center node)
+  const EMPLOYEE_COLOR = 'rgb(255, 160, 140)'; // Coral/peach for Employee nodes (surrounding nodes)
+  const PROJECT_COLOR = 'rgb(0, 200, 220)'; // Bright cyan for Project nodes (from legend)
+
   const colorPalette = [
-    '#6A7BA2', // Muted Steel Blue - Central/Primary nodes
-    '#A58DA7', // Soft Plum Gray - Source nodes
-    '#8FA8A6', // Muted Teal Gray - File/Data nodes
-    '#B5A27A', // Soft Beige Brown - Process/Task nodes
-    '#A5ABB6', // Neutral Gray Blue - Generic nodes
+    EMPLOYEE_COLOR,    // Default: Employee color (most common)
+    DEPARTMENT_COLOR,  // Department color
+    PROJECT_COLOR,     // Project color
   ];
 
   // Function to generate a consistent color based on table name (matches KnowledgeGraphEditor)
@@ -368,8 +370,27 @@ function StepRelationships({ node, relationships, allNodes, relationshipStyles =
     return sourceId === node.id || targetId === node.id;
   });
 
-  // Get unique relationship types from node's relationships only
-  const uniqueRelTypes = [...new Set(nodeRelationships.map(rel => rel.type || rel.label || 'RELATED_TO'))];
+  // Remove duplicate bidirectional relationships
+  // If a relationship exists between Node A and Node B, show it only once
+  const uniqueRelationships = [];
+  const seenPairs = new Set();
+
+  nodeRelationships.forEach((rel) => {
+    const sourceId = typeof rel.source === 'object' ? rel.source?.id : rel.source;
+    const targetId = typeof rel.target === 'object' ? rel.target?.id : rel.target;
+
+    // Create a normalized key that's the same regardless of direction
+    const pairKey = [sourceId, targetId].sort().join('↔');
+
+    // Only add if we haven't seen this pair before
+    if (!seenPairs.has(pairKey)) {
+      seenPairs.add(pairKey);
+      uniqueRelationships.push(rel);
+    }
+  });
+
+  // Get unique relationship types from unique relationships only
+  const uniqueRelTypes = [...new Set(uniqueRelationships.map(rel => rel.type || rel.label || 'RELATED_TO'))];
 
   // Handle type filter toggle
   const handleTypeToggle = (type) => {
@@ -395,7 +416,7 @@ function StepRelationships({ node, relationships, allNodes, relationshipStyles =
   };
 
   // Filter by selected types and search query
-  const filteredRelationships = nodeRelationships.filter((rel) => {
+  const filteredRelationships = uniqueRelationships.filter((rel) => {
     const relType = rel.type || rel.label || 'RELATED_TO';
     const sourceName = getNodeName(rel.source);
     const targetName = getNodeName(rel.target);
@@ -449,9 +470,9 @@ function StepRelationships({ node, relationships, allNodes, relationshipStyles =
             <Typography variant="caption" sx={{ color: '#6B7280', fontWeight: 600 }}>
               Filter by Type:
             </Typography>
-            {nodeRelationships.length > 0 && (
+            {uniqueRelationships.length > 0 && (
               <Chip
-                label={`${filteredRelationships.length} of ${nodeRelationships.length}`}
+                label={`${filteredRelationships.length} of ${uniqueRelationships.length}`}
                 size="small"
                 sx={{
                   bgcolor: '#F3F4F6',
@@ -528,9 +549,6 @@ function StepRelationships({ node, relationships, allNodes, relationshipStyles =
             // Get column information from relationship
             const sourceColumn = rel.originalRel?.source_column || rel.properties?.source_column || rel.source_column || '';
             const targetColumn = rel.originalRel?.target_column || rel.properties?.target_column || rel.target_column || '';
-
-            // Get standardized field: bidirectional
-            const bidirectional = rel.bidirectional ?? rel.originalRel?.bidirectional ?? rel.properties?.bidirectional ?? null;
 
             // Determine if current node is source or target
             const isSource = sourceId === node.id;
@@ -622,16 +640,6 @@ function StepRelationships({ node, relationships, allNodes, relationshipStyles =
                       {displaySourceColumn}
                     </Typography>
 
-                    {/* Arrow */}
-                    <Typography
-                      sx={{
-                        fontSize: '0.75rem',
-                        color: '#9CA3AF',
-                      }}
-                    >
-                      →
-                    </Typography>
-
                     {/* Relationship Type Badge */}
                     <Chip
                       label={relType}
@@ -703,39 +711,11 @@ function StepRelationships({ node, relationships, allNodes, relationshipStyles =
                     </Typography>
                   </Box>
                 )}
-
-                {/* Additional Metadata Row: Bidirectional Indicator Only */}
-                {bidirectional !== null && (
-                  <Box
-                    sx={{
-                      mt: 0.75,
-                      display: 'flex',
-                      gap: 0.5,
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Chip
-                      label={bidirectional ? '↔' : '→'}
-                      size="small"
-                      sx={{
-                        bgcolor: '#F9FAFB',
-                        color: '#6B7280',
-                        fontSize: '0.65rem',
-                        height: 18,
-                        fontWeight: 500,
-                        border: '1px solid #E5E7EB',
-                        '& .MuiChip-label': {
-                          px: 0.5,
-                        },
-                      }}
-                    />
-                  </Box>
-                )}
               </Box>
             );
           })}
         </Box>
-      ) : nodeRelationships.length > 0 ? (
+      ) : uniqueRelationships.length > 0 ? (
         <Box
           sx={{
             display: 'flex',
