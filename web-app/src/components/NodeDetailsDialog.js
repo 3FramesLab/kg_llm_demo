@@ -336,6 +336,7 @@ function StepProperties({ node }) {
 function StepRelationships({ node, relationships, allNodes, relationshipStyles = {} }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTypes, setSelectedTypes] = useState(['All']); // Filter by relationship types
+  const [showAllRelationships, setShowAllRelationships] = useState(false); // Track if user has interacted with filters
 
   // Color palette matching KnowledgeGraphEditor node colors
   const DEPARTMENT_COLOR = 'rgb(95, 158, 160)'; // Teal/cyan for Department nodes (center node)
@@ -394,6 +395,7 @@ function StepRelationships({ node, relationships, allNodes, relationshipStyles =
 
   // Handle type filter toggle
   const handleTypeToggle = (type) => {
+    setShowAllRelationships(true); // Show all relationships when user interacts with filters
     if (type === 'All') {
       setSelectedTypes(['All']);
     } else {
@@ -404,6 +406,15 @@ function StepRelationships({ node, relationships, allNodes, relationshipStyles =
         : [...selectedTypes, type];
 
       setSelectedTypes(newSelection.length === 0 ? ['All'] : newSelection);
+    }
+  };
+
+  // Handle search query change
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    if (value !== '') {
+      setShowAllRelationships(true); // Show all relationships when user starts searching
     }
   };
 
@@ -447,7 +458,7 @@ function StepRelationships({ node, relationships, allNodes, relationshipStyles =
         fullWidth
         placeholder="Search relationships..."
         value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
+        onChange={handleSearchChange}
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
@@ -539,7 +550,8 @@ function StepRelationships({ node, relationships, allNodes, relationshipStyles =
       {/* Relationships List */}
       {filteredRelationships.length > 0 ? (
         <Box>
-          {filteredRelationships.map((rel, index) => {
+          {/* Determine how many relationships to display */}
+          {(showAllRelationships ? filteredRelationships : filteredRelationships.slice(0, 1)).map((rel, index) => {
             const relType = rel.type || rel.label || 'RELATED_TO';
             const sourceId = typeof rel.source === 'object' ? rel.source?.id : rel.source;
             const targetId = typeof rel.target === 'object' ? rel.target?.id : rel.target;
@@ -714,6 +726,34 @@ function StepRelationships({ node, relationships, allNodes, relationshipStyles =
               </Box>
             );
           })}
+
+          {/* Show More button when not all relationships are displayed */}
+          {!showAllRelationships && filteredRelationships.length > 1 && (
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                py: 1.5,
+                borderTop: '1px solid #E5E7EB',
+              }}
+            >
+              <Typography
+                onClick={() => setShowAllRelationships(true)}
+                sx={{
+                  fontSize: '0.8125rem',
+                  color: '#5B6FE5',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  '&:hover': {
+                    textDecoration: 'underline',
+                  },
+                }}
+              >
+                Show {filteredRelationships.length - 1} more relationship{filteredRelationships.length - 1 !== 1 ? 's' : ''}
+              </Typography>
+            </Box>
+          )}
         </Box>
       ) : uniqueRelationships.length > 0 ? (
         <Box
