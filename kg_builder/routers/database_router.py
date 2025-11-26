@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, Optional, Any, List
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel, Field
 
 from kg_builder.services.jdbc_connection_manager import get_jdbc_connection, ensure_jvm_initialized
@@ -390,6 +390,16 @@ async def list_databases_from_connection(connection_id: str):
             raise HTTPException(status_code=404, detail=f"Connection {connection_id} not found")
 
         conn_info = _connections[connection_id]
+
+        # Excel connections don't have databases - return empty list
+        if conn_info["type"] == "excel":
+            return {
+                "success": True,
+                "databases": [],
+                "count": 0,
+                "message": "Excel files do not have databases"
+            }
+
         driver_class = _get_driver_class(conn_info["type"])
 
         # For listing databases, connect without specifying a database
@@ -453,12 +463,47 @@ async def list_databases_from_connection(connection_id: str):
 
 @router.get("/database/connections/{connection_id}/databases/{database_name}/tables")
 async def list_tables_from_database(connection_id: str, database_name: str):
-    """List all tables from a specific database using JDBC."""
+    """List all tables from a specific database using JDBC or Excel sheets."""
     try:
         if connection_id not in _connections:
             raise HTTPException(status_code=404, detail=f"Connection {connection_id} not found")
 
         conn_info = _connections[connection_id]
+
+        # Handle Excel connections - read sheet names from the Excel file
+        if conn_info["type"] == "excel":
+            try:
+                import pandas as pd
+                file_path = conn_info.get("file_path")
+
+                if not file_path or not Path(file_path).exists():
+                    raise HTTPException(status_code=404, detail=f"Excel file not found: {file_path}")
+
+                logger.info(f"Reading sheet names from Excel file: {file_path}")
+
+                # Read Excel file and get sheet names
+                excel_file = pd.ExcelFile(file_path)
+                sheet_names = excel_file.sheet_names
+
+                logger.info(f"Found {len(sheet_names)} sheets in Excel file: {sheet_names}")
+
+                return {
+                    "success": True,
+                    "tables": sheet_names,
+                    "count": len(sheet_names),
+                    "message": "Excel sheets listed as tables"
+                }
+
+            except ImportError:
+                raise HTTPException(
+                    status_code=500,
+                    detail="pandas library is required to read Excel files. Please install it: pip install pandas openpyxl"
+                )
+            except Exception as e:
+                logger.error(f"Failed to read Excel file: {e}")
+                raise HTTPException(status_code=500, detail=f"Failed to read Excel file: {str(e)}")
+
+        # Handle regular database connections
         driver_class = _get_driver_class(conn_info["type"])
 
         # Connect to the specific database
@@ -799,4 +844,142 @@ async def get_schema_configurations():
             status_code=500,
             detail=f"Failed to retrieve schema configurations: {str(e)}"
         )
+
+@router.post("/upload-excel")
+async def upload_excel_file(file: UploadFile = File(...), name: str = Form(None)):
+    """
+    Upload an Excel file (.xlsx or .xls) and create a connection entry.
+
+    This endpoint accepts Excel files, validates them, saves them to disk,
+    and creates a connection entry that appears in the connections list.
+
+    Args:
+        file: Excel file uploaded via multipart/form-data
+        name: Optional connection name (defaults to filename if not provided)
+
+    Returns:
+        JSON response with success status, message, and connection details
+
+    Raises:
+        HTTPException: If file validation fails or processing errors occur
+    """
+    try:
+        # Validate file type
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="No file provided")
+
+        # Check file extension
+        file_extension = file.filename.lower().split('.')[-1]
+        valid_extensions = ['xlsx', 'xls']
+
+        if file_extension not in valid_extensions:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid file type. Only Excel files (.xlsx, .xls) are supported. Got: .{file_extension}"
+            )
+
+        # Validate MIME type
+        valid_mime_types = [
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',  # .xlsx
+            'application/vnd.ms-excel',  # .xls
+            'application/octet-stream'  # Sometimes browsers send this for Excel files
+        ]
+
+        if file.content_type not in valid_mime_types:
+            logger.warning(f"Unexpected MIME type: {file.content_type} for file: {file.filename}")
+            # Don't reject based on MIME type alone, as browsers can be inconsistent
+
+        # Read file content
+        file_content = await file.read()
+        file_size = len(file_content)
+
+        # Validate file size (max 10MB)
+        max_size = 10 * 1024 * 1024  # 10MB in bytes
+        if file_size > max_size:
+            raise HTTPException(
+                status_code=400,
+                detail=f"File size exceeds maximum limit of 10MB. File size: {file_size / (1024 * 1024):.2f}MB"
+            )
+
+        if file_size == 0:
+            raise HTTPException(status_code=400, detail="Uploaded file is empty")
+
+        # Create uploads directory if it doesn't exist
+        uploads_dir = Path("uploads/excel")
+        uploads_dir.mkdir(parents=True, exist_ok=True)
+
+        # Generate unique filename
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        unique_id = uuid.uuid4().hex[:8]
+        safe_filename = f"excel_{timestamp}_{unique_id}.{file_extension}"
+        file_path = uploads_dir / safe_filename
+
+        # Save file to disk
+        with open(file_path, 'wb') as f:
+            f.write(file_content)
+
+        logger.info(f"Excel file uploaded successfully: {file.filename} -> {safe_filename}")
+        logger.info(f"File size: {file_size / 1024:.2f} KB")
+        logger.info(f"Saved to: {file_path}")
+
+        # Create connection entry
+        connection_id = str(uuid.uuid4())
+        connection_name = name if name and name.strip() else file.filename
+
+        # Store connection info (similar to database connections)
+        _connections[connection_id] = {
+            "id": connection_id,
+            "name": connection_name,
+            "type": "excel",
+            "host": "local",
+            "port": 0,
+            "database": safe_filename,  # Store the saved filename
+            "username": "",
+            "password": "",
+            "service_name": None,
+            "status": "connected",
+            "file_path": str(file_path),
+            "original_filename": file.filename,
+            "file_size_kb": round(file_size / 1024, 2),
+            "uploaded_at": timestamp
+        }
+
+        # Persist to disk
+        _save_connections_to_disk()
+
+        logger.info(f"Excel connection '{connection_name}' created with ID: {connection_id}")
+
+        # Create response matching DatabaseConnectionResponse format
+        connection_response = {
+            "id": connection_id,
+            "name": connection_name,
+            "type": "excel",
+            "host": "local",
+            "port": 0,
+            "database": safe_filename,
+            "username": "",
+            "status": "connected",
+            "service_name": None
+        }
+
+        return {
+            "success": True,
+            "message": f"Excel file '{file.filename}' uploaded successfully and connection created",
+            "connection": connection_response,
+            "file_name": file.filename,
+            "saved_as": safe_filename,
+            "file_size_kb": round(file_size / 1024, 2),
+            "file_path": str(file_path),
+            "timestamp": timestamp
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to upload Excel file: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to upload Excel file: {str(e)}"
+        )
+
 

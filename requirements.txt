@@ -17,6 +17,10 @@ pyodbc
 sqlalchemy
 pymongo
 
+# Excel file handling
+pandas
+openpyxl
+
 # LLM Integration
 openai
 

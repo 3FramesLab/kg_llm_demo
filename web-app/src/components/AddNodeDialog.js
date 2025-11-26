@@ -169,6 +169,13 @@ export default function AddNodeDialog({
     setSelectedColumns([]);
 
     try {
+      // Skip loading schemas for Excel connections
+      if (selectedSource.type === 'excel') {
+        setError('Excel files are not yet supported for node creation. Please use a database connection.');
+        setLoadingSchemas(false);
+        return;
+      }
+
       const response = await listDatabasesFromConnection(selectedSource.id);
       if (response.data.success) {
         const schemaList = response.data.databases || [];

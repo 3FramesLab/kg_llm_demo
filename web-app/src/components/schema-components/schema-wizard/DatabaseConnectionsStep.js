@@ -85,9 +85,25 @@ function DatabaseConnectionsStep({
   ============================ */
   const loadSchemas = async (connectionId) => {
     const res = await listDatabasesFromConnection(connectionId);
+    const databases = res.data.databases || [];
+
+    // For Excel connections with no databases, use connection name as temporary database
+    if (databases.length === 0 && res.data.message === "Excel files do not have databases") {
+      const connection = connections.find(c => c.id === connectionId);
+      if (connection) {
+        // Use connection name as the temporary database name
+        const tempDatabaseName = connection.name;
+        setSchemasByConn((prev) => ({
+          ...prev,
+          [connectionId]: [tempDatabaseName]
+        }));
+        return;
+      }
+    }
+
     setSchemasByConn((prev) => ({
       ...prev,
-      [connectionId]: res.data.databases || []
+      [connectionId]: databases
     }));
   };
 

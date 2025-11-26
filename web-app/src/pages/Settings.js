@@ -59,9 +59,9 @@ function Settings() {
       const connectionsData = response.data.connections || [];
       setConnections(connectionsData);
 
-      // Load databases for each connection
+      // Load databases for each connection (skip Excel connections)
       for (const conn of connectionsData) {
-        if (conn.status === 'connected') {
+        if (conn.status === 'connected' && conn.type !== 'excel') {
           loadDatabasesForConnection(conn.id);
         }
       }
@@ -289,36 +289,41 @@ function Settings() {
                                 {databases[connection.id]?.length || 0}
                               </TableCell>
                               <TableCell align="right" sx={{ py: 0.75 }}>
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleTestConnection(connection)}
-                                  title="Test Connection"
-                                  sx={{
-                                    p: 0.5,
-                                    color: '#3B82F6',
-                                    '&:hover': {
-                                      bgcolor: '#DBEAFE',
-                                      color: '#1E40AF',
-                                    },
-                                  }}
-                                >
-                                  <CheckCircleIcon fontSize="small" />
-                                </IconButton>
-                                <IconButton
-                                  size="small"
-                                  onClick={() => loadDatabasesForConnection(connection.id)}
-                                  title="Refresh"
-                                  sx={{
-                                    p: 0.5,
-                                    color: '#6B7280',
-                                    '&:hover': {
-                                      bgcolor: '#F3F4F6',
-                                      color: '#1F2937',
-                                    },
-                                  }}
-                                >
-                                  <RefreshIcon fontSize="small" />
-                                </IconButton>
+                                {/* Only show Test Connection and Refresh for database connections, not Excel */}
+                                {connection.type !== 'excel' && (
+                                  <>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => handleTestConnection(connection)}
+                                      title="Test Connection"
+                                      sx={{
+                                        p: 0.5,
+                                        color: '#3B82F6',
+                                        '&:hover': {
+                                          bgcolor: '#DBEAFE',
+                                          color: '#1E40AF',
+                                        },
+                                      }}
+                                    >
+                                      <CheckCircleIcon fontSize="small" />
+                                    </IconButton>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => loadDatabasesForConnection(connection.id)}
+                                      title="Refresh"
+                                      sx={{
+                                        p: 0.5,
+                                        color: '#6B7280',
+                                        '&:hover': {
+                                          bgcolor: '#F3F4F6',
+                                          color: '#1F2937',
+                                        },
+                                      }}
+                                    >
+                                      <RefreshIcon fontSize="small" />
+                                    </IconButton>
+                                  </>
+                                )}
                                 <IconButton
                                   size="small"
                                   onClick={() => handleRemoveConnection(connection.id)}

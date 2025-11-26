@@ -198,4 +198,13 @@ export const deleteDashboard = (dashboardId) => api.delete(`/dashboards/${dashbo
 
 export const getUniqueOpsPlanner = () => api.get('/material-master/ops-planners');
 
+// Excel Upload
+export const uploadExcelFile = (formData) => {
+  return api.post('/upload-excel', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};
+
 export default api;
