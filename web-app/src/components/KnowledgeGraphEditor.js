@@ -71,6 +71,10 @@ export default function KnowledgeGraphEditor({
   const [showLegend, setShowLegend] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  // State for link hover tooltip
+  const [hoveredLink, setHoveredLink] = useState(null);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+
   // Panel width constants
   const PANEL_WIDTH = 300;
 
@@ -523,6 +527,23 @@ export default function KnowledgeGraphEditor({
     onLinkClick?.(link);
   };
 
+  // Link hover handlers for tooltip
+  const handleLinkHover = (link) => {
+    setHoveredLink(link);
+  };
+
+  // Track mouse position for tooltip placement
+  useEffect(() => {
+    const handleMouseMove = (event) => {
+      setTooltipPos({ x: event.clientX, y: event.clientY });
+    };
+
+    if (hoveredLink) {
+      window.addEventListener('mousemove', handleMouseMove);
+      return () => window.removeEventListener('mousemove', handleMouseMove);
+    }
+  }, [hoveredLink]);
+
   // Panel handlers
   const handlePanelClose = () => {
     setPanelOpen(false);
@@ -863,7 +884,7 @@ export default function KnowledgeGraphEditor({
                       </span>
                     </Tooltip>
 
-                    <Tooltip title="Show color legend" placement="bottom">
+                    {/* <Tooltip title="Show color legend" placement="bottom">
                       <IconButton
                         size="small"
                         onClick={handleToggleLegend}
@@ -880,7 +901,7 @@ export default function KnowledgeGraphEditor({
                       >
                         <PaletteIcon sx={{ fontSize: 18 }} />
                       </IconButton>
-                    </Tooltip>
+                    </Tooltip> */}
 
                     <Tooltip title="Export graph as JSON" placement="bottom">
                       <span>
@@ -1054,6 +1075,7 @@ export default function KnowledgeGraphEditor({
                 graphData={graphData}
                 onNodeClick={handleNodeClick}
                 onLinkClick={handleLinkClick}
+                onLinkHover={handleLinkHover}
 
                 /* === Physics tuned for organic layout like reference === */
                 d3AlphaDecay={0.015} // Slightly faster settling
@@ -1080,6 +1102,7 @@ export default function KnowledgeGraphEditor({
                   const style = getRelationshipStyle(link.type);
                   return style.dashArray;
                 }}
+                linkHoverPrecision={8} // Increase hover detection area for easier tooltip triggering
 
                 /* Link labels with unidirectional arrows - styled to match reference image */
                 linkCanvasObjectMode={() => "after"}
@@ -1270,6 +1293,37 @@ export default function KnowledgeGraphEditor({
                   ctx.fill();
                 }}
               />
+
+              {/* Custom Tooltip for Link Hover - Simple white card with relationship type only */}
+              {hoveredLink && (
+                <Box
+                  sx={{
+                    position: 'fixed',
+                    left: tooltipPos.x + 15,
+                    top: tooltipPos.y + 15,
+                    bgcolor: '#FFFFFF',
+                    border: '1px solid #E5E7EB',
+                    borderRadius: 1,
+                    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
+                    px: 1.5,
+                    py: 1,
+                    zIndex: 10000,
+                    pointerEvents: 'none',
+                    transition: 'opacity 0.2s ease-in-out',
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      fontSize: '0.8125rem',
+                      fontWeight: 600,
+                      color: '#1F2937',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {hoveredLink.type || 'RELATED_TO'}
+                  </Typography>
+                </Box>
+              )}
             </>
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 1 }}>

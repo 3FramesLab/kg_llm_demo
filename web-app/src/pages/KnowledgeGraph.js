@@ -183,7 +183,7 @@ export default function KnowledgeGraph() {
               }}
             >
               {/* Header Section */}
-              <Box sx={{ mb: 1.5 }}>
+              <Box sx={{ mb: 1 }}>
                 <Typography
                   variant="h5"
                   sx={{
@@ -208,7 +208,7 @@ export default function KnowledgeGraph() {
                   Generate and visualize knowledge graphs from database schemas
                 </Typography>
               </Box>
-              <Divider sx={{ mb: 2 }} />
+              <Divider sx={{ mb: 1.5 }} />
 
               {/* Alerts */}
               {error && (
@@ -236,7 +236,7 @@ export default function KnowledgeGraph() {
                 value={tabValue}
                 onChange={(e, newValue) => setTabValue(newValue)}
                 sx={{
-                  mb: 1.5,
+                  mb: 1,
                   '& .MuiTab-root': {
                     fontSize: '0.875rem',
                     fontWeight: 600,
@@ -518,7 +518,7 @@ export default function KnowledgeGraph() {
                             <Paper
                               elevation={0}
                               sx={{
-                                p: 2,
+                                p: 1,
                                 borderRadius: 1,
                                 mb: 2,
                                 border: '1px solid #E5E7EB',
