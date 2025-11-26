@@ -12,6 +12,8 @@ import {
   ListItemButton,
   Collapse,
   Divider,
+  Tooltip,
+  IconButton,
 } from '@mui/material';
 import {
   Refresh,
@@ -22,6 +24,7 @@ import {
   ViewColumn,
   Link as LinkIcon,
   CheckCircle,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
 import { getSchemaConfigurations } from '../../services/api';
 
@@ -97,6 +100,65 @@ export default function SchemaConfigurationDisplay({ onSchemaLoaded }) {
     }));
   };
 
+  const handleDownloadConfig = (config, event) => {
+    // Prevent triggering selection when clicking download button
+    event.stopPropagation();
+
+    try {
+      // Create a comprehensive JSON object with all schema configuration details
+      const downloadData = {
+        schemaName: config.schemaName || config.id,
+        id: config.id,
+        createdAt: config.createdAt || new Date().toISOString(),
+        entityCount: config.tables.length,
+        tables: config.tables.map(table => ({
+          tableName: table.tableName,
+          databaseName: table.databaseName,
+          primaryAlias: table.primaryAlias,
+          tableAliases: table.tableAliases || [],
+          columns: table.columns.map(column => ({
+            name: column.name,
+            type: column.type,
+            aliases: column.aliases || [],
+            relationships: column.relationships || [],
+          })),
+        })),
+        metadata: {
+          exportedAt: new Date().toISOString(),
+          version: '1.0',
+        },
+      };
+
+      // Convert to JSON string with pretty formatting
+      const jsonString = JSON.stringify(downloadData, null, 2);
+
+      // Create a Blob from the JSON string
+      const blob = new Blob([jsonString], { type: 'application/json' });
+
+      // Create a download link
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+
+      // Generate filename: schema-config-{schemaName}.json
+      const schemaName = (config.schemaName || config.id).replace(/[^a-z0-9]/gi, '-').toLowerCase();
+      link.download = `schema-config-${schemaName}.json`;
+
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      console.log('Schema configuration downloaded successfully:', link.download);
+    } catch (error) {
+      console.error('Error downloading schema configuration:', error);
+      setError('Failed to download schema configuration');
+    }
+  };
+
   const handleToggleEntity = (entityKey) => {
     setExpandedEntities((prev) => ({
       ...prev,
@@ -125,9 +187,9 @@ export default function SchemaConfigurationDisplay({ onSchemaLoaded }) {
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       {/* Header with Refresh Button */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexShrink: 0 }}>
         <Typography
           variant="subtitle1"
           sx={{
@@ -167,10 +229,9 @@ export default function SchemaConfigurationDisplay({ onSchemaLoaded }) {
       <Paper
         elevation={0}
         sx={{
-          flex: 1,
           border: '1px solid #E5E7EB',
           borderRadius: 1,
-          overflow: 'auto',
+          overflow: 'visible', // Changed from 'auto' - parent handles scrolling
         }}
       >
         <List disablePadding>
@@ -241,6 +302,38 @@ export default function SchemaConfigurationDisplay({ onSchemaLoaded }) {
                           fontWeight: 600,
                         }}
                       />
+                      {/* Download Button */}
+                      <Tooltip title="Download schema configuration" placement="top">
+                        <Box
+                          onClick={(e) => handleDownloadConfig(config, e)}
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 32,
+                            height: 32,
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            bgcolor: 'transparent',
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                              bgcolor: '#EEF2FF',
+                              '& .download-icon': {
+                                color: '#5B6FE5',
+                              },
+                            },
+                          }}
+                        >
+                          <DownloadIcon
+                            className="download-icon"
+                            sx={{
+                              fontSize: '1.1rem',
+                              color: '#6B7280',
+                              transition: 'color 0.2s ease',
+                            }}
+                          />
+                        </Box>
+                      </Tooltip>
                       {selectedConfigId === config.id && (
                         <Box
                           onClick={(e) => handleToggleConfig(configIndex, e)}

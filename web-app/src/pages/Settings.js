@@ -227,19 +227,6 @@ function Settings() {
                     startIcon={<AddIcon />}
                     onClick={() => setDialogOpen(true)}
                     size="small"
-                    sx={{
-                      px: 2.5,
-                      bgcolor: '#5B6FE5',
-                      textTransform: 'none',
-                      fontWeight: 500,
-                      fontSize: '0.875rem',
-                      borderRadius: '8px',
-                      boxShadow: '0 1px 3px 0 rgba(91, 111, 229, 0.2)',
-                      '&:hover': {
-                        bgcolor: '#4C5FD5',
-                        boxShadow: '0 2px 6px 0 rgba(91, 111, 229, 0.3)',
-                      },
-                    }}
                   >
                     Add New Connection
                   </Button>
@@ -369,21 +356,6 @@ function Settings() {
                   onClick={loadConnections}
                   variant="outlined"
                   size="small"
-                  sx={{
-                    px: 1.5,
-                    py: 0.5,
-                    minWidth: 'auto',
-                    color: '#64748B',
-                    borderColor: '#CBD5E1',
-                    fontSize: '0.8125rem',
-                    textTransform: 'none',
-                    borderRadius: '8px',
-                    '&:hover': {
-                      bgcolor: '#F8FAFC',
-                      borderColor: '#94A3B8',
-                      color: '#475569',
-                    },
-                  }}
                 >
                   ↻ Refresh All
                 </Button>

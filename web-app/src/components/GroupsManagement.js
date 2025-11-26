@@ -146,22 +146,6 @@ const GroupsManagement = ({ refreshTrigger, onRefresh }) => {
           size="small"
           startIcon={<AddIcon />}
           onClick={() => handleOpenDialog()}
-          sx={{
-            px: 2,
-            py: 0.5,
-            minHeight: 'auto',
-            bgcolor: '#5B6FE5',
-            color: '#FFFFFF',
-            fontSize: '0.8125rem',
-            fontWeight: 500,
-            textTransform: 'none',
-            borderRadius: '8px',
-            boxShadow: '0 1px 3px 0 rgba(91, 111, 229, 0.2)',
-            '&:hover': {
-              bgcolor: '#4C5FD5',
-              boxShadow: '0 2px 6px 0 rgba(91, 111, 229, 0.3)',
-            },
-          }}
         >
           Add Group
         </Button>
@@ -170,21 +154,6 @@ const GroupsManagement = ({ refreshTrigger, onRefresh }) => {
           size="small"
           startIcon={<RefreshIcon />}
           onClick={loadGroups}
-          sx={{
-            px: 1.5,
-            py: 0.5,
-            minWidth: 'auto',
-            color: '#64748B',
-            borderColor: '#CBD5E1',
-            fontSize: '0.8125rem',
-            textTransform: 'none',
-            borderRadius: '8px',
-            '&:hover': {
-              bgcolor: '#F8FAFC',
-              borderColor: '#94A3B8',
-              color: '#475569',
-            },
-          }}
         >
           Refresh
         </Button>
@@ -196,14 +165,14 @@ const GroupsManagement = ({ refreshTrigger, onRefresh }) => {
         </Box>
       ) : (
         <TableContainer component={Paper}>
-          <Table>
+          <Table size="small">
             <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
               <TableRow>
-                <TableCell><strong>Code</strong></TableCell>
-                <TableCell><strong>Name</strong></TableCell>
-                <TableCell><strong>Description</strong></TableCell>
-                <TableCell><strong>Status</strong></TableCell>
-                <TableCell align="right"><strong>Actions</strong></TableCell>
+                <TableCell sx={{ py: 0.75 }}><strong>Code</strong></TableCell>
+                <TableCell sx={{ py: 0.75 }}><strong>Name</strong></TableCell>
+                <TableCell sx={{ py: 0.75 }}><strong>Description</strong></TableCell>
+                <TableCell sx={{ py: 0.75 }}><strong>Status</strong></TableCell>
+                <TableCell align="right" sx={{ py: 0.75 }}><strong>Actions</strong></TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -216,17 +185,17 @@ const GroupsManagement = ({ refreshTrigger, onRefresh }) => {
               ) : (
                 groups.map((group) => (
                   <TableRow key={group.id} hover>
-                    <TableCell>{group.code || '-'}</TableCell>
-                    <TableCell>{group.name}</TableCell>
-                    <TableCell>{group.description || '-'}</TableCell>
-                    <TableCell>
+                    <TableCell sx={{ py: 0.75 }}>{group.code || '-'}</TableCell>
+                    <TableCell sx={{ py: 0.75 }}>{group.name}</TableCell>
+                    <TableCell sx={{ py: 0.75 }}>{group.description || '-'}</TableCell>
+                    <TableCell sx={{ py: 0.75 }}>
                       <Chip
                         label={group.is_active ? 'Active' : 'Inactive'}
                         color={group.is_active ? 'success' : 'default'}
                         size="small"
                       />
                     </TableCell>
-                    <TableCell align="right">
+                    <TableCell align="right" sx={{ py: 0.75 }}>
                       <IconButton
                         size="small"
                         onClick={() => handleOpenDialog(group)}
@@ -299,16 +268,6 @@ const GroupsManagement = ({ refreshTrigger, onRefresh }) => {
           <Button
             onClick={handleCloseDialog}
             size="small"
-            sx={{
-              px: 1.5,
-              py: 0.5,
-              minWidth: 'auto',
-              color: '#64748B',
-              borderColor: '#CBD5E1',
-              fontSize: '0.8125rem',
-              textTransform: 'none',
-              borderRadius: '8px',
-            }}
           >
             Cancel
           </Button>
@@ -317,27 +276,6 @@ const GroupsManagement = ({ refreshTrigger, onRefresh }) => {
             variant="contained"
             size="small"
             disabled={!isFormValid()}
-            sx={{
-              px: 2,
-              py: 0.5,
-              minHeight: 'auto',
-              bgcolor: '#5B6FE5',
-              color: '#FFFFFF',
-              fontSize: '0.8125rem',
-              fontWeight: 500,
-              textTransform: 'none',
-              borderRadius: '8px',
-              boxShadow: '0 1px 3px 0 rgba(91, 111, 229, 0.2)',
-              '&:hover': {
-                bgcolor: '#4C5FD5',
-                boxShadow: '0 2px 6px 0 rgba(91, 111, 229, 0.3)',
-              },
-              '&:disabled': {
-                bgcolor: '#D1D5DB',
-                color: '#9CA3AF',
-                boxShadow: 'none',
-              },
-            }}
           >
             {editingGroup ? 'Update' : 'Create'}
           </Button>

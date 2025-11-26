@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import { PlayArrow } from '@mui/icons-material';
 import { generateKG } from '../../services/api';
+import KnowledgeGraphEditor from '../KnowledgeGraphEditor';
 
 /**
  * Get the display name for a table.
@@ -45,6 +46,11 @@ export default function KGGenerationPanel({ schemaConfig, relationships, onKGGen
   const [success, setSuccess] = useState(null);
   const [generationProgress, setGenerationProgress] = useState(0);
 
+  // State for generated KG data
+  const [generatedKGName, setGeneratedKGName] = useState(null);
+  const [generatedNodes, setGeneratedNodes] = useState([]);
+  const [generatedRelationships, setGeneratedRelationships] = useState([]);
+
   const handleGenerateKG = async () => {
     if (!kgName.trim()) {
       setError('Please enter a knowledge graph name');
@@ -69,21 +75,31 @@ export default function KGGenerationPanel({ schemaConfig, relationships, onKGGen
 
       const payload = {
         schema_names: schemaConfig.tables.map(t => t.databaseName),
+        schema_id: schemaConfig.id || null,
+        schema_name: schemaConfig.schemaName || null,
         kg_name: kgName,
         use_llm_enhancement: useLLM,
         backends: ['graphiti'],
-        relationship_pairs: relationships.map(rel => ({
-          source_table: rel.source_table,
-          target_table: rel.target_table,
-          source_column: rel.source_column,
-          target_column: rel.target_column,
-        })),
+        relationship_pairs: relationships
+          .filter(rel => !rel.is_placeholder) // Exclude placeholder rows
+          .map(rel => ({
+            source_table: rel.source_table || '',
+            source_column: rel.source_column || '',
+            target_table: rel.target_table || '',
+            target_column: rel.target_column || '',
+            relationship_type: rel.relationship_type || 'MATCHES',
+            confidence: typeof rel.confidence === 'number' ? rel.confidence : 0.8,
+            bidirectional: typeof rel.bidirectional === 'boolean' ? rel.bidirectional : true,
+            _comment: rel._comment || '',
+          })),
       };
 
-      // Include schema configuration ID if available (for primary alias support)
-      if (schemaConfig.id) {
-        payload.schema_config_id = schemaConfig.id;
-        console.log('Including schema configuration ID for primary alias support:', schemaConfig.id);
+      // Log schema metadata for debugging
+      if (schemaConfig.id || schemaConfig.schemaName) {
+        console.log('Including schema metadata:', {
+          schema_id: schemaConfig.id,
+          schema_name: schemaConfig.schemaName,
+        });
       }
 
       const response = await generateKG(payload);
@@ -92,8 +108,22 @@ export default function KGGenerationPanel({ schemaConfig, relationships, onKGGen
 
       if (response.data.success) {
         setSuccess(`Knowledge graph "${kgName}" generated successfully!`);
+
+        // Capture the generated KG data for visualization
+        setGeneratedKGName(response.data.kg_name || kgName);
+        setGeneratedNodes(response.data.nodes || []);
+        setGeneratedRelationships(response.data.relationships || []);
+
+        console.log('Generated KG Data:', {
+          kg_name: response.data.kg_name,
+          nodes_count: response.data.nodes_count,
+          relationships_count: response.data.relationships_count,
+          nodes: response.data.nodes,
+          relationships: response.data.relationships,
+        });
+
         setKgName('');
-        onKGGenerated();
+        // Don't call onKGGenerated() immediately - let user view the graph first
       } else {
         setError(response.data.message || 'Failed to generate knowledge graph');
       }
@@ -110,7 +140,7 @@ export default function KGGenerationPanel({ schemaConfig, relationships, onKGGen
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       {/* Alerts */}
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -280,12 +310,8 @@ export default function KGGenerationPanel({ schemaConfig, relationships, onKGGen
               onChange={(e) => setKgName(e.target.value)}
               placeholder="e.g., my_kg_v1"
               disabled={loading}
-              size="small"
               sx={{
                 mb: 1.5,
-                '& .MuiOutlinedInput-root': {
-                  fontSize: '0.875rem',
-                },
               }}
             />
 
@@ -346,26 +372,6 @@ export default function KGGenerationPanel({ schemaConfig, relationships, onKGGen
               onClick={handleGenerateKG}
               disabled={loading || !kgName.trim()}
               size="small"
-              sx={{
-                px: 2,
-                py: 1,
-                bgcolor: '#5B6FE5',
-                color: '#FFFFFF',
-                fontSize: '0.8125rem',
-                fontWeight: 500,
-                textTransform: 'none',
-                borderRadius: '8px',
-                boxShadow: '0 1px 3px 0 rgba(91, 111, 229, 0.2)',
-                '&:hover': {
-                  bgcolor: '#4C5FD5',
-                  boxShadow: '0 2px 6px 0 rgba(91, 111, 229, 0.3)',
-                },
-                '&:disabled': {
-                  bgcolor: '#E5E7EB',
-                  color: '#9CA3AF',
-                  boxShadow: 'none',
-                },
-              }}
             >
               {loading ? 'Generating...' : 'Generate Knowledge Graph'}
             </Button>
@@ -464,6 +470,75 @@ export default function KGGenerationPanel({ schemaConfig, relationships, onKGGen
                 </CardContent>
               </Card>
             ))}
+          </Box>
+        </Paper>
+      )}
+
+      {/* Generated Knowledge Graph Visualization */}
+      {generatedKGName && generatedNodes.length > 0 && (
+        <Paper
+          elevation={0}
+          sx={{
+            mt: 2,
+            border: '1px solid #E5E7EB',
+            borderRadius: 1,
+            bgcolor: '#FFFFFF',
+            overflow: 'hidden',
+          }}
+        >
+          <Box
+            sx={{
+              p: 1.5,
+              borderBottom: '1px solid #E5E7EB',
+              bgcolor: '#F9FAFB',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <Typography
+              variant="subtitle2"
+              sx={{
+                fontWeight: 600,
+                color: '#1F2937',
+                fontSize: '0.9rem',
+              }}
+            >
+              Generated Knowledge Graph: {generatedKGName}
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Chip
+                label={`${generatedNodes.length} Nodes`}
+                size="small"
+                sx={{
+                  bgcolor: '#EEF2FF',
+                  color: '#5B6FE5',
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                }}
+              />
+              <Chip
+                label={`${generatedRelationships.length} Relationships`}
+                size="small"
+                sx={{
+                  bgcolor: '#F0FDF4',
+                  color: '#16A34A',
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                }}
+              />
+            </Box>
+          </Box>
+          <Box sx={{ height: '600px', bgcolor: '#FAFAFA' }}>
+            <KnowledgeGraphEditor
+              kgName={generatedKGName}
+              entities={generatedNodes}
+              relationships={generatedRelationships}
+              onRefresh={() => {
+                // Optional: Add refresh logic if needed
+                console.log('Refresh requested for generated KG');
+              }}
+            />
           </Box>
         </Paper>
       )}

@@ -588,20 +588,6 @@ function TableSelectionStep({ connections, selectedTables, setSelectedTables, on
           sx={{
             '& .MuiOutlinedInput-root': {
               bgcolor: '#FFFFFF',
-              fontSize: '0.8125rem',
-              '& fieldset': {
-                borderColor: '#E5E7EB',
-              },
-              '&:hover fieldset': {
-                borderColor: '#5B6FE5',
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: '#5B6FE5',
-                borderWidth: '1px',
-              },
-              '& input': {
-                py: 0.75
-              }
             },
           }}
         />

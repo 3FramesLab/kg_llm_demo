@@ -137,30 +137,14 @@ function AddConnectionDialog({ open, onClose, onConnectionAdded, onShowSnackbar 
             onChange={handleInputChange}
             fullWidth
             required
-            size="small"
-            sx={{
-              '& .MuiInputLabel-root': { fontSize: '0.875rem', color: '#6B7280' },
-              '& .MuiOutlinedInput-root': {
-                '& fieldset': { borderColor: '#D1D5DB' },
-                '&:hover fieldset': { borderColor: '#9CA3AF' },
-                '&.Mui-focused fieldset': { borderColor: '#5B6FE5' },
-              },
-            }}
           />
-          <FormControl fullWidth required size="small">
-            <InputLabel sx={{ fontSize: '0.875rem', color: '#6B7280' }}>Source Type</InputLabel>
+          <FormControl fullWidth required>
+            <InputLabel>Source Type</InputLabel>
             <Select
               name="type"
               value={formData.type}
               onChange={handleInputChange}
               label="Source Type"
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': { borderColor: '#D1D5DB' },
-                  '&:hover fieldset': { borderColor: '#9CA3AF' },
-                  '&.Mui-focused fieldset': { borderColor: '#5B6FE5' },
-                },
-              }}
             >
               <MenuItem value="mysql">MySQL</MenuItem>
               <MenuItem value="postgresql">PostgreSQL</MenuItem>
@@ -176,15 +160,6 @@ function AddConnectionDialog({ open, onClose, onConnectionAdded, onShowSnackbar 
             onChange={handleInputChange}
             fullWidth
             required
-            size="small"
-            sx={{
-              '& .MuiInputLabel-root': { fontSize: '0.875rem', color: '#6B7280' },
-              '& .MuiOutlinedInput-root': {
-                '& fieldset': { borderColor: '#D1D5DB' },
-                '&:hover fieldset': { borderColor: '#9CA3AF' },
-                '&.Mui-focused fieldset': { borderColor: '#5B6FE5' },
-              },
-            }}
           />
           <TextField
             label="Port"
@@ -193,15 +168,6 @@ function AddConnectionDialog({ open, onClose, onConnectionAdded, onShowSnackbar 
             onChange={handleInputChange}
             fullWidth
             required
-            size="small"
-            sx={{
-              '& .MuiInputLabel-root': { fontSize: '0.875rem', color: '#6B7280' },
-              '& .MuiOutlinedInput-root': {
-                '& fieldset': { borderColor: '#D1D5DB' },
-                '&:hover fieldset': { borderColor: '#9CA3AF' },
-                '&.Mui-focused fieldset': { borderColor: '#5B6FE5' },
-              },
-            }}
           />
           <TextField
             label="Source Database Name"
@@ -210,15 +176,6 @@ function AddConnectionDialog({ open, onClose, onConnectionAdded, onShowSnackbar 
             onChange={handleInputChange}
             fullWidth
             required
-            size="small"
-            sx={{
-              '& .MuiInputLabel-root': { fontSize: '0.875rem', color: '#6B7280' },
-              '& .MuiOutlinedInput-root': {
-                '& fieldset': { borderColor: '#D1D5DB' },
-                '&:hover fieldset': { borderColor: '#9CA3AF' },
-                '&.Mui-focused fieldset': { borderColor: '#5B6FE5' },
-              },
-            }}
           />
           <TextField
             label="Username"
@@ -227,15 +184,6 @@ function AddConnectionDialog({ open, onClose, onConnectionAdded, onShowSnackbar 
             onChange={handleInputChange}
             fullWidth
             required
-            size="small"
-            sx={{
-              '& .MuiInputLabel-root': { fontSize: '0.875rem', color: '#6B7280' },
-              '& .MuiOutlinedInput-root': {
-                '& fieldset': { borderColor: '#D1D5DB' },
-                '&:hover fieldset': { borderColor: '#9CA3AF' },
-                '&.Mui-focused fieldset': { borderColor: '#5B6FE5' },
-              },
-            }}
           />
           <TextField
             label="Password"
@@ -245,15 +193,6 @@ function AddConnectionDialog({ open, onClose, onConnectionAdded, onShowSnackbar 
             onChange={handleInputChange}
             fullWidth
             required
-            size="small"
-            sx={{
-              '& .MuiInputLabel-root': { fontSize: '0.875rem', color: '#6B7280' },
-              '& .MuiOutlinedInput-root': {
-                '& fieldset': { borderColor: '#D1D5DB' },
-                '&:hover fieldset': { borderColor: '#9CA3AF' },
-                '&.Mui-focused fieldset': { borderColor: '#5B6FE5' },
-              },
-            }}
           />
           {formData.type === 'oracle' && (
             <TextField
@@ -262,17 +201,7 @@ function AddConnectionDialog({ open, onClose, onConnectionAdded, onShowSnackbar 
               value={formData.service_name}
               onChange={handleInputChange}
               fullWidth
-              size="small"
               helperText="Oracle service name (e.g., ORCLPDB). Leave empty to use SID."
-              sx={{
-                '& .MuiInputLabel-root': { fontSize: '0.875rem', color: '#6B7280' },
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': { borderColor: '#D1D5DB' },
-                  '&:hover fieldset': { borderColor: '#9CA3AF' },
-                  '&.Mui-focused fieldset': { borderColor: '#5B6FE5' },
-                },
-                '& .MuiFormHelperText-root': { fontSize: '0.75rem', color: '#6B7280' },
-              }}
             />
           )}
         </Box>
@@ -282,21 +211,6 @@ function AddConnectionDialog({ open, onClose, onConnectionAdded, onShowSnackbar 
           onClick={handleClose}
           variant="outlined"
           size="small"
-          sx={{
-            px: 1.5,
-            py: 0.5,
-            minWidth: 'auto',
-            color: '#64748B',
-            borderColor: '#CBD5E1',
-            fontSize: '0.8125rem',
-            textTransform: 'none',
-            borderRadius: '8px',
-            '&:hover': {
-              bgcolor: '#F8FAFC',
-              borderColor: '#94A3B8',
-              color: '#475569',
-            },
-          }}
         >
           Cancel
         </Button>
@@ -306,25 +220,6 @@ function AddConnectionDialog({ open, onClose, onConnectionAdded, onShowSnackbar 
           variant="outlined"
           startIcon={testingConnection ? <CircularProgress size={16} /> : null}
           size="small"
-          sx={{
-            px: 1.5,
-            py: 0.5,
-            minWidth: 'auto',
-            color: '#64748B',
-            borderColor: '#CBD5E1',
-            fontSize: '0.8125rem',
-            textTransform: 'none',
-            borderRadius: '8px',
-            '&:hover': {
-              bgcolor: '#F8FAFC',
-              borderColor: '#94A3B8',
-              color: '#475569',
-            },
-            '&:disabled': {
-              color: '#D1D5DB',
-              borderColor: '#E5E7EB',
-            },
-          }}
         >
           Test Connection
         </Button>
@@ -333,27 +228,6 @@ function AddConnectionDialog({ open, onClose, onConnectionAdded, onShowSnackbar 
           variant="contained"
           disabled={loading || !formData.name || !formData.host}
           size="small"
-          sx={{
-            px: 2,
-            py: 0.5,
-            minHeight: 'auto',
-            bgcolor: '#5B6FE5',
-            color: '#FFFFFF',
-            fontSize: '0.8125rem',
-            fontWeight: 500,
-            textTransform: 'none',
-            borderRadius: '8px',
-            boxShadow: '0 1px 3px 0 rgba(91, 111, 229, 0.2)',
-            '&:hover': {
-              bgcolor: '#4C5FD5',
-              boxShadow: '0 2px 6px 0 rgba(91, 111, 229, 0.3)',
-            },
-            '&:disabled': {
-              bgcolor: '#E5E7EB',
-              color: '#9CA3AF',
-              boxShadow: 'none',
-            },
-          }}
         >
           {loading ? (
             <>

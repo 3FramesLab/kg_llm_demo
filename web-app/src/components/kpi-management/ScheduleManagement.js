@@ -301,6 +301,7 @@ const ScheduleManagement = ({ kpiId, kpiName }) => {
           startIcon={<AddIcon />}
           onClick={handleCreateSchedule}
           disabled={loading}
+          size="small"
         >
           Create Schedule
         </Button>
@@ -338,6 +339,7 @@ const ScheduleManagement = ({ kpiId, kpiName }) => {
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={handleCreateSchedule}
+                    size="small"
                   >
                     Create First Schedule
                   </Button>
@@ -607,11 +609,12 @@ const ScheduleManagement = ({ kpiId, kpiName }) => {
           </LocalizationProvider>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => setDialogOpen(false)} size="small">Cancel</Button>
           <Button
             onClick={handleSaveSchedule}
             variant="contained"
             disabled={loading || !formData.schedule_name}
+            size="small"
           >
             {editingSchedule ? 'Update' : 'Create'} Schedule
           </Button>
@@ -638,7 +641,7 @@ const ScheduleManagement = ({ kpiId, kpiName }) => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setHistoryDialogOpen(false)}>Close</Button>
+          <Button onClick={() => setHistoryDialogOpen(false)} size="small">Close</Button>
         </DialogActions>
       </Dialog>
     </Box>

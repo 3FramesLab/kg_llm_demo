@@ -632,7 +632,7 @@ function AliasesStep({ selectedTables, onDataChange }) {
       >
         <CircularProgress size={48} sx={{ color: '#5B6FE5' }} />
         <Typography variant="body1" sx={{ color: '#6B7280' }}>
-          Generating entity aliases using AI...
+          Generating entity aliases, please wait...
         </Typography>
       </Box>
     );
@@ -707,10 +707,6 @@ function AliasesStep({ selectedTables, onDataChange }) {
                 color: '#FFFFFF',
                 '&:hover': {
                   bgcolor: '#059669',
-                },
-                '&:disabled': {
-                  bgcolor: '#D1D5DB',
-                  color: '#9CA3AF',
                 },
               }}
             >
@@ -1221,16 +1217,6 @@ function AliasesStep({ selectedTables, onDataChange }) {
               if (e.key === 'Enter' && newAliasInput.trim()) {
                 handleAddAlias();
               }
-            }}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                '&.Mui-focused fieldset': {
-                  borderColor: '#5B6FE5',
-                },
-              },
-              '& .MuiInputLabel-root.Mui-focused': {
-                color: '#5B6FE5',
-              },
             }}
             helperText="Press Enter to save quickly"
           />

@@ -594,8 +594,8 @@ const KPIList = ({ onEdit, onExecute, onExecuteCached, onViewHistory, onManageSc
           Are you sure you want to delete the KPI "{selectedKPI?.name}"?
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
-          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+          <Button onClick={() => setDeleteConfirmOpen(false)} size="small">Cancel</Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained" size="small">
             Delete
           </Button>
         </DialogActions>

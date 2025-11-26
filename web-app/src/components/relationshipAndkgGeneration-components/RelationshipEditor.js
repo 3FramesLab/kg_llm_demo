@@ -17,6 +17,7 @@ import {
   Select,
   MenuItem,
   FormControl,
+  FormControlLabel,
   InputLabel,
   IconButton,
   Alert,
@@ -26,6 +27,7 @@ import {
   Divider,
   TextField,
   Slider,
+  Checkbox,
 } from '@mui/material';
 import { Add, Edit, Delete, AutoAwesome, Storage, TableChart } from '@mui/icons-material';
 import { suggestRelationships } from '../../services/api';
@@ -62,7 +64,8 @@ export default function RelationshipEditor({ schemaConfig, onRelationshipsUpdate
     target_column: '',
     relationship_type: 'MATCHES',
     confidence: 0.8,
-    description: '',
+    bidirectional: true,
+    _comment: '',
   });
 
   useEffect(() => {
@@ -90,7 +93,14 @@ export default function RelationshipEditor({ schemaConfig, onRelationshipsUpdate
 
           if (response.data.success && response.data.suggestions) {
             const suggestedRels = response.data.suggestions.map(rel => ({
-              ...rel,
+              source_table: rel.source_table || '',
+              source_column: rel.source_column || '',
+              target_table: rel.target_table || '',
+              target_column: rel.target_column || '',
+              relationship_type: rel.relationship_type || 'MATCHES',
+              confidence: typeof rel.confidence === 'number' ? rel.confidence : 0.8,
+              bidirectional: typeof rel.bidirectional === 'boolean' ? rel.bidirectional : true,
+              _comment: rel.reasoning || rel.description || rel._comment || '',
               id: Math.random(),
             }));
             allSuggestions.push(...suggestedRels);
@@ -124,19 +134,25 @@ export default function RelationshipEditor({ schemaConfig, onRelationshipsUpdate
       // If this is a placeholder row, pre-fill source table and column
       if (rel.is_placeholder) {
         setFormData({
-          source_table: rel.source_table,
-          source_column: rel.source_column,
+          source_table: rel.source_table || '',
+          source_column: rel.source_column || '',
           target_table: '',
           target_column: '',
           relationship_type: 'MATCHES',
           confidence: 0.8,
-          description: '',
+          bidirectional: true,
+          _comment: '',
         });
       } else {
         setFormData({
-          ...rel,
-          confidence: rel.confidence !== null && rel.confidence !== undefined ? rel.confidence : 0.8,
-          description: rel.description || rel.reasoning || '',
+          source_table: rel.source_table || '',
+          source_column: rel.source_column || '',
+          target_table: rel.target_table || '',
+          target_column: rel.target_column || '',
+          relationship_type: rel.relationship_type || 'MATCHES',
+          confidence: typeof rel.confidence === 'number' ? rel.confidence : 0.8,
+          bidirectional: typeof rel.bidirectional === 'boolean' ? rel.bidirectional : true,
+          _comment: rel._comment || rel.description || rel.reasoning || '',
         });
       }
     } else {
@@ -148,7 +164,8 @@ export default function RelationshipEditor({ schemaConfig, onRelationshipsUpdate
         target_column: '',
         relationship_type: 'MATCHES',
         confidence: 0.8,
-        description: '',
+        bidirectional: true,
+        _comment: '',
       });
     }
     setOpenDialog(true);
@@ -160,8 +177,9 @@ export default function RelationshipEditor({ schemaConfig, onRelationshipsUpdate
   };
 
   const handleSave = () => {
-    if (!formData.source_table || !formData.target_table) {
-      setError('Please fill in all required fields');
+    // Validate required fields
+    if (!formData.source_table || !formData.source_column || !formData.target_table || !formData.target_column) {
+      setError('Please fill in all required fields (source table, source column, target table, target column)');
       return;
     }
 
@@ -172,12 +190,28 @@ export default function RelationshipEditor({ schemaConfig, onRelationshipsUpdate
       return;
     }
 
+    // Create standardized relationship object with all 8 required properties
+    const standardizedRelationship = {
+      source_table: formData.source_table.trim(),
+      source_column: formData.source_column.trim(),
+      target_table: formData.target_table.trim(),
+      target_column: formData.target_column.trim(),
+      relationship_type: formData.relationship_type.trim(),
+      confidence: confidence,
+      bidirectional: Boolean(formData.bidirectional),
+      _comment: (formData._comment || '').trim(),
+    };
+
     let updatedRels;
     if (editingIndex !== null) {
       updatedRels = [...relationships];
-      updatedRels[editingIndex] = { ...formData, confidence };
+      // Preserve the id if it exists
+      updatedRels[editingIndex] = {
+        ...standardizedRelationship,
+        id: relationships[editingIndex].id || Math.random()
+      };
     } else {
-      updatedRels = [...relationships, { ...formData, confidence, id: Math.random() }];
+      updatedRels = [...relationships, { ...standardizedRelationship, id: Math.random() }];
     }
 
     setRelationships(updatedRels);
@@ -245,7 +279,7 @@ export default function RelationshipEditor({ schemaConfig, onRelationshipsUpdate
         // Column has a suggestion - use it
         merged.push(suggestionMap[key]);
       } else {
-        // Column has no suggestion - create a placeholder row
+        // Column has no suggestion - create a standardized placeholder row
         merged.push({
           id: Math.random(),
           source_table: columnInfo.tableName,
@@ -254,6 +288,8 @@ export default function RelationshipEditor({ schemaConfig, onRelationshipsUpdate
           target_column: '',
           relationship_type: '',
           confidence: null,
+          bidirectional: true,
+          _comment: '',
           is_placeholder: true, // Mark as placeholder for styling
         });
       }
@@ -299,7 +335,7 @@ export default function RelationshipEditor({ schemaConfig, onRelationshipsUpdate
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       {/* Schema Configuration Summary Section */}
       {schemaConfig && (
         <Paper
@@ -410,14 +446,14 @@ export default function RelationshipEditor({ schemaConfig, onRelationshipsUpdate
             variant="outlined"
             size="small"
             sx={{
-              px: 1.25,
-              py: 0.375,
+              px: 1.5,
+              py: 0.5,
               minWidth: 'auto',
               color: '#64748B',
               borderColor: '#CBD5E1',
-              fontSize: '0.75rem',
+              fontSize: '0.8125rem',
               textTransform: 'none',
-              borderRadius: '6px',
+              borderRadius: '8px',
               '&:hover': {
                 bgcolor: '#F8FAFC',
                 borderColor: '#94A3B8',
@@ -444,15 +480,15 @@ export default function RelationshipEditor({ schemaConfig, onRelationshipsUpdate
             onClick={() => handleOpenDialog()}
             size="small"
             sx={{
-              px: 1.25,
-              py: 0.375,
+              px: 1.5,
+              py: 0.5,
               minHeight: 'auto',
               bgcolor: '#5B6FE5',
               color: '#FFFFFF',
-              fontSize: '0.75rem',
+              fontSize: '0.8125rem',
               fontWeight: 500,
               textTransform: 'none',
-              borderRadius: '6px',
+              borderRadius: '8px',
               boxShadow: '0 1px 3px 0 rgba(91, 111, 229, 0.2)',
               '&:hover': {
                 bgcolor: '#4C5FD5',
@@ -919,7 +955,7 @@ export default function RelationshipEditor({ schemaConfig, onRelationshipsUpdate
             >
               Configuration
             </Typography>
-            <FormControl fullWidth>
+            <FormControl fullWidth sx={{ mb: 1 }}>
               <InputLabel sx={{ fontSize: '0.8125rem' }}>Relationship Type</InputLabel>
               <Select
                 value={formData.relationship_type}
@@ -928,8 +964,34 @@ export default function RelationshipEditor({ schemaConfig, onRelationshipsUpdate
                 size="small"
               >
                 <MenuItem value="MATCHES">MATCHES</MenuItem>
+                <MenuItem value="ONE_TO_MANY">ONE_TO_MANY</MenuItem>
+                <MenuItem value="MANY_TO_ONE">MANY_TO_ONE</MenuItem>
+                <MenuItem value="MANY_TO_MANY">MANY_TO_MANY</MenuItem>
+                <MenuItem value="REFERENCES">REFERENCES</MenuItem>
+                <MenuItem value="RELATED_TO">RELATED_TO</MenuItem>
               </Select>
             </FormControl>
+
+            {/* Bidirectional Checkbox */}
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={formData.bidirectional}
+                  onChange={(e) => setFormData({ ...formData, bidirectional: e.target.checked })}
+                  sx={{
+                    color: '#CBD5E1',
+                    '&.Mui-checked': {
+                      color: '#5B6FE5',
+                    },
+                  }}
+                />
+              }
+              label={
+                <Typography sx={{ fontSize: '0.8125rem', color: '#6B7280' }}>
+                  Bidirectional relationship
+                </Typography>
+              }
+            />
           </Box>
 
           <Divider sx={{ my: 1 }} />
@@ -1001,31 +1063,22 @@ export default function RelationshipEditor({ schemaConfig, onRelationshipsUpdate
               />
             </Box>
 
-            {/* Description Field */}
+            {/* Comment Field */}
             <TextField
               fullWidth
-              label="Description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              label="Comment (Optional)"
+              value={formData._comment}
+              onChange={(e) => setFormData({ ...formData, _comment: e.target.value })}
               multiline
               rows={3}
+              placeholder="Enter a comment or reasoning for this relationship..."
               size="small"
-              placeholder="Enter a description or reasoning for this relationship..."
               sx={{
-                '& .MuiOutlinedInput-root': {
-                  fontSize: '0.8125rem',
-                  '&:hover fieldset': {
-                    borderColor: '#5B6FE5',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#5B6FE5',
-                  },
-                },
                 '& .MuiInputLabel-root': {
                   fontSize: '0.8125rem',
-                  '&.Mui-focused': {
-                    color: '#5B6FE5',
-                  },
+                },
+                '& .MuiInputBase-input': {
+                  fontSize: '0.8125rem',
                 },
               }}
             />

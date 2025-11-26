@@ -249,6 +249,7 @@ const KPIExecutionDialog = ({ open, kpi, onClose, onSuccess, fullScreen }) => {
           onClick={onClose}
           disabled={executing}
           fullWidth={isMobile}
+          size="small"
         >
           Cancel
         </Button>
@@ -265,6 +266,7 @@ const KPIExecutionDialog = ({ open, kpi, onClose, onSuccess, fullScreen }) => {
           }
           startIcon={executing ? <CircularProgress size={20} /> : null}
           fullWidth={isMobile}
+          size="small"
           sx={{ ml: isMobile ? 0 : 1, mt: isMobile ? 1 : 0 }}
         >
           {executing ? 'Executing...' : 'Execute'}

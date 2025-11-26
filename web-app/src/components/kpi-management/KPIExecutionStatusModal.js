@@ -274,7 +274,7 @@ const KPIExecutionStatusModal = ({ open, executionId, kpiName, onComplete, onErr
             variant="contained"
             color="primary"
             fullWidth
-            sx={{ mt: 1 }}
+            size="small"
           >
             Close
           </Button>

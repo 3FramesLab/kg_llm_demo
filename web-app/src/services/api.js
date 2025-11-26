@@ -29,6 +29,16 @@ export const queryKG = (kgName, query) => api.post(`/kg/${kgName}/query`, { quer
 export const exportKG = (kgName) => api.get(`/kg/${kgName}/export`);
 export const deleteKG = (kgName) => api.delete(`/kg/${kgName}`);
 
+// Knowledge Graph CRUD Operations - Entities
+export const createEntity = (kgName, entityData) => api.post(`/kg/${kgName}/entities`, entityData);
+export const updateEntity = (kgName, entityId, entityData) => api.put(`/kg/${kgName}/entities/${entityId}`, entityData);
+export const deleteEntity = (kgName, entityId) => api.delete(`/kg/${kgName}/entities/${entityId}`);
+
+// Knowledge Graph CRUD Operations - Relationships
+export const createRelationship = (kgName, relationshipData) => api.post(`/kg/${kgName}/relationships`, relationshipData);
+export const updateRelationship = (kgName, relationshipId, relationshipData) => api.put(`/kg/${kgName}/relationships/${relationshipId}`, relationshipData);
+export const deleteRelationship = (kgName, relationshipId) => api.delete(`/kg/${kgName}/relationships/${relationshipId}`);
+
 // LLM Features
 export const extractEntities = (schemaName) => api.post(`/llm/extract/${schemaName}`);
 export const analyzeSchema = (schemaName) => api.post(`/llm/analyze/${schemaName}`);

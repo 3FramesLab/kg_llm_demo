@@ -553,20 +553,11 @@ const DashboardTrendsWidget = ({
             href={emptyStateRedirectUrl}
             size="small"
             sx={{
-              py: 0.75,
-              px: 2,
-              borderRadius: 1.5,
-              fontSize: '0.8125rem',
-              fontWeight: 600,
-              textTransform: 'none',
               background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-              boxShadow: '0 2px 8px rgba(99, 102, 241, 0.2)',
               '&:hover': {
                 background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
-                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
                 transform: 'translateY(-1px)'
               },
-              transition: 'all 0.2s ease-in-out'
             }}
           >
             Go to KPI Management
@@ -873,17 +864,11 @@ const DashboardTrendsWidget = ({
 
                       {/* Search Input for OPS Planner */}
                       <TextField
-                        size="small"
                         placeholder="Search planners..."
                         value={opsSearchQuery}
                         onChange={(e) => setOpsSearchQuery(e.target.value)}
                         sx={{
                           minWidth: 150,
-                          '& .MuiOutlinedInput-root': {
-                            fontSize: '0.875rem',
-                            borderRadius: 1,
-                            bgcolor: 'white',
-                          },
                         }}
                         InputProps={{
                           startAdornment: (
@@ -1019,7 +1004,7 @@ const DashboardTrendsWidget = ({
                               <TableHead>
                                 <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
                                   {results.column_names?.map((col) => (
-                                    <TableCell key={col} sx={{ fontWeight: 'bold' }}>
+                                    <TableCell key={col} sx={{ fontWeight: 'bold', py: 0.75 }}>
                                       {col}
                                       {/* Add filter indicator for ops_planner column */}
                                       {selectedOpsPlanner && (
@@ -1038,7 +1023,7 @@ const DashboardTrendsWidget = ({
                                   )) || (
                                       // Fallback: use keys from first row if column_names not available
                                       filteredResults[0] && Object.keys(filteredResults[0]).map((col) => (
-                                        <TableCell key={col} sx={{ fontWeight: 'bold' }}>
+                                        <TableCell key={col} sx={{ fontWeight: 'bold', py: 0.75 }}>
                                           {col}
                                           {/* Add filter indicator for ops_planner column */}
                                           {selectedOpsPlanner && (
@@ -1064,7 +1049,7 @@ const DashboardTrendsWidget = ({
                                   .map((row, idx) => (
                                     <TableRow key={idx}>
                                       {(results.column_names || Object.keys(row))?.map((col) => (
-                                        <TableCell key={`${idx}-${col}`}>
+                                        <TableCell key={`${idx}-${col}`} sx={{ py: 0.75 }}>
                                           {String(row[col] ?? '')}
                                         </TableCell>
                                       ))}

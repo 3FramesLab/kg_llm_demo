@@ -102,18 +102,19 @@ export default function RelationshipAndKGGeneration() {
             <Paper
               elevation={0}
               sx={{
-                height: '100%',
-                minHeight: 'calc(100vh - 64px)',
+                height: 'calc(100vh - 80px)', // Fixed height for the entire container
+                maxHeight: 'calc(100vh - 80px)',
                 p: 1.25,
                 bgcolor: '#FFFFFF',
                 border: '1px solid #E5E7EB',
                 borderRadius: 4,
                 display: 'flex',
                 flexDirection: 'column',
+                overflow: 'hidden', // Prevent outer container from scrolling
               }}
             >
-              {/* Header Section */}
-              <Box sx={{ mb: 1 }}>
+              {/* Header Section - Fixed at top */}
+              <Box sx={{ mb: 1, flexShrink: 0 }}>
                 <Typography
                   variant="h5"
                   sx={{
@@ -142,25 +143,30 @@ export default function RelationshipAndKGGeneration() {
                   Configure schemas, manage relationships, and generate knowledge graphs to unlock deeper insights from your data.
                 </Typography>
               </Box>
-              <Divider sx={{ mb: 1.5 }} />
+              <Divider sx={{ mb: 1.5, flexShrink: 0 }} />
 
-              {/* Alerts */}
-              {error && (
-                <Alert severity="error" sx={{ mb: 1 }}>
-                  {error}
-                </Alert>
-              )}
-              {success && (
-                <Alert severity="success" sx={{ mb: 1 }}>
-                  {success}
-                </Alert>
+              {/* Alerts - Fixed at top */}
+              {(error || success) && (
+                <Box sx={{ mb: 1, flexShrink: 0 }}>
+                  {error && (
+                    <Alert severity="error" sx={{ mb: success ? 1 : 0 }}>
+                      {error}
+                    </Alert>
+                  )}
+                  {success && (
+                    <Alert severity="success">
+                      {success}
+                    </Alert>
+                  )}
+                </Box>
               )}
 
-              {/* Stepper */}
+              {/* Stepper - Fixed at top */}
               <Stepper
                 activeStep={activeStep}
                 sx={{
                   mb: 1.25,
+                  flexShrink: 0,
                   '& .MuiStepLabel-label': { fontSize: '0.875rem' },
                   '& .MuiStepIcon-root': { width: 28, height: 28 },
                   '& .MuiStep-root': { padding: '8px 0' },
@@ -173,7 +179,7 @@ export default function RelationshipAndKGGeneration() {
                 ))}
               </Stepper>
 
-              {/* Content Area */}
+              {/* Scrollable Content Area - Takes remaining space */}
               <Box
                 sx={{
                   flex: 1,
@@ -182,34 +188,64 @@ export default function RelationshipAndKGGeneration() {
                   borderRadius: 1,
                   display: 'flex',
                   flexDirection: 'column',
-                  minHeight: 300,
+                  overflow: 'hidden', // Container doesn't scroll
+                  minHeight: 0, // Important for flex child to respect parent height
                 }}
               >
-                {activeStep === 0 && (
-                  <SchemaConfigurationDisplay onSchemaLoaded={handleSchemaLoaded} />
-                )}
-                {activeStep === 1 && (
-                  <RelationshipEditor
-                    schemaConfig={schemaConfig}
-                    onRelationshipsUpdated={handleRelationshipsUpdated}
-                  />
-                )}
-                {activeStep === 2 && (
-                  <KGGenerationPanel
-                    schemaConfig={schemaConfig}
-                    relationships={relationships}
-                    onKGGenerated={handleKGGenerated}
-                  />
-                )}
+                {/* Inner scrollable wrapper */}
+                <Box
+                  sx={{
+                    flex: 1,
+                    overflow: 'auto', // This creates the scrollbar
+                    display: 'flex',
+                    flexDirection: 'column',
+                    minHeight: 0,
+                    // Custom scrollbar styling
+                    '&::-webkit-scrollbar': {
+                      width: '8px',
+                    },
+                    '&::-webkit-scrollbar-track': {
+                      bgcolor: '#F3F4F6',
+                      borderRadius: '4px',
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      bgcolor: '#CBD5E1',
+                      borderRadius: '4px',
+                      '&:hover': {
+                        bgcolor: '#94A3B8',
+                      },
+                    },
+                  }}
+                >
+                  {activeStep === 0 && (
+                    <SchemaConfigurationDisplay onSchemaLoaded={handleSchemaLoaded} />
+                  )}
+                  {activeStep === 1 && (
+                    <RelationshipEditor
+                      schemaConfig={schemaConfig}
+                      onRelationshipsUpdated={handleRelationshipsUpdated}
+                    />
+                  )}
+                  {activeStep === 2 && (
+                    <KGGenerationPanel
+                      schemaConfig={schemaConfig}
+                      relationships={relationships}
+                      onKGGenerated={handleKGGenerated}
+                    />
+                  )}
+                </Box>
               </Box>
 
-              {/* Action Buttons */}
+              {/* Action Buttons - Fixed at bottom */}
               <Box
                 sx={{
                   display: 'flex',
                   justifyContent: 'space-between',
                   mt: 1,
                   pt: 0.75,
+                  flexShrink: 0,
+                  borderTop: '1px solid #E5E7EB',
+                  bgcolor: '#FFFFFF',
                 }}
               >
                 <Button

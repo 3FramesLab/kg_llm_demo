@@ -213,31 +213,9 @@ const KPIForm = ({ open, kpi, onClose, onSuccess, fullScreen }) => {
             onChange={handleChange}
             fullWidth
             required
-            size="small"
             placeholder="e.g., Product Match Rate"
             disabled={loading || (kpi ? true : false)}
             helperText={kpi ? 'Name cannot be changed' : ''}
-            sx={{
-              '& .MuiInputLabel-root': {
-                fontSize: '0.875rem',
-                color: '#6B7280',
-              },
-              '& .MuiOutlinedInput-root': {
-                '& fieldset': {
-                  borderColor: '#D1D5DB',
-                },
-                '&:hover fieldset': {
-                  borderColor: '#9CA3AF',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#5B6FE5',
-                },
-              },
-              '& .MuiFormHelperText-root': {
-                fontSize: '0.75rem',
-                color: '#6B7280',
-              },
-            }}
           />
 
           {/* Alias Name */}
@@ -247,57 +225,17 @@ const KPIForm = ({ open, kpi, onClose, onSuccess, fullScreen }) => {
             value={formData.alias_name}
             onChange={handleChange}
             fullWidth
-            size="small"
             placeholder="e.g., PMR"
             disabled={loading}
             helperText="Business-friendly short name"
-            sx={{
-              '& .MuiInputLabel-root': {
-                fontSize: '0.875rem',
-                color: '#6B7280',
-              },
-              '& .MuiOutlinedInput-root': {
-                '& fieldset': {
-                  borderColor: '#D1D5DB',
-                },
-                '&:hover fieldset': {
-                  borderColor: '#9CA3AF',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#5B6FE5',
-                },
-              },
-              '& .MuiFormHelperText-root': {
-                fontSize: '0.75rem',
-                color: '#6B7280',
-              },
-            }}
           />
 
           {/* Group Dropdown */}
           <FormControl
             fullWidth
-            size="small"
             disabled={loading || loadingDropdowns}
             required
             error={!formData.group_id && error === 'Group selection is required'}
-            sx={{
-              '& .MuiInputLabel-root': {
-                fontSize: '0.875rem',
-                color: '#6B7280',
-              },
-              '& .MuiOutlinedInput-root': {
-                '& fieldset': {
-                  borderColor: '#D1D5DB',
-                },
-                '&:hover fieldset': {
-                  borderColor: '#9CA3AF',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#5B6FE5',
-                },
-              },
-            }}
           >
             <InputLabel>Group *</InputLabel>
             <Select
@@ -309,13 +247,13 @@ const KPIForm = ({ open, kpi, onClose, onSuccess, fullScreen }) => {
               <MenuItem value="">
                 <em>Select a group</em>
               </MenuItem>
-              {groups.map((group) => (
+              {Array.isArray(groups) && groups.map((group) => (
                 <MenuItem key={group.id} value={group.id}>
                   {group.name}
                 </MenuItem>
               ))}
             </Select>
-            <FormHelperText sx={{ fontSize: '0.75rem', color: '#6B7280' }}>
+            <FormHelperText>
               Select the group from Master Page
             </FormHelperText>
           </FormControl>
@@ -323,27 +261,9 @@ const KPIForm = ({ open, kpi, onClose, onSuccess, fullScreen }) => {
           {/* Dashboard Dropdown */}
           <FormControl
             fullWidth
-            size="small"
             disabled={loading || loadingDropdowns}
             required
             error={!formData.dashboard_id && error === 'Dashboard selection is required'}
-            sx={{
-              '& .MuiInputLabel-root': {
-                fontSize: '0.875rem',
-                color: '#6B7280',
-              },
-              '& .MuiOutlinedInput-root': {
-                '& fieldset': {
-                  borderColor: '#D1D5DB',
-                },
-                '&:hover fieldset': {
-                  borderColor: '#9CA3AF',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#5B6FE5',
-                },
-              },
-            }}
           >
             <InputLabel>Dashboard *</InputLabel>
             <Select
@@ -355,13 +275,13 @@ const KPIForm = ({ open, kpi, onClose, onSuccess, fullScreen }) => {
               <MenuItem value="">
                 <em>Select a dashboard</em>
               </MenuItem>
-              {dashboards.map((dashboard) => (
+              {Array.isArray(dashboards) && dashboards.map((dashboard) => (
                 <MenuItem key={dashboard.id} value={dashboard.id}>
                   {dashboard.name}
                 </MenuItem>
               ))}
             </Select>
-            <FormHelperText sx={{ fontSize: '0.75rem', color: '#6B7280' }}>
+            <FormHelperText>
               Select the dashboard from Master Page
             </FormHelperText>
           </FormControl>
@@ -373,28 +293,10 @@ const KPIForm = ({ open, kpi, onClose, onSuccess, fullScreen }) => {
             value={formData.description}
             onChange={handleChange}
             fullWidth
-            size="small"
             multiline
             rows={2}
             placeholder="Detailed description of what this KPI measures"
             disabled={loading}
-            sx={{
-              '& .MuiInputLabel-root': {
-                fontSize: '0.875rem',
-                color: '#6B7280',
-              },
-              '& .MuiOutlinedInput-root': {
-                '& fieldset': {
-                  borderColor: '#D1D5DB',
-                },
-                '&:hover fieldset': {
-                  borderColor: '#9CA3AF',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#5B6FE5',
-                },
-              },
-            }}
           />
 
           {/* NL Definition */}
@@ -405,33 +307,11 @@ const KPIForm = ({ open, kpi, onClose, onSuccess, fullScreen }) => {
             onChange={handleChange}
             fullWidth
             required
-            size="small"
             multiline
             rows={3}
             placeholder="e.g., Show me all products in RBP that are not in OPS"
             disabled={loading}
             helperText="The natural language query that defines this KPI"
-            sx={{
-              '& .MuiInputLabel-root': {
-                fontSize: '0.875rem',
-                color: '#6B7280',
-              },
-              '& .MuiOutlinedInput-root': {
-                '& fieldset': {
-                  borderColor: '#D1D5DB',
-                },
-                '&:hover fieldset': {
-                  borderColor: '#9CA3AF',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#5B6FE5',
-                },
-              },
-              '& .MuiFormHelperText-root': {
-                fontSize: '0.75rem',
-                color: '#6B7280',
-              },
-            }}
           />
         </Box>
       </DialogContent>
@@ -440,15 +320,6 @@ const KPIForm = ({ open, kpi, onClose, onSuccess, fullScreen }) => {
           onClick={onClose}
           disabled={loading}
           size="small"
-          sx={{
-            color: '#6B7280',
-            textTransform: 'none',
-            fontWeight: 500,
-            borderRadius: '8px',
-            '&:hover': {
-              bgcolor: '#F3F4F6',
-            },
-          }}
         >
           Cancel
         </Button>
@@ -458,19 +329,6 @@ const KPIForm = ({ open, kpi, onClose, onSuccess, fullScreen }) => {
           disabled={loading}
           size="small"
           startIcon={loading ? <CircularProgress size={16} /> : null}
-          sx={{
-            bgcolor: '#5B6FE5',
-            textTransform: 'none',
-            fontWeight: 500,
-            borderRadius: '8px',
-            '&:hover': {
-              bgcolor: '#4C5FD5',
-            },
-            '&:disabled': {
-              bgcolor: '#D1D5DB',
-              color: '#9CA3AF',
-            },
-          }}
         >
           {loading ? 'Saving...' : kpi ? 'Update' : 'Create'}
         </Button>

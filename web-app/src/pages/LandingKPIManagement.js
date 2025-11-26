@@ -383,23 +383,6 @@ const LandingKPIManagement = () => {
                           size="small"
                           startIcon={<AddIcon />}
                           onClick={handleCreateKPI}
-                          sx={{
-                            py: 0.9,
-                            px: 2,
-                            borderRadius: 1,
-                            fontSize: '0.85rem',
-                            fontWeight: 700,
-                            textTransform: 'none',
-                            boxShadow: '0 4px 14px rgba(25, 118, 210, 0.3)',
-                            transition: 'all 0.3s ease',
-                            '&:hover': {
-                              transform: 'translateY(-2px)',
-                              boxShadow: '0 6px 20px rgba(25, 118, 210, 0.4)',
-                            },
-                            '&:active': {
-                              transform: 'translateY(0)',
-                            },
-                          }}
                         >
                           Create New KPI
                         </Button>

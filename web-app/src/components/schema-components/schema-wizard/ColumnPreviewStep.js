@@ -253,20 +253,6 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, tableAliases 
             sx={{
               '& .MuiOutlinedInput-root': {
                 bgcolor: '#FFFFFF',
-                fontSize: '0.8125rem',
-                '& fieldset': {
-                  borderColor: '#E5E7EB',
-                },
-                '&:hover fieldset': {
-                  borderColor: '#5B6FE5',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#5B6FE5',
-                  borderWidth: '1px',
-                },
-                '& input': {
-                  py: 0.75
-                }
               },
             }}
           />
@@ -278,40 +264,12 @@ function ColumnPreviewStep({ selectedTables, selectedColumns = {}, tableAliases 
             value={schemaName}
             onChange={(e) => setSchemaName(e.target.value)}
             fullWidth
-            size="small"
             required
             sx={{
               '& .MuiOutlinedInput-root': {
                 bgcolor: '#F9FAFB',
-                color: '#1F2937',
-                '& fieldset': {
-                  borderColor: '#E5E7EB',
-                },
-                '&:hover fieldset': {
-                  borderColor: '#D1D5DB',
-                },
                 '&.Mui-focused': {
                   bgcolor: '#FFFFFF',
-                  '& fieldset': {
-                    borderColor: '#5B6FE5',
-                  },
-                },
-              },
-              '& .MuiOutlinedInput-input': {
-                color: '#1F2937',
-                '&::placeholder': {
-                  color: '#9CA3AF',
-                  opacity: 1,
-                },
-              },
-              '& .MuiInputBase-input:required:invalid + fieldset': {
-                borderColor: '#EF4444',
-              },
-              '& .MuiFormLabel-root': {
-                color: '#6B7280',
-                fontSize: '0.875rem',
-                '&.Mui-focused': {
-                  color: '#5B6FE5',
                 },
               },
             }}

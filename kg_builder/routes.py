@@ -27,7 +27,12 @@ from kg_builder.models import (
     NLQueryExecutionRequest, NLQueryExecutionResponse,
     KPIDefinition, KPIUpdateRequest as KPIUpdateRequestNew,
     KPIExecutionResult, DrilldownRequest, DrilldownResponse,
-    KPICacheFlagsRequest, KPIClearCacheRequest
+    KPICacheFlagsRequest, KPIClearCacheRequest,
+    EntityCreateRequest, EntityUpdateRequest, EntityCreateResponse,
+    EntityUpdateResponse, EntityDeleteResponse,
+    RelationshipCreateRequest, RelationshipUpdateRequest,
+    RelationshipCreateResponse, RelationshipUpdateResponse,
+    RelationshipDeleteResponse
 )
 from kg_builder.services.schema_parser import SchemaParser
 from kg_builder.services.falkordb_backend import get_falkordb_backend
@@ -47,6 +52,83 @@ from kg_builder.utils.java_response_decorator import java_safe_response
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+def _standardize_relationship(rel: Dict) -> Dict:
+    """
+    Transform a relationship object to the standardized 8-field format.
+
+    Standardized format:
+    {
+        "source_table": str,
+        "source_column": str,
+        "target_table": str,
+        "target_column": str,
+        "relationship_type": str,
+        "confidence": float (0.0-1.0),
+        "bidirectional": bool,
+        "_comment": str
+    }
+
+    Args:
+        rel: Relationship object from backend storage (may have different structure)
+
+    Returns:
+        Standardized relationship object with all 8 required fields
+    """
+    # Extract source and target table names from IDs if needed
+    source_id = rel.get('source_id', '')
+    target_id = rel.get('target_id', '')
+
+    # Try to extract table names from IDs (e.g., "table_name" or just "name")
+    source_table = rel.get('source_table', source_id.replace('table_', ''))
+    target_table = rel.get('target_table', target_id.replace('table_', ''))
+
+    # Extract columns
+    source_column = rel.get('source_column', '')
+    target_column = rel.get('target_column', '')
+
+    # Extract relationship type
+    relationship_type = rel.get('relationship_type', 'RELATED_TO')
+
+    # Extract confidence from properties or use default
+    properties = rel.get('properties', {})
+    confidence = properties.get('llm_confidence', properties.get('confidence', 0.8))
+
+    # Ensure confidence is a float between 0.0 and 1.0
+    try:
+        confidence = float(confidence)
+        confidence = max(0.0, min(1.0, confidence))
+    except (ValueError, TypeError):
+        confidence = 0.8
+
+    # Extract bidirectional flag (default to True)
+    bidirectional = properties.get('bidirectional', True)
+    if not isinstance(bidirectional, bool):
+        bidirectional = True
+
+    # Extract comment/description/reasoning
+    comment = (
+        rel.get('_comment', '') or
+        properties.get('_comment', '') or
+        properties.get('description', '') or
+        properties.get('llm_description', '') or
+        properties.get('llm_reasoning', '') or
+        properties.get('reasoning', '') or
+        ''
+    )
+
+    # Return standardized format
+    return {
+        "source_table": source_table,
+        "source_column": source_column,
+        "target_table": target_table,
+        "target_column": target_column,
+        "relationship_type": relationship_type,
+        "confidence": confidence,
+        "bidirectional": bidirectional,
+        "_comment": comment
+    }
 
 
 def get_source_database_connection():
@@ -215,8 +297,11 @@ async def generate_knowledge_graph(request: KGGenerationRequest):
     Supports both auto-detection and explicit relationship pairs (v2).
     Also supports loading schema data and primary aliases from schema configuration.
 
-    When schema_config_id is provided, the system loads schema data directly from
-    the configuration file instead of requiring separate schema JSON files.
+    When schema_id (or schema_config_id for backward compatibility) is provided,
+    the system loads schema data directly from the schema_configurations/ directory
+    instead of requiring separate schema JSON files in the schemas/ directory.
+
+    This allows dynamic schema loading from user-created configurations.
     """
     try:
         start_time = time.time()
@@ -225,22 +310,26 @@ async def generate_knowledge_graph(request: KGGenerationRequest):
         schema_names = request.schema_names or [request.schema_name]
 
         # Load schema data and primary aliases from schema configuration if provided
+        # Prefer schema_id over schema_config_id (backward compatibility)
         primary_aliases_map = {}
         prebuilt_schemas = None
+        config_id = request.schema_id or request.schema_config_id
 
-        if request.schema_config_id:
-            logger.info(f"Loading schema data from configuration: {request.schema_config_id}")
+        if config_id:
+            logger.info(f"Loading schema data from configuration: {config_id}")
+            if request.schema_name:
+                logger.info(f"  Schema Name: {request.schema_name}")
 
             # Build DatabaseSchema objects from configuration
-            prebuilt_schemas = _build_database_schemas_from_config(request.schema_config_id)
+            prebuilt_schemas = _build_database_schemas_from_config(config_id)
             logger.info(f"Built {len(prebuilt_schemas)} DatabaseSchema objects from configuration")
 
             # Load primary aliases
-            primary_aliases_map = _load_primary_aliases_from_schema_config(request.schema_config_id)
+            primary_aliases_map = _load_primary_aliases_from_schema_config(config_id)
             if primary_aliases_map:
                 logger.info(f"Loaded {len(primary_aliases_map)} primary aliases from schema configuration")
             else:
-                logger.warning(f"No primary aliases found in schema configuration '{request.schema_config_id}'")
+                logger.warning(f"No primary aliases found in schema configuration '{config_id}'")
 
         # Build knowledge graph - UNIFIED APPROACH
         # Always use build_merged_knowledge_graph() regardless of schema count
@@ -354,6 +443,20 @@ async def generate_knowledge_graph(request: KGGenerationRequest):
         if explicit_pairs_added > 0:
             message += f" with {explicit_pairs_added} explicit relationship pair(s)"
 
+        # Transform relationships to standardized format for response
+        standardized_relationships = []
+        for rel in kg.relationships:
+            # Convert GraphRelationship to dict first
+            rel_dict = {
+                "source_id": rel.source_id,
+                "target_id": rel.target_id,
+                "relationship_type": rel.relationship_type,
+                "properties": rel.properties,
+                "source_column": rel.source_column,
+                "target_column": rel.target_column
+            }
+            standardized_relationships.append(_standardize_relationship(rel_dict))
+
         return KGGenerationResponse(
             success=True,
             schemas_processed=schema_names,
@@ -362,7 +465,7 @@ async def generate_knowledge_graph(request: KGGenerationRequest):
             nodes_count=len(kg.nodes),
             relationships_count=len(kg.relationships),
             nodes=kg.nodes,
-            relationships=kg.relationships,
+            relationships=standardized_relationships,
             backends_used=backends_used,
             generation_time_ms=elapsed_ms
         )
@@ -435,7 +538,13 @@ async def get_entities(kg_name: str, backend: str = "graphiti"):
 
 @router.get("/kg/{kg_name}/relationships")
 async def get_relationships(kg_name: str, backend: str = "graphiti"):
-    """Get all relationships from a knowledge graph."""
+    """
+    Get all relationships from a knowledge graph.
+
+    Returns relationships in standardized 8-field format:
+    - source_table, source_column, target_table, target_column
+    - relationship_type, confidence, bidirectional, _comment
+    """
     try:
         if backend.lower() == "falkordb":
             backend_obj = get_falkordb_backend()
@@ -444,14 +553,238 @@ async def get_relationships(kg_name: str, backend: str = "graphiti"):
             backend_obj = get_graphiti_backend()
             relationships = backend_obj.get_relationships(kg_name)
 
+        # Transform all relationships to standardized format
+        standardized_relationships = [_standardize_relationship(rel) for rel in relationships]
+
         return {
             "success": True,
             "kg_name": kg_name,
-            "relationships": relationships,
-            "count": len(relationships)
+            "relationships": standardized_relationships,
+            "count": len(standardized_relationships)
         }
     except Exception as e:
         logger.error(f"Error retrieving relationships: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# CRUD endpoints for entities
+@router.post("/kg/{kg_name}/entities", response_model=EntityCreateResponse)
+async def create_entity(kg_name: str, request: EntityCreateRequest, backend: str = "graphiti"):
+    """
+    Create a new entity in the knowledge graph.
+
+    This endpoint allows manual creation of nodes with multi-label support.
+    """
+    try:
+        logger.info(f"Creating entity in KG '{kg_name}': {request.name}")
+
+        # Use Graphiti backend for storage
+        backend_obj = get_graphiti_backend()
+
+        # Prepare entity data
+        entity_data = {
+            'id': request.id,
+            'name': request.name,
+            'labels': request.labels,
+            'properties': request.properties,
+            'source_table': request.source_table,
+            'source_column': request.source_column,
+        }
+
+        # Create entity
+        created_entity = backend_obj.create_entity(kg_name, entity_data)
+
+        return EntityCreateResponse(
+            success=True,
+            message=f"Entity '{created_entity['name']}' created successfully",
+            entity=created_entity
+        )
+
+    except ValueError as e:
+        logger.error(f"Validation error creating entity: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error creating entity: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/kg/{kg_name}/entities/{entity_id}", response_model=EntityUpdateResponse)
+async def update_entity(kg_name: str, entity_id: str, request: EntityUpdateRequest, backend: str = "graphiti"):
+    """
+    Update an existing entity in the knowledge graph.
+    """
+    try:
+        logger.info(f"Updating entity '{entity_id}' in KG '{kg_name}'")
+
+        # Use Graphiti backend for storage
+        backend_obj = get_graphiti_backend()
+
+        # Prepare update data
+        update_data = {}
+        if request.name is not None:
+            update_data['name'] = request.name
+        if request.labels is not None:
+            update_data['labels'] = request.labels
+        if request.properties is not None:
+            update_data['properties'] = request.properties
+        if request.source_table is not None:
+            update_data['source_table'] = request.source_table
+        if request.source_column is not None:
+            update_data['source_column'] = request.source_column
+
+        # Update entity
+        updated_entity = backend_obj.update_entity(kg_name, entity_id, update_data)
+
+        return EntityUpdateResponse(
+            success=True,
+            message=f"Entity '{entity_id}' updated successfully",
+            entity=updated_entity
+        )
+
+    except ValueError as e:
+        logger.error(f"Validation error updating entity: {e}")
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error updating entity: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/kg/{kg_name}/entities/{entity_id}", response_model=EntityDeleteResponse)
+async def delete_entity(kg_name: str, entity_id: str, backend: str = "graphiti"):
+    """
+    Delete an entity from the knowledge graph.
+    Also deletes all relationships connected to this entity.
+    """
+    try:
+        logger.info(f"Deleting entity '{entity_id}' from KG '{kg_name}'")
+
+        # Use Graphiti backend for storage
+        backend_obj = get_graphiti_backend()
+
+        # Delete entity
+        backend_obj.delete_entity(kg_name, entity_id)
+
+        return EntityDeleteResponse(
+            success=True,
+            message=f"Entity '{entity_id}' and its relationships deleted successfully",
+            deleted_entity_id=entity_id
+        )
+
+    except ValueError as e:
+        logger.error(f"Validation error deleting entity: {e}")
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error deleting entity: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# CRUD endpoints for relationships
+@router.post("/kg/{kg_name}/relationships", response_model=RelationshipCreateResponse)
+async def create_relationship(kg_name: str, request: RelationshipCreateRequest, backend: str = "graphiti"):
+    """
+    Create a new relationship in the knowledge graph.
+
+    This endpoint allows manual creation of relationships between any two nodes,
+    including cross-schema relationships.
+    """
+    try:
+        logger.info(f"Creating relationship in KG '{kg_name}': {request.source_id} -> {request.target_id}")
+
+        # Use Graphiti backend for storage
+        backend_obj = get_graphiti_backend()
+
+        # Prepare relationship data
+        relationship_data = {
+            'id': request.id,
+            'source_id': request.source_id,
+            'target_id': request.target_id,
+            'relationship_type': request.relationship_type,
+            'properties': request.properties,
+            'source_column': request.source_column,
+            'target_column': request.target_column,
+        }
+
+        # Create relationship
+        created_relationship = backend_obj.create_relationship(kg_name, relationship_data)
+
+        return RelationshipCreateResponse(
+            success=True,
+            message=f"Relationship created successfully",
+            relationship=created_relationship
+        )
+
+    except ValueError as e:
+        logger.error(f"Validation error creating relationship: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error creating relationship: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/kg/{kg_name}/relationships/{relationship_id}", response_model=RelationshipUpdateResponse)
+async def update_relationship(kg_name: str, relationship_id: str, request: RelationshipUpdateRequest, backend: str = "graphiti"):
+    """
+    Update an existing relationship in the knowledge graph.
+    """
+    try:
+        logger.info(f"Updating relationship '{relationship_id}' in KG '{kg_name}'")
+
+        # Use Graphiti backend for storage
+        backend_obj = get_graphiti_backend()
+
+        # Prepare update data
+        update_data = {}
+        if request.relationship_type is not None:
+            update_data['relationship_type'] = request.relationship_type
+        if request.properties is not None:
+            update_data['properties'] = request.properties
+        if request.source_column is not None:
+            update_data['source_column'] = request.source_column
+        if request.target_column is not None:
+            update_data['target_column'] = request.target_column
+
+        # Update relationship
+        updated_relationship = backend_obj.update_relationship(kg_name, relationship_id, update_data)
+
+        return RelationshipUpdateResponse(
+            success=True,
+            message=f"Relationship '{relationship_id}' updated successfully",
+            relationship=updated_relationship
+        )
+
+    except ValueError as e:
+        logger.error(f"Validation error updating relationship: {e}")
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error updating relationship: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/kg/{kg_name}/relationships/{relationship_id}", response_model=RelationshipDeleteResponse)
+async def delete_relationship(kg_name: str, relationship_id: str, backend: str = "graphiti"):
+    """
+    Delete a relationship from the knowledge graph.
+    """
+    try:
+        logger.info(f"Deleting relationship '{relationship_id}' from KG '{kg_name}'")
+
+        # Use Graphiti backend for storage
+        backend_obj = get_graphiti_backend()
+
+        # Delete relationship
+        backend_obj.delete_relationship(kg_name, relationship_id)
+
+        return RelationshipDeleteResponse(
+            success=True,
+            message=f"Relationship '{relationship_id}' deleted successfully",
+            deleted_relationship_id=relationship_id
+        )
+
+    except ValueError as e:
+        logger.error(f"Validation error deleting relationship: {e}")
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error deleting relationship: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -671,16 +1004,24 @@ async def delete_table_alias(kg_name: str, table_name: str):
 
 @router.get("/kg/{kg_name}/export")
 async def export_graph(kg_name: str, backend: str = "graphiti"):
-    """Export a knowledge graph."""
+    """
+    Export a knowledge graph.
+
+    Returns entities and relationships in standardized format.
+    Relationships use the 8-field standardized structure.
+    """
     try:
         if backend.lower() == "falkordb":
             backend_obj = get_falkordb_backend()
         else:
             backend_obj = get_graphiti_backend()
-        
+
         entities = backend_obj.get_entities(kg_name)
         relationships = backend_obj.get_relationships(kg_name)
-        
+
+        # Transform all relationships to standardized format
+        standardized_relationships = [_standardize_relationship(rel) for rel in relationships]
+
         return GraphExportResponse(
             success=True,
             message=f"Graph '{kg_name}' exported successfully",
@@ -688,10 +1029,10 @@ async def export_graph(kg_name: str, backend: str = "graphiti"):
             data={
                 "kg_name": kg_name,
                 "entities": entities,
-                "relationships": relationships,
+                "relationships": standardized_relationships,
                 "stats": {
                     "entities_count": len(entities),
-                    "relationships_count": len(relationships)
+                    "relationships_count": len(standardized_relationships)
                 }
             }
         )

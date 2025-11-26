@@ -265,7 +265,17 @@ class KGGenerationRequest(BaseModel):
     # Schema configuration ID (for primary alias support)
     schema_config_id: Optional[str] = Field(
         default=None,
-        description="Schema configuration ID to load table primary aliases from (e.g., schema_config_20251123_113432_a3108eac)"
+        description="Schema configuration ID to load table primary aliases from (e.g., schema_config_20251123_113432_a3108eac) - DEPRECATED, use schema_id"
+    )
+
+    # New schema metadata fields (preferred over schema_config_id)
+    schema_id: Optional[str] = Field(
+        default=None,
+        description="Schema configuration ID (e.g., schema_config_20251125_163709_7afa8bf3)"
+    )
+    schema_name: Optional[str] = Field(
+        default=None,
+        description="Schema configuration name for logging and metadata"
     )
 
     # V1: Field preferences (legacy - ambiguous table hints)
@@ -311,7 +321,7 @@ class KGGenerationResponse(BaseModel):
     nodes_count: int
     relationships_count: int
     nodes: List[GraphNode] = Field(default=[], description="All nodes in the knowledge graph")
-    relationships: List[GraphRelationship] = Field(default=[], description="All relationships in the knowledge graph")
+    relationships: List[Dict[str, Any]] = Field(default=[], description="All relationships in standardized 8-field format")
     backends_used: List[str]
     generation_time_ms: float
 
@@ -345,6 +355,87 @@ class GraphExportResponse(BaseModel):
     message: str
     format: str
     data: Dict[str, Any]
+
+
+# CRUD operation models for entities and relationships
+class EntityCreateRequest(BaseModel):
+    """Request model for creating a new entity."""
+    id: Optional[str] = Field(None, description="Optional entity ID (auto-generated if not provided)")
+    name: str = Field(..., description="Display name for the entity")
+    labels: List[str] = Field(..., description="List of labels for the entity (Neo4j style)")
+    properties: Dict[str, Any] = Field(default_factory=dict, description="Entity properties")
+    source_table: Optional[str] = Field(None, description="Source table name")
+    source_column: Optional[str] = Field(None, description="Source column name")
+
+
+class EntityUpdateRequest(BaseModel):
+    """Request model for updating an existing entity."""
+    name: Optional[str] = Field(None, description="Updated display name")
+    labels: Optional[List[str]] = Field(None, description="Updated labels")
+    properties: Optional[Dict[str, Any]] = Field(None, description="Updated properties (merged with existing)")
+    source_table: Optional[str] = Field(None, description="Updated source table")
+    source_column: Optional[str] = Field(None, description="Updated source column")
+
+
+class EntityCreateResponse(BaseModel):
+    """Response model for entity creation."""
+    success: bool
+    message: str
+    entity: Dict[str, Any]
+
+
+class EntityUpdateResponse(BaseModel):
+    """Response model for entity update."""
+    success: bool
+    message: str
+    entity: Dict[str, Any]
+
+
+class EntityDeleteResponse(BaseModel):
+    """Response model for entity deletion."""
+    success: bool
+    message: str
+    deleted_entity_id: str
+
+
+class RelationshipCreateRequest(BaseModel):
+    """Request model for creating a new relationship."""
+    id: Optional[str] = Field(None, description="Optional relationship ID (auto-generated if not provided)")
+    source_id: str = Field(..., description="Source entity ID")
+    target_id: str = Field(..., description="Target entity ID")
+    relationship_type: str = Field(..., description="Type of relationship")
+    properties: Dict[str, Any] = Field(default_factory=dict, description="Relationship properties")
+    source_column: Optional[str] = Field(None, description="Source column name")
+    target_column: Optional[str] = Field(None, description="Target column name")
+
+
+class RelationshipUpdateRequest(BaseModel):
+    """Request model for updating an existing relationship."""
+    relationship_type: Optional[str] = Field(None, description="Updated relationship type")
+    properties: Optional[Dict[str, Any]] = Field(None, description="Updated properties (merged with existing)")
+    source_column: Optional[str] = Field(None, description="Updated source column")
+    target_column: Optional[str] = Field(None, description="Updated target column")
+
+
+class RelationshipCreateResponse(BaseModel):
+    """Response model for relationship creation."""
+    success: bool
+    message: str
+    relationship: Dict[str, Any]
+
+
+class RelationshipUpdateResponse(BaseModel):
+    """Response model for relationship update."""
+    success: bool
+    message: str
+    relationship: Dict[str, Any]
+
+
+class RelationshipDeleteResponse(BaseModel):
+    """Response model for relationship deletion."""
+    success: bool
+    message: str
+    deleted_relationship_id: str
 
 
 class HealthCheckResponse(BaseModel):

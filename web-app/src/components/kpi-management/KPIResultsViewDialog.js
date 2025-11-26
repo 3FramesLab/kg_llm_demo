@@ -156,7 +156,7 @@ const KPIResultsViewDialog = ({ open, onClose, kpi, showMetadata = true }) => {
         <Button
           size="small"
           onClick={onClose}
-          sx={{ minWidth: 'auto', p: 0.5 }}
+          sx={{ minWidth: 'auto' }}
         >
           <CloseIcon />
         </Button>
@@ -360,10 +360,11 @@ const KPIResultsViewDialog = ({ open, onClose, kpi, showMetadata = true }) => {
           startIcon={<DownloadIcon />}
           onClick={handleDownloadCSV}
           disabled={!filteredData || filteredData.length === 0}
+          size="small"
         >
           Download CSV {hasActiveFilters ? '(Filtered)' : ''}
         </Button>
-        <Button onClick={onClose} variant="contained">
+        <Button onClick={onClose} variant="contained" size="small">
           Close
         </Button>
       </DialogActions>
